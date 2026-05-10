@@ -10,6 +10,7 @@ import { MuscleHeatmap } from '@/components/muscle/MuscleHeatmap';
 import { Card } from '@/components/ui/Card';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { calculate1RM } from '@/lib/aiPlanner';
 import type { MuscleGroup } from '@/types';
 
@@ -18,6 +19,7 @@ type ProgressTab = 'exercises' | 'volume' | 'muscles';
 export default function ProgressScreen() {
   const { workouts } = useWorkoutStore();
   const { profile } = useProfileStore();
+  const units = useSettingsStore((s) => s.settings.units);
   const [activeTab, setActiveTab] = useState<ProgressTab>('exercises');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [heatmapPeriod, setHeatmapPeriod] = useState<7 | 30>(7);
@@ -200,6 +202,7 @@ export default function ProgressScreen() {
                                 exerciseName={ex.name}
                                 metric="estimated1RM"
                                 height={180}
+                                units={units}
                               />
                             </View>
                           )}

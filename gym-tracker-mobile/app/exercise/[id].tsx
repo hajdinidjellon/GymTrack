@@ -101,6 +101,7 @@ export default function ExerciseDetailScreen() {
                 exerciseName={exerciseName}
                 metric="estimated1RM"
                 height={200}
+                units={units}
               />
             </Card>
           </View>

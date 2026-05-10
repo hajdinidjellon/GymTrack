@@ -11,12 +11,14 @@ interface ProgressChartProps {
   exerciseName: string;
   metric?: 'estimated1RM' | 'maxWeight' | 'totalVolume';
   height?: number;
+  units?: 'kg' | 'lbs';
 }
 
 export function ProgressChart({
   data,
   metric = 'estimated1RM',
   height = 220,
+  units = 'kg',
 }: ProgressChartProps) {
   if (data.length === 0) {
     return (
@@ -36,7 +38,11 @@ export function ProgressChart({
   const trendColor  = trend >= 0 ? colors.status.success : colors.status.danger;
 
   const metricLabel =
-    metric === 'estimated1RM' ? '1RM estimé (kg)' : metric === 'maxWeight' ? 'Poids max (kg)' : 'Volume (kg)';
+    metric === 'estimated1RM'
+      ? `1RM estimé (${units})`
+      : metric === 'maxWeight'
+        ? `Poids max (${units})`
+        : `Volume (${units})`;
 
   // Calcul du graphique
   const W = 320;
@@ -64,12 +70,12 @@ export function ProgressChart({
         <View>
           <Text className="text-sm text-text-muted">{metricLabel}</Text>
           <Text className="text-2xl font-bold text-text-primary">
-            {latestValue.toFixed(1)} kg
+            {latestValue.toFixed(1)} {units}
           </Text>
         </View>
         {trend !== 0 && (
           <Text className="text-sm font-semibold" style={{ color: trendColor }}>
-            {trend > 0 ? '+' : ''}{trend.toFixed(1)} kg
+            {trend > 0 ? '+' : ''}{trend.toFixed(1)} {units}
           </Text>
         )}
       </View>
