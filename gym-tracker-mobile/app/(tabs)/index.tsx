@@ -84,7 +84,7 @@ export default function DashboardScreen() {
         <View className="px-5 pt-2 gap-1">
           <Text className="text-sm text-text-muted capitalize">{today}</Text>
           <Text className="text-2xl font-black text-text-primary">
-            Bonjour {profile?.name ? `, ${profile.name}` : ''} 👋
+            Bonjour{profile?.name ? ` ${profile.name}` : ''} 👋
           </Text>
         </View>
 
