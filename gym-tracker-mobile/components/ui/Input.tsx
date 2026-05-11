@@ -6,6 +6,7 @@ import {
   Pressable,
   type TextInputProps,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/constants/theme';
 
 interface InputProps extends Omit<TextInputProps, 'style'> {
@@ -17,62 +18,41 @@ interface InputProps extends Omit<TextInputProps, 'style'> {
   onRightIconPress?: () => void;
 }
 
-export function Input({
-  label,
-  error,
-  hint,
-  leftIcon,
-  rightIcon,
-  onRightIconPress,
-  ...rest
-}: InputProps) {
+export function Input({ label, error, hint, leftIcon, rightIcon, onRightIconPress, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
-
-  const borderColor = error
-    ? '#ef4444'
-    : focused
-      ? '#7c3aed'
-      : 'rgba(255,255,255,0.12)';
+  const borderColor = error ? '#ef4444' : focused ? '#7c3aed' : 'rgba(255,255,255,0.10)';
 
   return (
-    <View className="gap-1.5">
+    <View style={{ gap: 6 }}>
       {label && (
-        <Text className="text-sm font-medium text-text-secondary">{label}</Text>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
+          {label}
+        </Text>
       )}
-
-      <View
-        className="flex-row items-center rounded-xl bg-white/[0.06] px-3 gap-2"
-        style={{ borderWidth: 1, borderColor }}
-      >
-        {leftIcon && <View className="opacity-60">{leftIcon}</View>}
-
+      <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 16, gap: 8, borderWidth: 1, borderColor }}>
+        {leftIcon && <View style={{ opacity: 0.6 }}>{leftIcon}</View>}
         <TextInput
-          className="flex-1 py-3 text-base text-text-primary"
+          style={{ flex: 1, paddingVertical: 14, fontSize: 16, fontWeight: '500', color: colors.text.primary }}
           placeholderTextColor={colors.text.muted}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           selectionColor={colors.brand.primary}
           {...rest}
         />
-
         {rightIcon && (
           <Pressable onPress={onRightIconPress}>
-            <View className="opacity-60">{rightIcon}</View>
+            <View style={{ opacity: 0.6 }}>{rightIcon}</View>
           </Pressable>
         )}
       </View>
-
-      {error && (
-        <Text className="text-xs text-status-danger">{error}</Text>
-      )}
-      {hint && !error && (
-        <Text className="text-xs text-text-muted">{hint}</Text>
-      )}
+      {error && <Text style={{ fontSize: 12, color: colors.status.danger }}>{error}</Text>}
+      {hint && !error && <Text style={{ fontSize: 12, color: colors.text.muted }}>{hint}</Text>}
     </View>
   );
 }
 
-// Variante numérique compacte pour les séries (poids/reps)
+// ── Stepper numérique — poids & reps ─────────────────────────────
+
 interface NumericInputProps {
   value: number;
   onChange: (value: number) => void;
@@ -80,38 +60,82 @@ interface NumericInputProps {
   max?: number;
   step?: number;
   suffix?: string;
+  large?: boolean;
 }
 
-export function NumericInput({
-  value,
-  onChange,
-  min = 0,
-  max = 999,
-  step = 1,
-  suffix,
-}: NumericInputProps) {
-  const handleChange = (text: string) => {
+export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, suffix, large = false }: NumericInputProps) {
+  const clamp = (v: number) => Math.min(Math.max(v, min), max);
+
+  const handleText = (text: string) => {
     const num = parseFloat(text.replace(',', '.'));
-    if (!isNaN(num) && num >= min && num <= max) {
-      onChange(num);
-    } else if (text === '' || text === '-') {
-      onChange(min);
-    }
+    if (!isNaN(num)) onChange(clamp(num));
+    else if (text === '') onChange(min);
   };
 
+  const valueStr = Number.isInteger(value) ? String(value) : value.toFixed(1);
+
+  if (large) {
+    return (
+      <View style={{ alignItems: 'center', gap: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Pressable
+            onPress={() => onChange(clamp(value - step))}
+            style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 20, color: colors.text.secondary, fontWeight: '700', lineHeight: 22 }}>−</Text>
+          </Pressable>
+
+          <TextInput
+            style={{ fontSize: 40, fontWeight: '900', color: colors.text.primary, textAlign: 'center', minWidth: 80 }}
+            value={valueStr}
+            onChangeText={handleText}
+            keyboardType="numeric"
+            selectTextOnFocus
+          />
+
+          <Pressable
+            onPress={() => onChange(clamp(value + step))}
+            style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 20, color: colors.text.secondary, fontWeight: '700', lineHeight: 22 }}>+</Text>
+          </Pressable>
+        </View>
+        {suffix && (
+          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
+            {suffix}
+          </Text>
+        )}
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-row items-center bg-white/[0.08] rounded-lg px-2 py-1.5 gap-1">
+    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
+      <Pressable
+        onPress={() => onChange(clamp(value - step))}
+        style={{ paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Text style={{ fontSize: 16, color: colors.text.secondary, fontWeight: '700' }}>−</Text>
+      </Pressable>
+
       <TextInput
-        className="text-base font-semibold text-text-primary text-center min-w-[48px]"
-        value={String(value)}
-        onChangeText={handleChange}
+        style={{ fontSize: 16, fontWeight: '700', color: colors.text.primary, textAlign: 'center', minWidth: 44 }}
+        value={valueStr}
+        onChangeText={handleText}
         keyboardType="numeric"
         selectTextOnFocus
-        placeholderTextColor={colors.text.muted}
       />
+
       {suffix && (
-        <Text className="text-sm text-text-muted">{suffix}</Text>
+        <Text style={{ fontSize: 11, color: colors.text.muted, paddingRight: 4 }}>{suffix}</Text>
       )}
+
+      <Pressable
+        onPress={() => onChange(clamp(value + step))}
+        style={{ paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Text style={{ fontSize: 16, color: colors.text.secondary, fontWeight: '700' }}>+</Text>
+      </Pressable>
     </View>
   );
 }

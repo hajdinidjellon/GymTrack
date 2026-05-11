@@ -8,6 +8,8 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { ExerciseCard } from '@/components/session/ExerciseCard';
@@ -21,20 +23,20 @@ import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { getSuggestedSession } from '@/lib/aiPlanner';
 import { colors } from '@/constants/theme';
-import type { ActiveExercise, WorkoutType } from '@/types';
+import type { ActiveExercise, WorkoutSet, WorkoutType } from '@/types';
 
 // ── Types de séance rapide ────────────────────────────────────
 
 const QUICK_STARTS: Array<{
   title: string;
   type: WorkoutType;
-  emoji: string;
+  icon: keyof typeof Ionicons.glyphMap;
   color: string;
 }> = [
-  { title: 'Force', type: 'strength', emoji: '💪', color: '#7c3aed' },
-  { title: 'Hypertrophie', type: 'hypertrophy', emoji: '🏋️', color: '#06b6d4' },
-  { title: 'Cardio', type: 'cardio', emoji: '🏃', color: '#10b981' },
-  { title: 'Mobilité', type: 'mobility', emoji: '🧘', color: '#f59e0b' },
+  { title: 'Force',        type: 'strength',    icon: 'barbell-outline'   as const, color: '#7c3aed' },
+  { title: 'Hypertrophie', type: 'hypertrophy', icon: 'body-outline'       as const, color: '#06b6d4' },
+  { title: 'Cardio',       type: 'cardio',      icon: 'pulse-outline'      as const, color: '#10b981' },
+  { title: 'Mobilité',     type: 'mobility',    icon: 'leaf-outline'       as const, color: '#f59e0b' },
 ];
 
 const EXERCISE_DATABASE: Array<{ name: string; category: ActiveExercise['category']; muscleGroups: ActiveExercise['muscleGroups'] }> = [
@@ -93,9 +95,9 @@ function ExercisePicker({ visible, onSelect, onClose }: ExercisePickerProps) {
         </View>
 
         <ScrollView contentContainerClassName="px-4 gap-2 pb-8">
-          {filtered.map((ex) => (
+          {filtered.map((ex, i) => (
             <Pressable
-              key={ex.name}
+              key={`${ex.name}-${i}`}
               onPress={() => {
                 onSelect({
                   id: `${ex.name}-${Date.now()}`,
@@ -108,9 +110,11 @@ function ExercisePicker({ visible, onSelect, onClose }: ExercisePickerProps) {
               }}
               className="flex-row items-center gap-3 p-3 rounded-xl bg-white/[0.04]"
             >
-              <Text className="text-base">
-                {ex.category === 'compound' ? '🏋️' : ex.category === 'isolation' ? '💪' : '⚡'}
-              </Text>
+              <Ionicons
+                name={ex.category === 'compound' ? 'barbell-outline' : ex.category === 'isolation' ? 'fitness-outline' : 'flash-outline'}
+                size={18}
+                color={colors.text.muted}
+              />
               <View className="flex-1">
                 <Text className="text-sm font-medium text-text-primary">{ex.name}</Text>
                 <Text className="text-xs text-text-muted">
@@ -157,12 +161,28 @@ export default function SessionScreen() {
     [startSession],
   );
 
+  // Auto-fill avec la dernière performance connue
   const handleAddExercise = useCallback(
     (exercise: Omit<ActiveExercise, 'isExpanded'>) => {
-      addExercise({ ...exercise, isExpanded: true });
+      const lastWorkout = getLastWorkoutForExercise(exercise.name);
+      const lastExercise = lastWorkout?.exercises.find(
+        (e) => e.name.toLowerCase() === exercise.name.toLowerCase(),
+      );
+
+      const sets: WorkoutSet[] = lastExercise?.sets.length
+        ? lastExercise.sets.map((s) => ({
+            weight:    s.weight,
+            reps:      s.reps,
+            setType:   s.setType,
+            restTime:  defaultRestTime,
+            completed: false,
+          }))
+        : [{ weight: 0, reps: 8, setType: 'normal' as const, restTime: defaultRestTime, completed: false }];
+
+      addExercise({ ...exercise, sets, isExpanded: true });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
     },
-    [addExercise],
+    [addExercise, getLastWorkoutForExercise, defaultRestTime],
   );
 
   const handleFinish = async () => {
@@ -198,121 +218,124 @@ export default function SessionScreen() {
   // ── Vue : pas de séance active ─────────────────────────────
 
   if (!activeSession) {
-    const suggested =
-      profile ? getSuggestedSession(profile, workouts, null) : null;
+    const suggested = profile ? getSuggestedSession(profile, workouts, null) : null;
 
     return (
-      <SafeAreaView className="flex-1 bg-bg-primary">
-        <ScrollView contentContainerClassName="px-5 py-4 gap-6">
-          <Text className="text-2xl font-black text-text-primary">
-            Nouvelle séance
-          </Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg.primary }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 48, gap: 32 }}>
 
-          {/* Nom de la séance */}
-          <View className="gap-2">
-            <Text className="text-sm text-text-secondary">Nom (optionnel)</Text>
-            <TextInput
-              className="bg-white/[0.08] rounded-xl px-4 py-3 text-text-primary text-base"
-              placeholder="Séance Push, Chest Day…"
-              placeholderTextColor={colors.text.muted}
-              value={workoutName}
-              onChangeText={setWorkoutName}
-            />
+          {/* Header */}
+          <View style={{ gap: 4 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text.muted, letterSpacing: 2, textTransform: 'uppercase' }}>
+              Aujourd'hui
+            </Text>
+            <Text style={{ fontSize: 36, fontWeight: '900', color: colors.text.primary, letterSpacing: -1 }}>
+              Nouvelle séance
+            </Text>
           </View>
 
           {/* Type de séance */}
-          <View className="gap-2">
-            <Text className="text-sm text-text-secondary">Type</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {QUICK_STARTS.map((qs) => (
-                <Pressable
-                  key={qs.type}
-                  onPress={() => setSelectedType(qs.type)}
-                  className="flex-row items-center gap-2 px-4 py-2.5 rounded-xl"
-                  style={{
-                    backgroundColor:
-                      selectedType === qs.type
-                        ? `${qs.color}22`
-                        : 'rgba(255,255,255,0.06)',
-                    borderWidth: 1,
-                    borderColor:
-                      selectedType === qs.type
-                        ? qs.color
-                        : 'rgba(255,255,255,0.1)',
-                  }}
-                >
-                  <Text>{qs.emoji}</Text>
-                  <Text
-                    className="text-sm font-medium"
-                    style={{
-                      color:
-                        selectedType === qs.type ? qs.color : colors.text.secondary,
-                    }}
-                  >
-                    {qs.title}
-                  </Text>
-                </Pressable>
-              ))}
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text.muted, letterSpacing: 2, textTransform: 'uppercase' }}>
+              Type
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {QUICK_STARTS.map((qs) => {
+                const isSelected = selectedType === qs.type;
+                return (
+                  <Pressable key={qs.type} onPress={() => setSelectedType(qs.type)} style={{ overflow: 'hidden', borderRadius: 16 }}>
+                    {isSelected ? (
+                      <LinearGradient
+                        colors={[qs.color, qs.color + 'bb']}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                        style={{ paddingHorizontal: 18, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                      >
+                        <Ionicons name={qs.icon} size={16} color="#fff" />
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff' }}>{qs.title}</Text>
+                      </LinearGradient>
+                    ) : (
+                      <View style={{
+                        paddingHorizontal: 18, paddingVertical: 12,
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
+                        borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 8,
+                      }}>
+                        <Ionicons name={qs.icon} size={16} color={colors.text.muted} />
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text.muted }}>{qs.title}</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 
-          {/* Suggestion IA */}
+          {/* Suggestion du jour */}
           {suggested && (
-            <Card padding="md" className="gap-3">
-              <View className="flex-row items-center gap-2">
-                <Text>🤖</Text>
-                <Text className="text-sm font-semibold text-text-primary">
-                  Séance suggérée
-                </Text>
-              </View>
-              <Text className="text-base font-bold text-text-primary">
-                {suggested.title}
+            <View style={{ gap: 12 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text.muted, letterSpacing: 2, textTransform: 'uppercase' }}>
+                Suggestion
               </Text>
-              <Text className="text-sm text-text-secondary">
-                {suggested.reason}
-              </Text>
-              <Text className="text-xs text-text-muted">
-                {suggested.exercises.length} exercices · ~{suggested.estimatedDuration} min
-              </Text>
-              <Button
-                label="Utiliser cette suggestion"
-                variant="secondary"
-                size="sm"
+              <Pressable
                 onPress={() => {
-                  setWorkoutName(suggested.title);
                   handleStart(suggested.title, 'strength');
                   suggested.exercises.forEach((ex) => {
-                    addExercise({
+                    handleAddExercise({
                       id: `${ex.name}-${Date.now()}`,
                       name: ex.name,
                       category: ex.category,
                       muscleGroups: suggested.focus,
-                      sets: Array.from({ length: ex.targetSets }, () => ({
-                        weight: ex.targetWeight ?? 0,
-                        reps:
-                          typeof ex.targetReps === 'number'
-                            ? ex.targetReps
-                            : ex.targetReps[0] ?? 8,
-                        setType: 'normal' as const,
-                        restTime: ex.restTime,
-                        completed: false,
-                      })),
-                      isExpanded: true,
+                      sets: [],
                     });
                   });
                 }}
-              />
-            </Card>
+                style={{ borderRadius: 20, overflow: 'hidden' }}
+              >
+                <LinearGradient
+                  colors={['rgba(124,58,237,0.20)', 'rgba(6,182,212,0.10)']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={{ padding: 20, gap: 10, borderWidth: 1, borderColor: 'rgba(124,58,237,0.25)', borderRadius: 20 }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Text style={{ fontSize: 22, fontWeight: '900', color: colors.text.primary, flex: 1 }}>
+                      {suggested.title}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: colors.text.muted, fontWeight: '600' }}>
+                      ~{suggested.estimatedDuration} min
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 14, color: colors.text.secondary }}>
+                    {suggested.reason}
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                    {suggested.focus.map((m) => (
+                      <View key={m} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: 'rgba(124,58,237,0.20)', borderWidth: 1, borderColor: 'rgba(124,58,237,0.35)' }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 0.5 }}>{m}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <LinearGradient colors={['#7c3aed', '#06b6d4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Démarrer cette séance →</Text>
+                  </LinearGradient>
+                </LinearGradient>
+              </Pressable>
+            </View>
           )}
 
-          {/* Démarrer */}
-          <Button
-            label="Démarrer la séance"
-            variant="primary"
-            size="lg"
-            fullWidth
-            onPress={() => handleStart(workoutName, selectedType)}
-          />
+          {/* Ou séance libre */}
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text.muted, letterSpacing: 2, textTransform: 'uppercase' }}>
+              Ou séance libre
+            </Text>
+            <Button
+              label="Démarrer sans programme"
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onPress={() => handleStart('Séance', selectedType)}
+            />
+          </View>
+
         </ScrollView>
       </SafeAreaView>
     );
@@ -332,35 +355,32 @@ export default function SessionScreen() {
   return (
     <SafeAreaView className="flex-1 bg-bg-primary">
       {/* Header fixe */}
-      <View
-        className="flex-row items-center justify-between px-5 py-3"
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: 'rgba(255,255,255,0.08)',
-        }}
-      >
-        <SessionTimer elapsedSeconds={activeSession.elapsedSeconds} />
+      <View style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 }}>
+          <SessionTimer elapsedSeconds={activeSession.elapsedSeconds} />
 
-        <View className="items-center">
-          <Text className="text-xs text-text-muted">Progression</Text>
-          <Text className="text-sm font-bold text-text-primary">
-            {completedSets}/{totalSets} séries
-          </Text>
-        </View>
-
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={() => setShowFinishModal(true)}
-            className="px-3 py-1.5 rounded-lg"
-            style={{ backgroundColor: 'rgba(16,185,129,0.2)' }}
-          >
-            <Text className="text-xs font-semibold text-status-success">
-              Terminer
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 10, fontWeight: '600', color: colors.text.muted, letterSpacing: 1, textTransform: 'uppercase' }}>Séries</Text>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: colors.text.primary }}>
+              {completedSets}<Text style={{ color: colors.text.muted, fontSize: 14 }}>/{totalSets}</Text>
             </Text>
-          </Pressable>
-          <Pressable onPress={handleDiscard}>
-            <Text className="text-xs text-status-danger">✕</Text>
-          </Pressable>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <Pressable onPress={() => setShowFinishModal(true)} style={{ borderRadius: 12, overflow: 'hidden' }}>
+              <LinearGradient
+                colors={['#10b981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ paddingHorizontal: 14, paddingVertical: 7 }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Terminer</Text>
+              </LinearGradient>
+            </Pressable>
+            <Pressable onPress={handleDiscard} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(239,68,68,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 12, color: colors.status.danger, fontWeight: '700' }}>✕</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -457,9 +477,11 @@ export default function SessionScreen() {
                       feeling === f ? '#7c3aed' : 'rgba(255,255,255,0.08)',
                   }}
                 >
-                  <Text className="text-xl">
-                    {f === 1 ? '😩' : f === 2 ? '😕' : f === 3 ? '😐' : f === 4 ? '😊' : '🔥'}
-                  </Text>
+                  <Ionicons
+                    name={f === 1 ? 'sad-outline' : f === 2 ? 'remove-circle-outline' : f === 3 ? 'ellipse-outline' : f === 4 ? 'happy-outline' : 'flame-outline'}
+                    size={22}
+                    color={feeling === f ? '#fff' : colors.text.muted}
+                  />
                 </Pressable>
               ))}
             </View>
@@ -491,8 +513,9 @@ export default function SessionScreen() {
           <View className="gap-2">
             <Button
               label="Sauvegarder la séance ✓"
-              variant="primary"
+              variant="gradient"
               size="lg"
+              pill
               fullWidth
               onPress={handleFinish}
             />

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert, Switch } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { RankCard } from '@/components/gamification/RankCard';
@@ -67,34 +69,49 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-bg-primary">
       <ScrollView contentContainerClassName="pb-8">
         {/* Header profil */}
-        <View className="px-5 pt-4 pb-5 gap-4">
-          <View className="flex-row items-center gap-4">
-            <View
-              className="w-16 h-16 rounded-2xl items-center justify-center"
-              style={{ backgroundColor: 'rgba(124,58,237,0.2)' }}
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, gap: 16 }}>
+          {/* Bouton déconnexion en haut à droite */}
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <Pressable
+              onPress={handleLogout}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                backgroundColor: 'rgba(239,68,68,0.10)',
+                borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)',
+                borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8,
+              }}
             >
-              <Text className="text-3xl">
-                {rank?.icon === 'crown' ? '👑' :
-                 rank?.icon === 'gem' ? '💎' :
-                 rank?.icon === 'award' ? '🏆' : '🛡️'}
+              <Ionicons name="log-out-outline" size={16} color="#ef4444" />
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#ef4444' }}>Déconnexion</Text>
+            </Pressable>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <LinearGradient
+              colors={rank ? [rank.color, rank.color + '88'] : ['#7c3aed', '#06b6d4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+                shadowColor: rank?.color ?? '#7c3aed',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}
+            >
+              <Text style={{ fontSize: 28 }}>
+                {rank?.icon === 'crown' ? '👑' : rank?.icon === 'gem' ? '💎' : rank?.icon === 'award' ? '🏆' : '🛡️'}
               </Text>
-            </View>
-            <View className="flex-1">
+            </LinearGradient>
+            <View style={{ flex: 1 }}>
               {editingName ? (
-                <View className="flex-row items-center gap-2">
-                  <Input
-                    value={nameInput}
-                    onChangeText={setNameInput}
-                    placeholder="Ton prénom"
-                  />
-                  <Button label="OK" variant="primary" size="sm" onPress={handleSaveName} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Input value={nameInput} onChangeText={setNameInput} placeholder="Ton prénom" />
+                  <Button label="OK" variant="gradient" size="sm" onPress={handleSaveName} />
                 </View>
               ) : (
                 <Pressable onPress={() => setEditingName(true)}>
-                  <Text className="text-2xl font-black text-text-primary">
+                  <Text style={{ fontSize: 26, fontWeight: '900', color: '#f8fafc' }}>
                     {profile?.name || 'Athlète'}
                   </Text>
-                  <Text className="text-xs text-text-muted">
+                  <Text style={{ fontSize: 11, color: 'rgba(248,250,252,0.35)', marginTop: 2 }}>
                     Appuyer pour modifier
                   </Text>
                 </Pressable>
@@ -102,23 +119,27 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* Rang */}
           {rank && <RankCard rank={rank} totalXP={totalXP} />}
         </View>
 
         {/* Navigation sections */}
-        <View className="flex-row px-5 bg-white/[0.04] mx-5 rounded-xl p-1 mb-4">
+        <View style={{ flexDirection: 'row', marginHorizontal: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
           {SECTIONS.map((s) => (
-            <Pressable
-              key={s.id}
-              onPress={() => setActiveSection(s.id)}
-              className={`flex-1 py-2 rounded-lg items-center ${activeSection === s.id ? 'bg-brand-primary' : ''}`}
-            >
-              <Text
-                className={`text-sm font-medium ${activeSection === s.id ? 'text-white' : 'text-text-secondary'}`}
-              >
-                {s.label}
-              </Text>
+            <Pressable key={s.id} onPress={() => setActiveSection(s.id)} style={{ flex: 1, borderRadius: 10, overflow: 'hidden' }}>
+              {activeSection === s.id ? (
+                <LinearGradient
+                  colors={['#7c3aed', '#06b6d4']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ paddingVertical: 9, alignItems: 'center' }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{s.label}</Text>
+                </LinearGradient>
+              ) : (
+                <View style={{ paddingVertical: 9, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: 'rgba(248,250,252,0.45)' }}>{s.label}</Text>
+                </View>
+              )}
             </Pressable>
           ))}
         </View>
@@ -126,31 +147,19 @@ export default function ProfileScreen() {
         {/* Section Statistiques */}
         {activeSection === 'stats' && (
           <View className="px-5 gap-4">
-            <View className="flex-row gap-3">
-              <Card padding="md" className="flex-1 items-center gap-1">
-                <Text className="text-2xl font-black text-text-primary">
-                  {workouts.length}
-                </Text>
-                <Text className="text-xs text-text-muted text-center">
-                  Séances
-                </Text>
-              </Card>
-              <Card padding="md" className="flex-1 items-center gap-1">
-                <Text className="text-2xl font-black text-status-warning">
-                  {streak}
-                </Text>
-                <Text className="text-xs text-text-muted text-center">
-                  Streak 🔥
-                </Text>
-              </Card>
-              <Card padding="md" className="flex-1 items-center gap-1">
-                <Text className="text-2xl font-black text-brand-primary">
-                  {totalXP.toLocaleString('fr-FR')}
-                </Text>
-                <Text className="text-xs text-text-muted text-center">
-                  XP
-                </Text>
-              </Card>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {[
+                { value: workouts.length, label: 'Séances', color: '#06b6d4' },
+                { value: streak,          label: 'Streak 🔥', color: '#f59e0b' },
+                { value: totalXP,         label: 'XP',        color: '#7c3aed' },
+              ].map(({ value, label, color }) => (
+                <View key={label} style={{ flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}>
+                  <LinearGradient colors={[`${color}18`, `${color}06`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 14, alignItems: 'center', gap: 4 }}>
+                    <Text style={{ fontSize: 28, fontWeight: '900', color }}>{typeof value === 'number' && value > 999 ? value.toLocaleString('fr-FR') : value}</Text>
+                    <Text style={{ fontSize: 11, color: 'rgba(248,250,252,0.45)', fontWeight: '500' }}>{label}</Text>
+                  </LinearGradient>
+                </View>
+              ))}
             </View>
 
             {/* PRs */}

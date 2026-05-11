@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface ProgressBarProps {
   progress: number;
   color?: string;
+  gradient?: [string, string];
   backgroundColor?: string;
   height?: number;
   showLabel?: boolean;
@@ -14,6 +16,7 @@ interface ProgressBarProps {
 export function ProgressBar({
   progress,
   color = '#7c3aed',
+  gradient,
   backgroundColor = 'rgba(255,255,255,0.08)',
   height = 6,
   showLabel = false,
@@ -48,10 +51,32 @@ export function ProgressBar({
           )}
         </View>
       )}
-      <View style={{ backgroundColor, height, borderRadius: height / 2, overflow: 'hidden' }}>
-        <Animated.View
-          style={{ width: animatedWidth, height, borderRadius: height / 2, backgroundColor: color }}
-        />
+      <View
+        style={{
+          backgroundColor,
+          height,
+          borderRadius: height / 2,
+          overflow: 'hidden',
+        }}
+      >
+        <Animated.View style={{ width: animatedWidth, height }}>
+          {gradient ? (
+            <LinearGradient
+              colors={gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ flex: 1, borderRadius: height / 2 }}
+            />
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                borderRadius: height / 2,
+                backgroundColor: color,
+              }}
+            />
+          )}
+        </Animated.View>
       </View>
     </View>
   );
