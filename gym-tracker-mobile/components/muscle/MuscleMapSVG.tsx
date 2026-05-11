@@ -190,7 +190,7 @@ export function MuscleMapSVG({
       <Pressable
         key={side}
         onPress={(e) => handlePress(e, zones)}
-        style={{ width: displayW, height: displayH, overflow: 'hidden', backgroundColor: '#f8f8f8' }}
+        style={{ width: displayW, height: displayH, overflow: 'hidden', backgroundColor: '#e8eaf6', borderRadius: 12 }}
       >
         {/* PNG positionné aux coordonnées exactes du pattern SVG original */}
         <Image

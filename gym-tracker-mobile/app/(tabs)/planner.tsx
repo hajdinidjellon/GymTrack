@@ -1,323 +1,503 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { NumericInput } from '@/components/ui/Input';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { getSuggestedSession, generatePRProgression, generateWarmupSets } from '@/lib/aiPlanner';
-import type { TrainingPlan, MuscleGroup } from '@/types';
 import { MUSCLE_LABELS } from '@/lib/gamification';
+import { colors } from '@/constants/theme';
+import type { TrainingPlan } from '@/types';
+
+// ── Label section ────────────────────────────────────────────────
+function SectionHeader({ icon, title, subtitle }: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <View style={{ gap: 2 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Ionicons name={icon} size={18} color={colors.brand.primary} />
+        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text.primary, letterSpacing: -0.3 }}>
+          {title}
+        </Text>
+      </View>
+      {subtitle && (
+        <Text style={{ fontSize: 13, color: colors.text.muted, marginLeft: 26 }}>
+          {subtitle}
+        </Text>
+      )}
+    </View>
+  );
+}
 
 export default function PlannerScreen() {
   const { workouts } = useWorkoutStore();
   const { profile, goals, saveGoal } = useProfileStore();
 
-  const [activePlan, setActivePlan] = useState<TrainingPlan | null>(null);
+  const [activePlan, setActivePlan]   = useState<TrainingPlan | null>(null);
   const [showNewPlan, setShowNewPlan] = useState(false);
-  const [planTarget, setPlanTarget] = useState(100);
-  const [planWeeks, setPlanWeeks] = useState(12);
+  const [planTarget, setPlanTarget]   = useState(100);
+  const [planWeeks, setPlanWeeks]     = useState(12);
 
-  const suggested = profile
-    ? getSuggestedSession(profile, workouts, activePlan)
-    : null;
+  const suggested = profile ? getSuggestedSession(profile, workouts, activePlan) : null;
 
   const handleGeneratePlan = () => {
     if (!profile) {
       Alert.alert('Profil requis', 'Configure ton profil avant de créer un plan.');
       return;
     }
-    const benchPR = profile.prs.find((p) =>
-      p.exercise.toLowerCase().includes('couché'),
-    );
+    const benchPR = profile.prs.find((p) => p.exercise.toLowerCase().includes('couché'));
     const current = benchPR?.oneRepMax ?? 60;
 
     const plan = generatePRProgression({
-      exerciseName: benchPR?.exercise ?? 'Développé couché',
-      currentMax: current,
-      targetMax: planTarget,
-      weeks: planWeeks,
-      frequency: profile.trainingFrequency,
+      exerciseName:    benchPR?.exercise ?? 'Développé couché',
+      currentMax:      current,
+      targetMax:       planTarget,
+      weeks:           planWeeks,
+      frequency:       profile.trainingFrequency,
       experienceLevel: profile.experienceLevel,
-      trainingGoal: 'strength',
+      trainingGoal:    'strength',
     });
 
     setActivePlan(plan);
     setShowNewPlan(false);
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-bg-primary">
-      <ScrollView contentContainerClassName="px-5 py-4 gap-6 pb-8">
-        <Text className="text-2xl font-black text-text-primary">
-          Planificateur
-        </Text>
+  const activeGoals = goals.filter((g) => g.status === 'active');
 
-        {/* Suggestion du jour */}
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg.primary }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 48 }}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* ── Header ── */}
+        <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 28, gap: 4 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text.muted, letterSpacing: 2.5, textTransform: 'uppercase' }}>
+            Planification
+          </Text>
+          <Text style={{ fontSize: 36, fontWeight: '900', color: colors.text.primary, letterSpacing: -1, lineHeight: 42 }}>
+            Mon plan
+          </Text>
+        </View>
+
+        {/* ── Suggestion du jour ── */}
         {suggested && (
-          <View className="gap-2">
-            <Text className="text-base font-semibold text-text-primary">
-              Suggestion d'aujourd'hui
-            </Text>
-            <Card padding="md" className="gap-3">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-lg font-bold text-text-primary">
+          <View style={{ paddingHorizontal: 24, marginBottom: 36, gap: 14 }}>
+            <SectionHeader
+              icon="flash-outline"
+              title="Suggestion du jour"
+              subtitle="Basée sur tes muscles récupérés et ton historique"
+            />
+
+            <LinearGradient
+              colors={['rgba(124,58,237,0.18)', 'rgba(6,182,212,0.08)']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={{ borderRadius: 20, padding: 20, gap: 16, borderWidth: 1, borderColor: 'rgba(124,58,237,0.25)' }}
+            >
+              {/* Titre + durée */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 22, fontWeight: '900', color: colors.text.primary, flex: 1, letterSpacing: -0.5 }}>
                   {suggested.title}
                 </Text>
-                <Text className="text-sm text-text-muted">
-                  ~{suggested.estimatedDuration} min
-                </Text>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text.muted }}>
+                    ~{suggested.estimatedDuration} min
+                  </Text>
+                </View>
               </View>
-              <Text className="text-sm text-text-secondary">
+
+              <Text style={{ fontSize: 14, color: colors.text.secondary, lineHeight: 20 }}>
                 {suggested.reason}
               </Text>
 
-              {/* Exercices prévus */}
-              <View className="gap-1.5">
-                {suggested.exercises.slice(0, 4).map((ex) => (
-                  <View
-                    key={ex.name}
-                    className="flex-row items-center gap-2 py-1"
-                  >
-                    <Text className="text-xs text-text-muted w-4">
-                      {ex.category === 'compound' ? '🏋️' : '💪'}
-                    </Text>
-                    <Text className="flex-1 text-sm text-text-primary">
-                      {ex.name}
-                    </Text>
-                    <Text className="text-xs text-text-muted">
-                      {ex.targetSets}×
-                      {typeof ex.targetReps === 'number'
-                        ? ex.targetReps
-                        : `${ex.targetReps[0]}-${ex.targetReps[1]}`}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Groupes musculaires focus */}
-              <View className="flex-row flex-wrap gap-1">
+              {/* Muscles focus */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                 {suggested.focus.map((m) => (
-                  <View
-                    key={m}
-                    className="px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: 'rgba(6,182,212,0.15)' }}
-                  >
-                    <Text className="text-xs text-brand-secondary">
+                  <View key={m} style={{
+                    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999,
+                    backgroundColor: 'rgba(124,58,237,0.22)',
+                    borderWidth: 1, borderColor: 'rgba(124,58,237,0.40)',
+                  }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#c4b5fd', textTransform: 'uppercase', letterSpacing: 0.8 }}>
                       {MUSCLE_LABELS[m]}
                     </Text>
                   </View>
                 ))}
               </View>
-            </Card>
-          </View>
-        )}
 
-        {/* Calculateur d'échauffement */}
-        <WarmupCalculator profile={profile} />
-
-        {/* Plan actif */}
-        {activePlan ? (
-          <View className="gap-2">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-semibold text-text-primary">
-                Programme actif
-              </Text>
-              <Pressable onPress={() => setActivePlan(null)}>
-                <Text className="text-xs text-status-danger">Supprimer</Text>
-              </Pressable>
-            </View>
-            <Card padding="md" className="gap-3">
-              <Text className="text-base font-bold text-text-primary">
-                {activePlan.name}
-              </Text>
-              <Text className="text-sm text-text-muted">
-                {activePlan.duration} semaines · {activePlan.frequency}×/semaine
-              </Text>
-              <Text className="text-xs text-text-secondary uppercase tracking-wider">
-                Algorithme : {activePlan.algorithm}
-              </Text>
-
-              {/* Semaines */}
-              <View className="gap-2 mt-2">
-                {activePlan.weeks.slice(0, 4).map((week) => (
-                  <View key={week.weekNumber} className="gap-1">
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-xs text-text-secondary">
-                        Semaine {week.weekNumber}
-                        {week.deloadWeek ? ' (Deload)' : ''}
-                      </Text>
-                      <Text className="text-xs text-text-muted">
-                        {week.intensity}% · {week.volume} reps
-                      </Text>
+              {/* Exercices prévus */}
+              <View style={{ gap: 8 }}>
+                {suggested.exercises.slice(0, 4).map((ex, i) => (
+                  <View key={`${ex.name}-${i}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{
+                      width: 32, height: 32, borderRadius: 10,
+                      backgroundColor: ex.category === 'compound'
+                        ? 'rgba(124,58,237,0.20)'
+                        : 'rgba(6,182,212,0.15)',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons
+                        name={ex.category === 'compound' ? 'barbell-outline' : 'fitness-outline'}
+                        size={16}
+                        color={ex.category === 'compound' ? '#a78bfa' : '#67e8f9'}
+                      />
                     </View>
-                    <ProgressBar
-                      progress={week.intensity}
-                      color={week.deloadWeek ? '#f59e0b' : '#7c3aed'}
-                      height={4}
-                      animated={false}
-                    />
+                    <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: colors.text.primary }}>
+                      {ex.name}
+                    </Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text.muted }}>
+                      {ex.targetSets}×{typeof ex.targetReps === 'number' ? ex.targetReps : `${ex.targetReps[0]}-${ex.targetReps[1]}`}
+                    </Text>
                   </View>
                 ))}
-                {activePlan.weeks.length > 4 && (
-                  <Text className="text-xs text-text-muted text-center">
-                    + {activePlan.weeks.length - 4} semaines...
+                {suggested.exercises.length > 4 && (
+                  <Text style={{ fontSize: 13, color: colors.text.muted, marginLeft: 44 }}>
+                    + {suggested.exercises.length - 4} exercices
                   </Text>
                 )}
               </View>
-            </Card>
-          </View>
-        ) : (
-          <View className="gap-2">
-            <Text className="text-base font-semibold text-text-primary">
-              Créer un programme
-            </Text>
-
-            {showNewPlan ? (
-              <Card padding="md" className="gap-4">
-                <Text className="text-sm font-semibold text-text-primary">
-                  Programme force (Développé couché)
-                </Text>
-
-                <View className="gap-2">
-                  <Text className="text-xs text-text-muted">
-                    Objectif (kg) :{' '}
-                    <Text className="text-text-primary font-bold">
-                      {planTarget}
-                    </Text>
-                  </Text>
-                  <NumericInput
-                    value={planTarget}
-                    onChange={setPlanTarget}
-                    min={40}
-                    max={300}
-                    step={5}
-                    suffix="kg"
-                  />
-                </View>
-
-                <View className="gap-2">
-                  <Text className="text-xs text-text-muted">
-                    Durée : <Text className="text-text-primary font-bold">{planWeeks}</Text> semaines
-                  </Text>
-                  <View className="flex-row gap-2">
-                    {[8, 12, 16, 20].map((w) => (
-                      <Pressable
-                        key={w}
-                        onPress={() => setPlanWeeks(w)}
-                        className={`flex-1 py-2 rounded-lg items-center ${planWeeks === w ? 'bg-brand-primary' : 'bg-white/[0.08]'}`}
-                      >
-                        <Text className={`text-sm font-medium ${planWeeks === w ? 'text-white' : 'text-text-secondary'}`}>
-                          {w}s
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                <View className="flex-row gap-2">
-                  <Button
-                    label="Générer le plan"
-                    variant="primary"
-                    size="md"
-                    onPress={handleGeneratePlan}
-                  />
-                  <Button
-                    label="Annuler"
-                    variant="ghost"
-                    size="md"
-                    onPress={() => setShowNewPlan(false)}
-                  />
-                </View>
-              </Card>
-            ) : (
-              <Button
-                label="+ Créer un programme de force"
-                variant="secondary"
-                size="md"
-                fullWidth
-                onPress={() => setShowNewPlan(true)}
-              />
-            )}
+            </LinearGradient>
           </View>
         )}
 
-        {/* Objectifs actifs */}
-        {goals.filter((g) => g.status === 'active').length > 0 && (
-          <View className="gap-2">
-            <Text className="text-base font-semibold text-text-primary">
-              Objectifs actifs
-            </Text>
-            {goals
-              .filter((g) => g.status === 'active')
-              .map((goal) => (
-                <Card key={goal.id} padding="md" className="gap-2">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-sm font-semibold text-text-primary">
+        {/* Séparateur */}
+        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 24, marginBottom: 36 }} />
+
+        {/* ── Calculateur d'échauffement ── */}
+        <WarmupSection />
+
+        {/* Séparateur */}
+        <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 24, marginVertical: 36 }} />
+
+        {/* ── Programme de force ── */}
+        <View style={{ paddingHorizontal: 24, marginBottom: 36, gap: 14 }}>
+          <SectionHeader
+            icon="trending-up-outline"
+            title="Programme de force"
+            subtitle="Génère un plan progressif sur plusieurs semaines"
+          />
+
+          {activePlan ? (
+            <View style={{ gap: 14 }}>
+              {/* Plan actif */}
+              <LinearGradient
+                colors={['rgba(124,58,237,0.12)', 'rgba(124,58,237,0.04)']}
+                style={{ borderRadius: 20, padding: 20, gap: 14, borderWidth: 1, borderColor: 'rgba(124,58,237,0.20)' }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text.muted, letterSpacing: 2, textTransform: 'uppercase' }}>
+                      Programme actif
+                    </Text>
+                    <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text.primary, letterSpacing: -0.3 }}>
+                      {activePlan.name}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: colors.text.muted }}>
+                      {activePlan.duration} semaines · {activePlan.frequency}×/semaine · {activePlan.algorithm}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setActivePlan(null)}
+                    style={{ backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 10, padding: 8 }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={colors.status.danger} />
+                  </Pressable>
+                </View>
+
+                {/* Semaines — avec charges exactes */}
+                <View style={{ gap: 12 }}>
+                  {activePlan.weeks.map((week) => {
+                    const session = week.sessions[0];
+                    const ex = session?.exercises[0];
+                    return (
+                      <View
+                        key={week.weekNumber}
+                        style={{
+                          backgroundColor: week.deloadWeek ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)',
+                          borderRadius: 14, padding: 14, gap: 8,
+                          borderWidth: 1,
+                          borderColor: week.deloadWeek ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.07)',
+                        }}
+                      >
+                        {/* Header semaine */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ fontSize: 14, fontWeight: '800', color: week.deloadWeek ? '#f59e0b' : colors.text.primary }}>
+                              Semaine {week.weekNumber}
+                            </Text>
+                            {week.deloadWeek && (
+                              <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                <Text style={{ fontSize: 10, fontWeight: '700', color: '#f59e0b' }}>DÉLOAD</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text.muted }}>
+                            {week.intensity}% intensité
+                          </Text>
+                        </View>
+
+                        {/* Exercice + charges */}
+                        {ex && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 13, color: colors.text.muted }}>{ex.name}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <View style={{ backgroundColor: 'rgba(124,58,237,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                                <Text style={{ fontSize: 16, fontWeight: '900', color: '#a78bfa' }}>
+                                  {ex.targetWeight ?? '—'} kg
+                                </Text>
+                              </View>
+                              <Text style={{ fontSize: 14, color: colors.text.muted }}>
+                                {ex.targetSets}×{typeof ex.targetReps === 'number' ? ex.targetReps : `${ex.targetReps[0]}-${ex.targetReps[1]}`}
+                              </Text>
+                              {ex.targetRPE && (
+                                <Text style={{ fontSize: 12, color: colors.text.muted }}>RPE {ex.targetRPE}</Text>
+                              )}
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Barre intensité */}
+                        <ProgressBar
+                          progress={week.intensity}
+                          gradient={week.deloadWeek ? ['#f59e0b', '#d97706'] : ['#7c3aed', '#06b6d4']}
+                          height={5}
+                          animated={false}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+              </LinearGradient>
+            </View>
+          ) : showNewPlan ? (
+            <LinearGradient
+              colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
+              style={{ borderRadius: 20, padding: 20, gap: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text.primary }}>
+                Développé couché — Programme force
+              </Text>
+
+              {/* Objectif */}
+              <View style={{ gap: 10 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text.muted, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                  Objectif
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <NumericInput value={planTarget} onChange={setPlanTarget} min={40} max={300} step={5} suffix="kg" />
+                </View>
+              </View>
+
+              {/* Durée */}
+              <View style={{ gap: 10 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text.muted, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                  Durée
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {[8, 12, 16, 20].map((w) => (
+                    <Pressable
+                      key={w}
+                      onPress={() => setPlanWeeks(w)}
+                      style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}
+                    >
+                      {planWeeks === w ? (
+                        <LinearGradient colors={['#7c3aed', '#06b6d4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 12, alignItems: 'center' }}>
+                          <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff' }}>{w}s</Text>
+                        </LinearGradient>
+                      ) : (
+                        <View style={{ paddingVertical: 12, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', borderRadius: 12 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text.muted }}>{w}s</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Pressable onPress={handleGeneratePlan} style={{ flex: 1, borderRadius: 14, overflow: 'hidden' }}>
+                  <LinearGradient colors={['#7c3aed', '#06b6d4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+                    <Ionicons name="sparkles-outline" size={18} color="#fff" />
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff' }}>Générer</Text>
+                  </LinearGradient>
+                </Pressable>
+                <Pressable
+                  onPress={() => setShowNewPlan(false)}
+                  style={{ paddingHorizontal: 20, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text.muted }}>Annuler</Text>
+                </Pressable>
+              </View>
+            </LinearGradient>
+          ) : (
+            <Pressable onPress={() => setShowNewPlan(true)} style={{ borderRadius: 18, overflow: 'hidden' }}>
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 14,
+                padding: 18,
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
+                borderRadius: 18,
+              }}>
+                <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(124,58,237,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="add-outline" size={24} color={colors.brand.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text.primary }}>Créer un programme</Text>
+                  <Text style={{ fontSize: 13, color: colors.text.muted, marginTop: 2 }}>Progression linéaire, 5/3/1 ou DUP</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
+              </View>
+            </Pressable>
+          )}
+        </View>
+
+        {/* ── Objectifs actifs ── */}
+        {activeGoals.length > 0 && (
+          <View style={{ paddingHorizontal: 24, gap: 14 }}>
+            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginBottom: 8 }} />
+            <SectionHeader
+              icon="flag-outline"
+              title="Objectifs actifs"
+              subtitle={`${activeGoals.length} objectif${activeGoals.length > 1 ? 's' : ''} en cours`}
+            />
+            <View style={{ gap: 10 }}>
+              {activeGoals.map((goal) => (
+                <View
+                  key={goal.id}
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    borderRadius: 16, padding: 16, gap: 10,
+                    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text.primary }}>
                       {goal.exercise ?? goal.type}
                     </Text>
-                    <Text className="text-xs text-text-muted">
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text.muted }}>
                       {goal.currentValue} → {goal.targetValue}
                     </Text>
                   </View>
-                  <ProgressBar
-                    progress={goal.progress}
-                    showLabel
-                    animated
-                  />
-                </Card>
+                  <ProgressBar progress={goal.progress} gradient={['#7c3aed', '#06b6d4']} height={6} showLabel animated />
+                </View>
               ))}
+            </View>
           </View>
         )}
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Calculateur d'échauffement ────────────────────────────────
+// ── Calculateur d'échauffement ───────────────────────────────────
+function WarmupSection() {
+  const [weight, setWeight] = useState(80);
+  const [targetReps, setTargetReps] = useState(5);
+  const sets = generateWarmupSets(weight, targetReps);
 
-function WarmupCalculator({ profile }: { profile: ReturnType<typeof useProfileStore.getState>['profile'] }) {
-  const [workingWeight, setWorkingWeight] = useState(80);
-
-  const warmups = generateWarmupSets(workingWeight);
+  const intensityLabel =
+    targetReps <= 2 ? 'Force max (1-2 reps) — montée très progressive' :
+    targetReps <= 4 ? 'Force (3-4 reps) — montée progressive'           :
+    targetReps <= 6 ? 'Force / Hypertrophie (5-6 reps)'                 :
+                      'Hypertrophie (7+ reps) — chauffe légère suffisante';
 
   return (
-    <View className="gap-2">
-      <Text className="text-base font-semibold text-text-primary">
-        Calculateur d'échauffement
-      </Text>
-      <Card padding="md" className="gap-3">
-        <View className="flex-row items-center gap-3">
-          <Text className="text-sm text-text-secondary">Poids de travail</Text>
-          <NumericInput
-            value={workingWeight}
-            onChange={setWorkingWeight}
-            min={20}
-            max={400}
-            step={2.5}
-            suffix="kg"
-          />
+    <View style={{ paddingHorizontal: 24, gap: 14 }}>
+      <SectionHeader
+        icon="thermometer-outline"
+        title="Calculateur d'échauffement"
+        subtitle="Les séries de chauffe s'adaptent à ton poids ET tes reps cibles"
+      />
+
+      <View style={{
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 20, padding: 20, gap: 16,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+      }}>
+        {/* Poids + reps cibles */}
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <View style={{ flex: 1, gap: 8 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text.muted, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+              Poids de travail
+            </Text>
+            <NumericInput value={weight} onChange={setWeight} min={20} max={400} step={2.5} suffix="kg" />
+          </View>
+          <View style={{ flex: 1, gap: 8 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.text.muted, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+              Reps cibles
+            </Text>
+            <NumericInput value={targetReps} onChange={setTargetReps} min={1} max={20} step={1} />
+          </View>
         </View>
 
-        <View className="gap-1.5">
-          {warmups.map((set, i) => (
+        {/* Label intensité */}
+        <View style={{ backgroundColor: 'rgba(124,58,237,0.10)', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: 'rgba(124,58,237,0.20)' }}>
+          <Text style={{ fontSize: 12, color: '#c4b5fd', fontWeight: '600' }}>{intensityLabel}</Text>
+        </View>
+
+        {/* Séries générées */}
+        <View style={{ gap: 8 }}>
+          {sets.map((set, i) => (
             <View
               key={i}
-              className="flex-row items-center gap-3 py-2 px-3 rounded-lg bg-white/[0.04]"
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 12,
+                padding: 14, borderRadius: 14,
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+              }}
             >
-              <Text className="text-xs text-brand-secondary w-5">W{i + 1}</Text>
-              <Text className="flex-1 text-sm font-medium text-text-primary">
-                {set.weight}kg × {set.reps} reps
+              <View style={{
+                width: 32, height: 32, borderRadius: 10,
+                backgroundColor: 'rgba(6,182,212,0.15)',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#67e8f9' }}>W{i + 1}</Text>
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 18, fontWeight: '900', color: colors.text.primary }}>
+                  {set.weight} <Text style={{ fontSize: 13, fontWeight: '500', color: colors.text.muted }}>kg</Text>
+                </Text>
+              </View>
+
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text.secondary }}>
+                × {set.reps} reps
               </Text>
-              <Text className="text-xs text-text-muted">
-                {set.restTime}s repos
-              </Text>
+
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text.muted }}>{set.restTime}s</Text>
+              </View>
             </View>
           ))}
         </View>
-      </Card>
+
+        {/* Intensité en % */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 4 }}>
+          {sets.map((set, i) => (
+            <View key={i} style={{ alignItems: 'center', gap: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#67e8f9' }}>
+                {Math.round((set.weight / weight) * 100)}%
+              </Text>
+              <Text style={{ fontSize: 10, color: colors.text.muted }}>W{i + 1}</Text>
+            </View>
+          ))}
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#7c3aed' }}>100%</Text>
+            <Text style={{ fontSize: 10, color: colors.text.muted }}>Travail</Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }

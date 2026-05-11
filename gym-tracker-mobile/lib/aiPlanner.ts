@@ -43,38 +43,57 @@ export function getRecommendedReps(intensity: number): number {
   return 12;
 }
 
-export function generateWarmupSets(workingWeight: number): WorkoutSet[] {
+export function generateWarmupSets(workingWeight: number, targetReps: number = 5): WorkoutSet[] {
   const warmups: WorkoutSet[] = [];
 
+  // Plus les reps sont basses (intensité haute), plus on a besoin de montée progressive
+  const isLowRep  = targetReps <= 3;   // Force max, 1-3 reps
+  const isMidRep  = targetReps <= 6;   // Force/hypertrophie, 4-6 reps
+  // isHighRep = 7+ reps : moins de sets de chauffe nécessaires
+
+  // Set 1 — toujours : très léger, activer les muscles
   warmups.push({
-    reps: 10,
-    weight: Math.max(20, workingWeight * 0.4),
+    reps: Math.min(15, targetReps + 8),
+    weight: Math.max(20, Math.round((workingWeight * 0.35) / 2.5) * 2.5),
     setType: 'warmup',
     restTime: 60,
   });
 
-  if (workingWeight > 60) {
+  // Set 2 — si poids > 50kg
+  if (workingWeight > 50) {
     warmups.push({
-      reps: 5,
-      weight: Math.round((workingWeight * 0.6) / 2.5) * 2.5,
+      reps: Math.min(10, targetReps + 4),
+      weight: Math.round((workingWeight * 0.55) / 2.5) * 2.5,
+      setType: 'warmup',
+      restTime: 75,
+    });
+  }
+
+  // Set 3 — si poids > 70kg et reps modérées/basses
+  if (workingWeight > 70 && isMidRep) {
+    warmups.push({
+      reps: Math.min(5, targetReps + 2),
+      weight: Math.round((workingWeight * 0.72) / 2.5) * 2.5,
       setType: 'warmup',
       restTime: 90,
     });
   }
 
-  if (workingWeight > 80) {
+  // Set 4 — si poids > 90kg et reps basses (force max)
+  if (workingWeight > 90 && isLowRep) {
     warmups.push({
-      reps: 3,
-      weight: Math.round((workingWeight * 0.75) / 2.5) * 2.5,
+      reps: Math.max(1, targetReps),
+      weight: Math.round((workingWeight * 0.87) / 2.5) * 2.5,
       setType: 'warmup',
-      restTime: 120,
+      restTime: 150,
     });
   }
 
-  if (workingWeight > 100) {
+  // Set 5 — si poids > 120kg et reps très basses (≤ 2)
+  if (workingWeight > 120 && targetReps <= 2) {
     warmups.push({
       reps: 1,
-      weight: Math.round((workingWeight * 0.9) / 2.5) * 2.5,
+      weight: Math.round((workingWeight * 0.95) / 2.5) * 2.5,
       setType: 'warmup',
       restTime: 180,
     });

@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SetRow } from './SetRow';
-import { Chip } from '@/components/ui/Badge';
 import { colors } from '@/constants/theme';
 import { MUSCLE_LABELS } from '@/lib/gamification';
 import type { ActiveExercise, WorkoutSet, Workout } from '@/types';
@@ -14,11 +14,13 @@ interface ExerciseCardProps {
   onStartRest: (seconds: number) => void;
 }
 
-export function ExerciseCard({
-  exercise,
-  lastWorkout,
-  onStartRest,
-}: ExerciseCardProps) {
+const CATEGORY_GRADIENT: Record<string, [string, string]> = {
+  compound:  ['#7c3aed', '#06b6d4'],
+  isolation: ['#06b6d4', '#10b981'],
+  accessory: ['#f59e0b', '#ef4444'],
+};
+
+export function ExerciseCard({ exercise, lastWorkout, onStartRest }: ExerciseCardProps) {
   const { updateSet, addSet, removeSet, completeSet, toggleExerciseExpanded } = useSessionStore();
   const units           = useSettingsStore((s) => s.settings.units);
   const defaultRestTime = useSettingsStore((s) => s.settings.defaultRestTime);
@@ -29,17 +31,13 @@ export function ExerciseCard({
 
   const completedCount  = exercise.sets.filter((s) => s.completed).length;
   const totalCount      = exercise.sets.length;
-  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-
-  const handleToggle = useCallback(() => {
-    toggleExerciseExpanded(exercise.id);
-  }, [exercise.id, toggleExerciseExpanded]);
+  const isAllDone       = completedCount === totalCount && totalCount > 0;
+  const gradient        = CATEGORY_GRADIENT[exercise.category] ?? CATEGORY_GRADIENT.compound!;
 
   const handleSetComplete = useCallback(
     (setIndex: number) => {
       completeSet(exercise.id, setIndex);
-      const restTime = exercise.sets[setIndex]?.restTime ?? defaultRestTime;
-      onStartRest(restTime);
+      onStartRest(exercise.sets[setIndex]?.restTime ?? defaultRestTime);
     },
     [completeSet, exercise.id, exercise.sets, defaultRestTime, onStartRest],
   );
@@ -47,9 +45,9 @@ export function ExerciseCard({
   const handleAddSet = useCallback(() => {
     const lastSet = exercise.sets[exercise.sets.length - 1];
     const newSet: WorkoutSet = {
-      reps: lastSet?.reps ?? 8,
-      weight: lastSet?.weight ?? 0,
-      setType: lastSet?.setType ?? 'normal',
+      reps:     lastSet?.reps ?? 8,
+      weight:   lastSet?.weight ?? 0,
+      setType:  lastSet?.setType ?? 'normal',
       restTime: defaultRestTime,
       completed: false,
     };
@@ -57,69 +55,56 @@ export function ExerciseCard({
   }, [exercise.id, exercise.sets, addSet, defaultRestTime]);
 
   return (
-    <View
-      className="rounded-2xl overflow-hidden"
-      style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}
-    >
-      {/* Header */}
-      <Pressable onPress={handleToggle}>
-        <View className="bg-white/[0.05] px-4 py-3">
-          {/* Barre de progression */}
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              height: 2,
-              width: `${progressPercent}%`,
-              backgroundColor: colors.status.success,
-            }}
+    <View style={{ gap: 0 }}>
+      {/* Header exercice */}
+      <Pressable onPress={() => toggleExerciseExpanded(exercise.id)}>
+        <View style={{ paddingVertical: 16, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          {/* Accent couleur catégorie */}
+          <LinearGradient
+            colors={isAllDone ? ['#10b981', '#059669'] : gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={{ width: 4, height: 48, borderRadius: 2 }}
           />
 
-          <View className="flex-row items-center gap-3">
-            <View
-              className="w-9 h-9 rounded-xl items-center justify-center"
-              style={{ backgroundColor: 'rgba(124,58,237,0.2)' }}
-            >
-              <Text className="text-base">
-                {exercise.category === 'compound' ? '🏋️' :
-                 exercise.category === 'isolation' ? '💪' : '⚡'}
-              </Text>
-            </View>
-
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-text-primary">
-                {exercise.name}
-              </Text>
-              <View className="flex-row items-center gap-1.5 mt-0.5">
-                {exercise.muscleGroups.slice(0, 2).map((m) => (
-                  <Chip key={m} label={MUSCLE_LABELS[m]} size="sm" variant="brand" />
-                ))}
-              </View>
-            </View>
-
-            <View className="items-end gap-1">
-              <Text className="text-xs text-text-muted">
-                {completedCount}/{totalCount} séries
-              </Text>
-              <Text className="text-sm">{exercise.isExpanded ? '▲' : '▼'}</Text>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: isAllDone ? colors.status.success : colors.text.primary, letterSpacing: -0.3 }}>
+              {exercise.name}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+              {exercise.muscleGroups.slice(0, 3).map((m) => (
+                <Text key={m} style={{ fontSize: 11, fontWeight: '600', color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {MUSCLE_LABELS[m]}
+                </Text>
+              ))}
             </View>
           </View>
 
-          {prevExercise && (
-            <View className="mt-2 flex-row items-center gap-1">
-              <Text className="text-xs text-text-muted">
-                Dernière fois : {prevExercise.sets.length} séries, top set{' '}
-                {Math.max(...prevExercise.sets.map((s) => s.weight))}{units}
-              </Text>
-            </View>
-          )}
+          {/* Compteur séries */}
+          <View style={{ alignItems: 'flex-end', gap: 2 }}>
+            <Text style={{ fontSize: 24, fontWeight: '900', color: isAllDone ? colors.status.success : colors.text.primary }}>
+              {completedCount}
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text.muted }}>/{totalCount}</Text>
+            </Text>
+            <Text style={{ fontSize: 11, color: colors.text.muted, fontWeight: '600', letterSpacing: 0.3 }}>SÉRIES</Text>
+          </View>
         </View>
       </Pressable>
 
-      {/* Corps */}
+      {/* Barre de progression */}
+      <View style={{ height: 2, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 4, borderRadius: 1, overflow: 'hidden' }}>
+        {totalCount > 0 && (
+          <LinearGradient
+            colors={isAllDone ? ['#10b981', '#059669'] : gradient}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={{ width: `${(completedCount / totalCount) * 100}%`, height: 2 }}
+          />
+        )}
+      </View>
+
+      {/* Corps — séries */}
       {exercise.isExpanded && (
-        <View className="px-3 py-2 gap-2 bg-bg-primary">
+        <View style={{ paddingTop: 12, gap: 8 }}>
           {exercise.sets.map((set, index) => (
             <SetRow
               key={index}
@@ -136,14 +121,26 @@ export function ExerciseCard({
 
           <Pressable
             onPress={handleAddSet}
-            className="flex-row items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.06] mt-1"
+            style={{
+              paddingVertical: 14,
+              borderRadius: 14,
+              backgroundColor: 'rgba(124,58,237,0.08)',
+              borderWidth: 1,
+              borderStyle: 'dashed',
+              borderColor: 'rgba(124,58,237,0.30)',
+              alignItems: 'center',
+              marginTop: 4,
+            }}
           >
-            <Text className="text-sm font-medium text-brand-primary">
-              + Ajouter une série
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.brand.primary }}>
+              + Série
             </Text>
           </Pressable>
         </View>
       )}
+
+      {/* Séparateur entre exercices */}
+      <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginTop: 16 }} />
     </View>
   );
 }

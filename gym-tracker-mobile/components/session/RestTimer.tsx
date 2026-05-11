@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Modal, Animated } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable, Modal } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/constants/theme';
 
 interface RestTimerProps {
@@ -10,109 +11,120 @@ interface RestTimerProps {
   onAddTime: (seconds: number) => void;
 }
 
-export function RestTimer({
-  secondsLeft,
-  totalSeconds,
-  isVisible,
-  onSkip,
-  onAddTime,
-}: RestTimerProps) {
-  const rotation = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const progress = secondsLeft / totalSeconds;
-    Animated.timing(rotation, {
-      toValue: 1 - progress,
-      duration: 900,
-      useNativeDriver: false,
-    }).start();
-  }, [secondsLeft, totalSeconds, rotation]);
-
+export function RestTimer({ secondsLeft, totalSeconds, isVisible, onSkip, onAddTime }: RestTimerProps) {
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const progress = secondsLeft / totalSeconds;
 
   const urgencyColor =
-    secondsLeft <= 10
-      ? colors.status.danger
-      : secondsLeft <= 30
-        ? colors.status.warning
-        : colors.brand.secondary;
+    secondsLeft <= 10 ? colors.status.danger :
+    secondsLeft <= 30 ? colors.status.warning :
+    colors.brand.secondary;
 
-  const SIZE = 180;
-  const STROKE = 8;
+  const urgencyGradient: [string, string] =
+    secondsLeft <= 10 ? ['#ef4444', '#dc2626'] :
+    secondsLeft <= 30 ? ['#f59e0b', '#d97706'] :
+    ['#7c3aed', '#06b6d4'];
+
+  const SIZE   = 200;
+  const STROKE = 10;
 
   return (
     <Modal visible={isVisible} transparent animationType="fade" statusBarTranslucent>
-      <View className="flex-1 items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.80)' }}>
         <View
-          className="items-center gap-6 p-8 rounded-3xl mx-6"
           style={{
-            backgroundColor: colors.bg.secondary,
+            backgroundColor: '#0d0d1c',
+            borderRadius: 28,
             borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.1)',
-            minWidth: 300,
+            borderColor: 'rgba(255,255,255,0.10)',
+            padding: 32,
+            gap: 28,
+            minWidth: 320,
+            alignItems: 'center',
+            shadowColor: urgencyColor,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.3,
+            shadowRadius: 40,
+            elevation: 20,
           }}
         >
-          <Text className="text-lg font-semibold text-text-secondary">Temps de repos</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text.muted, letterSpacing: 2, textTransform: 'uppercase' }}>
+            Temps de repos
+          </Text>
 
-          {/* Cercle de progression */}
+          {/* Anneau */}
           <View style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
+            {/* Track */}
             <View
               style={{
                 position: 'absolute',
-                width: SIZE,
-                height: SIZE,
+                width: SIZE, height: SIZE,
                 borderRadius: SIZE / 2,
                 borderWidth: STROKE,
-                borderColor: 'rgba(255,255,255,0.08)',
+                borderColor: 'rgba(255,255,255,0.07)',
               }}
             />
+            {/* Arc de progression */}
             <View
               style={{
                 position: 'absolute',
-                width: SIZE,
-                height: SIZE,
+                width: SIZE, height: SIZE,
                 borderRadius: SIZE / 2,
                 borderWidth: STROKE,
                 borderColor: 'transparent',
                 borderTopColor: urgencyColor,
-                borderRightColor: secondsLeft / totalSeconds > 0.25 ? urgencyColor : 'transparent',
-                borderBottomColor: secondsLeft / totalSeconds > 0.5 ? urgencyColor : 'transparent',
-                borderLeftColor: secondsLeft / totalSeconds > 0.75 ? urgencyColor : 'transparent',
+                borderRightColor: progress > 0.25 ? urgencyColor : 'transparent',
+                borderBottomColor: progress > 0.5  ? urgencyColor : 'transparent',
+                borderLeftColor:  progress > 0.75 ? urgencyColor : 'transparent',
                 transform: [{ rotate: '-90deg' }],
               }}
             />
-            <Text
-              style={{
-                fontSize: 48,
-                fontWeight: '900',
-                color: urgencyColor,
-              }}
-            >
+            {/* Temps */}
+            <Text style={{ fontSize: 52, fontWeight: '900', color: urgencyColor }}>
               {timeStr}
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.text.muted, marginTop: 2 }}>
+              / {String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:{String(totalSeconds % 60).padStart(2, '0')}
             </Text>
           </View>
 
-          <View className="flex-row gap-3">
+          {/* Boutons */}
+          <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
             <Pressable
               onPress={() => onAddTime(15)}
-              className="flex-1 py-3 rounded-xl bg-white/[0.08] items-center"
+              style={{
+                flex: 1, paddingVertical: 13, borderRadius: 14,
+                backgroundColor: 'rgba(255,255,255,0.07)',
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+                alignItems: 'center',
+              }}
             >
-              <Text className="text-sm font-semibold text-text-primary">+15s</Text>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text.primary }}>+15s</Text>
             </Pressable>
+
             <Pressable
               onPress={() => onAddTime(30)}
-              className="flex-1 py-3 rounded-xl bg-white/[0.08] items-center"
+              style={{
+                flex: 1, paddingVertical: 13, borderRadius: 14,
+                backgroundColor: 'rgba(255,255,255,0.07)',
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+                alignItems: 'center',
+              }}
             >
-              <Text className="text-sm font-semibold text-text-primary">+30s</Text>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text.primary }}>+30s</Text>
             </Pressable>
-            <Pressable
-              onPress={onSkip}
-              className="flex-1 py-3 rounded-xl items-center"
-              style={{ backgroundColor: 'rgba(124,58,237,0.25)' }}
-            >
-              <Text className="text-sm font-semibold text-brand-primary">Passer</Text>
+
+            <Pressable onPress={onSkip} style={{ flex: 1.2, borderRadius: 14, overflow: 'hidden' }}>
+              <LinearGradient
+                colors={urgencyGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ paddingVertical: 13, alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Passer</Text>
+              </LinearGradient>
             </Pressable>
           </View>
         </View>
