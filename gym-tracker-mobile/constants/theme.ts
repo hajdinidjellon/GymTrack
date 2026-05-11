@@ -9,8 +9,8 @@ export const colors = {
   bg: {
     primary: '#080810',
     secondary: '#0f0f1a',
-    card: 'rgba(255,255,255,0.04)',
-    cardBorder: 'rgba(255,255,255,0.08)',
+    card: 'rgba(255,255,255,0.05)',
+    cardBorder: 'rgba(255,255,255,0.10)',
     overlay: 'rgba(0,0,0,0.75)',
   },
   brand: {
@@ -113,33 +113,51 @@ export const typography = {
 export const shadows = {
   sm: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 3,
   },
   md: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 6,
   },
   brand: {
     shadowColor: '#7c3aed',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 10,
   },
   glow: (color: string) => ({
     shadowColor: color,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 12,
   }),
 } as const;
+
+export const gradients = {
+  brand: ['#7c3aed', '#06b6d4'] as [string, string],
+  brandReverse: ['#06b6d4', '#7c3aed'] as [string, string],
+  brandSubtle: ['rgba(124,58,237,0.8)', 'rgba(6,182,212,0.8)'] as [string, string],
+  bronze: ['#B45309', '#D97706'] as [string, string],
+  silver: ['#6B7280', '#9CA3AF'] as [string, string],
+  gold: ['#D97706', '#F59E0B'] as [string, string],
+  platinum: ['#0891B2', '#06B6D4'] as [string, string],
+  diamond: ['#7C3AED', '#A78BFA'] as [string, string],
+  legend: ['#DC2626', '#F87171'] as [string, string],
+  success: ['#059669', '#10b981'] as [string, string],
+  dark: ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)'] as [string, string],
+} as const;
+
+export function getRankGradient(tier: string): [string, string] {
+  return (gradients as Record<string, [string, string]>)[tier] ?? gradients.brand;
+}
 
 export const animation = {
   fast: 150,
