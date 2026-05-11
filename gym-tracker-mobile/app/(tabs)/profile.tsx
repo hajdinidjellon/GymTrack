@@ -132,17 +132,6 @@ export default function ProfileScreen() {
 
         {/* ── Header ── */}
         <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, gap: 20 }}>
-          {/* Déconnexion */}
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-            <Pressable
-              onPress={handleLogout}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(239,68,68,0.10)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.22)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 }}
-            >
-              <Ionicons name="log-out-outline" size={16} color="#ef4444" />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#ef4444' }}>Déconnexion</Text>
-            </Pressable>
-          </View>
-
           {/* Avatar + Nom */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <LinearGradient

@@ -56,10 +56,11 @@ function AppNavigator() {
       await loadWorkouts();
       const profile = await loadProfile().then(() => useProfileStore.getState().profile);
 
-      // 3. Vérifie la session Supabase
+      // 3. Supabase session — optionnelle (sync cloud)
+      // L'app fonctionne entièrement hors-ligne sans compte
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
 
       if (!mounted) return;
 
@@ -88,9 +89,9 @@ function AppNavigator() {
   useEffect(() => {
     if (!isReady) return;
 
-    if (!isAuthenticated) {
-      router.replace('/(auth)/login');
-    } else if (!hasProfile) {
+    // On ne bloque plus sur l'auth Supabase.
+    // Seul le profil local compte pour le routing.
+    if (!hasProfile) {
       router.replace('/(auth)/onboarding/goal');
     } else {
       router.replace('/(tabs)');
