@@ -2,9 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { MuscleMapSVG, MuscleHeatmapList } from './MuscleMapSVG';
 import { MUSCLE_LABELS } from '@/lib/gamification';
-import { getMuscleHeatColor } from '@/constants/theme';
-import type { MuscleGroup, Workout } from '@/types';
 import { getMuscleActivity } from '@/lib/gamification';
+import type { MuscleGroup, Workout } from '@/types';
+
+// Couleur basique pour le détail (sans dépendre de Skia)
+function muscleDetailColor(intensity: number): string {
+  if (intensity <= 0)  return 'rgba(255,255,255,0.06)';
+  if (intensity < 25)  return 'rgba(147,197,253,0.6)';
+  if (intensity < 60)  return 'rgba(251,191,36,0.75)';
+  if (intensity < 85)  return 'rgba(249,115,22,0.85)';
+  return 'rgba(239,68,68,0.95)';
+}
 
 interface MuscleHeatmapProps {
   workouts: Workout[];
@@ -19,27 +27,30 @@ export function MuscleHeatmap({
   onPeriodChange,
   compact = false,
 }: MuscleHeatmapProps) {
-  const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | null>(null);
+  const [selected, setSelected] = useState<MuscleGroup | null>(null);
   const activity = getMuscleActivity(workouts, period);
 
-  const handleMusclePress = (muscle: MuscleGroup) => {
-    setSelectedMuscle((prev) => (prev === muscle ? null : muscle));
+  const handlePress = (muscle: MuscleGroup) => {
+    setSelected((prev) => (prev === muscle ? null : muscle));
   };
 
   return (
-    <View className="gap-4">
+    <View style={{ gap: 16 }}>
       {/* Sélecteur période */}
       {onPeriodChange && (
-        <View className="flex-row bg-white/[0.06] rounded-xl p-1 self-start">
+        <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
           {([7, 30] as const).map((p) => (
             <Pressable
               key={p}
               onPress={() => onPeriodChange(p)}
-              className={`px-4 py-1.5 rounded-lg ${period === p ? 'bg-brand-primary' : ''}`}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 6,
+                borderRadius: 8,
+                backgroundColor: period === p ? '#7c3aed' : 'transparent',
+              }}
             >
-              <Text
-                className={`text-sm font-medium ${period === p ? 'text-white' : 'text-text-secondary'}`}
-              >
+              <Text style={{ fontSize: 13, fontWeight: '500', color: period === p ? 'white' : 'rgba(248,250,252,0.55)' }}>
                 {p === 7 ? '7 jours' : '30 jours'}
               </Text>
             </Pressable>
@@ -49,73 +60,63 @@ export function MuscleHeatmap({
 
       {/* Mannequin */}
       {!compact && (
-        <View className="items-center">
+        <View style={{ alignItems: 'center' }}>
           <MuscleMapSVG
-            muscleActivity={activity}
-            onMusclePress={handleMusclePress}
-            selectedMuscle={selectedMuscle}
-            view="both"
-            width={140}
+            activity={activity}
+            selected={selected}
+            onMusclePress={handlePress}
+            size="md"
+            showBoth
             showLegend
           />
         </View>
       )}
 
-      {/* Liste scrollable des muscles */}
+      {/* Liste scrollable */}
       <MuscleHeatmapList
-        muscleActivity={activity}
-        onMusclePress={handleMusclePress}
-        selectedMuscle={selectedMuscle}
+        activity={activity}
+        selected={selected}
+        onMusclePress={handlePress}
       />
 
       {/* Détail muscle sélectionné */}
-      {selectedMuscle && (
-        <MuscleDetail muscle={selectedMuscle} intensity={activity[selectedMuscle] ?? 0} />
+      {selected && (
+        <MuscleDetail muscle={selected} intensity={activity[selected] ?? 0} />
       )}
     </View>
   );
 }
 
-function MuscleDetail({
-  muscle,
-  intensity,
-}: {
-  muscle: MuscleGroup;
-  intensity: number;
-}) {
-  const color = getMuscleHeatColor(intensity);
+function MuscleDetail({ muscle, intensity }: { muscle: MuscleGroup; intensity: number }) {
+  const color = muscleDetailColor(intensity);
   const status =
-    intensity === 0
-      ? 'Aucun travail récent'
-      : intensity < 25
-        ? 'Peu sollicité — bon à travailler'
-        : intensity < 60
-          ? 'Modérément entraîné'
-          : intensity < 85
-            ? 'Bien sollicité'
-            : 'Très sollicité — laisser récupérer';
+    intensity === 0   ? 'Aucun travail récent' :
+    intensity < 25    ? 'Peu sollicité — bon à travailler' :
+    intensity < 60    ? 'Modérément entraîné' :
+    intensity < 85    ? 'Bien sollicité' :
+                        'Très sollicité — laisser récupérer';
 
   return (
     <View
-      className="flex-row items-center gap-3 p-3 rounded-xl bg-white/[0.06]"
-      style={{ borderLeftWidth: 3, borderLeftColor: color }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        padding: 12,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        borderLeftWidth: 3,
+        borderLeftColor: color,
+      }}
     >
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          backgroundColor: color,
-          opacity: 0.8,
-        }}
-      />
-      <View className="flex-1">
-        <Text className="text-base font-semibold text-text-primary">
+      <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: color, opacity: 0.8 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 15, fontWeight: '600', color: '#f8fafc' }}>
           {MUSCLE_LABELS[muscle]}
         </Text>
-        <Text className="text-sm text-text-secondary">{status}</Text>
+        <Text style={{ fontSize: 13, color: 'rgba(248,250,252,0.55)' }}>{status}</Text>
       </View>
-      <Text className="text-xl font-bold" style={{ color }}>
+      <Text style={{ fontSize: 20, fontWeight: '700', color }}>
         {intensity}%
       </Text>
     </View>

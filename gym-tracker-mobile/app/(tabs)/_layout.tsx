@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
-import { colors } from '@/constants/theme';
 import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '@/constants/theme';
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
@@ -9,6 +10,8 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -17,14 +20,17 @@ export default function TabsLayout() {
           backgroundColor: colors.bg.secondary,
           borderTopColor: 'rgba(255,255,255,0.08)',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          // Ajoute le bas de la safe area + marge visuelle
+          height: 56 + insets.bottom + 8,
+          paddingBottom: insets.bottom + 8,
+          paddingTop: 6,
         },
         tabBarActiveTintColor: colors.brand.primary,
         tabBarInactiveTintColor: colors.text.muted,
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
+          marginTop: 0,
         },
       }}
     >
@@ -32,45 +38,35 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🏠" focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="session"
         options={{
           title: 'Séance',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="💪" focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="💪" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="progress"
         options={{
           title: 'Progrès',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="📈" focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="📈" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="planner"
         options={{
           title: 'Plan',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="📋" focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="📋" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="👤" focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
         }}
       />
     </Tabs>
