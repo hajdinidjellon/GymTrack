@@ -1,20 +1,26 @@
 /**
  * MASCOT — sprite sheets
- * mascot_sheet.png : 1408×768 — 12 poses (ancien ours)
- * mascotte2.png    : 1376×768 — variantes (pensive, etc.)
- * mascotte3.png    : 1376×768 — wave / celebrate
- * mascotte4.png    : 1376×768 — squat / deadlift
- * mascotte5.png    : 1376×768 — laugh, pushup, jumprope, run, flex_v2, chocolate
+ * mascot_sheet.png    : 1408×768 — 12 poses (ancien ours)
+ * mascotte2.png       : 1376×768 — variantes (pensive, etc.)
+ * mascotte3.png       : 1376×768 — wave / celebrate
+ * mascotte4.png       : 1376×768 — squat / deadlift
+ * mascotte5.png       : 1376×768 — laugh, pushup, jumprope, run, flex_v2, chocolate
+ * mimi.png            : 1630×965 — personnage féminin principal
+ * mascotte-mimi2.png  : 1376×768 — variantes mimi2 (name, bench, squat, frequency)
+ * mascotte-mimi3.png  : 1376×768 — variantes mimi3 (deadlift, celebration)
  */
 
 import React, { useEffect, useRef } from 'react';
 import { View, Image, Animated, Easing } from 'react-native';
 
-const SHEET_OLD = require('@/assets/mascot/mascot_sheet.png') as number;
-const SHEET_2   = require('@/assets/mascot/mascotte2.png')    as number;
-const SHEET_3   = require('@/assets/mascot/mascotte3.png')    as number;
-const SHEET_4   = require('@/assets/mascot/mascotte4.png')    as number;
-const SHEET_5   = require('@/assets/mascot/mascotte5.png')    as number;
+const SHEET_OLD  = require('@/assets/mascot/mascot_sheet.png')       as number;
+const SHEET_2    = require('@/assets/mascot/mascotte2.png')           as number;
+const SHEET_3    = require('@/assets/mascot/mascotte3.png')           as number;
+const SHEET_4    = require('@/assets/mascot/mascotte4.png')           as number;
+const SHEET_5    = require('@/assets/mascot/mascotte5.png')           as number;
+const SHEET_MIMI  = require('@/assets/mascot/mimi.png')               as number;
+const SHEET_MIMI2 = require('@/assets/mascot/mascotte-mimi2.png')     as number;
+const SHEET_MIMI3 = require('@/assets/mascot/mascotte-mimi3.png')     as number;
 
 type PoseDef = {
   x: number; y: number; w: number; h: number;
@@ -51,7 +57,18 @@ export type MascotPose =
   | 'jumprope'        // corde à sauter
   | 'run'             // court avec lunettes
   | 'flex_v2'         // flex / célébration (nouveau sheet)
-  | 'chocolate';      // mange du chocolat
+  | 'chocolate'       // mange du chocolat
+  // ── Sheet mimi 1630×965 ──────────────────────────────────────────
+  | 'mimi_goal'       // objectif (goal)
+  | 'mimi_level'      // niveau (level)
+  // ── Sheet mascotte-mimi2 1376×768 ───────────────────────────────
+  | 'mimi2_name'      // prénom
+  | 'mimi2_bench'     // développé couché
+  | 'mimi2_squat'     // squat
+  | 'mimi2_frequency' // fréquence
+  // ── Sheet mascotte-mimi3 1376×768 ───────────────────────────────
+  | 'mimi3_deadlift'  // soulevé de terre
+  | 'mimi3_done';     // célébration finale
 
 export const POSES: Record<MascotPose, PoseDef> = {
   // ── Sheet ancien 1408×768 ─────────────────────────────────────────
@@ -87,6 +104,20 @@ export const POSES: Record<MascotPose, PoseDef> = {
   run:         { x: 1115, y: 18,  w: 209, h: 275, imgW: 1376, imgH: 768, src: SHEET_5 },
   flex_v2:     { x: 56,   y: 18,  w: 235, h: 288, imgW: 1376, imgH: 768, src: SHEET_5 },
   chocolate:   { x: 785,  y: 289, w: 191, h: 242, imgW: 1376, imgH: 768, src: SHEET_5 },
+
+  // ── Sheet mimi 1630×965 ───────────────────────────────────────────
+  mimi_goal:   { x: 459, y: 90,  w: 285, h: 320, imgW: 1630, imgH: 965, src: SHEET_MIMI },
+  mimi_level:  { x: 844, y: 492, w: 284, h: 357, imgW: 1630, imgH: 965, src: SHEET_MIMI },
+
+  // ── Sheet mascotte-mimi2 1369×1149 ────────────────────────────────
+  mimi2_name:      { x: 92,   y: 76,  w: 212, h: 286, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
+  mimi2_bench:     { x: 44,   y: 452, w: 307, h: 258, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
+  mimi2_squat:     { x: 694,  y: 456, w: 301, h: 238, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
+  mimi2_frequency: { x: 1042, y: 485, w: 251, h: 210, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
+
+  // ── Sheet mascotte-mimi3 1536×1024 ────────────────────────────────
+  mimi3_deadlift: { x: 429, y: 394, w: 321, h: 277, imgW: 1536, imgH: 1024, src: SHEET_MIMI3 },
+  mimi3_done:     { x: 429, y: 47,  w: 321, h: 312, imgW: 1536, imgH: 1024, src: SHEET_MIMI3 },
 };
 
 // ── Props ─────────────────────────────────────────────────────────

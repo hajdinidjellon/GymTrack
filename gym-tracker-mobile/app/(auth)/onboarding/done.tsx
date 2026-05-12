@@ -113,7 +113,7 @@ export default function OnboardingDoneScreen() {
               backgroundColor: 'rgba(56,189,248,0.22)',
               opacity: glowO, transform: [{ scale: glowS }],
             }} />
-            <Mascot pose="celebrate" height={260} animate float />
+            <Mascot pose="mimi3_done" height={220} animate float />
           </View>
 
           {/* ── Texte ────────────────────────────────────── */}

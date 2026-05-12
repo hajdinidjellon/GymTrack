@@ -25,8 +25,8 @@ export default function OnboardingSquatScreen() {
 
   return (
     <OnboardingFrame
-      pose="squat"
-      mascotHeight={190}
+      pose="mimi2_squat"
+      mascotHeight={150}
       question="Ton record au squat ?"
       subtext="Le roi des exercices — qu'est-ce que tu mets sur la barre ?"
       step={6}

@@ -36,8 +36,8 @@ export default function OnboardingLevelScreen() {
 
   return (
     <OnboardingFrame
-      pose="flex_v2"
-      mascotHeight={150}
+      pose="mimi_level"
+      mascotHeight={160}
       question="Quel est ton niveau ?"
       subtext="Adapte ta progression dès le départ."
       step={3}

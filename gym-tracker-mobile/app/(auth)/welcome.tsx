@@ -69,11 +69,11 @@ function ParadeMascot({ pose, height, delay }: {
 }
 
 const PARADE: Array<{ pose: MascotPose; h: number; delay: number }> = [
-  { pose: 'deadlift', h: 80,  delay: 0    },
-  { pose: 'overhead', h: 88,  delay: 300  },
-  { pose: 'bench_curl', h: 76, delay: 600 },
-  { pose: 'squat',    h: 84,  delay: 900  },
-  { pose: 'rack',     h: 82,  delay: 1200 },
+  { pose: 'mimi3_done',      h: 88,  delay: 0    },
+  { pose: 'mimi_goal',       h: 82,  delay: 300  },
+  { pose: 'mimi2_bench',     h: 80,  delay: 600  },
+  { pose: 'mimi_level',      h: 86,  delay: 900  },
+  { pose: 'mimi3_deadlift',  h: 84,  delay: 1200 },
 ];
 
 export default function WelcomeScreen() {

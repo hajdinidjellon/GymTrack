@@ -37,8 +37,8 @@ export default function OnboardingGoalScreen() {
 
   return (
     <OnboardingFrame
-      pose="pensive"
-      mascotHeight={130}
+      pose="mimi_goal"
+      mascotHeight={150}
       question={`Qu'est-ce qui t'amène ici${name ? `, ${name}` : ''} ?`}
       step={2}
       total={TOTAL}

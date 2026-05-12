@@ -30,8 +30,8 @@ export default function OnboardingFrequencyScreen() {
 
   return (
     <OnboardingFrame
-      pose="sac"
-      mascotHeight={160}
+      pose="mimi2_frequency"
+      mascotHeight={130}
       question="Combien de séances par semaine ?"
       subtext="Mieux vaut 3 séances tenues que 6 abandonnées."
       step={4}

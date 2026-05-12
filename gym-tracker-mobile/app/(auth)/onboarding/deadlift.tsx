@@ -19,14 +19,14 @@ export default function OnboardingDeadliftScreen() {
 
   const goNext = () =>
     router.push({
-      pathname: '/(auth)/onboarding/ohp',
+      pathname: '/(auth)/onboarding/done',
       params: { ...params, deadW: String(weight), deadR: String(reps) },
     });
 
   return (
     <OnboardingFrame
-      pose="deadlift"
-      mascotHeight={190}
+      pose="mimi3_deadlift"
+      mascotHeight={150}
       question="Ton record au soulevé de terre ?"
       subtext="Le mouvement le plus complet — quelle est ta meilleure performance ?"
       step={7}
@@ -34,7 +34,7 @@ export default function OnboardingDeadliftScreen() {
       canContinue={true}
       skipLabel="Je ne sais pas encore"
       onSkip={() => router.push({
-        pathname: '/(auth)/onboarding/ohp',
+        pathname: '/(auth)/onboarding/done',
         params: { ...params, deadW: '0', deadR: '3' },
       })}
       onContinue={goNext}

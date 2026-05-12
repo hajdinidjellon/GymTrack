@@ -13,8 +13,8 @@ export default function OnboardingNameScreen() {
 
   return (
     <OnboardingFrame
-      pose="wave"
-      mascotHeight={180}
+      pose="mimi2_name"
+      mascotHeight={160}
       question="Comment tu t'appelles ?"
       subtext="Ton prénom sera utilisé pour personnaliser ton expérience."
       step={1}
