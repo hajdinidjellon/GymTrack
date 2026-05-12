@@ -50,7 +50,7 @@ export default function LoginScreen() {
     if (profile) {
       router.replace('/(tabs)');
     } else {
-      router.replace('/(auth)/onboarding/goal');
+      router.replace('/(auth)/onboarding/name');
     }
   };
 

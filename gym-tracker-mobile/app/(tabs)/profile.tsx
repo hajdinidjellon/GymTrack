@@ -92,7 +92,7 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert('Se déconnecter', 'Tes données locales seront conservées.', [
       { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/login'); } },
+      { text: 'Se déconnecter', style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/welcome'); } },
     ]);
   };
 

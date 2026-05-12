@@ -92,7 +92,7 @@ function AppNavigator() {
     // On ne bloque plus sur l'auth Supabase.
     // Seul le profil local compte pour le routing.
     if (!hasProfile) {
-      router.replace('/(auth)/onboarding/goal');
+      router.replace('/(auth)/welcome');
     } else {
       router.replace('/(tabs)');
     }

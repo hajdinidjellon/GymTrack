@@ -25,7 +25,7 @@ export default function RegisterScreen() {
     setLoading(true); setError(null);
     const { error: authError } = await signUpWithEmail(email.trim(), password);
     if (authError) { setError(authError); setLoading(false); return; }
-    router.replace('/(auth)/onboarding/goal');
+    router.replace('/(auth)/onboarding/name');
   };
 
   return (
@@ -56,7 +56,7 @@ export default function RegisterScreen() {
 
         {/* Bouton sans compte en priorité */}
         <Pressable
-          onPress={() => router.replace('/(auth)/onboarding/goal')}
+          onPress={() => router.replace('/(auth)/onboarding/name')}
           style={{ borderRadius: 18, overflow: 'hidden', marginBottom: 28 }}
         >
           <LinearGradient colors={['#7c3aed', '#06b6d4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
