@@ -22,8 +22,8 @@ export default function OnboardingBenchScreen() {
 
   return (
     <OnboardingFrame
-      pose="mimi2_bench"
-      mascotHeight={150}
+      mascotFrames={['mouv_bench_1', 'mouv_bench_2']}
+      mascotHeight={160}
       question="Ton record au développé couché ?"
       subtext="Mets 0 si tu ne le connais pas encore."
       step={5}

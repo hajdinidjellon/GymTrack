@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mascot, type MascotPose } from '@/components/mascot/Mascot';
+import { Mascot, AnimatedExerciseMascot, type MascotPose } from '@/components/mascot/Mascot';
 
 const { width: W } = Dimensions.get('window');
 
@@ -52,8 +52,12 @@ function StepProgress({ current, total }: { current: number; total: number }) {
 
 // ── Props ─────────────────────────────────────────────────────────
 interface OnboardingFrameProps {
-  pose: MascotPose;
+  pose?: MascotPose;
   mascotHeight?: number;
+  mascotFrames?: [MascotPose, MascotPose];
+  frameDuration?: number;
+  /** Remplace le slot mascotte par un composant custom (ex: ToggleMascot aligné à gauche) */
+  customMascot?: React.ReactNode;
   question: string;
   subtext?: string;
   step: number;
@@ -64,6 +68,8 @@ interface OnboardingFrameProps {
   skipLabel?: string;
   onSkip?: () => void;
   onContinue?: () => void;
+  /** Contenu affiché juste au-dessus du bouton Continuer */
+  aboveCta?: React.ReactNode;
   /** Cache le bouton CTA — utiliser quand la navigation est déclenchée par la sélection */
   hideCta?: boolean;
   loading?: boolean;
@@ -72,10 +78,11 @@ interface OnboardingFrameProps {
 }
 
 export function OnboardingFrame({
-  pose, mascotHeight = 180, question, subtext,
+  pose, mascotHeight = 180, mascotFrames, frameDuration, customMascot,
+  question, subtext,
   step, total, canContinue,
   ctaLabel = 'Continuer', ctaIcon = 'arrow-forward',
-  skipLabel, onSkip, onContinue, hideCta = false, loading = false, hideBack = false,
+  skipLabel, onSkip, onContinue, aboveCta, hideCta = false, loading = false, hideBack = false,
   children,
 }: OnboardingFrameProps) {
 
@@ -171,8 +178,17 @@ export function OnboardingFrame({
           </Animated.View>
 
           {/* ── Mascotte ────────────────────────────────── */}
-          <View style={{ alignItems: 'center', marginBottom: 28 }}>
-            <Mascot pose={pose} height={mascotHeight} animate float />
+          <View style={{ alignItems: customMascot ? 'flex-start' : 'center', marginBottom: 28 }}>
+            {customMascot ? customMascot
+              : mascotFrames ? (
+                <AnimatedExerciseMascot
+                  frames={mascotFrames}
+                  height={mascotHeight}
+                  frameDuration={frameDuration}
+                />
+              ) : pose ? (
+                <Mascot pose={pose} height={mascotHeight} animate float />
+              ) : null}
           </View>
 
           {/* ── Contenu (choices / input) ───────────────── */}
@@ -186,6 +202,7 @@ export function OnboardingFrame({
           <View style={{
             paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12, gap: 8,
           }}>
+            {aboveCta}
             {skipLabel && onSkip && (
               <Pressable
                 onPress={onSkip}

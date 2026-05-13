@@ -3,6 +3,7 @@ import { View, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
+import { ToggleMascot } from '@/components/mascot/Mascot';
 
 const TOTAL = 8;
 
@@ -24,6 +25,11 @@ export default function OnboardingNameScreen() {
       onContinue={() =>
         router.push({ pathname: '/(auth)/onboarding/goal', params: { name: trimmed } })
       }
+      aboveCta={
+        <View style={{ alignItems: 'center', paddingBottom: 4 }}>
+          <ToggleMascot poseA="cache3_pos1" poseB="cache3_pos2" height={180} />
+        </View>
+      }
     >
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -40,7 +46,6 @@ export default function OnboardingNameScreen() {
           value={name}
           onChangeText={setName}
           autoCapitalize="words"
-          autoFocus
           returnKeyType="done"
           onSubmitEditing={() =>
             canContinue && router.push({ pathname: '/(auth)/onboarding/goal', params: { name: trimmed } })

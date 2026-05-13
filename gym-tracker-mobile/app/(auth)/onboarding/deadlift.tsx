@@ -25,8 +25,8 @@ export default function OnboardingDeadliftScreen() {
 
   return (
     <OnboardingFrame
-      pose="mimi3_deadlift"
-      mascotHeight={150}
+      mascotFrames={['mouv_dead_1', 'mouv_dead_3']}
+      mascotHeight={160}
       question="Ton record au soulevé de terre ?"
       subtext="Le mouvement le plus complet — quelle est ta meilleure performance ?"
       step={7}

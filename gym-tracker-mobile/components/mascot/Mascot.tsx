@@ -1,26 +1,28 @@
 /**
  * MASCOT — sprite sheets
- * mascot_sheet.png    : 1408×768 — 12 poses (ancien ours)
- * mascotte2.png       : 1376×768 — variantes (pensive, etc.)
- * mascotte3.png       : 1376×768 — wave / celebrate
- * mascotte4.png       : 1376×768 — squat / deadlift
- * mascotte5.png       : 1376×768 — laugh, pushup, jumprope, run, flex_v2, chocolate
- * mimi.png            : 1630×965 — personnage féminin principal
- * mascotte-mimi2.png  : 1376×768 — variantes mimi2 (name, bench, squat, frequency)
- * mascotte-mimi3.png  : 1376×768 — variantes mimi3 (deadlift, celebration)
+ * mascot_sheet.png             : 1408×768  — 12 poses (ancien ours)
+ * mascotte2.png                : 1376×768  — variantes (pensive, etc.)
+ * mascotte3.png                : 1376×768  — wave / celebrate
+ * mascotte4.png                : 1376×768  — squat / deadlift / bench_press
+ * mascotte5.png                : 1376×768  — laugh, pushup, jumprope, run, flex_v2, chocolate
+ * mimi.png                     : 1630×965  — personnage féminin principal
+ * mascotte-mimi2.png           : 1369×1149 — mimi2 statiques (name, bench, squat, frequency)
+ * mascotte-mimi3.png           : 1536×1024 — mimi3 (deadlift statique, célébration)
+ * mascotte-mimi-mouvement1.png : 1417×1110 — 9 frames animées squat/bench/deadlift (3×3)
  */
 
 import React, { useEffect, useRef } from 'react';
-import { View, Image, Animated, Easing } from 'react-native';
+import { View, Image, Pressable, Animated, Easing } from 'react-native';
 
-const SHEET_OLD  = require('@/assets/mascot/mascot_sheet.png')       as number;
-const SHEET_2    = require('@/assets/mascot/mascotte2.png')           as number;
-const SHEET_3    = require('@/assets/mascot/mascotte3.png')           as number;
-const SHEET_4    = require('@/assets/mascot/mascotte4.png')           as number;
-const SHEET_5    = require('@/assets/mascot/mascotte5.png')           as number;
-const SHEET_MIMI  = require('@/assets/mascot/mimi.png')               as number;
-const SHEET_MIMI2 = require('@/assets/mascot/mascotte-mimi2.png')     as number;
-const SHEET_MIMI3 = require('@/assets/mascot/mascotte-mimi3.png')     as number;
+const SHEET_OLD   = require('@/assets/mascot/mascot_sheet.png')              as number;
+const SHEET_2     = require('@/assets/mascot/mascotte2.png')                  as number;
+const SHEET_3     = require('@/assets/mascot/mascotte3.png')                  as number;
+const SHEET_4     = require('@/assets/mascot/mascotte4.png')                  as number;
+const SHEET_5     = require('@/assets/mascot/mascotte5.png')                  as number;
+const SHEET_MIMI  = require('@/assets/mascot/mimi.png')                       as number;
+const SHEET_MIMI2 = require('@/assets/mascot/mascotte-mimi2.png')             as number;
+const SHEET_MIMI3 = require('@/assets/mascot/mascotte-mimi3.png')             as number;
+const SHEET_MOUV1 = require('@/assets/mascot/mascotte-mimi-mouvement1.png')   as number;
 
 type PoseDef = {
   x: number; y: number; w: number; h: number;
@@ -29,49 +31,36 @@ type PoseDef = {
 };
 
 export type MascotPose =
-  // ── Ancien sheet ──────────────────────────────────────────────────
-  | 'rack'            // avec barre de traction
-  | 'bench_curl'      // assis avec haltère
-  | 'lecture'         // lit un livre
-  | 'overhead'        // développé militaire
-  | 'flex'            // pose musclée
-  | 'serviette'       // serviette sur la tête
-  | 'shaker'          // boit son shaker
-  | 'shy'             // cache ses yeux
-  | 'halteres'        // haltères au sol
-  | 'sac'             // sac de sport
-  | 'casque'          // casque / ceinture
-  | 'repos'           // assis qui se repose
-  // ── Sheet mascotte3 ───────────────────────────────────────────────
-  | 'wave'            // fait coucou de la main
-  | 'celebrate'       // célèbre / bras en l'air
-  // ── Sheet mascotte2 ───────────────────────────────────────────────
-  | 'pensive'         // pensif, main au menton
-  // ── Sheet mascotte4 ───────────────────────────────────────────────
-  | 'squat'           // squat profond
-  | 'deadlift'        // soulevé de terre
-  | 'bench_press'     // développé couché sur banc
-  // ── Sheet mascotte5 ───────────────────────────────────────────────
-  | 'laugh'           // rigole, assis
-  | 'pushup'          // pompes
-  | 'jumprope'        // corde à sauter
-  | 'run'             // court avec lunettes
-  | 'flex_v2'         // flex / célébration (nouveau sheet)
-  | 'chocolate'       // mange du chocolat
-  // ── Sheet mimi 1630×965 ──────────────────────────────────────────
-  | 'mimi_goal'       // objectif (goal)
-  | 'mimi_level'      // niveau (level)
-  // ── Sheet mascotte-mimi2 1376×768 ───────────────────────────────
-  | 'mimi2_name'      // prénom
-  | 'mimi2_bench'     // développé couché
-  | 'mimi2_squat'     // squat
-  | 'mimi2_frequency' // fréquence
-  // ── Sheet mascotte-mimi3 1376×768 ───────────────────────────────
-  | 'mimi3_deadlift'  // soulevé de terre
-  | 'mimi3_done';     // célébration finale
+  // ── Ancien sheet 1408×768 ───────────────────────────────────────
+  | 'rack' | 'bench_curl' | 'lecture' | 'overhead' | 'flex'
+  | 'serviette' | 'shaker' | 'shy' | 'halteres' | 'sac' | 'casque' | 'repos'
+  // ── mascotte3 1376×768 ──────────────────────────────────────────
+  | 'wave' | 'celebrate'
+  // ── mascotte2 1376×768 ──────────────────────────────────────────
+  | 'pensive'
+  // ── mascotte4 1376×768 ──────────────────────────────────────────
+  | 'squat' | 'deadlift' | 'bench_press'
+  // ── mascotte5 1376×768 ──────────────────────────────────────────
+  | 'laugh' | 'pushup' | 'jumprope' | 'run' | 'flex_v2' | 'chocolate'
+  // ── mimi 1630×965 ───────────────────────────────────────────────
+  | 'mimi_goal' | 'mimi_level'
+  // ── mascotte-mimi2 1369×1149 — statiques ────────────────────────
+  | 'mimi2_name' | 'mimi2_bench' | 'mimi2_squat' | 'mimi2_frequency'
+  // ── mascotte-mimi3 1536×1024 ────────────────────────────────────
+  | 'mimi3_deadlift' | 'mimi3_done'
+  // ── mascotte-cache 1536×1024 — welcome ──────────────────────────
+  | 'cache_hidden' | 'cache_revealed'
+  // ── mascotte-cache3 1536×1024 — name ────────────────────────────
+  | 'cache3_pos1' | 'cache3_pos2'
+  // ── mascotte-cache4 1536×1024 — goal ────────────────────────────
+  | 'cache4_pos1' | 'cache4_pos2'
+  // ── mascotte-mimi-mouvement1 1417×1110 — frames animées ─────────
+  | 'mouv_squat_1'  | 'mouv_squat_2'  | 'mouv_squat_3'
+  | 'mouv_bench_1'  | 'mouv_bench_2'  | 'mouv_bench_3'
+  | 'mouv_dead_1'   | 'mouv_dead_2'   | 'mouv_dead_3';
 
 export const POSES: Record<MascotPose, PoseDef> = {
-  // ── Sheet ancien 1408×768 ─────────────────────────────────────────
+  // ── Ancien sheet 1408×768 ────────────────────────────────────────
   rack:        { x: 10,   y: 10,  w: 300, h: 250, imgW: 1408, imgH: 768, src: SHEET_OLD },
   bench_curl:  { x: 360,  y: 10,  w: 300, h: 250, imgW: 1408, imgH: 768, src: SHEET_OLD },
   lecture:     { x: 715,  y: 10,  w: 230, h: 250, imgW: 1408, imgH: 768, src: SHEET_OLD },
@@ -85,19 +74,19 @@ export const POSES: Record<MascotPose, PoseDef> = {
   casque:      { x: 730,  y: 540, w: 310, h: 220, imgW: 1408, imgH: 768, src: SHEET_OLD },
   repos:       { x: 1060, y: 540, w: 330, h: 220, imgW: 1408, imgH: 768, src: SHEET_OLD },
 
-  // ── Sheet mascotte3 1376×768 ──────────────────────────────────────
+  // ── mascotte3 1376×768 ───────────────────────────────────────────
   wave:        { x: 1058, y: 374, w: 300, h: 394, imgW: 1376, imgH: 768, src: SHEET_3 },
   celebrate:   { x: 31,   y: 19,  w: 283, h: 310, imgW: 1376, imgH: 768, src: SHEET_3 },
 
-  // ── Sheet mascotte2 1376×768 ──────────────────────────────────────
+  // ── mascotte2 1376×768 ───────────────────────────────────────────
   pensive:     { x: 770,  y: 19,  w: 206, h: 254, imgW: 1376, imgH: 768, src: SHEET_2 },
 
-  // ── Sheet mascotte4 1376×768 ──────────────────────────────────────
+  // ── mascotte4 1376×768 ───────────────────────────────────────────
   squat:       { x: 359,  y: 9,   w: 346, h: 268, imgW: 1376, imgH: 768, src: SHEET_4 },
   deadlift:    { x: 4,    y: 277, w: 350, h: 250, imgW: 1376, imgH: 768, src: SHEET_4 },
   bench_press: { x: 1040, y: 49,  w: 324, h: 212, imgW: 1376, imgH: 768, src: SHEET_4 },
 
-  // ── Sheet mascotte5 1376×768 ──────────────────────────────────────
+  // ── mascotte5 1376×768 ───────────────────────────────────────────
   laugh:       { x: 778,  y: 18,  w: 232, h: 249, imgW: 1376, imgH: 768, src: SHEET_5 },
   pushup:      { x: 56,   y: 304, w: 271, h: 214, imgW: 1376, imgH: 768, src: SHEET_5 },
   jumprope:    { x: 431,  y: 283, w: 209, h: 292, imgW: 1376, imgH: 768, src: SHEET_5 },
@@ -105,33 +94,78 @@ export const POSES: Record<MascotPose, PoseDef> = {
   flex_v2:     { x: 56,   y: 18,  w: 235, h: 288, imgW: 1376, imgH: 768, src: SHEET_5 },
   chocolate:   { x: 785,  y: 289, w: 191, h: 242, imgW: 1376, imgH: 768, src: SHEET_5 },
 
-  // ── Sheet mimi 1630×965 ───────────────────────────────────────────
+  // ── mimi 1630×965 ────────────────────────────────────────────────
   mimi_goal:   { x: 459, y: 90,  w: 285, h: 320, imgW: 1630, imgH: 965, src: SHEET_MIMI },
   mimi_level:  { x: 844, y: 492, w: 284, h: 357, imgW: 1630, imgH: 965, src: SHEET_MIMI },
 
-  // ── Sheet mascotte-mimi2 1369×1149 ────────────────────────────────
+  // ── mascotte-mimi2 1369×1149 — statiques ─────────────────────────
   mimi2_name:      { x: 92,   y: 76,  w: 212, h: 286, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
   mimi2_bench:     { x: 44,   y: 452, w: 307, h: 258, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
   mimi2_squat:     { x: 694,  y: 456, w: 301, h: 238, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
   mimi2_frequency: { x: 1042, y: 485, w: 251, h: 210, imgW: 1369, imgH: 1149, src: SHEET_MIMI2 },
 
-  // ── Sheet mascotte-mimi3 1536×1024 ────────────────────────────────
+  // ── mascotte-mimi3 1536×1024 ─────────────────────────────────────
   mimi3_deadlift: { x: 429, y: 394, w: 321, h: 277, imgW: 1536, imgH: 1024, src: SHEET_MIMI3 },
   mimi3_done:     { x: 429, y: 47,  w: 321, h: 312, imgW: 1536, imgH: 1024, src: SHEET_MIMI3 },
+
+  // ── mascotte-cache 1536×1024 — welcome peek ───────────────────────
+  cache_hidden:   { x: 199, y: 78,  w: 309, h: 837, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache.png') as number },
+  cache_revealed: { x: 905, y: 78,  w: 449, h: 837, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache.png') as number },
+
+  // ── mascotte-cache3 1536×1024 — name screen ───────────────────────
+  cache3_pos1: { x: 544, y: 702, w: 195, h: 248, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache3.png') as number },
+  cache3_pos2: { x: 738, y: 702, w: 218, h: 248, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache3.png') as number },
+
+  // ── mascotte-cache4 1536×1024 — goal screen ───────────────────────
+  cache4_pos1: { x: 52,  y: 44, w: 143, h: 236, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache4.png') as number },
+  cache4_pos2: { x: 198, y: 44, w: 161, h: 236, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache4.png') as number },
+
+  // ── mascotte-mimi-mouvement1 1417×1110 — squat ───────────────────
+  mouv_squat_1: { x: 19,   y: 27,  w: 360, h: 306, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+  mouv_squat_2: { x: 1033, y: 27,  w: 331, h: 306, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+  mouv_squat_3: { x: 705,  y: 27,  w: 331, h: 306, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+
+  // ── mascotte-mimi-mouvement1 1417×1110 — bench ───────────────────
+  mouv_bench_1: { x: 25,   y: 384, w: 342, h: 301, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+  mouv_bench_2: { x: 373,  y: 378, w: 339, h: 309, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+  mouv_bench_3: { x: 709,  y: 379, w: 322, h: 305, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+
+  // ── mascotte-mimi-mouvement1 1417×1110 — deadlift ────────────────
+  mouv_dead_1:  { x: 19,   y: 726, w: 312, h: 298, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+  mouv_dead_2:  { x: 700,  y: 726, w: 287, h: 298, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
+  mouv_dead_3:  { x: 996,  y: 724, w: 346, h: 303, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
 };
+
+// ── Rendu d'une frame de sprite ───────────────────────────────────
+function SpriteFrame({ pose, height }: { pose: MascotPose; height: number }) {
+  const crop  = POSES[pose];
+  const scale = height / crop.h;
+  const dispW = crop.w * scale;
+  return (
+    <View style={{ width: dispW, height, overflow: 'hidden' }}>
+      <Image
+        source={crop.src}
+        style={{
+          width:      crop.imgW * scale,
+          height:     crop.imgH * scale,
+          marginLeft: -crop.x * scale,
+          marginTop:  -crop.y * scale,
+        }}
+        resizeMode="stretch"
+      />
+    </View>
+  );
+}
 
 // ── Props ─────────────────────────────────────────────────────────
 interface MascotProps {
   pose: MascotPose;
-  /** Hauteur d'affichage — largeur calculée proportionnellement */
   height?: number;
-  /** Animation d'apparition (fade + slide-up) */
   animate?: boolean;
-  /** Léger flottement permanent (idle) */
   float?: boolean;
 }
 
-// ── Composant ─────────────────────────────────────────────────────
+// ── Composant statique ────────────────────────────────────────────
 export function Mascot({ pose, height = 160, animate = true, float = false }: MascotProps) {
   const crop  = POSES[pose];
   const scale = height / crop.h;
@@ -178,5 +212,126 @@ export function Mascot({ pose, height = 160, animate = true, float = false }: Ma
         />
       </View>
     </Animated.View>
+  );
+}
+
+// ── Composant animation exercice (2 frames : A → B → A → B…) ─────
+// Les 2 frames sont pré-rendues en absolu, switch d'opacité instantané
+// via Animated.loop — zéro re-render, zéro clignotement.
+export function AnimatedExerciseMascot({
+  frames,
+  height = 160,
+  frameDuration = 600,
+}: {
+  frames: [MascotPose, MascotPose];
+  height?: number;
+  frameDuration?: number;
+}) {
+  const opA = useRef(new Animated.Value(1)).current;
+  const opB = useRef(new Animated.Value(0)).current;
+
+  const maxW = Math.max(
+    POSES[frames[0]].w * (height / POSES[frames[0]].h),
+    POSES[frames[1]].w * (height / POSES[frames[1]].h),
+  );
+
+  useEffect(() => {
+    opA.setValue(1);
+    opB.setValue(0);
+
+    const toggle = (hide: Animated.Value, show: Animated.Value) =>
+      Animated.sequence([
+        Animated.delay(frameDuration),
+        Animated.parallel([
+          Animated.timing(hide, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.timing(show, { toValue: 1, duration: 0, useNativeDriver: true }),
+        ]),
+      ]);
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        toggle(opA, opB),
+        toggle(opB, opA),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [frameDuration]);
+
+  const renderFrame = (pose: MascotPose, op: Animated.Value, key: number) => {
+    const crop  = POSES[pose];
+    const scale = height / crop.h;
+    const dispW = crop.w * scale;
+    return (
+      <Animated.View
+        key={key}
+        style={{ position: 'absolute', top: 0, left: (maxW - dispW) / 2, opacity: op }}
+      >
+        <SpriteFrame pose={pose} height={height} />
+      </Animated.View>
+    );
+  };
+
+  return (
+    <View style={{ width: maxW, height }}>
+      {renderFrame(frames[0], opA, 0)}
+      {renderFrame(frames[1], opB, 1)}
+    </View>
+  );
+}
+
+// ── Mascotte à deux poses — tap pour alterner ─────────────────────
+export function ToggleMascot({
+  poseA,
+  poseB,
+  height = 140,
+  slideOffset = 0,
+}: {
+  poseA: MascotPose;
+  poseB: MascotPose;
+  height?: number;
+  /** Décalage X (px) appliqué à poseB quand elle apparaît */
+  slideOffset?: number;
+}) {
+  const revealedRef = useRef(false);
+  const opA = useRef(new Animated.Value(1)).current;
+  const opB = useRef(new Animated.Value(0)).current;
+  // Slide appliqué uniquement à poseB — poseA ne bouge jamais
+  const txB = useRef(new Animated.Value(0)).current;
+
+  const maxW = Math.max(
+    POSES[poseA].w * (height / POSES[poseA].h),
+    POSES[poseB].w * (height / POSES[poseB].h),
+  );
+
+  const handlePress = () => {
+    revealedRef.current = !revealedRef.current;
+    const show = revealedRef.current;
+    Animated.parallel([
+      Animated.timing(opA, { toValue: show ? 0 : 1, duration: 180, useNativeDriver: true }),
+      Animated.timing(opB, { toValue: show ? 1 : 0, duration: 180, useNativeDriver: true }),
+      Animated.spring(txB, {
+        toValue: show ? slideOffset : 0,
+        speed: 14, bounciness: 6, useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const cropA = POSES[poseA]; const scaleA = height / cropA.h;
+  const cropB = POSES[poseB]; const scaleB = height / cropB.h;
+
+  return (
+    <Pressable onPress={handlePress} hitSlop={12}>
+      <View style={{ width: maxW, height }}>
+        {/* poseA — fixe, ne bouge jamais */}
+        <Animated.View style={{ position: 'absolute', top: 0, left: (maxW - cropA.w * scaleA) / 2, opacity: opA }}>
+          <SpriteFrame pose={poseA} height={height} />
+        </Animated.View>
+        {/* poseB — slide uniquement sur cette frame */}
+        <Animated.View style={{ position: 'absolute', top: 0, left: (maxW - cropB.w * scaleB) / 2, opacity: opB, transform: [{ translateX: txB }] }}>
+          <SpriteFrame pose={poseB} height={height} />
+        </Animated.View>
+      </View>
+    </Pressable>
   );
 }
