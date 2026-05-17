@@ -58,7 +58,7 @@ export default function OnboardingGoalScreen() {
                 key={g.id}
                 onPress={() => handleSelect(g.id)}
                 style={({ pressed }) => ({
-                  borderRadius: 20,
+                  borderRadius: 18,
                   overflow: 'hidden',
                   transform: [{ scale: pressed ? 0.97 : 1 }],
                   borderWidth: 2,
@@ -69,13 +69,15 @@ export default function OnboardingGoalScreen() {
                   <LinearGradient
                     colors={[`${g.color}28`, `${g.color}10`]}
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16 }}
                   />
                 )}
 
                 <View style={{
                   flexDirection: 'row',
                   alignItems: 'stretch',
+                  borderRadius: 16,
+                  overflow: 'hidden',
                   backgroundColor: isSel ? 'transparent' : 'rgba(255,255,255,0.04)',
                 }}>
                   <View style={{

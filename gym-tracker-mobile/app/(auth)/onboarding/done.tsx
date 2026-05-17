@@ -152,7 +152,7 @@ export default function OnboardingDoneScreen() {
               elevation: 10,
             })}
           >
-            <View style={{ backgroundColor: '#38bdf8', paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            <View style={{ backgroundColor: '#38bdf8', borderRadius: 18, overflow: 'hidden', paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <Ionicons name="flame" size={20} color="#07090f" />
               <Text style={{ fontSize: 17, fontWeight: '900', color: '#07090f', letterSpacing: 1, textTransform: 'uppercase' }}>
                 C'est parti !

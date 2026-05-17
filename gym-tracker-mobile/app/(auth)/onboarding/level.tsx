@@ -53,7 +53,7 @@ export default function OnboardingLevelScreen() {
               key={l.id}
               onPress={() => handleSelect(l.id)}
               style={({ pressed }) => ({
-                borderRadius: 20,
+                borderRadius: 18,
                 overflow: 'hidden',
                 transform: [{ scale: pressed ? 0.97 : 1 }],
                 borderWidth: 2,
@@ -64,13 +64,15 @@ export default function OnboardingLevelScreen() {
                 <LinearGradient
                   colors={[`${l.color}28`, `${l.color}10`]}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16 }}
                 />
               )}
 
               <View style={{
                 flexDirection: 'row',
                 alignItems: 'stretch',
+                borderRadius: 16,
+                overflow: 'hidden',
                 backgroundColor: isSel ? 'transparent' : 'rgba(255,255,255,0.04)',
               }}>
                 {/* Bloc icône */}

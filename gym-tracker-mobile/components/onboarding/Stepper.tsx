@@ -96,11 +96,9 @@ export function Stepper({
               {display}
             </Text>
           )}
-          {unit && (
-            <Text style={{ fontSize: 11, fontWeight: '700', color: editing ? 'rgba(56,189,248,0.70)' : 'rgba(255,255,255,0.40)', letterSpacing: 1.2, marginTop: -2 }}>
-              {unit}
-            </Text>
-          )}
+          <Text style={{ fontSize: 11, fontWeight: '700', color: unit ? (editing ? 'rgba(56,189,248,0.70)' : 'rgba(255,255,255,0.40)') : 'transparent', letterSpacing: 1.2, marginTop: -2 }}>
+            {unit ?? ' '}
+          </Text>
         </Pressable>
 
         {/* Bouton + */}

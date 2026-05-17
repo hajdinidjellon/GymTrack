@@ -233,6 +233,7 @@ export function OnboardingFrame({
               >
                 <View style={{
                   backgroundColor: '#38bdf8',
+                  borderRadius: 18,
                   paddingVertical: 19,
                   flexDirection: 'row', alignItems: 'center',
                   justifyContent: 'center', gap: 10,

@@ -38,7 +38,7 @@ export default function OnboardingBenchScreen() {
     >
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <Stepper value={weight} onChange={setWeight} min={0} max={400} step={2.5} label="Poids" unit="kg" />
-        <Stepper value={reps}   onChange={setReps}   min={1} max={30}  step={1}   label="Répétitions" />
+        <Stepper value={reps}   onChange={setReps}   min={1} max={30}  step={1}   label="Répétitions" unit="rep" />
       </View>
 
       {rm !== null && weight > 0 && (

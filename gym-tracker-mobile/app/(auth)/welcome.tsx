@@ -194,7 +194,7 @@ export default function WelcomeScreen() {
                 elevation: 10,
               })}
             >
-              <View style={{ backgroundColor: '#38bdf8', paddingVertical: 20, alignItems: 'center' }}>
+              <View style={{ backgroundColor: '#38bdf8', borderRadius: 18, overflow: 'hidden', paddingVertical: 20, alignItems: 'center' }}>
                 <Text style={{ fontSize: 16, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
                   Commencer maintenant
                 </Text>

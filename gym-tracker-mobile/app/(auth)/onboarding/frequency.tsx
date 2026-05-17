@@ -8,19 +8,23 @@ const { width: W } = Dimensions.get('window');
 const TOTAL = 8;
 
 const OPTS: Array<{ n: number; label: string; hint: string; color: string }> = [
+  { n: 1, label: '1×',  hint: 'Par semaine',  color: '#94a3b8' },
   { n: 2, label: '2×',  hint: 'Par semaine',  color: '#34d399' },
   { n: 3, label: '3×',  hint: 'Par semaine',  color: '#38bdf8' },
   { n: 4, label: '4×',  hint: 'Par semaine',  color: '#a78bfa' },
   { n: 5, label: '5×',  hint: 'Par semaine',  color: '#f59e0b' },
   { n: 6, label: '6×',  hint: 'Par semaine',  color: '#f87171' },
+  { n: 7, label: '7×',  hint: 'Par semaine',  color: '#ef4444' },
 ];
 
 const ADVICE: Record<number, string> = {
+  1: 'Un bon début — mieux vaut une séance tenue que zéro.',
   2: 'Parfait pour démarrer ou maintenir sa condition physique.',
   3: 'Le compromis idéal pour progresser sans s\'épuiser.',
   4: 'Un volume solide — assure-toi de bien récupérer.',
   5: 'Entraînement intensif — dédiés aux passionnés.',
   6: 'Haut volume — réservé aux athlètes aguerris.',
+  7: 'Tous les jours — écoute bien ton corps et priorise la récupération.',
 };
 
 export default function OnboardingFrequencyScreen() {
@@ -44,15 +48,15 @@ export default function OnboardingFrequencyScreen() {
         })
       }
     >
-      {/* Grille 2+3 */}
+      {/* Grille 3+4 */}
       <View style={{ gap: 12 }}>
-        {/* Ligne 1 : 2 et 3 */}
+        {/* Ligne 1 : 1, 2, 3 */}
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          {OPTS.slice(0, 2).map((o) => <FreqCard key={o.n} opt={o} selected={freq === o.n} onPress={() => setFreq(o.n)} />)}
+          {OPTS.slice(0, 3).map((o) => <FreqCard key={o.n} opt={o} selected={freq === o.n} onPress={() => setFreq(o.n)} />)}
         </View>
-        {/* Ligne 2 : 4, 5, 6 */}
+        {/* Ligne 2 : 4, 5, 6, 7 */}
         <View style={{ flexDirection: 'row', gap: 12 }}>
-          {OPTS.slice(2).map((o) => <FreqCard key={o.n} opt={o} selected={freq === o.n} onPress={() => setFreq(o.n)} />)}
+          {OPTS.slice(3).map((o) => <FreqCard key={o.n} opt={o} selected={freq === o.n} onPress={() => setFreq(o.n)} />)}
         </View>
       </View>
 
@@ -94,14 +98,14 @@ function FreqCard({ opt, selected, onPress }: {
       })}
     >
       <Text style={{
-        fontSize: 36, fontWeight: '900',
+        fontSize: 32, fontWeight: '900',
         color: selected ? opt.color : 'rgba(255,255,255,0.55)',
         letterSpacing: -1,
       }}>
         {opt.label}
       </Text>
       <Text style={{
-        fontSize: 11, fontWeight: '700',
+        fontSize: 10, fontWeight: '700',
         color: selected ? `${opt.color}CC` : 'rgba(255,255,255,0.28)',
         letterSpacing: 1, textTransform: 'uppercase',
       }}>
