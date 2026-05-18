@@ -1,27 +1,19 @@
 /**
  * MASCOT — sprite sheets
- * mascot_sheet.png             : 1408×768  — 12 poses (ancien ours)
- * mascotte2.png                : 1376×768  — variantes (pensive, etc.)
- * mascotte3.png                : 1376×768  — wave / celebrate
- * mascotte4.png                : 1376×768  — squat / deadlift / bench_press
- * mascotte5.png                : 1376×768  — laugh, pushup, jumprope, run, flex_v2, chocolate
  * mimi.png                     : 1630×965  — personnage féminin principal
  * mascotte-mimi2.png           : 1369×1149 — mimi2 statiques (name, bench, squat, frequency)
  * mascotte-mimi3.png           : 1536×1024 — mimi3 (deadlift statique, célébration)
+ * mascotte-mimi5.png           : 1536×1024 — Mimi onboarding goals (balance, target, cardio, anatomy, mesure, calendar, clock, sports, bell)
  * mascotte-mimi-mouvement1.png : 1417×1110 — 9 frames animées squat/bench/deadlift (3×3)
  */
 
 import React, { useEffect, useRef } from 'react';
 import { View, Image, Pressable, Animated, Easing } from 'react-native';
 
-const SHEET_OLD   = require('@/assets/mascot/mascot_sheet.png')              as number;
-const SHEET_2     = require('@/assets/mascot/mascotte2.png')                  as number;
-const SHEET_3     = require('@/assets/mascot/mascotte3.png')                  as number;
-const SHEET_4     = require('@/assets/mascot/mascotte4.png')                  as number;
-const SHEET_5     = require('@/assets/mascot/mascotte5.png')                  as number;
 const SHEET_MIMI  = require('@/assets/mascot/mimi.png')                       as number;
 const SHEET_MIMI2 = require('@/assets/mascot/mascotte-mimi2.png')             as number;
 const SHEET_MIMI3 = require('@/assets/mascot/mascotte-mimi3.png')             as number;
+const SHEET_MIMI5 = require('@/assets/mascot/mascotte-mimi5.png')             as number;
 const SHEET_MOUV1 = require('@/assets/mascot/mascotte-mimi-mouvement1.png')   as number;
 
 type PoseDef = {
@@ -31,23 +23,16 @@ type PoseDef = {
 };
 
 export type MascotPose =
-  // ── Ancien sheet 1408×768 ───────────────────────────────────────
-  | 'rack' | 'bench_curl' | 'lecture' | 'overhead' | 'flex'
-  | 'serviette' | 'shaker' | 'shy' | 'halteres' | 'sac' | 'casque' | 'repos'
-  // ── mascotte3 1376×768 ──────────────────────────────────────────
-  | 'wave' | 'celebrate'
-  // ── mascotte2 1376×768 ──────────────────────────────────────────
-  | 'pensive'
-  // ── mascotte4 1376×768 ──────────────────────────────────────────
-  | 'squat' | 'deadlift' | 'bench_press'
-  // ── mascotte5 1376×768 ──────────────────────────────────────────
-  | 'laugh' | 'pushup' | 'jumprope' | 'run' | 'flex_v2' | 'chocolate'
   // ── mimi 1630×965 ───────────────────────────────────────────────
   | 'mimi_goal' | 'mimi_level'
   // ── mascotte-mimi2 1369×1149 — statiques ────────────────────────
   | 'mimi2_name' | 'mimi2_bench' | 'mimi2_squat' | 'mimi2_frequency'
   // ── mascotte-mimi3 1536×1024 ────────────────────────────────────
   | 'mimi3_deadlift' | 'mimi3_done'
+  // ── mascotte-mimi5 1536×1024 — onboarding goals ─────────────────
+  | 'mimi_balance'  | 'mimi_target'   | 'mimi_cardio'  | 'mimi_anatomy'
+  | 'mimi_mesure'   | 'mimi_calendar' | 'mimi_clock'
+  | 'mimi_sports'   | 'mimi_bell'
   // ── mascotte-cache 1536×1024 — welcome ──────────────────────────
   | 'cache_hidden' | 'cache_revealed'
   // ── mascotte-cache3 1536×1024 — name ────────────────────────────
@@ -60,40 +45,6 @@ export type MascotPose =
   | 'mouv_dead_1'   | 'mouv_dead_2'   | 'mouv_dead_3';
 
 export const POSES: Record<MascotPose, PoseDef> = {
-  // ── Ancien sheet 1408×768 ────────────────────────────────────────
-  rack:        { x: 10,   y: 10,  w: 300, h: 250, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  bench_curl:  { x: 360,  y: 10,  w: 300, h: 250, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  lecture:     { x: 715,  y: 10,  w: 230, h: 250, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  overhead:    { x: 1000, y: 10,  w: 380, h: 250, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  flex:        { x: 50,   y: 274, w: 247, h: 249, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  serviette:   { x: 390,  y: 277, w: 320, h: 256, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  shaker:      { x: 769,  y: 277, w: 217, h: 256, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  shy:         { x: 1143, y: 277, w: 194, h: 256, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  halteres:    { x: 10,   y: 540, w: 310, h: 220, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  sac:         { x: 370,  y: 540, w: 310, h: 220, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  casque:      { x: 730,  y: 540, w: 310, h: 220, imgW: 1408, imgH: 768, src: SHEET_OLD },
-  repos:       { x: 1060, y: 540, w: 330, h: 220, imgW: 1408, imgH: 768, src: SHEET_OLD },
-
-  // ── mascotte3 1376×768 ───────────────────────────────────────────
-  wave:        { x: 1058, y: 374, w: 300, h: 394, imgW: 1376, imgH: 768, src: SHEET_3 },
-  celebrate:   { x: 31,   y: 19,  w: 283, h: 310, imgW: 1376, imgH: 768, src: SHEET_3 },
-
-  // ── mascotte2 1376×768 ───────────────────────────────────────────
-  pensive:     { x: 770,  y: 19,  w: 206, h: 254, imgW: 1376, imgH: 768, src: SHEET_2 },
-
-  // ── mascotte4 1376×768 ───────────────────────────────────────────
-  squat:       { x: 359,  y: 9,   w: 346, h: 268, imgW: 1376, imgH: 768, src: SHEET_4 },
-  deadlift:    { x: 4,    y: 277, w: 350, h: 250, imgW: 1376, imgH: 768, src: SHEET_4 },
-  bench_press: { x: 1040, y: 49,  w: 324, h: 212, imgW: 1376, imgH: 768, src: SHEET_4 },
-
-  // ── mascotte5 1376×768 ───────────────────────────────────────────
-  laugh:       { x: 778,  y: 18,  w: 232, h: 249, imgW: 1376, imgH: 768, src: SHEET_5 },
-  pushup:      { x: 56,   y: 304, w: 271, h: 214, imgW: 1376, imgH: 768, src: SHEET_5 },
-  jumprope:    { x: 431,  y: 283, w: 209, h: 292, imgW: 1376, imgH: 768, src: SHEET_5 },
-  run:         { x: 1115, y: 18,  w: 209, h: 275, imgW: 1376, imgH: 768, src: SHEET_5 },
-  flex_v2:     { x: 56,   y: 18,  w: 235, h: 288, imgW: 1376, imgH: 768, src: SHEET_5 },
-  chocolate:   { x: 785,  y: 289, w: 191, h: 242, imgW: 1376, imgH: 768, src: SHEET_5 },
-
   // ── mimi 1630×965 ────────────────────────────────────────────────
   mimi_goal:   { x: 459, y: 90,  w: 285, h: 320, imgW: 1630, imgH: 965, src: SHEET_MIMI },
   mimi_level:  { x: 844, y: 492, w: 284, h: 357, imgW: 1630, imgH: 965, src: SHEET_MIMI },
@@ -107,6 +58,17 @@ export const POSES: Record<MascotPose, PoseDef> = {
   // ── mascotte-mimi3 1536×1024 ─────────────────────────────────────
   mimi3_deadlift: { x: 429, y: 394, w: 321, h: 277, imgW: 1536, imgH: 1024, src: SHEET_MIMI3 },
   mimi3_done:     { x: 429, y: 47,  w: 321, h: 312, imgW: 1536, imgH: 1024, src: SHEET_MIMI3 },
+
+  // ── mascotte-mimi5 1536×1024 — Mimi onboarding goals ─────────────
+  mimi_balance:  { x: 72,   y: 25,  w: 249, h: 339, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_target:   { x: 406,  y: 25,  w: 358, h: 339, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_cardio:   { x: 806,  y: 25,  w: 266, h: 339, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_anatomy:  { x: 1162, y: 25,  w: 339, h: 339, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_mesure:   { x: 72,   y: 384, w: 249, h: 311, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_calendar: { x: 832,  y: 373, w: 241, h: 322, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_clock:    { x: 1152, y: 352, w: 349, h: 343, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_sports:   { x: 1142, y: 693, w: 339, h: 306, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
+  mimi_bell:     { x: 444,  y: 706, w: 261, h: 296, imgW: 1536, imgH: 1024, src: SHEET_MIMI5 },
 
   // ── mascotte-cache 1536×1024 — welcome peek ───────────────────────
   cache_hidden:   { x: 199, y: 78,  w: 309, h: 837, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache.png') as number },

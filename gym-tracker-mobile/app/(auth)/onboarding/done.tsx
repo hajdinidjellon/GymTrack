@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, Pressable, Animated, Easing, Dimensions,
 } from 'react-native';
@@ -8,6 +8,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Mascot } from '@/components/mascot/Mascot';
+import { useProfileStore } from '@/stores/profileStore';
+import { calculate1RM } from '@/lib/aiPlanner';
+import { parseGoal } from '@/lib/onboardingFlow';
+import type {
+  UserProfile, PersonalRecord, MuscleGroup, DayOfWeek, TimeOfDay,
+  HealthFocus, SportBackground, BodyStats,
+} from '@/types';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -53,13 +60,37 @@ function ConfettiPiece({ i }: { i: number }) {
   );
 }
 
+type DoneParams = {
+  name?: string; goal?: string; level?: string; frequency?: string;
+  benchW?: string; benchR?: string;
+  squatW?: string; squatR?: string;
+  deadW?: string;  deadR?: string;
+  muscleFocus?: string; height?: string; weight?: string;
+  targetWeight?: string; cardioPerWeek?: string;
+  preferredDays?: string; timeOfDay?: string;
+  reminderTime?: string; defaultReminder?: string;
+  healthFocus?: string; sportBackground?: string;
+};
+
 export default function OnboardingDoneScreen() {
-  const params = useLocalSearchParams<{ name: string }>();
+  const params = useLocalSearchParams<DoneParams>();
   const name   = (params.name ?? '').trim() || 'champion';
+  const { saveProfile } = useProfileStore();
+  const [saving, setSaving] = useState(true);
 
   const fade  = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(30)).current;
   const glow  = useRef(new Animated.Value(0)).current;
+
+  // Persiste le profil au montage de l'écran
+  useEffect(() => {
+    const profile = buildProfileFromParams(params);
+    saveProfile(profile).catch((err) => {
+      console.error('Failed to save profile from onboarding', err);
+    }).finally(() => {
+      setSaving(false);
+    });
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -144,18 +175,20 @@ export default function OnboardingDoneScreen() {
           {/* ── CTA ──────────────────────────────────────── */}
           <Pressable
             onPress={() => router.replace('/(tabs)')}
+            disabled={saving}
             style={({ pressed }) => ({
               borderRadius: 20, overflow: 'hidden',
-              transform: [{ scale: pressed ? 0.97 : 1 }],
+              opacity: saving ? 0.6 : 1,
+              transform: [{ scale: pressed && !saving ? 0.97 : 1 }],
               shadowColor: '#38bdf8',
               shadowOpacity: 0.50, shadowRadius: 22, shadowOffset: { width: 0, height: 10 },
               elevation: 10,
             })}
           >
             <View style={{ backgroundColor: '#38bdf8', borderRadius: 18, overflow: 'hidden', paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <Ionicons name="flame" size={20} color="#07090f" />
+              <Ionicons name={saving ? 'sync' : 'flame'} size={20} color="#07090f" />
               <Text style={{ fontSize: 17, fontWeight: '900', color: '#07090f', letterSpacing: 1, textTransform: 'uppercase' }}>
-                C'est parti !
+                {saving ? 'Préparation…' : "C'est parti !"}
               </Text>
             </View>
           </Pressable>
@@ -164,4 +197,103 @@ export default function OnboardingDoneScreen() {
       </SafeAreaView>
     </View>
   );
+}
+
+// ── Helpers : construction du profil depuis les params d'onboarding ──
+
+function num(raw: string | undefined, fallback = 0): number {
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function parseLevel(raw: string | undefined): UserProfile['experienceLevel'] {
+  if (raw === 'beginner' || raw === 'intermediate' || raw === 'advanced' || raw === 'elite') {
+    return raw;
+  }
+  return 'beginner';
+}
+
+function parseMuscles(raw: string | undefined): MuscleGroup[] {
+  if (!raw) return [];
+  const valid: MuscleGroup[] = ['chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'glutes', 'calves'];
+  return raw.split(',').filter((m): m is MuscleGroup => valid.includes(m as MuscleGroup));
+}
+
+function parseDays(raw: string | undefined): DayOfWeek[] {
+  if (!raw) return [];
+  const valid: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  return raw.split(',').filter((d): d is DayOfWeek => valid.includes(d as DayOfWeek));
+}
+
+function parseTimeOfDay(raw: string | undefined): TimeOfDay | undefined {
+  if (raw === 'morning' || raw === 'midday' || raw === 'evening') return raw;
+  return undefined;
+}
+
+function parseHealthFocus(raw: string | undefined): HealthFocus | undefined {
+  if (raw === 'strength' || raw === 'mobility' || raw === 'cardio' || raw === 'balanced') return raw;
+  return undefined;
+}
+
+function parseSportBackground(raw: string | undefined): SportBackground[] {
+  if (!raw) return [];
+  const valid: SportBackground[] = ['none', 'running', 'cycling', 'swimming', 'team_sport', 'combat', 'racket', 'other'];
+  return raw.split(',').filter((s): s is SportBackground => valid.includes(s as SportBackground));
+}
+
+function buildPR(exercise: string, weightStr: string | undefined, repsStr: string | undefined): PersonalRecord | null {
+  const weight = num(weightStr);
+  const reps   = num(repsStr, 5);
+  if (weight <= 0 || reps <= 0) return null;
+  return {
+    exercise,
+    weight,
+    reps,
+    oneRepMax: calculate1RM(weight, reps),
+    date: new Date().toISOString(),
+  };
+}
+
+function buildProfileFromParams(params: DoneParams): UserProfile {
+  const goal       = parseGoal(params.goal);
+  const today      = new Date().toISOString().slice(0, 10);
+
+  // PRs (peuplés uniquement si renseignés)
+  const prs: PersonalRecord[] = [];
+  const bench = buildPR('Développé couché', params.benchW, params.benchR);
+  const squat = buildPR('Squat',            params.squatW, params.squatR);
+  const dead  = buildPR('Soulevé de terre', params.deadW,  params.deadR);
+  if (bench) prs.push(bench);
+  if (squat) prs.push(squat);
+  if (dead)  prs.push(dead);
+
+  // BodyStats (poids actuel renseigné dans weight_loss / hypertrophy)
+  const weightKg = num(params.weight);
+  const bodyStats: BodyStats[] = weightKg > 0
+    ? [{ date: today, weight: weightKg }]
+    : [];
+
+  const height = num(params.height, 175);
+
+  return {
+    name: (params.name ?? '').trim() || 'Athlète',
+    height,
+    gender: 'other',
+    experienceLevel: parseLevel(params.level),
+    prs,
+    bodyStats,
+    trainingFrequency: num(params.frequency, 3),
+    goals: [],
+    onboarding: {
+      primaryGoal:     goal,
+      muscleFocus:     parseMuscles(params.muscleFocus),
+      targetWeight:    num(params.targetWeight) || undefined,
+      cardioPerWeek:   params.cardioPerWeek !== undefined ? num(params.cardioPerWeek) : undefined,
+      preferredDays:   parseDays(params.preferredDays),
+      timeOfDay:       parseTimeOfDay(params.timeOfDay),
+      reminderTime:    params.reminderTime || undefined,
+      healthFocus:     parseHealthFocus(params.healthFocus),
+      sportBackground: parseSportBackground(params.sportBackground),
+    },
+  };
 }

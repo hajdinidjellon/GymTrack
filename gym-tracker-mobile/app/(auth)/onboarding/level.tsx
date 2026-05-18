@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
+import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
 
 type Level = 'beginner' | 'intermediate' | 'advanced' | 'elite';
 
@@ -21,10 +22,9 @@ const LEVELS: Array<{
   { id: 'elite',        icon: 'ribbon',  title: 'Élite',         subtitle: 'Compétiteur confirmé',            years: '5 ans+',    color: '#f59e0b' },
 ];
 
-const TOTAL = 8;
-
 export default function OnboardingLevelScreen() {
   const params = useLocalSearchParams<{ name: string; goal: string }>();
+  const total  = getTotalSteps(parseGoal(params.goal));
   const [selected, setSelected] = useState<Level | null>(null);
 
   const handleSelect = (id: Level) => {
@@ -41,7 +41,7 @@ export default function OnboardingLevelScreen() {
       question="Quel est ton niveau ?"
       subtext="Adapte ta progression dès le départ."
       step={3}
-      total={TOTAL}
+      total={total}
       canContinue={false}
       hideCta
     >

@@ -102,6 +102,47 @@ export interface TrainingGoal {
   progress: number;
 }
 
+export type OnboardingGoal =
+  | 'pr'
+  | 'hypertrophy'
+  | 'weight_loss'
+  | 'consistency'
+  | 'health';
+
+export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+export type TimeOfDay = 'morning' | 'midday' | 'evening';
+export type HealthFocus = 'strength' | 'mobility' | 'cardio' | 'balanced';
+export type SportBackground =
+  | 'none'
+  | 'running'
+  | 'cycling'
+  | 'swimming'
+  | 'team_sport'
+  | 'combat'
+  | 'racket'
+  | 'other';
+
+export interface OnboardingPreferences {
+  /** Objectif principal choisi à l'onboarding */
+  primaryGoal?: OnboardingGoal;
+  /** Muscles prioritaires pour hypertrophy */
+  muscleFocus?: MuscleGroup[];
+  /** Poids cible (kg) pour weight_loss */
+  targetWeight?: number;
+  /** Séances cardio par semaine pour weight_loss */
+  cardioPerWeek?: number;
+  /** Jours préférés pour consistency */
+  preferredDays?: DayOfWeek[];
+  /** Moment de la journée pour consistency */
+  timeOfDay?: TimeOfDay;
+  /** Heure du rappel quotidien (format HH:mm) pour consistency */
+  reminderTime?: string;
+  /** Focus santé pour health */
+  healthFocus?: HealthFocus;
+  /** Historique sportif pour health */
+  sportBackground?: SportBackground[];
+}
+
 export interface UserProfile {
   name: string;
   birthDate?: string;
@@ -112,6 +153,8 @@ export interface UserProfile {
   bodyStats: BodyStats[];
   trainingFrequency: number;
   goals: TrainingGoal[];
+  /** Données collectées pendant l'onboarding selon le goal choisi */
+  onboarding?: OnboardingPreferences;
 }
 
 export interface AppSettings {

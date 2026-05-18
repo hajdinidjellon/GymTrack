@@ -3,9 +3,18 @@ import { View, Text, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
+import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
+import type { OnboardingGoal } from '@/types';
 
 const { width: W } = Dimensions.get('window');
-const TOTAL = 8;
+
+const NEXT_AFTER_FREQUENCY: Record<OnboardingGoal, string> = {
+  pr:          '/(auth)/onboarding/bench',
+  hypertrophy: '/(auth)/onboarding/muscle-focus',
+  weight_loss: '/(auth)/onboarding/current-weight',
+  consistency: '/(auth)/onboarding/preferred-days',
+  health:      '/(auth)/onboarding/health-focus',
+};
 
 const OPTS: Array<{ n: number; label: string; hint: string; color: string }> = [
   { n: 1, label: '1×',  hint: 'Par semaine',  color: '#94a3b8' },
@@ -29,6 +38,8 @@ const ADVICE: Record<number, string> = {
 
 export default function OnboardingFrequencyScreen() {
   const params = useLocalSearchParams<{ name: string; goal: string; level: string }>();
+  const goal   = parseGoal(params.goal);
+  const total  = getTotalSteps(goal);
   const [freq, setFreq] = useState(3);
   const opt  = OPTS.find((o) => o.n === freq) ?? OPTS[1]!;
 
@@ -39,11 +50,11 @@ export default function OnboardingFrequencyScreen() {
       question="Combien de séances par semaine ?"
       subtext="Mieux vaut 3 séances tenues que 6 abandonnées."
       step={4}
-      total={TOTAL}
+      total={total}
       canContinue={true}
       onContinue={() =>
         router.push({
-          pathname: '/(auth)/onboarding/bench',
+          pathname: NEXT_AFTER_FREQUENCY[goal] as never,
           params: { ...params, frequency: String(freq) },
         })
       }
