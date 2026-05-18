@@ -1,45 +1,44 @@
 import { Tabs } from 'expo-router';
-import { View, Text } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/constants/theme';
+import { BG_COLORS } from '@/components/ui/ScreenBackground';
 
-const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
-  home:     { active: '⌂',  inactive: '⌂'  },
-  session:  { active: '◉',  inactive: '◎'  },
-  progress: { active: '▲',  inactive: '△'  },
-  planner:  { active: '▦',  inactive: '▧'  },
-  profile:  { active: '●',  inactive: '○'  },
+const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+  home:     { active: 'home',           inactive: 'home-outline' },
+  session:  { active: 'flame',          inactive: 'flame-outline' },
+  progress: { active: 'trending-up',    inactive: 'trending-up-outline' },
+  planner:  { active: 'calendar',       inactive: 'calendar-outline' },
+  profile:  { active: 'person-circle',  inactive: 'person-circle-outline' },
 };
 
-function TabIcon({ name, focused, label }: { name: string; focused: boolean; label: string }) {
-  const icon = TAB_ICONS[name] ?? { active: '●', inactive: '○' };
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  const icon = TAB_ICONS[name] ?? { active: 'ellipse', inactive: 'ellipse-outline' };
 
   return (
-    <View style={{ alignItems: 'center', gap: 2 }}>
+    <View style={{ alignItems: 'center', justifyContent: 'center', gap: 4 }}>
       {focused && (
-        <LinearGradient
-          colors={['#7c3aed', '#06b6d4']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+        <View
           style={{
             position: 'absolute',
             top: -10,
-            width: 28,
-            height: 2,
-            borderRadius: 1,
+            width: 22,
+            height: 3,
+            borderRadius: 2,
+            backgroundColor: BG_COLORS.accent,
+            shadowColor: BG_COLORS.accent,
+            shadowOpacity: 0.6,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 0 },
+            elevation: 4,
           }}
         />
       )}
-      <Text
-        style={{
-          fontSize: 18,
-          color: focused ? colors.brand.primary : colors.text.muted,
-          opacity: focused ? 1 : 0.5,
-        }}
-      >
-        {focused ? icon.active : icon.inactive}
-      </Text>
+      <Ionicons
+        name={focused ? icon.active : icon.inactive}
+        size={22}
+        color={focused ? BG_COLORS.accent : 'rgba(255,255,255,0.40)'}
+      />
     </View>
   );
 }
@@ -52,20 +51,21 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0c0c18',
-          borderTopColor: 'rgba(255,255,255,0.07)',
+          backgroundColor: '#08101a',
+          borderTopColor: 'rgba(56,189,248,0.10)',
           borderTopWidth: 1,
-          height: 58 + insets.bottom,
+          height: 60 + insets.bottom,
           paddingBottom: insets.bottom + 6,
-          paddingTop: 8,
+          paddingTop: 10,
         },
-        tabBarActiveTintColor: colors.brand.primary,
-        tabBarInactiveTintColor: colors.text.muted,
+        tabBarActiveTintColor: BG_COLORS.accent,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.40)',
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '600',
-          letterSpacing: 0.3,
-          marginTop: 2,
+          fontWeight: '800',
+          letterSpacing: 0.6,
+          marginTop: 3,
+          textTransform: 'uppercase',
         },
         tabBarShowLabel: true,
       }}
@@ -74,35 +74,35 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} label="Accueil" />,
+          tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="session"
         options={{
           title: 'Séance',
-          tabBarIcon: ({ focused }) => <TabIcon name="session" focused={focused} label="Séance" />,
+          tabBarIcon: ({ focused }) => <TabIcon name="session" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="progress"
         options={{
           title: 'Progrès',
-          tabBarIcon: ({ focused }) => <TabIcon name="progress" focused={focused} label="Progrès" />,
+          tabBarIcon: ({ focused }) => <TabIcon name="progress" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="planner"
         options={{
           title: 'Plan',
-          tabBarIcon: ({ focused }) => <TabIcon name="planner" focused={focused} label="Plan" />,
+          tabBarIcon: ({ focused }) => <TabIcon name="planner" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ focused }) => <TabIcon name="profile" focused={focused} label="Profil" />,
+          tabBarIcon: ({ focused }) => <TabIcon name="profile" focused={focused} />,
         }}
       />
     </Tabs>

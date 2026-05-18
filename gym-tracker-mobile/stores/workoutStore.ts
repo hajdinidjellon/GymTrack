@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { saveWorkoutLocal, deleteWorkoutLocal, loadWorkoutsLocal } from '@/lib/db';
 import { flushSyncQueue } from '@/lib/sync';
+import { refreshAllNotifications } from '@/lib/notifications';
+import { calculateStreakFromWorkouts } from '@/lib/gamification';
 import type { Workout } from '@/types';
 
 interface WorkoutStore {
@@ -33,6 +35,22 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     await saveWorkoutLocal(workout);
     set((s) => ({ workouts: [workout, ...s.workouts] }));
     flushSyncQueue().catch(() => null);
+
+    // Reschedule streak warning après chaque nouvelle séance
+    // Import dynamique pour éviter les cycles
+    try {
+      const { useProfileStore } = await import('./profileStore');
+      const { useSettingsStore } = await import('./settingsStore');
+      const profile  = useProfileStore.getState().profile;
+      const settings = useSettingsStore.getState().settings;
+      if (settings.notifications && profile) {
+        const workouts = get().workouts;
+        const streak   = calculateStreakFromWorkouts(workouts);
+        await refreshAllNotifications(profile.onboarding, streak, workout.date);
+      }
+    } catch {
+      // best-effort
+    }
   },
 
   updateWorkout: async (workout) => {

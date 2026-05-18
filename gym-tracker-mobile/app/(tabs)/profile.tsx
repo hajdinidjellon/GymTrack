@@ -1,92 +1,160 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, Pressable, Alert, Switch, TextInput,
+  Animated, Easing, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { RankCard } from '@/components/gamification/RankCard';
 import { BadgeGrid } from '@/components/gamification/BadgeGrid';
 import { NumericInput } from '@/components/ui/Input';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { ScreenBackground, BG_COLORS } from '@/components/ui/ScreenBackground';
 import { useProfileStore } from '@/stores/profileStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { signOut } from '@/lib/supabase';
-import { calculateStreakFromWorkouts } from '@/lib/gamification';
+import { calculateStreakFromWorkouts, getProgressToNextRank, getNextRank } from '@/lib/gamification';
 import { calculate1RM } from '@/lib/aiPlanner';
-import { colors } from '@/constants/theme';
-import type { PersonalRecord, UserProfile } from '@/types';
+import {
+  requestPermissions, refreshAllNotifications, cancelAllTrainingReminders,
+} from '@/lib/notifications';
+import { getRankGradient } from '@/constants/theme';
+import type { Rank, RankTier, UserProfile } from '@/types';
+
+// ── Badge image inlined (extrait de RankCard pour le hero) ────
+const RANK_IMAGE = require('@/assets/rank.png') as number;
+const RANK_IMG_W = 1408;
+const RANK_IMG_H = 768;
+const BADGE_CROPS: Record<string, { x: number; y: number; w: number; h: number }> = {
+  bronze:   { x: 36,   y: 254, w: 242, h: 250 },
+  silver:   { x: 279,  y: 253, w: 195, h: 249 },
+  gold:     { x: 495,  y: 250, w: 199, h: 254 },
+  platinum: { x: 715,  y: 252, w: 197, h: 250 },
+  diamond:  { x: 928,  y: 254, w: 205, h: 249 },
+  legend:   { x: 1133, y: 220, w: 242, h: 290 },
+};
+const TIER_LABEL: Record<string, string> = {
+  bronze: 'BRONZE', silver: 'ARGENT', gold: 'OR',
+  platinum: 'PLATINE', diamond: 'DIAMANT', legend: 'CHAMPION',
+};
+
+function BadgeImage({ tier, size }: { tier: string; size: number }) {
+  const crop = BADGE_CROPS[tier] ?? BADGE_CROPS.bronze!;
+  const scale = size / crop.h;
+  return (
+    <View style={{ width: crop.w * scale, height: size, overflow: 'hidden' }}>
+      <Image
+        source={RANK_IMAGE}
+        style={{
+          width:      RANK_IMG_W * scale,
+          height:     RANK_IMG_H * scale,
+          marginLeft: -crop.x * scale,
+          marginTop:  -crop.y * scale,
+        }}
+        resizeMode="stretch"
+      />
+    </View>
+  );
+}
 
 type Section = 'stats' | 'badges' | 'settings';
 type Level = UserProfile['experienceLevel'];
 
 const LEVELS: Array<{ id: Level; label: string; years: string }> = [
   { id: 'beginner',     label: 'Débutant',      years: '< 1 an'   },
-  { id: 'intermediate', label: 'Intermédiaire',  years: '1-3 ans'  },
-  { id: 'advanced',     label: 'Avancé',         years: '3-5 ans'  },
-  { id: 'elite',        label: 'Élite',          years: '5 ans+'   },
+  { id: 'intermediate', label: 'Intermédiaire', years: '1-3 ans'  },
+  { id: 'advanced',     label: 'Avancé',        years: '3-5 ans'  },
+  { id: 'elite',        label: 'Élite',         years: '5 ans+'   },
 ];
 
 const PR_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'Développé couché':    'barbell-outline',
-  'Squat':               'body-outline',
-  'Soulevé de terre':    'arrow-up-outline',
-  'Développé militaire': 'fitness-outline',
+  'Développé couché':    'barbell',
+  'Squat':               'body',
+  'Soulevé de terre':    'arrow-up',
+  'Développé militaire': 'fitness',
 };
-const PR_COLORS = ['#7c3aed', '#06b6d4', '#10b981', '#f59e0b'];
 
-// ── Composants utilitaires ───────────────────────────────────────
-
-function SectionTab({ id, label, active, onPress }: { id: Section; label: string; active: boolean; onPress: () => void }) {
+// ── SectionTab ─────────────────────────────────────────────────
+function SectionTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={{ flex: 1, borderRadius: 10, overflow: 'hidden' }}>
-      {active ? (
-        <LinearGradient colors={['#7c3aed', '#06b6d4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 11, alignItems: 'center' }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>{label}</Text>
-        </LinearGradient>
-      ) : (
-        <View style={{ paddingVertical: 11, alignItems: 'center' }}>
-          <Text style={{ fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.40)' }}>{label}</Text>
-        </View>
-      )}
+    <Pressable
+      onPress={onPress}
+      style={{
+        flex: 1, borderRadius: 10,
+        backgroundColor: active ? BG_COLORS.accent : 'transparent',
+        paddingVertical: 11, alignItems: 'center',
+      }}
+    >
+      <Text style={{
+        fontSize: 12, fontWeight: '900',
+        color: active ? '#07090f' : 'rgba(255,255,255,0.45)',
+        letterSpacing: 0.5, textTransform: 'uppercase',
+      }}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
-function SettingRow({ icon, label, children }: { icon: keyof typeof Ionicons.glyphMap; label: string; children: React.ReactNode }) {
+// ── SettingRow ─────────────────────────────────────────────────
+function SettingRow({ icon, label, children, last = false }: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  children: React.ReactNode;
+  last?: boolean;
+}) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)', gap: 14 }}>
-      <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(124,58,237,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name={icon} size={18} color="#a78bfa" />
+    <View style={{
+      flexDirection: 'row', alignItems: 'center',
+      paddingVertical: 14, gap: 14,
+      borderBottomWidth: last ? 0 : 1,
+      borderColor: 'rgba(255,255,255,0.06)',
+    }}>
+      <View style={{
+        width: 38, height: 38, borderRadius: 11,
+        backgroundColor: 'rgba(56,189,248,0.14)',
+        borderWidth: 1, borderColor: 'rgba(56,189,248,0.28)',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Ionicons name={icon} size={17} color={BG_COLORS.accent} />
       </View>
-      <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: colors.text.primary }}>{label}</Text>
+      <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.1 }}>
+        {label}
+      </Text>
       {children}
     </View>
   );
 }
 
-// ── Écran principal ──────────────────────────────────────────────
-
+// ── Écran principal ────────────────────────────────────────────
 export default function ProfileScreen() {
   const { profile, updateProfile, getTotalXP, getCurrentRank } = useProfileStore();
   const { workouts } = useWorkoutStore();
   const { settings, updateSettings } = useSettingsStore();
 
-  const [activeSection, setActiveSection] = useState<Section>('stats');
-  const [editingName, setEditingName]     = useState(false);
-  const [nameInput, setNameInput]         = useState(profile?.name ?? '');
+  const [activeSection, setActiveSection]   = useState<Section>('stats');
+  const [editingName, setEditingName]       = useState(false);
+  const [nameInput, setNameInput]           = useState(profile?.name ?? '');
   const [editingPRIndex, setEditingPRIndex] = useState<number | null>(null);
-  const [editingLevel, setEditingLevel]   = useState(false);
-  const [editingFreq, setEditingFreq]     = useState(false);
+  const [editingLevel, setEditingLevel]     = useState(false);
+  const [editingFreq, setEditingFreq]       = useState(false);
+  const [prEdit, setPrEdit]                 = useState<{ weight: number; reps: number }>({ weight: 0, reps: 1 });
 
-  // État local pour édition PR
-  const [prEdit, setPrEdit] = useState<{ weight: number; reps: number }>({ weight: 0, reps: 1 });
+  const fade  = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade,  { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(slide, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   const totalXP = getTotalXP();
   const rank    = getCurrentRank();
   const streak  = calculateStreakFromWorkouts(workouts);
-
   const gamificationData = { workouts, profile: profile ?? null, totalXP, streak };
 
   const handleLogout = () => {
@@ -121,325 +189,655 @@ export default function ProfileScreen() {
   };
 
   const SECTIONS: Array<{ id: Section; label: string }> = [
-    { id: 'stats',    label: 'Profil' },
-    { id: 'badges',   label: 'Badges' },
+    { id: 'stats',    label: 'Profil'   },
+    { id: 'badges',   label: 'Badges'   },
     { id: 'settings', label: 'Réglages' },
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#080810' }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+    <View style={{ flex: 1, backgroundColor: BG_COLORS.base }}>
+      <ScreenBackground variant="profile" />
 
-        {/* ── Header ── */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, gap: 20 }}>
-          {/* Avatar + Nom */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <LinearGradient
-              colors={rank ? [rank.color, rank.color + '88'] : ['#7c3aed', '#06b6d4']}
-              style={{ width: 68, height: 68, borderRadius: 22, alignItems: 'center', justifyContent: 'center', shadowColor: rank?.color ?? '#7c3aed', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}
-            >
-              <Text style={{ fontSize: 28, fontWeight: '900', color: '#fff' }}>
-                {(profile?.name?.[0] ?? 'A').toUpperCase()}
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 48 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* ── HERO HEADER unifié ── */}
+            <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 22 }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
+                Mon profil
               </Text>
-            </LinearGradient>
 
-            <View style={{ flex: 1, gap: 4 }}>
-              {editingName ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TextInput
-                    style={{ flex: 1, fontSize: 20, fontWeight: '800', color: '#fff', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: '#7c3aed' }}
-                    value={nameInput}
-                    onChangeText={setNameInput}
-                    autoFocus
-                    returnKeyType="done"
-                    onSubmitEditing={saveName}
-                  />
-                  <Pressable onPress={saveName} style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#7c3aed', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="checkmark" size={20} color="#fff" />
+              {rank ? (
+                <ProfileHero
+                  name={profile?.name ?? 'Athlète'}
+                  initial={(profile?.name?.[0] ?? 'A').toUpperCase()}
+                  rank={rank}
+                  totalXP={totalXP}
+                  editingName={editingName}
+                  nameInput={nameInput}
+                  onNameInputChange={setNameInput}
+                  onStartEditName={() => { setNameInput(profile?.name ?? ''); setEditingName(true); }}
+                  onSaveName={saveName}
+                />
+              ) : (
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 16,
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+                  padding: 18,
+                }}>
+                  <LinearGradient
+                    colors={[BG_COLORS.accent, '#0ea5e9']}
+                    style={{ width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff' }}>
+                      {(profile?.name?.[0] ?? 'A').toUpperCase()}
+                    </Text>
+                  </LinearGradient>
+                  <Pressable
+                    onPress={() => { setNameInput(profile?.name ?? ''); setEditingName(true); }}
+                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  >
+                    <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: -0.8 }}>
+                      {profile?.name || 'Athlète'}
+                    </Text>
+                    <Ionicons name="pencil-outline" size={14} color="rgba(255,255,255,0.45)" />
                   </Pressable>
                 </View>
-              ) : (
-                <Pressable onPress={() => { setNameInput(profile?.name ?? ''); setEditingName(true); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff' }}>
-                    {profile?.name || 'Athlète'}
-                  </Text>
-                  <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 4 }}>
-                    <Ionicons name="pencil-outline" size={14} color="rgba(255,255,255,0.45)" />
-                  </View>
-                </Pressable>
-              )}
-              {rank && (
-                <Text style={{ fontSize: 13, color: rank.color, fontWeight: '600' }}>{rank.name}</Text>
               )}
             </View>
-          </View>
 
-          {/* Rank card */}
-          {rank && <RankCard rank={rank} totalXP={totalXP} compact />}
-        </View>
-
-        {/* ── Tabs ── */}
-        <View style={{ flexDirection: 'row', marginHorizontal: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
-          {SECTIONS.map((s) => <SectionTab key={s.id} id={s.id} label={s.label} active={activeSection === s.id} onPress={() => setActiveSection(s.id)} />)}
-        </View>
-
-        {/* ══════════════════════════════════════
-            PROFIL (stats)
-        ══════════════════════════════════════ */}
-        {activeSection === 'stats' && (
-          <View style={{ paddingHorizontal: 20, gap: 24 }}>
-
-            {/* Stats rapides */}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              {[
-                { value: workouts.length, label: 'Séances',  color: '#06b6d4' },
-                { value: streak,          label: 'Streak',   color: '#f59e0b' },
-                { value: totalXP,         label: 'XP total', color: '#7c3aed' },
-              ].map(({ value, label, color }) => (
-                <View key={label} style={{ flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
-                  <LinearGradient colors={[`${color}18`, `${color}06`]} style={{ padding: 14, alignItems: 'center', gap: 4 }}>
-                    <Text style={{ fontSize: 28, fontWeight: '900', color }}>
-                      {value > 999 ? (value as number).toLocaleString('fr-FR') : value}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', fontWeight: '600' }}>{label}</Text>
-                  </LinearGradient>
-                </View>
+            {/* ── TABS ── */}
+            <View style={{
+              flexDirection: 'row', marginHorizontal: 20,
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              borderRadius: 14, padding: 4, marginBottom: 20,
+              borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+            }}>
+              {SECTIONS.map((s) => (
+                <SectionTab key={s.id} label={s.label} active={activeSection === s.id} onPress={() => setActiveSection(s.id)} />
               ))}
             </View>
 
-            {/* ── Records personnels ── */}
-            <View style={{ gap: 12 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.30)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                Records personnels
-              </Text>
+            {/* ── PROFIL stats ── */}
+            {activeSection === 'stats' && (
+              <View style={{ paddingHorizontal: 20, gap: 22 }}>
+                {/* Stats KPI */}
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {[
+                    { value: workouts.length, label: 'Séances',  color: BG_COLORS.accent, icon: 'trophy' as const },
+                    { value: streak,          label: 'Streak',   color: '#fb923c',         icon: 'flame'  as const },
+                    { value: totalXP,         label: 'XP total', color: '#a78bfa',         icon: 'star'   as const },
+                  ].map(({ value, label, color, icon }) => (
+                    <View key={label} style={{
+                      flex: 1,
+                      backgroundColor: `${color}10`,
+                      borderRadius: 16, borderWidth: 1,
+                      borderColor: `${color}28`,
+                      padding: 14, gap: 6,
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Ionicons name={icon} size={13} color={color} />
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                          {label}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 24, fontWeight: '900', color, letterSpacing: -0.8 }}>
+                        {value > 999 ? (value as number).toLocaleString('fr-FR') : value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
 
-              {profile?.prs && profile.prs.length > 0 ? (
-                profile.prs.map((pr, i) => {
-                  const isEditing = editingPRIndex === i;
-                  const color     = PR_COLORS[i % PR_COLORS.length] ?? '#7c3aed';
-                  const icon      = PR_ICONS[pr.exercise] ?? 'barbell-outline';
+                {/* ── Records personnels ── */}
+                <View style={{ gap: 12 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
+                    Records personnels
+                  </Text>
 
-                  return (
-                    <View
-                      key={`${pr.exercise}-${i}`}
-                      style={{ borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: isEditing ? '#7c3aed' : 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)' }}
-                    >
-                      {/* Accent top */}
-                      <LinearGradient colors={[color, color + '55']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: 2 }} />
+                  {profile?.prs && profile.prs.length > 0 ? (
+                    profile.prs.map((pr, i) => {
+                      const isEditing = editingPRIndex === i;
+                      const icon      = PR_ICONS[pr.exercise] ?? 'barbell';
 
-                      <View style={{ padding: 16, gap: 12 }}>
-                        {/* Titre + bouton éditer */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                          <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${color}18`, alignItems: 'center', justifyContent: 'center' }}>
-                            <Ionicons name={icon} size={20} color={color} />
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>{pr.exercise}</Text>
-                            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-                              1RM estimé · <Text style={{ color, fontWeight: '700' }}>{pr.oneRepMax.toFixed(1)} kg</Text>
-                            </Text>
-                          </View>
-                          {isEditing ? (
-                            <View style={{ flexDirection: 'row', gap: 8 }}>
-                              <Pressable onPress={() => setEditingPRIndex(null)} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="close" size={16} color="rgba(255,255,255,0.50)" />
-                              </Pressable>
-                              <Pressable onPress={savePR} style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#7c3aed', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="checkmark" size={16} color="#fff" />
-                              </Pressable>
+                      return (
+                        <View
+                          key={`${pr.exercise}-${i}`}
+                          style={{
+                            borderRadius: 18, overflow: 'hidden',
+                            borderWidth: 1,
+                            borderColor: isEditing ? BG_COLORS.accent : 'rgba(255,255,255,0.08)',
+                            backgroundColor: isEditing ? 'rgba(56,189,248,0.06)' : 'rgba(255,255,255,0.04)',
+                          }}
+                        >
+                          <View style={{ padding: 16, gap: 12 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                              <View style={{
+                                width: 42, height: 42, borderRadius: 13,
+                                backgroundColor: 'rgba(251,191,36,0.16)',
+                                borderWidth: 1, borderColor: 'rgba(251,191,36,0.32)',
+                                alignItems: 'center', justifyContent: 'center',
+                              }}>
+                                <Ionicons name={icon} size={19} color="#fbbf24" />
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: -0.2 }}>
+                                  {pr.exercise}
+                                </Text>
+                                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2, fontWeight: '600' }}>
+                                  1RM estimé · <Text style={{ color: '#fbbf24', fontWeight: '800' }}>{pr.oneRepMax.toFixed(1)} kg</Text>
+                                </Text>
+                              </View>
+
+                              {isEditing ? (
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                  <Pressable
+                                    onPress={() => setEditingPRIndex(null)}
+                                    style={{
+                                      width: 34, height: 34, borderRadius: 10,
+                                      backgroundColor: 'rgba(255,255,255,0.08)',
+                                      alignItems: 'center', justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Ionicons name="close" size={16} color="rgba(255,255,255,0.50)" />
+                                  </Pressable>
+                                  <Pressable
+                                    onPress={savePR}
+                                    style={{
+                                      width: 34, height: 34, borderRadius: 10,
+                                      backgroundColor: BG_COLORS.accent,
+                                      alignItems: 'center', justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Ionicons name="checkmark" size={16} color="#07090f" />
+                                  </Pressable>
+                                </View>
+                              ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                  <Text style={{ fontSize: 17, fontWeight: '900', color: '#fff', letterSpacing: -0.5 }}>
+                                    {pr.weight}<Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.45)' }}>kg</Text>
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.45)' }}> ×{pr.reps}</Text>
+                                  </Text>
+                                  <Pressable
+                                    onPress={() => startEditPR(i)}
+                                    style={{
+                                      width: 32, height: 32, borderRadius: 10,
+                                      backgroundColor: 'rgba(255,255,255,0.06)',
+                                      borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+                                      alignItems: 'center', justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Ionicons name="pencil-outline" size={13} color="rgba(255,255,255,0.55)" />
+                                  </Pressable>
+                                </View>
+                              )}
                             </View>
-                          ) : (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                              <Text style={{ fontSize: 17, fontWeight: '900', color: '#fff' }}>
-                                {pr.weight}kg
-                                <Text style={{ fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.40)' }}> × {pr.reps}</Text>
-                              </Text>
-                              <Pressable onPress={() => startEditPR(i)} style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.07)', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="pencil-outline" size={14} color="rgba(255,255,255,0.45)" />
-                              </Pressable>
-                            </View>
-                          )}
+
+                            {isEditing && (
+                              <View style={{ flexDirection: 'row', gap: 12 }}>
+                                <View style={{ flex: 1, gap: 6 }}>
+                                  <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                                    Poids
+                                  </Text>
+                                  <NumericInput value={prEdit.weight} onChange={(v) => setPrEdit((p) => ({ ...p, weight: v }))} min={0} max={500} step={2.5} suffix="kg" />
+                                </View>
+                                <View style={{ flex: 1, gap: 6 }}>
+                                  <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                                    Reps
+                                  </Text>
+                                  <NumericInput value={prEdit.reps} onChange={(v) => setPrEdit((p) => ({ ...p, reps: v }))} min={1} max={30} step={1} />
+                                </View>
+                              </View>
+                            )}
+                          </View>
                         </View>
+                      );
+                    })
+                  ) : (
+                    <View style={{
+                      backgroundColor: 'rgba(255,255,255,0.04)',
+                      borderRadius: 18, padding: 22, alignItems: 'center', gap: 10,
+                      borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+                    }}>
+                      <View style={{
+                        width: 52, height: 52, borderRadius: 16,
+                        backgroundColor: 'rgba(251,191,36,0.14)',
+                        borderWidth: 1, borderColor: 'rgba(251,191,36,0.28)',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Ionicons name="trophy-outline" size={26} color="#fbbf24" />
+                      </View>
+                      <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', textAlign: 'center', fontWeight: '600', lineHeight: 20 }}>
+                        Aucun PR enregistré.{'\n'}Fais une séance pour en ajouter.
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
-                        {/* Mode édition inline */}
-                        {isEditing && (
-                          <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <View style={{ flex: 1, gap: 6 }}>
-                              <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.5, textTransform: 'uppercase' }}>Poids</Text>
-                              <NumericInput value={prEdit.weight} onChange={(v) => setPrEdit((p) => ({ ...p, weight: v }))} min={0} max={500} step={2.5} suffix="kg" />
-                            </View>
-                            <View style={{ flex: 1, gap: 6 }}>
-                              <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.5, textTransform: 'uppercase' }}>Reps</Text>
-                              <NumericInput value={prEdit.reps} onChange={(v) => setPrEdit((p) => ({ ...p, reps: v }))} min={1} max={30} step={1} />
-                            </View>
+                {/* ── Infos profil ── */}
+                {profile && (
+                  <View style={{ gap: 12 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
+                      Configuration
+                    </Text>
+
+                    <View style={{
+                      backgroundColor: 'rgba(255,255,255,0.04)',
+                      borderRadius: 18, borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.08)',
+                      paddingHorizontal: 14,
+                    }}>
+                      {/* Niveau */}
+                      <View style={{ paddingVertical: 14, gap: 10, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.1 }}>
+                            Niveau
+                          </Text>
+                          <Pressable
+                            onPress={() => setEditingLevel((v) => !v)}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                            hitSlop={8}
+                          >
+                            <Text style={{ fontSize: 14, color: BG_COLORS.accent, fontWeight: '800' }}>
+                              {LEVELS.find((l) => l.id === profile.experienceLevel)?.label ?? profile.experienceLevel}
+                            </Text>
+                            <Ionicons name={editingLevel ? 'chevron-up' : 'pencil-outline'} size={13} color="rgba(255,255,255,0.45)" />
+                          </Pressable>
+                        </View>
+                        {editingLevel && (
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                            {LEVELS.map((l) => {
+                              const isSel = profile.experienceLevel === l.id;
+                              return (
+                                <Pressable
+                                  key={l.id}
+                                  onPress={() => { updateProfile({ experienceLevel: l.id }); setEditingLevel(false); }}
+                                  style={{
+                                    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12,
+                                    backgroundColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.05)',
+                                    borderWidth: 1.5,
+                                    borderColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.10)',
+                                  }}
+                                >
+                                  <Text style={{
+                                    fontSize: 13, fontWeight: '900',
+                                    color: isSel ? '#07090f' : 'rgba(255,255,255,0.60)',
+                                  }}>
+                                    {l.label}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Fréquence */}
+                      <View style={{ paddingVertical: 14, gap: 10 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.1 }}>
+                            Séances / semaine
+                          </Text>
+                          <Pressable
+                            onPress={() => setEditingFreq((v) => !v)}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                            hitSlop={8}
+                          >
+                            <Text style={{ fontSize: 14, color: BG_COLORS.accent, fontWeight: '800' }}>
+                              {profile.trainingFrequency}×
+                            </Text>
+                            <Ionicons name={editingFreq ? 'chevron-up' : 'pencil-outline'} size={13} color="rgba(255,255,255,0.45)" />
+                          </Pressable>
+                        </View>
+                        {editingFreq && (
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                            {[2, 3, 4, 5, 6].map((f) => {
+                              const isSel = profile.trainingFrequency === f;
+                              return (
+                                <Pressable
+                                  key={f}
+                                  onPress={() => { updateProfile({ trainingFrequency: f }); setEditingFreq(false); }}
+                                  style={{
+                                    flex: 1, paddingVertical: 11, borderRadius: 12,
+                                    alignItems: 'center',
+                                    backgroundColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.05)',
+                                    borderWidth: 1.5,
+                                    borderColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.10)',
+                                  }}
+                                >
+                                  <Text style={{
+                                    fontSize: 16, fontWeight: '900',
+                                    color: isSel ? '#07090f' : 'rgba(255,255,255,0.55)',
+                                  }}>
+                                    {f}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
                           </View>
                         )}
                       </View>
                     </View>
-                  );
-                })
-              ) : (
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: 20, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' }}>
-                  <Ionicons name="trophy-outline" size={28} color="rgba(255,255,255,0.25)" />
-                  <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.40)', textAlign: 'center' }}>
-                    Aucun PR enregistré.{'\n'}Fais une séance pour en ajouter.
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* ── Informations du profil ── */}
-            {profile && (
-              <View style={{ gap: 12 }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.30)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                  Mon profil
-                </Text>
-
-                <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 4, gap: 0 }}>
-
-                  {/* Niveau */}
-                  <View style={{ padding: 14, gap: 10 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text.primary }}>Niveau</Text>
-                      <Pressable onPress={() => setEditingLevel((v) => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={{ fontSize: 14, color: '#a78bfa', fontWeight: '600' }}>
-                          {LEVELS.find((l) => l.id === profile.experienceLevel)?.label ?? profile.experienceLevel}
-                        </Text>
-                        <Ionicons name={editingLevel ? 'chevron-up' : 'pencil-outline'} size={14} color="rgba(255,255,255,0.35)" />
-                      </Pressable>
-                    </View>
-                    {editingLevel && (
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                        {LEVELS.map((l) => (
-                          <Pressable
-                            key={l.id}
-                            onPress={() => { updateProfile({ experienceLevel: l.id }); setEditingLevel(false); }}
-                            style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: profile.experienceLevel === l.id ? '#7c3aed' : 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: profile.experienceLevel === l.id ? '#7c3aed' : 'rgba(255,255,255,0.10)' }}
-                          >
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: profile.experienceLevel === l.id ? '#fff' : 'rgba(255,255,255,0.55)' }}>
-                              {l.label}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                    )}
                   </View>
-
-                  <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginHorizontal: 14 }} />
-
-                  {/* Fréquence */}
-                  <View style={{ padding: 14, gap: 10 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text.primary }}>Séances / semaine</Text>
-                      <Pressable onPress={() => setEditingFreq((v) => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={{ fontSize: 14, color: '#a78bfa', fontWeight: '600' }}>{profile.trainingFrequency}×</Text>
-                        <Ionicons name={editingFreq ? 'chevron-up' : 'pencil-outline'} size={14} color="rgba(255,255,255,0.35)" />
-                      </Pressable>
-                    </View>
-                    {editingFreq && (
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {[2, 3, 4, 5, 6].map((f) => (
-                          <Pressable
-                            key={f}
-                            onPress={() => { updateProfile({ trainingFrequency: f }); setEditingFreq(false); }}
-                            style={{ flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: profile.trainingFrequency === f ? '#7c3aed' : 'rgba(255,255,255,0.07)', alignItems: 'center', borderWidth: 1, borderColor: profile.trainingFrequency === f ? '#7c3aed' : 'rgba(255,255,255,0.10)' }}
-                          >
-                            <Text style={{ fontSize: 16, fontWeight: '800', color: profile.trainingFrequency === f ? '#fff' : 'rgba(255,255,255,0.50)' }}>{f}</Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                </View>
+                )}
               </View>
             )}
-          </View>
-        )}
 
-        {/* ══════════════════════════════════════
-            BADGES
-        ══════════════════════════════════════ */}
-        {activeSection === 'badges' && (
-          <View style={{ paddingHorizontal: 20 }}>
-            <BadgeGrid gamificationData={gamificationData} showLocked />
-          </View>
-        )}
-
-        {/* ══════════════════════════════════════
-            RÉGLAGES
-        ══════════════════════════════════════ */}
-        {activeSection === 'settings' && (
-          <View style={{ paddingHorizontal: 20, gap: 20 }}>
-
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 16 }}>
-
-              <SettingRow icon="speedometer-outline" label="Unités de poids">
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {(['kg', 'lbs'] as const).map((u) => (
-                    <Pressable
-                      key={u}
-                      onPress={() => updateSettings({ units: u })}
-                      style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, backgroundColor: settings.units === u ? '#7c3aed' : 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: settings.units === u ? '#7c3aed' : 'rgba(255,255,255,0.10)' }}
-                    >
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: settings.units === u ? '#fff' : 'rgba(255,255,255,0.50)' }}>{u}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </SettingRow>
-
-              <SettingRow icon="timer-outline" label="Timer de repos">
-                <Switch value={settings.restTimerEnabled} onValueChange={(v) => updateSettings({ restTimerEnabled: v })} trackColor={{ true: '#7c3aed', false: 'rgba(255,255,255,0.15)' }} thumbColor="#fff" />
-              </SettingRow>
-
-              <SettingRow icon="time-outline" label="Repos par défaut">
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {([60, 90, 120, 180] as const).map((t) => (
-                    <Pressable
-                      key={t}
-                      onPress={() => updateSettings({ defaultRestTime: t })}
-                      style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: settings.defaultRestTime === t ? '#7c3aed' : 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: settings.defaultRestTime === t ? '#7c3aed' : 'rgba(255,255,255,0.10)' }}
-                    >
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: settings.defaultRestTime === t ? '#fff' : 'rgba(255,255,255,0.50)' }}>{t}s</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </SettingRow>
-
-              <SettingRow icon="notifications-outline" label="Notifications">
-                <Switch value={settings.notifications} onValueChange={(v) => updateSettings({ notifications: v })} trackColor={{ true: '#7c3aed', false: 'rgba(255,255,255,0.15)' }} thumbColor="#fff" />
-              </SettingRow>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 14 }}>
-                <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(124,58,237,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="language-outline" size={18} color="#a78bfa" />
-                </View>
-                <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: colors.text.primary }}>Langue</Text>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  {(['fr', 'en'] as const).map((l) => (
-                    <Pressable
-                      key={l}
-                      onPress={() => updateSettings({ language: l })}
-                      style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: settings.language === l ? '#7c3aed' : 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: settings.language === l ? '#7c3aed' : 'rgba(255,255,255,0.10)' }}
-                    >
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: settings.language === l ? '#fff' : 'rgba(255,255,255,0.50)' }}>{l.toUpperCase()}</Text>
-                    </Pressable>
-                  ))}
-                </View>
+            {/* ── BADGES ── */}
+            {activeSection === 'badges' && (
+              <View style={{ paddingHorizontal: 20 }}>
+                <BadgeGrid gamificationData={gamificationData} showLocked />
               </View>
+            )}
+
+            {/* ── RÉGLAGES ── */}
+            {activeSection === 'settings' && (
+              <View style={{ paddingHorizontal: 20, gap: 18 }}>
+                <View style={{
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 20, borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  paddingHorizontal: 16,
+                }}>
+                  <SettingRow icon="speedometer-outline" label="Unités">
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {(['kg', 'lbs'] as const).map((u) => {
+                        const isSel = settings.units === u;
+                        return (
+                          <Pressable
+                            key={u}
+                            onPress={() => updateSettings({ units: u })}
+                            style={{
+                              paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10,
+                              backgroundColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.06)',
+                              borderWidth: 1.5,
+                              borderColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.10)',
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 13, fontWeight: '900',
+                              color: isSel ? '#07090f' : 'rgba(255,255,255,0.55)',
+                              letterSpacing: 0.3,
+                            }}>
+                              {u.toUpperCase()}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </SettingRow>
+
+                  <SettingRow icon="timer-outline" label="Timer de repos">
+                    <Switch
+                      value={settings.restTimerEnabled}
+                      onValueChange={(v) => updateSettings({ restTimerEnabled: v })}
+                      trackColor={{ true: BG_COLORS.accent, false: 'rgba(255,255,255,0.15)' }}
+                      thumbColor="#fff"
+                    />
+                  </SettingRow>
+
+                  <SettingRow icon="time-outline" label="Repos par défaut">
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {([60, 90, 120, 180] as const).map((t) => {
+                        const isSel = settings.defaultRestTime === t;
+                        return (
+                          <Pressable
+                            key={t}
+                            onPress={() => updateSettings({ defaultRestTime: t })}
+                            style={{
+                              paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10,
+                              backgroundColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.06)',
+                              borderWidth: 1.5,
+                              borderColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.10)',
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 12, fontWeight: '900',
+                              color: isSel ? '#07090f' : 'rgba(255,255,255,0.55)',
+                            }}>
+                              {t}s
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </SettingRow>
+
+                  <SettingRow icon="notifications-outline" label="Notifications">
+                    <Switch
+                      value={settings.notifications}
+                      onValueChange={async (v) => {
+                        updateSettings({ notifications: v });
+                        if (v) {
+                          const granted = await requestPermissions();
+                          if (granted && profile) {
+                            const streak = calculateStreakFromWorkouts(workouts);
+                            const last   = workouts[0]?.date;
+                            await refreshAllNotifications(profile.onboarding, streak, last);
+                          }
+                        } else {
+                          await cancelAllTrainingReminders();
+                        }
+                      }}
+                      trackColor={{ true: BG_COLORS.accent, false: 'rgba(255,255,255,0.15)' }}
+                      thumbColor="#fff"
+                    />
+                  </SettingRow>
+
+                  <SettingRow icon="language-outline" label="Langue" last>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {(['fr', 'en'] as const).map((l) => {
+                        const isSel = settings.language === l;
+                        return (
+                          <Pressable
+                            key={l}
+                            onPress={() => updateSettings({ language: l })}
+                            style={{
+                              paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+                              backgroundColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.06)',
+                              borderWidth: 1.5,
+                              borderColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.10)',
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 13, fontWeight: '900',
+                              color: isSel ? '#07090f' : 'rgba(255,255,255,0.55)',
+                            }}>
+                              {l.toUpperCase()}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </SettingRow>
+                </View>
+
+                <Pressable
+                  onPress={handleLogout}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    padding: 16, borderRadius: 16,
+                    backgroundColor: pressed ? 'rgba(239,68,68,0.18)' : 'rgba(239,68,68,0.10)',
+                    borderWidth: 1, borderColor: 'rgba(239,68,68,0.28)',
+                  })}
+                >
+                  <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: '#ef4444', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                    Se déconnecter
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </ScrollView>
+        </Animated.View>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+// ── HERO PROFILE — carte unifiée avatar + nom + rang + XP ─────────
+function ProfileHero({
+  name, initial, rank, totalXP,
+  editingName, nameInput, onNameInputChange, onStartEditName, onSaveName,
+}: {
+  name: string;
+  initial: string;
+  rank: Rank;
+  totalXP: number;
+  editingName: boolean;
+  nameInput: string;
+  onNameInputChange: (v: string) => void;
+  onStartEditName: () => void;
+  onSaveName: () => void;
+}) {
+  const progress  = getProgressToNextRank(totalXP);
+  const nextRank  = getNextRank(rank.tier as RankTier, rank.level);
+  const tierLabel = TIER_LABEL[rank.tier] ?? rank.tier.toUpperCase();
+  const gradient  = getRankGradient(rank.tier);
+  const xpToNext  = nextRank ? Math.max(0, nextRank.minXP - totalXP) : 0;
+
+  return (
+    <View style={{
+      borderRadius: 24, overflow: 'hidden',
+      borderWidth: 1, borderColor: `${rank.color}28`,
+      shadowColor: rank.color,
+      shadowOpacity: 0.30, shadowRadius: 22, shadowOffset: { width: 0, height: 8 },
+      elevation: 10,
+    }}>
+      <LinearGradient
+        colors={[`${rank.color}18`, `${rank.color}04`]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={{ padding: 20, gap: 18 }}
+      >
+        {/* ── Row 1 : avatar + nom + edit ─────────────── */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <LinearGradient
+            colors={gradient}
+            style={{
+              width: 54, height: 54, borderRadius: 17,
+              alignItems: 'center', justifyContent: 'center',
+              shadowColor: rank.color, shadowOpacity: 0.45,
+              shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+              elevation: 6,
+            }}
+          >
+            <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff' }}>{initial}</Text>
+          </LinearGradient>
+
+          {editingName ? (
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TextInput
+                style={{
+                  flex: 1, fontSize: 20, fontWeight: '900', color: '#fff',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10,
+                  borderWidth: 1.5, borderColor: rank.color,
+                }}
+                value={nameInput}
+                onChangeText={onNameInputChange}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={onSaveName}
+              />
+              <Pressable
+                onPress={onSaveName}
+                style={{
+                  width: 38, height: 38, borderRadius: 12,
+                  backgroundColor: rank.color,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="checkmark" size={19} color="#07090f" />
+              </Pressable>
             </View>
-
-            {/* Déconnexion */}
+          ) : (
             <Pressable
-              onPress={handleLogout}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, borderRadius: 16, backgroundColor: 'rgba(239,68,68,0.10)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.22)' }}
+              onPress={onStartEditName}
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
             >
-              <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#ef4444' }}>Se déconnecter</Text>
+              <Text style={{ flex: 1, fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: -0.9 }} numberOfLines={1}>
+                {name}
+              </Text>
+              <View style={{
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                borderRadius: 9, padding: 6,
+                borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+              }}>
+                <Ionicons name="pencil-outline" size={13} color="rgba(255,255,255,0.65)" />
+              </View>
             </Pressable>
-          </View>
-        )}
+          )}
+        </View>
 
-      </ScrollView>
-    </SafeAreaView>
+        {/* ── Row 2 : badge + tier info ─────────────────── */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <BadgeImage tier={rank.tier} size={110} />
+
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={{
+              fontSize: 10, fontWeight: '900', color: rank.color,
+              letterSpacing: 2.5, textTransform: 'uppercase',
+            }}>
+              {tierLabel}
+            </Text>
+            <Text style={{ fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: -0.8, lineHeight: 28 }}>
+              {rank.name}
+            </Text>
+            {rank.description && (
+              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic', lineHeight: 16, marginTop: 2 }}>
+                {rank.description}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* ── Séparateur ───────────────────────────────── */}
+        <View style={{ height: 1, backgroundColor: `${rank.color}22` }} />
+
+        {/* ── Row 3 : XP + progress ─────────────────────── */}
+        <View style={{ gap: 10 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <View>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1.6, textTransform: 'uppercase' }}>
+                XP total
+              </Text>
+              <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 }}>
+                {totalXP.toLocaleString('fr-FR')}
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1.6, textTransform: 'uppercase' }}>
+                {nextRank ? 'Prochain rang' : 'Max'}
+              </Text>
+              <Text style={{ fontSize: 16, fontWeight: '900', color: rank.color, letterSpacing: -0.3 }}>
+                {nextRank ? `${xpToNext.toLocaleString('fr-FR')} XP` : '★'}
+              </Text>
+            </View>
+          </View>
+
+          <ProgressBar
+            progress={progress}
+            gradient={gradient}
+            backgroundColor="rgba(255,255,255,0.07)"
+            height={8}
+            animated
+          />
+
+          {nextRank && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', fontWeight: '700' }}>
+                Vers <Text style={{ color: '#fff', fontWeight: '800' }}>{nextRank.name}</Text>
+              </Text>
+              <Text style={{ fontSize: 12, fontWeight: '900', color: rank.color }}>
+                {progress}%
+              </Text>
+            </View>
+          )}
+        </View>
+      </LinearGradient>
+    </View>
   );
 }
