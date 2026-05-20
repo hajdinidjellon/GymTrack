@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format, startOfWeek, addDays, isSameDay, isThisWeek } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useT, useDateLocale } from '@/lib/i18n';
 import { RankCard } from '@/components/gamification/RankCard';
 import { MuscleMapSVG } from '@/components/muscle/MuscleMapSVG';
 import { Mascot } from '@/components/mascot/Mascot';
@@ -19,6 +19,7 @@ import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { getMuscleActivity, MUSCLE_LABELS } from '@/lib/gamification';
 import { getSuggestedSession } from '@/lib/aiPlanner';
+import { useCelebrationStore } from '@/stores/celebrationStore';
 import { initialSync } from '@/lib/sync';
 import type { MuscleGroup, Workout, PersonalRecord } from '@/types';
 
@@ -63,6 +64,10 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing]         = useState(false);
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | null>(null);
   const [heatPeriod, setHeatPeriod]         = useState<7 | 30>(7);
+  const showCelebration  = useCelebrationStore((s) => s.show);
+  const goalShownWeekRef = useRef<string | null>(null);
+  const t = useT();
+  const dateLocale = useDateLocale();
 
   const fade  = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(20)).current;
@@ -109,6 +114,20 @@ export default function DashboardScreen() {
     () => workouts.filter((w) => isThisWeek(new Date(w.date), { weekStartsOn: 1 })).length,
     [workouts],
   );
+
+  // Célébration objectif hebdo — une seule fois par semaine
+  useEffect(() => {
+    if (thisWeekCount < target || target === 0) return;
+    const now  = new Date();
+    const week = `${now.getFullYear()}-W${Math.ceil((now.getDate() - now.getDay() + 10) / 7)}`;
+    if (goalShownWeekRef.current === week) return;
+    goalShownWeekRef.current = week;
+    showCelebration({
+      type: 'weekly_goal',
+      title: t('dashboard.weeklyGoalReached'),
+      subtitle: t('dashboard.weeklyGoalSubtitle', { n: target, plural: target > 1 ? 's' : '' }),
+    });
+  }, [thisWeekCount, target, t]);
 
   // Dots semaine : lun → dim
   const weekDays = useMemo(() => {
@@ -164,12 +183,19 @@ export default function DashboardScreen() {
               </View>
 
               <Text style={{ fontSize: 34, fontWeight: '900', color: '#fff', letterSpacing: -1.4, lineHeight: 38 }}>
-                {firstName ? `Salut, ${firstName}` : 'Salut'}
+                {firstName ? t('dashboard.greeting', { name: firstName }) : t('dashboard.greetingAnon')}
               </Text>
               <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', fontWeight: '600', marginTop: 6, lineHeight: 19, textTransform: 'capitalize' }}>
-                {format(new Date(), "EEEE d MMMM", { locale: fr })}
+                {format(new Date(), "EEEE d MMMM", { locale: dateLocale })}
               </Text>
             </View>
+
+            {/* ─── RANG HERO ──────────────────────────────── */}
+            {rank && (
+              <View style={{ marginBottom: 16 }}>
+                <RankCard rank={rank} totalXP={totalXP} homeHero />
+              </View>
+            )}
 
             {/* ─── STATS KPI STRIP ─────────────────────────── */}
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
@@ -177,31 +203,31 @@ export default function DashboardScreen() {
                 icon="flame"
                 iconColor="#fb923c"
                 value={streak}
-                label="Streak"
-                unit={streak === 1 ? 'jour' : 'jours'}
+                label={t('dashboard.streak')}
+                unit={streak === 1 ? t('unit.day') : t('unit.days')}
                 accent={streak > 0}
               />
               <StatCard
                 icon="checkmark-done"
                 iconColor={BG_COLORS.accent}
                 value={`${thisWeekCount}/${target}`}
-                label="Cette sem."
-                unit="séances"
+                label={t('dashboard.thisWeek')}
+                unit={t('unit.sessions')}
                 accent={thisWeekCount >= target}
               />
               <StatCard
                 icon="trophy"
                 iconColor="#fbbf24"
                 value={workouts.length}
-                label="Total"
-                unit={workouts.length > 1 ? 'séances' : 'séance'}
+                label={t('dashboard.total')}
+                unit={workouts.length > 1 ? t('unit.sessions') : t('unit.session')}
               />
             </View>
 
             {/* ─── COMPARAISON HEBDO ──────────────────── */}
             {workouts.length > 0 && (
               <View style={{ marginBottom: 16 }}>
-                <WeeklyComparison workouts={workouts} />
+                <WeeklyComparison workouts={workouts} target={target} />
               </View>
             )}
 
@@ -215,15 +241,15 @@ export default function DashboardScreen() {
             }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2, textTransform: 'uppercase' }}>
-                  Ma semaine
+                  {t('dashboard.myWeek')}
                 </Text>
                 <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.40)' }}>
-                  {thisWeekCount}/{target} · objectif
+                  {t('dashboard.weekGoal', { done: thisWeekCount, target })}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 {weekDays.map((d, i) => {
-                  const dayLabel = ['L','M','M','J','V','S','D'][i] ?? '';
+                  const dayLabel = t(`days.${i}` as any);
                   return (
                     <View key={i} style={{ alignItems: 'center', gap: 6, flex: 1 }}>
                       <Text style={{
@@ -277,7 +303,7 @@ export default function DashboardScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 11, fontWeight: '800', color: '#10b981', letterSpacing: 1.6, textTransform: 'uppercase' }}>
-                      Séance en cours
+                      {t('dashboard.activeSession')}
                     </Text>
                     <Text style={{ fontSize: 17, fontWeight: '900', color: '#fff', marginTop: 2, letterSpacing: -0.3 }}>
                       {activeSession.exercises.length} exercices · {Math.floor(activeSession.elapsedSeconds / 60)} min
@@ -306,7 +332,7 @@ export default function DashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: BG_COLORS.accent }} />
                     <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                      Séance du jour
+                      {t('dashboard.suggestion')}
                     </Text>
                   </View>
 
@@ -373,24 +399,11 @@ export default function DashboardScreen() {
                     }}>
                       <Ionicons name="flame" size={18} color="#07090f" />
                       <Text style={{ fontSize: 15, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                        Démarrer
+                        {t('common.start')}
                       </Text>
                     </View>
                   </Pressable>
                 </View>
-              </View>
-            )}
-
-            {/* ─── RANG (compact) ─────────────────────────── */}
-            {rank && (
-              <View style={{
-                marginBottom: 20,
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                borderRadius: 22, borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.08)',
-                padding: 16,
-              }}>
-                <RankCard rank={rank} totalXP={totalXP} compact />
               </View>
             )}
 
@@ -404,7 +417,7 @@ export default function DashboardScreen() {
             }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 18, paddingBottom: 6 }}>
                 <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                  Muscles travaillés
+                  {t('dashboard.heatmap')}
                 </Text>
                 <View style={{
                   flexDirection: 'row',
@@ -426,7 +439,7 @@ export default function DashboardScreen() {
                         color: heatPeriod === p ? '#07090f' : 'rgba(255,255,255,0.45)',
                         letterSpacing: 0.5,
                       }}>
-                        {p === 7 ? '7J' : '30J'}
+                        {p === 7 ? t('dashboard.period.7') : t('dashboard.period.30')}
                       </Text>
                     </Pressable>
                   ))}
@@ -498,11 +511,11 @@ export default function DashboardScreen() {
               <View style={{ marginBottom: 20 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 2 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                    Mes records
+                    {t('progress.personalRecords')}
                   </Text>
                   <Pressable onPress={() => router.push('/(tabs)/profile')} hitSlop={8}>
                     <Text style={{ fontSize: 13, fontWeight: '700', color: BG_COLORS.accent, letterSpacing: 0.3 }}>
-                      Tout voir →
+                      {t('common.seeMore')} →
                     </Text>
                   </Pressable>
                 </View>
@@ -521,11 +534,11 @@ export default function DashboardScreen() {
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingHorizontal: 2 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                    Dernières séances
+                    {t('dashboard.lastWorkouts')}
                   </Text>
                   <Pressable onPress={() => router.push('/(tabs)/progress')} hitSlop={8}>
                     <Text style={{ fontSize: 13, fontWeight: '700', color: BG_COLORS.accent, letterSpacing: 0.3 }}>
-                      Tout voir →
+                      {t('common.seeMore')} →
                     </Text>
                   </Pressable>
                 </View>
@@ -575,7 +588,7 @@ export default function DashboardScreen() {
                   }}>
                     <Ionicons name="flame" size={18} color="#07090f" />
                     <Text style={{ fontSize: 15, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                      C'est parti
+                      {t('common.start')}
                     </Text>
                   </View>
                 </Pressable>
@@ -664,6 +677,7 @@ function HistoryCard({ workout }: { workout: Workout }) {
   const sets    = workoutSets(workout);
   const muscles = workoutMuscles(workout);
   const feelingColor = FEELING_COLOR[workout.feeling] ?? '#94a3b8';
+  const dateLocale = useDateLocale();
 
   return (
     <Pressable
@@ -697,7 +711,7 @@ function HistoryCard({ workout }: { workout: Workout }) {
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: feelingColor }} />
             </View>
             <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: '600', textTransform: 'capitalize' }}>
-              {format(new Date(workout.date), "EEEE d MMMM", { locale: fr })}
+              {format(new Date(workout.date), "EEEE d MMMM", { locale: dateLocale })}
             </Text>
           </View>
 

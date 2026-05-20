@@ -15,6 +15,8 @@ const SHEET_MIMI2 = require('@/assets/mascot/mascotte-mimi2.png')             as
 const SHEET_MIMI3 = require('@/assets/mascot/mascotte-mimi3.png')             as number;
 const SHEET_MIMI5 = require('@/assets/mascot/mascotte-mimi5.png')             as number;
 const SHEET_MOUV1 = require('@/assets/mascot/mascotte-mimi-mouvement1.png')   as number;
+const SHEET_CELEB    = require('@/assets/mascot/mascotte-celebration.png')    as number;
+const SHEET_TROPHY   = require('@/assets/mascot/mascotte-trophy.png')         as number;
 
 type PoseDef = {
   x: number; y: number; w: number; h: number;
@@ -42,7 +44,11 @@ export type MascotPose =
   // ── mascotte-mimi-mouvement1 1417×1110 — frames animées ─────────
   | 'mouv_squat_1'  | 'mouv_squat_2'  | 'mouv_squat_3'
   | 'mouv_bench_1'  | 'mouv_bench_2'  | 'mouv_bench_3'
-  | 'mouv_dead_1'   | 'mouv_dead_2'   | 'mouv_dead_3';
+  | 'mouv_dead_1'   | 'mouv_dead_2'   | 'mouv_dead_3'
+  // ── mascotte-celebration 1536×1024 — 3 frames célébration ────────
+  | 'celebrate_1' | 'celebrate_2' | 'celebrate_3'
+  // ── mascotte-trophy 1536×1024 — 2 frames trophée ─────────────────
+  | 'trophy_1' | 'trophy_2';
 
 export const POSES: Record<MascotPose, PoseDef> = {
   // ── mimi 1630×965 ────────────────────────────────────────────────
@@ -81,6 +87,15 @@ export const POSES: Record<MascotPose, PoseDef> = {
   // ── mascotte-cache4 1536×1024 — goal screen ───────────────────────
   cache4_pos1: { x: 52,  y: 44, w: 143, h: 236, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache4.png') as number },
   cache4_pos2: { x: 198, y: 44, w: 161, h: 236, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache4.png') as number },
+
+  // ── mascotte-celebration 1536×1024 — célébration PR ─────────────
+  celebrate_1: { x: 117,  y: 468, w: 294, h: 311, imgW: 1536, imgH: 1024, src: SHEET_CELEB },
+  celebrate_2: { x: 606,  y: 293, w: 360, h: 486, imgW: 1536, imgH: 1024, src: SHEET_CELEB },
+  celebrate_3: { x: 1112, y: 422, w: 322, h: 358, imgW: 1536, imgH: 1024, src: SHEET_CELEB },
+
+  // ── mascotte-trophy 1536×1024 — objectif / badge ─────────────────
+  trophy_1: { x: 266, y: 320, w: 387, h: 471, imgW: 1536, imgH: 1024, src: SHEET_TROPHY },
+  trophy_2: { x: 832, y: 210, w: 429, h: 581, imgW: 1536, imgH: 1024, src: SHEET_TROPHY },
 
   // ── mascotte-mimi-mouvement1 1417×1110 — squat ───────────────────
   mouv_squat_1: { x: 19,   y: 27,  w: 360, h: 306, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },

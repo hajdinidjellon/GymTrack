@@ -64,37 +64,58 @@ interface NumericInputProps {
 }
 
 export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, suffix, large = false }: NumericInputProps) {
-  const clamp = (v: number) => Math.min(Math.max(v, min), max);
+  const clamp                   = (v: number) => Math.min(Math.max(v, min), max);
+  const [editing, setEditing]   = useState(false);
+  const [editText, setEditText] = useState('');
+  const editTextRef             = React.useRef('');
 
-  const handleText = (text: string) => {
-    const num = parseFloat(text.replace(',', '.'));
-    if (!isNaN(num)) onChange(clamp(num));
-    else if (text === '') onChange(min);
+  const fmt = (v: number) => Number.isInteger(v) ? String(v) : v.toFixed(1);
+
+  const startEdit = () => {
+    const initial = fmt(value);
+    editTextRef.current = initial;
+    setEditText(initial);
+    setEditing(true);
   };
-
-  const valueStr = Number.isInteger(value) ? String(value) : value.toFixed(1);
+  const commit = () => {
+    const n = parseFloat(editTextRef.current.replace(',', '.'));
+    onChange(isNaN(n) ? min : clamp(n));
+    setEditing(false);
+  };
+  const handleButton = (newVal: number) => { setEditing(false); onChange(clamp(newVal)); };
 
   if (large) {
     return (
       <View style={{ alignItems: 'center', gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Pressable
-            onPress={() => onChange(clamp(value - step))}
+            onPress={() => handleButton(value - step)}
             style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text style={{ fontSize: 20, color: colors.text.secondary, fontWeight: '700', lineHeight: 22 }}>−</Text>
           </Pressable>
 
-          <TextInput
-            style={{ fontSize: 40, fontWeight: '900', color: colors.text.primary, textAlign: 'center', minWidth: 80 }}
-            value={valueStr}
-            onChangeText={handleText}
-            keyboardType="numeric"
-            selectTextOnFocus
-          />
+          {editing ? (
+            <TextInput
+              autoFocus
+              style={{ fontSize: 40, fontWeight: '900', color: colors.text.primary, textAlign: 'center', minWidth: 80 }}
+              value={editText}
+              onChangeText={(t) => { editTextRef.current = t; setEditText(t); }}
+              onBlur={commit}
+              onSubmitEditing={commit}
+              keyboardType="numeric"
+              selectTextOnFocus
+            />
+          ) : (
+            <Pressable onPress={startEdit} style={{ minWidth: 80, alignItems: 'center' }}>
+              <Text style={{ fontSize: 40, fontWeight: '900', color: colors.text.primary, textAlign: 'center' }}>
+                {fmt(value)}
+              </Text>
+            </Pressable>
+          )}
 
           <Pressable
-            onPress={() => onChange(clamp(value + step))}
+            onPress={() => handleButton(value + step)}
             style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text style={{ fontSize: 20, color: colors.text.secondary, fontWeight: '700', lineHeight: 22 }}>+</Text>
@@ -112,26 +133,37 @@ export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, su
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
       <Pressable
-        onPress={() => onChange(clamp(value - step))}
+        onPress={() => handleButton(value - step)}
         style={{ paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 16, color: colors.text.secondary, fontWeight: '700' }}>−</Text>
       </Pressable>
 
-      <TextInput
-        style={{ fontSize: 16, fontWeight: '700', color: colors.text.primary, textAlign: 'center', minWidth: 44 }}
-        value={valueStr}
-        onChangeText={handleText}
-        keyboardType="numeric"
-        selectTextOnFocus
-      />
+      {editing ? (
+        <TextInput
+          autoFocus
+          style={{ fontSize: 16, fontWeight: '700', color: colors.text.primary, textAlign: 'center', minWidth: 44 }}
+          value={editText}
+          onChangeText={(t) => { editTextRef.current = t; setEditText(t); }}
+          onBlur={commit}
+          onSubmitEditing={commit}
+          keyboardType="numeric"
+          selectTextOnFocus
+        />
+      ) : (
+        <Pressable onPress={startEdit} style={{ minWidth: 44, alignItems: 'center', paddingVertical: 8 }}>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text.primary, textAlign: 'center' }}>
+            {fmt(value)}
+          </Text>
+        </Pressable>
+      )}
 
       {suffix && (
         <Text style={{ fontSize: 11, color: colors.text.muted, paddingRight: 4 }}>{suffix}</Text>
       )}
 
       <Pressable
-        onPress={() => onChange(clamp(value + step))}
+        onPress={() => handleButton(value + step)}
         style={{ paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 16, color: colors.text.secondary, fontWeight: '700' }}>+</Text>

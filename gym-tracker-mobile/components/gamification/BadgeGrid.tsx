@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RarityBadge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { BADGES } from '@/lib/gamification';
+import { useT } from '@/lib/i18n';
 import { colors } from '@/constants/theme';
 import type { GamificationData, BadgeCategory } from '@/types';
 
@@ -34,23 +35,24 @@ const RARITY_GRADIENT: Record<string, [string, string]> = {
   legendary: ['#D97706', '#FCD34D'],
 };
 
-const CATEGORY_LABELS: Record<BadgeCategory, string> = {
-  consistency: 'Régularité',
-  strength:    'Force',
-  volume:      'Volume',
-  diversity:   'Diversité',
-  milestone:   'Jalons',
-  special:     'Spécial',
-};
-
 interface BadgeGridProps {
   gamificationData: GamificationData;
   showLocked?: boolean;
 }
 
 export function BadgeGrid({ gamificationData, showLocked = true }: BadgeGridProps) {
+  const t = useT();
   const [selectedCategory, setSelectedCategory] = useState<BadgeCategory | 'all'>('all');
   const [selectedBadge, setSelectedBadge]       = useState<string | null>(null);
+
+  const CATEGORY_LABELS: Record<BadgeCategory, string> = {
+    consistency: t('badge.cat.consistency'),
+    strength:    t('badge.cat.strength'),
+    volume:      t('badge.cat.volume'),
+    diversity:   t('badge.cat.diversity'),
+    milestone:   t('badge.cat.milestone'),
+    special:     t('badge.cat.special'),
+  };
 
   const categories: Array<BadgeCategory | 'all'> = [
     'all', 'milestone', 'consistency', 'strength', 'volume', 'diversity', 'special',
@@ -80,13 +82,13 @@ export function BadgeGrid({ gamificationData, showLocked = true }: BadgeGridProp
               {isActive ? (
                 <LinearGradient colors={['#7c3aed', '#06b6d4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>
-                    {cat === 'all' ? 'Tous' : CATEGORY_LABELS[cat]}
+                    {cat === 'all' ? t('badge.all') : CATEGORY_LABELS[cat]}
                   </Text>
                 </LinearGradient>
               ) : (
                 <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)', borderRadius: 999 }}>
                   <Text style={{ fontSize: 13, fontWeight: '500', color: colors.text.muted }}>
-                    {cat === 'all' ? 'Tous' : CATEGORY_LABELS[cat]}
+                    {cat === 'all' ? t('badge.all') : CATEGORY_LABELS[cat]}
                   </Text>
                 </View>
               )}
@@ -151,7 +153,7 @@ export function BadgeGrid({ gamificationData, showLocked = true }: BadgeGridProp
                   color: unlocked ? colors.text.primary : colors.text.muted,
                 }}
               >
-                {badge.name}
+                {t(`badge.${badge.id}.name` as any) !== `badge.${badge.id}.name` ? t(`badge.${badge.id}.name` as any) : badge.name}
               </Text>
             </Pressable>
           );
@@ -194,7 +196,7 @@ export function BadgeGrid({ gamificationData, showLocked = true }: BadgeGridProp
 
                 <View style={{ alignItems: 'center', gap: 6 }}>
                   <Text style={{ fontSize: 20, fontWeight: '900', color: '#fff', textAlign: 'center' }}>
-                    {selectedBadgeData.name}
+                    {t(`badge.${selectedBadgeData.id}.name` as any) !== `badge.${selectedBadgeData.id}.name` ? t(`badge.${selectedBadgeData.id}.name` as any) : selectedBadgeData.name}
                   </Text>
                   <RarityBadge rarity={selectedBadgeData.rarity} size="md" />
                 </View>
@@ -203,7 +205,7 @@ export function BadgeGrid({ gamificationData, showLocked = true }: BadgeGridProp
               {/* Body */}
               <View style={{ padding: 20, gap: 16 }}>
                 <Text style={{ fontSize: 15, color: colors.text.secondary, textAlign: 'center', lineHeight: 22 }}>
-                  {selectedBadgeData.description}
+                  {t(`badge.${selectedBadgeData.id}.desc` as any) !== `badge.${selectedBadgeData.id}.desc` ? t(`badge.${selectedBadgeData.id}.desc` as any) : selectedBadgeData.description}
                 </Text>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
@@ -216,7 +218,7 @@ export function BadgeGrid({ gamificationData, showLocked = true }: BadgeGridProp
                 {!isUnlocked && badgeProgress > 0 && (
                   <View style={{ gap: 8 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 12, color: colors.text.muted }}>Progression</Text>
+                      <Text style={{ fontSize: 12, color: colors.text.muted }}>{t('badge.progress')}</Text>
                       <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text.primary }}>{Math.round(badgeProgress)}%</Text>
                     </View>
                     <ProgressBar progress={badgeProgress} gradient={['#7c3aed', '#06b6d4']} height={6} animated />
@@ -226,7 +228,7 @@ export function BadgeGrid({ gamificationData, showLocked = true }: BadgeGridProp
                 {isUnlocked && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                     <Ionicons name="checkmark-circle" size={18} color={colors.status.success} />
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.status.success }}>Débloqué</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.status.success }}>{t('badge.unlocked')}</Text>
                   </View>
                 )}
               </View>

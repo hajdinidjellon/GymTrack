@@ -221,6 +221,58 @@ export async function notifyGoalAchieved(goalLabel: string): Promise<void> {
   }
 }
 
+const REST_COMPLETE_ID = 'rest-complete';
+
+/**
+ * Schedule une notification OS pour la fin du timer de repos.
+ * Gérée par l'OS — se déclenche même si l'app est en arrière-plan.
+ */
+export async function scheduleRestCompleteNotification(seconds: number): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(REST_COMPLETE_ID).catch(() => null);
+    await Notifications.scheduleNotificationAsync({
+      identifier: REST_COMPLETE_ID,
+      content: {
+        title: '✅ Repos terminé !',
+        body:  'C\'est reparti — lance ta prochaine série.',
+        sound: 'default',
+        data: { type: 'rest-complete' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        repeats: false,
+      },
+    });
+  } catch {
+    // ignore
+  }
+}
+
+export async function cancelRestCompleteNotification(): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(REST_COMPLETE_ID);
+  } catch {
+    // ignore
+  }
+}
+
+export async function notifyRestComplete(): Promise<void> {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '✅ Repos terminé !',
+        body:  'C\'est reparti — lance ta prochaine série.',
+        sound: 'default',
+        data: { type: 'rest-complete' },
+      },
+      trigger: null,
+    });
+  } catch {
+    // ignore
+  }
+}
+
 export async function notifyBadgeUnlocked(badgeName: string): Promise<void> {
   try {
     await Notifications.scheduleNotificationAsync({

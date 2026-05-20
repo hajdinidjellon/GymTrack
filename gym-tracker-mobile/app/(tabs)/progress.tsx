@@ -5,7 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useT, useDateLocale } from '@/lib/i18n';
 import { ProgressChart } from '@/components/charts/ProgressChart';
 import { VolumeBar, MiniVolumeBar } from '@/components/charts/VolumeBar';
 import { MuscleHeatmap } from '@/components/muscle/MuscleHeatmap';
@@ -19,20 +19,29 @@ import type { MuscleGroup } from '@/types';
 
 type ProgressTab = 'exercises' | 'volume' | 'muscles';
 
-const TABS: Array<{ id: ProgressTab; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
-  { id: 'exercises', label: 'Exercices', icon: 'barbell-outline'   },
-  { id: 'volume',    label: 'Volume',    icon: 'bar-chart-outline' },
-  { id: 'muscles',   label: 'Muscles',   icon: 'body-outline'      },
-];
+const TAB_ICONS: Record<ProgressTab, keyof typeof Ionicons.glyphMap> = {
+  exercises: 'barbell-outline',
+  volume:    'bar-chart-outline',
+  muscles:   'body-outline',
+};
 
 export default function ProgressScreen() {
   const { workouts } = useWorkoutStore();
   const { profile }  = useProfileStore();
   const units        = useSettingsStore((s) => s.settings.units);
+  const t = useT();
+  const dateLocale = useDateLocale();
+
+  const TABS: Array<{ id: ProgressTab; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
+    { id: 'exercises', label: t('progress.tab.exercises'), icon: TAB_ICONS.exercises },
+    { id: 'volume',    label: t('progress.tab.volume'),    icon: TAB_ICONS.volume    },
+    { id: 'muscles',   label: t('progress.tab.muscles'),   icon: TAB_ICONS.muscles   },
+  ];
 
   const [activeTab, setActiveTab]               = useState<ProgressTab>('exercises');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [heatmapPeriod, setHeatmapPeriod]       = useState<7 | 30>(7);
+  const [showAllExercises, setShowAllExercises] = useState(false);
 
   const fade  = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(20)).current;
@@ -89,13 +98,13 @@ export default function ProgressScreen() {
             {/* ── HEADER ── */}
             <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 22 }}>
               <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 6 }}>
-                Analyse
+                {t('progress.supertitle')}
               </Text>
               <Text style={{ fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1.6, lineHeight: 42 }}>
-                Progression
+                {t('progress.title')}
               </Text>
               <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', fontWeight: '600', marginTop: 8, lineHeight: 20 }}>
-                Mesure ton évolution sur chaque exercice et muscle.
+                {t('progress.subtitle')}
               </Text>
             </View>
 
@@ -146,16 +155,16 @@ export default function ProgressScreen() {
                     <Mascot pose="mimi_mesure" height={140} animate float />
                     <View style={{ alignItems: 'center', gap: 8 }}>
                       <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', textAlign: 'center', letterSpacing: -0.8, lineHeight: 26 }}>
-                        Pas encore assez{'\n'}de données
+                        {t('progress.noDataTitle')}
                       </Text>
                       <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', textAlign: 'center', fontWeight: '600', lineHeight: 20, paddingHorizontal: 8 }}>
-                        Fais au moins 2 séances avec le même exercice pour voir ta progression.
+                        {t('progress.noDataSubtitle')}
                       </Text>
                     </View>
                   </View>
                 ) : (
                   <>
-                    {exercises.map((ex) => {
+                    {(showAllExercises ? exercises : exercises.slice(0, 5)).map((ex) => {
                       const first       = ex.dataPoints[0];
                       const latest      = ex.dataPoints[ex.dataPoints.length - 1];
                       const progression = latest && first && first.estimated1RM > 0
@@ -191,7 +200,7 @@ export default function ProgressScreen() {
                                   {ex.name}
                                 </Text>
                                 <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginTop: 2 }}>
-                                  {ex.dataPoints.length} séances{latest ? ` · PR ${latest.maxWeight}${units}` : ''}
+                                  {t('progress.sessions', { n: ex.dataPoints.length })}{latest ? ` · ${t('progress.pr', { value: latest.maxWeight, unit: units })}` : ''}
                                 </Text>
                               </View>
 
@@ -228,10 +237,33 @@ export default function ProgressScreen() {
                       );
                     })}
 
+                    {exercises.length > 5 && (
+                      <Pressable
+                        onPress={() => setShowAllExercises((v) => !v)}
+                        style={({ pressed }) => ({
+                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                          paddingVertical: 14, borderRadius: 16,
+                          backgroundColor: pressed ? 'rgba(56,189,248,0.10)' : 'rgba(255,255,255,0.04)',
+                          borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+                        })}
+                      >
+                        <Ionicons
+                          name={showAllExercises ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color={BG_COLORS.accent}
+                        />
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 0.3 }}>
+                          {showAllExercises
+                            ? t('progress.seeLess')
+                            : t('progress.seeMore', { n: exercises.length - 5, plural: exercises.length - 5 > 1 ? 's' : '' })}
+                        </Text>
+                      </Pressable>
+                    )}
+
                     {profile?.prs && profile.prs.length > 0 && (
                       <View style={{ gap: 10, marginTop: 12 }}>
                         <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                          Records personnels
+                          {t('progress.personalRecords')}
                         </Text>
                         {profile.prs.map((pr) => (
                           <View key={pr.exercise} style={{
@@ -253,7 +285,7 @@ export default function ProgressScreen() {
                                 {pr.exercise}
                               </Text>
                               <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginTop: 2 }}>
-                                {format(new Date(pr.date), 'd MMM yyyy', { locale: fr })} · 1RM ~{pr.oneRepMax.toFixed(1)}{units}
+                                {format(new Date(pr.date), 'd MMM yyyy', { locale: dateLocale })} · 1RM ~{pr.oneRepMax.toFixed(1)}{units}
                               </Text>
                             </View>
                             <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.5 }}>
@@ -278,7 +310,7 @@ export default function ProgressScreen() {
                   borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', gap: 16,
                 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                    Volume par muscle — 7 jours
+                    {t('progress.weekVolume')}
                   </Text>
                   {weeklyVolume.length > 0 ? (
                     <>
@@ -297,7 +329,7 @@ export default function ProgressScreen() {
                     <View style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
                       <Ionicons name="bar-chart-outline" size={36} color="rgba(255,255,255,0.25)" />
                       <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: '600' }}>
-                        Aucune séance cette semaine
+                        {t('progress.noSessionsWeek')}
                       </Text>
                     </View>
                   )}

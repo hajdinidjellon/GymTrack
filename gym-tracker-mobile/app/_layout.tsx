@@ -17,6 +17,7 @@ import { useBadgeQueueStore } from '@/stores/badgeQueueStore';
 import { requestPermissions, refreshAllNotifications, cancelAllTrainingReminders, notifyBadgeUnlocked } from '@/lib/notifications';
 import { calculateStreakFromWorkouts, getUnlockedBadges } from '@/lib/gamification';
 import { BadgeUnlockModal } from '@/components/gamification/BadgeUnlockModal';
+import { CelebrationToast } from '@/components/ui/CelebrationToast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -181,6 +182,9 @@ function AppNavigator() {
         badge={queue[0] ?? null}
         onClose={dismissCurrent}
       />
+
+      {/* Toast de célébration PR / objectif hebdo */}
+      <CelebrationToast />
     </>
   );
 }

@@ -7,6 +7,7 @@
 
 import { create } from 'zustand';
 import * as Haptics from 'expo-haptics';
+import { scheduleRestCompleteNotification, cancelRestCompleteNotification } from '@/lib/notifications';
 import type {
   ActiveSession,
   ActiveExercise,
@@ -57,6 +58,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         exercises: [],
         elapsedSeconds: 0,
         restSecondsLeft: null,
+        restEndsAt: null,
         isResting: false,
         lastCompletedSetIndex: null,
       },
@@ -234,11 +236,16 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   startRestTimer: (seconds) => {
     get().stopRestTimer();
 
+    const restEndsAt = Date.now() + seconds * 1000;
+
     set((s) => ({
       activeSession: s.activeSession
-        ? { ...s.activeSession, restSecondsLeft: seconds, isResting: true }
+        ? { ...s.activeSession, restSecondsLeft: seconds, restEndsAt, isResting: true }
         : null,
     }));
+
+    // Notification OS — se déclenche même app en arrière-plan
+    scheduleRestCompleteNotification(seconds).catch(() => null);
 
     const interval = setInterval(() => {
       get().tickRestTimer();
@@ -253,38 +260,30 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       clearInterval(restInterval);
       set({ restInterval: null });
     }
+    cancelRestCompleteNotification().catch(() => null);
     set((s) => ({
       activeSession: s.activeSession
-        ? { ...s.activeSession, restSecondsLeft: null, isResting: false }
+        ? { ...s.activeSession, restSecondsLeft: null, restEndsAt: null, isResting: false }
         : null,
     }));
   },
 
   tickRestTimer: () => {
-    set((s) => {
-      if (!s.activeSession?.isResting) return s;
+    const { activeSession, restInterval } = get();
+    if (!activeSession?.isResting || activeSession.restEndsAt == null) return;
 
-      const left = (s.activeSession.restSecondsLeft ?? 0) - 1;
+    const left = Math.ceil((activeSession.restEndsAt - Date.now()) / 1000);
 
-      if (left <= 0) {
-        // Timer terminé — haptique + arrêt
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
-          () => null,
-        );
-        if (s.restInterval) clearInterval(s.restInterval);
-        return {
-          restInterval: null,
-          activeSession: {
-            ...s.activeSession,
-            restSecondsLeft: null,
-            isResting: false,
-          },
-        };
-      }
+    if (left <= 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
+      if (restInterval) clearInterval(restInterval);
+      set({
+        restInterval: null,
+        activeSession: { ...activeSession, restSecondsLeft: 0, restEndsAt: null, isResting: false },
+      });
+      return;
+    }
 
-      return {
-        activeSession: { ...s.activeSession, restSecondsLeft: left },
-      };
-    });
+    set({ activeSession: { ...activeSession, restSecondsLeft: left } });
   },
 }));

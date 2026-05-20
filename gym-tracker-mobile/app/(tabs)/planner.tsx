@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useT } from '@/lib/i18n';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { NumericInput } from '@/components/ui/Input';
 import { Mascot } from '@/components/mascot/Mascot';
@@ -55,6 +56,7 @@ export default function PlannerScreen() {
   const { profile, goals } = useProfileStore();
   const { startSession, addExercise } = useSessionStore();
   const defaultRestTime = useSettingsStore((s) => s.settings.defaultRestTime);
+  const t = useT();
 
   const [activePlan, setActivePlan]   = useState<TrainingPlan | null>(null);
   const [showNewPlan, setShowNewPlan] = useState(false);
@@ -83,7 +85,7 @@ export default function PlannerScreen() {
 
   const handleGeneratePlan = () => {
     if (!profile) {
-      Alert.alert('Profil requis', 'Configure ton profil avant de créer un plan.');
+      Alert.alert(t('planner.profileRequired'), t('planner.profileRequiredMsg'));
       return;
     }
     const benchPR = profile.prs.find((p) => p.exercise.toLowerCase().includes('couché'));
@@ -118,13 +120,13 @@ export default function PlannerScreen() {
             {/* ── HEADER ── */}
             <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 22 }}>
               <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 6 }}>
-                Planification
+                {t('planner.supertitle')}
               </Text>
               <Text style={{ fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1.6, lineHeight: 42 }}>
-                Mon plan
+                {t('planner.title')}
               </Text>
               <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', fontWeight: '600', marginTop: 8, lineHeight: 20 }}>
-                Suggestions du jour, échauffement intelligent, programmes de force.
+                {t('planner.subtitle')}
               </Text>
             </View>
 
@@ -133,8 +135,8 @@ export default function PlannerScreen() {
               <View style={{ paddingHorizontal: 20 }}>
                 <SectionHeader
                   icon="flame-outline"
-                  title="Templates rapides"
-                  subtitle="Push, Pull, Legs — démarre en un tap"
+                  title={t('planner.templates')}
+                  subtitle={t('planner.templatesSub')}
                 />
               </View>
 
@@ -154,8 +156,8 @@ export default function PlannerScreen() {
               <View style={{ paddingHorizontal: 20, marginBottom: 28, gap: 14 }}>
                 <SectionHeader
                   icon="flash-outline"
-                  title="Suggestion du jour"
-                  subtitle="Basée sur tes muscles récupérés et ton historique"
+                  title={t('planner.suggestion')}
+                  subtitle={t('planner.suggestionSub')}
                 />
 
                 <View style={{
@@ -236,7 +238,7 @@ export default function PlannerScreen() {
                       ))}
                       {suggested.exercises.length > 4 && (
                         <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: '700', marginLeft: 44 }}>
-                          + {suggested.exercises.length - 4} exercices
+                          {t('planner.moreExercises', { n: suggested.exercises.length - 4 })}
                         </Text>
                       )}
                     </View>
@@ -252,8 +254,8 @@ export default function PlannerScreen() {
             <View style={{ paddingHorizontal: 20, marginTop: 28, marginBottom: 28, gap: 14 }}>
               <SectionHeader
                 icon="trending-up-outline"
-                title="Programme de force"
-                subtitle="Génère un plan progressif sur plusieurs semaines"
+                title={t('planner.strengthProgram')}
+                subtitle={t('planner.strengthSub')}
               />
 
               {activePlan ? (
@@ -265,7 +267,7 @@ export default function PlannerScreen() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                     <View style={{ flex: 1, gap: 4 }}>
                       <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2, textTransform: 'uppercase' }}>
-                        Programme actif
+                        {t('planner.activePlan')}
                       </Text>
                       <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 }}>
                         {activePlan.name}
@@ -300,7 +302,7 @@ export default function PlannerScreen() {
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                               <Text style={{ fontSize: 14, fontWeight: '900', color: week.deloadWeek ? '#f59e0b' : '#fff' }}>
-                                Semaine {week.weekNumber}
+                                {t('planner.week', { n: week.weekNumber })}
                               </Text>
                               {week.deloadWeek && (
                                 <View style={{
@@ -308,7 +310,7 @@ export default function PlannerScreen() {
                                   borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2,
                                 }}>
                                   <Text style={{ fontSize: 9, fontWeight: '900', color: '#f59e0b', letterSpacing: 1 }}>
-                                    DÉLOAD
+                                    {t('planner.deload')}
                                   </Text>
                                 </View>
                               )}
@@ -360,14 +362,14 @@ export default function PlannerScreen() {
 
                   <View style={{ gap: 10 }}>
                     <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                      Objectif
+                      {t('planner.targetWeight')}
                     </Text>
-                    <NumericInput value={planTarget} onChange={setPlanTarget} min={40} max={300} step={5} suffix="kg" />
+                    <NumericInput value={planTarget} onChange={setPlanTarget} min={0} max={300} step={5} suffix="kg" />
                   </View>
 
                   <View style={{ gap: 10 }}>
                     <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                      Durée
+                      {t('planner.weeks')}
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       {[8, 12, 16, 20].map((w) => {
@@ -413,7 +415,7 @@ export default function PlannerScreen() {
                       }}>
                         <Ionicons name="sparkles" size={16} color="#07090f" />
                         <Text style={{ fontSize: 14, fontWeight: '900', color: '#07090f', letterSpacing: 1, textTransform: 'uppercase' }}>
-                          Générer
+                          {t('planner.generate')}
                         </Text>
                       </View>
                     </Pressable>
@@ -426,7 +428,7 @@ export default function PlannerScreen() {
                       }}
                     >
                       <Text style={{ fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.60)' }}>
-                        Annuler
+                        {t('common.cancel')}
                       </Text>
                     </Pressable>
                   </View>
@@ -456,7 +458,7 @@ export default function PlannerScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.2 }}>
-                        Créer un programme
+                        {t('planner.newPlan')}
                       </Text>
                       <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginTop: 2 }}>
                         Progression linéaire, 5/3/1 ou DUP
@@ -522,6 +524,7 @@ export default function PlannerScreen() {
 
 // ── Calculateur d'échauffement ─────────────────────────────────────
 function WarmupSection() {
+  const t = useT();
   const [weight, setWeight]         = useState(80);
   const [targetReps, setTargetReps] = useState(5);
   const sets = generateWarmupSets(weight, targetReps);
@@ -536,7 +539,7 @@ function WarmupSection() {
     <View style={{ paddingHorizontal: 20, gap: 14 }}>
       <SectionHeader
         icon="thermometer-outline"
-        title="Échauffement"
+        title={t('planner.warmup')}
         subtitle="Adapte tes séries de chauffe à ta charge et tes reps"
       />
 
@@ -550,7 +553,7 @@ function WarmupSection() {
             <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
               Poids de travail
             </Text>
-            <NumericInput value={weight} onChange={setWeight} min={20} max={400} step={2.5} suffix="kg" />
+            <NumericInput value={weight} onChange={setWeight} min={0} max={400} step={2.5} suffix="kg" />
           </View>
           <View style={{ flex: 1, gap: 8 }}>
             <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
@@ -633,12 +636,13 @@ function WarmupSection() {
 
 // ── TemplateCard ─ Push / Pull / Legs ─────────────────────────────
 function TemplateCard({ template, onPress }: { template: SessionTemplate; onPress: () => void }) {
+  const t = useT();
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
         width: 220,
-        borderRadius: 22, overflow: 'hidden',
+        borderRadius: 28, overflow: 'hidden',
         transform: [{ scale: pressed ? 0.97 : 1 }],
         borderWidth: 1.5,
         borderColor: `${template.color}38`,
@@ -650,7 +654,7 @@ function TemplateCard({ template, onPress }: { template: SessionTemplate; onPres
       <LinearGradient
         colors={[`${template.color}22`, `${template.color}08`]}
         start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-        style={{ padding: 16, gap: 12, minHeight: 200 }}
+        style={{ padding: 16, gap: 12, minHeight: 200, borderRadius: 28 }}
       >
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -709,7 +713,7 @@ function TemplateCard({ template, onPress }: { template: SessionTemplate; onPres
           paddingTop: 8, borderTopWidth: 1, borderColor: `${template.color}22`,
         }}>
           <Text style={{ fontSize: 13, fontWeight: '900', color: template.color, letterSpacing: 0.5, textTransform: 'uppercase' }}>
-            Démarrer
+            {t('planner.startSession')}
           </Text>
           <Ionicons name="arrow-forward" size={16} color={template.color} />
         </View>

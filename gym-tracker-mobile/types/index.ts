@@ -159,7 +159,7 @@ export interface UserProfile {
 
 export interface AppSettings {
   units: 'kg' | 'lbs';
-  defaultRestTime: 60 | 90 | 120 | 180;
+  defaultRestTime: 5 | 60 | 90 | 120 | 180;
   restTimerEnabled: boolean;
   theme: 'dark' | 'light' | 'system';
   notifications: boolean;
@@ -261,6 +261,7 @@ export interface ActiveSession {
   exercises: ActiveExercise[];
   elapsedSeconds: number;
   restSecondsLeft: number | null;
+  restEndsAt: number | null;
   isResting: boolean;
   lastCompletedSetIndex: number | null;
 }

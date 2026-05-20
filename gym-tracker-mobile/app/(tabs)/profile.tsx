@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useT } from '@/lib/i18n';
 import { BadgeGrid } from '@/components/gamification/BadgeGrid';
 import { NumericInput } from '@/components/ui/Input';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -19,6 +20,7 @@ import { calculateStreakFromWorkouts, getProgressToNextRank, getNextRank } from 
 import { calculate1RM } from '@/lib/aiPlanner';
 import {
   requestPermissions, refreshAllNotifications, cancelAllTrainingReminders,
+  notifyBadgeUnlocked,
 } from '@/lib/notifications';
 import { getRankGradient } from '@/constants/theme';
 import type { Rank, RankTier, UserProfile } from '@/types';
@@ -34,10 +36,6 @@ const BADGE_CROPS: Record<string, { x: number; y: number; w: number; h: number }
   platinum: { x: 715,  y: 252, w: 197, h: 250 },
   diamond:  { x: 928,  y: 254, w: 205, h: 249 },
   legend:   { x: 1133, y: 220, w: 242, h: 290 },
-};
-const TIER_LABEL: Record<string, string> = {
-  bronze: 'BRONZE', silver: 'ARGENT', gold: 'OR',
-  platinum: 'PLATINE', diamond: 'DIAMANT', legend: 'CHAMPION',
 };
 
 function BadgeImage({ tier, size }: { tier: string; size: number }) {
@@ -62,12 +60,6 @@ function BadgeImage({ tier, size }: { tier: string; size: number }) {
 type Section = 'stats' | 'badges' | 'settings';
 type Level = UserProfile['experienceLevel'];
 
-const LEVELS: Array<{ id: Level; label: string; years: string }> = [
-  { id: 'beginner',     label: 'Débutant',      years: '< 1 an'   },
-  { id: 'intermediate', label: 'Intermédiaire', years: '1-3 ans'  },
-  { id: 'advanced',     label: 'Avancé',        years: '3-5 ans'  },
-  { id: 'elite',        label: 'Élite',         years: '5 ans+'   },
-];
 
 const PR_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   'Développé couché':    'barbell',
@@ -133,6 +125,14 @@ export default function ProfileScreen() {
   const { profile, updateProfile, getTotalXP, getCurrentRank } = useProfileStore();
   const { workouts } = useWorkoutStore();
   const { settings, updateSettings } = useSettingsStore();
+  const t = useT();
+
+  const LEVELS: Array<{ id: Level; label: string; years: string }> = [
+    { id: 'beginner',     label: t('level.beginner'),     years: t('level.beginner.years')     },
+    { id: 'intermediate', label: t('level.intermediate'), years: t('level.intermediate.years') },
+    { id: 'advanced',     label: t('level.advanced'),     years: t('level.advanced.years')     },
+    { id: 'elite',        label: t('level.elite'),        years: t('level.elite.years')        },
+  ];
 
   const [activeSection, setActiveSection]   = useState<Section>('stats');
   const [editingName, setEditingName]       = useState(false);
@@ -158,9 +158,9 @@ export default function ProfileScreen() {
   const gamificationData = { workouts, profile: profile ?? null, totalXP, streak };
 
   const handleLogout = () => {
-    Alert.alert('Se déconnecter', 'Tes données locales seront conservées.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/welcome'); } },
+    Alert.alert(t('profile.logoutTitle'), t('profile.logoutMsg'), [
+      { text: t('profile.logoutCancel'), style: 'cancel' },
+      { text: t('profile.logoutConfirm'), style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/welcome'); } },
     ]);
   };
 
@@ -189,9 +189,9 @@ export default function ProfileScreen() {
   };
 
   const SECTIONS: Array<{ id: Section; label: string }> = [
-    { id: 'stats',    label: 'Profil'   },
-    { id: 'badges',   label: 'Badges'   },
-    { id: 'settings', label: 'Réglages' },
+    { id: 'stats',    label: t('profile.tab.stats')     },
+    { id: 'badges',   label: t('profile.tab.badges')    },
+    { id: 'settings', label: t('profile.tab.settings')  },
   ];
 
   return (
@@ -207,7 +207,7 @@ export default function ProfileScreen() {
             {/* ── HERO HEADER unifié ── */}
             <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 22 }}>
               <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 14 }}>
-                Mon profil
+                {t('profile.supertitle')}
               </Text>
 
               {rank ? (
@@ -268,9 +268,9 @@ export default function ProfileScreen() {
                 {/* Stats KPI */}
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {[
-                    { value: workouts.length, label: 'Séances',  color: BG_COLORS.accent, icon: 'trophy' as const },
-                    { value: streak,          label: 'Streak',   color: '#fb923c',         icon: 'flame'  as const },
-                    { value: totalXP,         label: 'XP total', color: '#a78bfa',         icon: 'star'   as const },
+                    { value: workouts.length, label: t('unit.sessions'),  color: BG_COLORS.accent, icon: 'trophy' as const },
+                    { value: streak,          label: t('dashboard.streak'),   color: '#fb923c',         icon: 'flame'  as const },
+                    { value: totalXP,         label: t('rank.xpTotal'), color: '#a78bfa',         icon: 'star'   as const },
                   ].map(({ value, label, color, icon }) => (
                     <View key={label} style={{
                       flex: 1,
@@ -295,7 +295,7 @@ export default function ProfileScreen() {
                 {/* ── Records personnels ── */}
                 <View style={{ gap: 12 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                    Records personnels
+                    {t('profile.personalRecords')}
                   </Text>
 
                   {profile?.prs && profile.prs.length > 0 ? (
@@ -328,7 +328,7 @@ export default function ProfileScreen() {
                                   {pr.exercise}
                                 </Text>
                                 <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2, fontWeight: '600' }}>
-                                  1RM estimé · <Text style={{ color: '#fbbf24', fontWeight: '800' }}>{pr.oneRepMax.toFixed(1)} kg</Text>
+                                  {t('profile.estimatedRM')} · <Text style={{ color: '#fbbf24', fontWeight: '800' }}>{pr.oneRepMax.toFixed(1)} kg</Text>
                                 </Text>
                               </View>
 
@@ -411,7 +411,7 @@ export default function ProfileScreen() {
                         <Ionicons name="trophy-outline" size={26} color="#fbbf24" />
                       </View>
                       <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', textAlign: 'center', fontWeight: '600', lineHeight: 20 }}>
-                        Aucun PR enregistré.{'\n'}Fais une séance pour en ajouter.
+                        {t('profile.noPRs')}
                       </Text>
                     </View>
                   )}
@@ -421,7 +421,7 @@ export default function ProfileScreen() {
                 {profile && (
                   <View style={{ gap: 12 }}>
                     <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                      Configuration
+                      {t('profile.config')}
                     </Text>
 
                     <View style={{
@@ -434,7 +434,7 @@ export default function ProfileScreen() {
                       <View style={{ paddingVertical: 14, gap: 10, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.1 }}>
-                            Niveau
+                            {t('profile.level')}
                           </Text>
                           <Pressable
                             onPress={() => setEditingLevel((v) => !v)}
@@ -479,7 +479,7 @@ export default function ProfileScreen() {
                       <View style={{ paddingVertical: 14, gap: 10 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', letterSpacing: -0.1 }}>
-                            Séances / semaine
+                            {t('profile.sessionsPerWeek')}
                           </Text>
                           <Pressable
                             onPress={() => setEditingFreq((v) => !v)}
@@ -542,7 +542,7 @@ export default function ProfileScreen() {
                   borderColor: 'rgba(255,255,255,0.08)',
                   paddingHorizontal: 16,
                 }}>
-                  <SettingRow icon="speedometer-outline" label="Unités">
+                  <SettingRow icon="speedometer-outline" label={t('settings.units')}>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       {(['kg', 'lbs'] as const).map((u) => {
                         const isSel = settings.units === u;
@@ -570,7 +570,7 @@ export default function ProfileScreen() {
                     </View>
                   </SettingRow>
 
-                  <SettingRow icon="timer-outline" label="Timer de repos">
+                  <SettingRow icon="timer-outline" label={t('settings.restTimer')}>
                     <Switch
                       value={settings.restTimerEnabled}
                       onValueChange={(v) => updateSettings({ restTimerEnabled: v })}
@@ -579,9 +579,9 @@ export default function ProfileScreen() {
                     />
                   </SettingRow>
 
-                  <SettingRow icon="time-outline" label="Repos par défaut">
+                  <SettingRow icon="time-outline" label={t('settings.defaultRest')}>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      {([60, 90, 120, 180] as const).map((t) => {
+                      {([5, 60, 90, 120] as const).map((t) => {
                         const isSel = settings.defaultRestTime === t;
                         return (
                           <Pressable
@@ -606,7 +606,7 @@ export default function ProfileScreen() {
                     </View>
                   </SettingRow>
 
-                  <SettingRow icon="notifications-outline" label="Notifications">
+                  <SettingRow icon="notifications-outline" label={t('settings.notifications')}>
                     <Switch
                       value={settings.notifications}
                       onValueChange={async (v) => {
@@ -627,7 +627,22 @@ export default function ProfileScreen() {
                     />
                   </SettingRow>
 
-                  <SettingRow icon="language-outline" label="Langue" last>
+                  <SettingRow icon="notifications-circle-outline" label={t('settings.testNotif')}>
+                    <Pressable
+                      onPress={() => notifyBadgeUnlocked('Test notification 🧪')}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+                        backgroundColor: pressed ? 'rgba(56,189,248,0.25)' : 'rgba(56,189,248,0.12)',
+                        borderWidth: 1.5, borderColor: BG_COLORS.accent,
+                      })}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '900', color: BG_COLORS.accent }}>
+                        {t('common.send')}
+                      </Text>
+                    </Pressable>
+                  </SettingRow>
+
+                  <SettingRow icon="language-outline" label={t('settings.language')} last>
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       {(['fr', 'en'] as const).map((l) => {
                         const isSel = settings.language === l;
@@ -666,7 +681,7 @@ export default function ProfileScreen() {
                 >
                   <Ionicons name="log-out-outline" size={18} color="#ef4444" />
                   <Text style={{ fontSize: 14, fontWeight: '900', color: '#ef4444', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                    Se déconnecter
+                    {t('profile.logoutBtn')}
                   </Text>
                 </Pressable>
               </View>
@@ -693,9 +708,10 @@ function ProfileHero({
   onStartEditName: () => void;
   onSaveName: () => void;
 }) {
+  const t = useT();
   const progress  = getProgressToNextRank(totalXP);
   const nextRank  = getNextRank(rank.tier as RankTier, rank.level);
-  const tierLabel = TIER_LABEL[rank.tier] ?? rank.tier.toUpperCase();
+  const tierLabel = t(`tier.${rank.tier}` as any);
   const gradient  = getRankGradient(rank.tier);
   const xpToNext  = nextRank ? Math.max(0, nextRank.minXP - totalXP) : 0;
 
@@ -802,7 +818,7 @@ function ProfileHero({
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
             <View>
               <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1.6, textTransform: 'uppercase' }}>
-                XP total
+                {t('rank.xpTotal')}
               </Text>
               <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 }}>
                 {totalXP.toLocaleString('fr-FR')}
@@ -810,7 +826,7 @@ function ProfileHero({
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1.6, textTransform: 'uppercase' }}>
-                {nextRank ? 'Prochain rang' : 'Max'}
+                {nextRank ? t('rank.next') : t('rank.max')}
               </Text>
               <Text style={{ fontSize: 16, fontWeight: '900', color: rank.color, letterSpacing: -0.3 }}>
                 {nextRank ? `${xpToNext.toLocaleString('fr-FR')} XP` : '★'}
@@ -829,7 +845,7 @@ function ProfileHero({
           {nextRank && (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', fontWeight: '700' }}>
-                Vers <Text style={{ color: '#fff', fontWeight: '800' }}>{nextRank.name}</Text>
+                {t('rank.towards')} <Text style={{ color: '#fff', fontWeight: '800' }}>{nextRank.name}</Text>
               </Text>
               <Text style={{ fontSize: 12, fontWeight: '900', color: rank.color }}>
                 {progress}%

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { MuscleMapSVG, MuscleHeatmapList } from './MuscleMapSVG';
-import { MUSCLE_LABELS } from '@/lib/gamification';
+import { useMuscleLabels } from '@/lib/i18n';
 import { getMuscleActivity } from '@/lib/gamification';
 import type { MuscleGroup, Workout } from '@/types';
 
@@ -28,6 +28,7 @@ export function MuscleHeatmap({
   compact = false,
 }: MuscleHeatmapProps) {
   const [selected, setSelected] = useState<MuscleGroup | null>(null);
+  const muscleLabels = useMuscleLabels();
   const activity = getMuscleActivity(workouts, period);
 
   const handlePress = (muscle: MuscleGroup) => {
@@ -81,13 +82,13 @@ export function MuscleHeatmap({
 
       {/* Détail muscle sélectionné */}
       {selected && (
-        <MuscleDetail muscle={selected} intensity={activity[selected] ?? 0} />
+        <MuscleDetail muscle={selected} intensity={activity[selected] ?? 0} muscleLabels={muscleLabels} />
       )}
     </View>
   );
 }
 
-function MuscleDetail({ muscle, intensity }: { muscle: MuscleGroup; intensity: number }) {
+function MuscleDetail({ muscle, intensity, muscleLabels }: { muscle: MuscleGroup; intensity: number; muscleLabels: Record<MuscleGroup, string> }) {
   const color = muscleDetailColor(intensity);
   const status =
     intensity === 0   ? 'Aucun travail récent' :
@@ -112,7 +113,7 @@ function MuscleDetail({ muscle, intensity }: { muscle: MuscleGroup; intensity: n
       <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: color, opacity: 0.8 }} />
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 15, fontWeight: '600', color: '#f8fafc' }}>
-          {MUSCLE_LABELS[muscle]}
+          {muscleLabels[muscle]}
         </Text>
         <Text style={{ fontSize: 13, color: 'rgba(248,250,252,0.55)' }}>{status}</Text>
       </View>

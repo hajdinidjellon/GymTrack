@@ -12,7 +12,7 @@ const SETTINGS_KEY = '@gymtrack/settings';
 
 const DEFAULT_SETTINGS: AppSettings = {
   units: 'kg',
-  defaultRestTime: 90,
+  defaultRestTime: 5,
   restTimerEnabled: true,
   theme: 'system',
   notifications: true,

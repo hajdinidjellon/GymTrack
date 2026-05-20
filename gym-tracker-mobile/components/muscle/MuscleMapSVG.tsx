@@ -13,7 +13,7 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, Image } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
-import { MUSCLE_LABELS } from '@/lib/gamification';
+import { useMuscleLabels } from '@/lib/i18n';
 import type { MuscleGroup } from '@/types';
 
 // ── PNGs anatomiques extraits des SVGs ────────────────────────
@@ -285,6 +285,7 @@ export function MuscleHeatmapList({
   onMusclePress,
   selected,
 }: MuscleHeatmapListProps) {
+  const muscleLabels = useMuscleLabels();
   const muscles: MuscleGroup[] = ['chest','back','shoulders','arms','legs','core','glutes','calves'];
 
   return (
@@ -308,7 +309,7 @@ export function MuscleHeatmapList({
             }}
           >
             <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: color, borderWidth: 1.5, borderColor: isSelected ? '#7c3aed' : 'transparent' }} />
-            <Text style={{ fontSize: 11, color: 'rgba(248,250,252,0.55)' }}>{MUSCLE_LABELS[muscle]}</Text>
+            <Text style={{ fontSize: 11, color: 'rgba(248,250,252,0.55)' }}>{muscleLabels[muscle]}</Text>
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#f8fafc' }}>{val}%</Text>
           </Pressable>
         );

@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useT } from '@/lib/i18n';
 import { ExerciseCard } from '@/components/session/ExerciseCard';
 import { RestTimer } from '@/components/session/RestTimer';
 import { SessionTimer } from '@/components/session/TimerRing';
@@ -16,21 +17,21 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { getSuggestedSession } from '@/lib/aiPlanner';
+import { getSuggestedSession, calculate1RM } from '@/lib/aiPlanner';
 import { MUSCLE_LABELS } from '@/lib/gamification';
-import { EXERCISE_GROUPS, filterGroups, type ExerciseDefinition } from '@/lib/exerciseDatabase';
+import { useCelebrationStore } from '@/stores/celebrationStore';
+import { EXERCISE_GROUPS, filterGroups, type ExerciseDefinition, type ExerciseGroup } from '@/lib/exerciseDatabase';
 import type { ActiveExercise, MuscleGroup, WorkoutSet, WorkoutType } from '@/types';
 
-const QUICK_STARTS: Array<{
-  title: string;
+const WORKOUT_MODES: Array<{
   type: WorkoutType;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
 }> = [
-  { title: 'Force',        type: 'strength',    icon: 'barbell-outline', color: '#38bdf8' },
-  { title: 'Hypertrophie', type: 'hypertrophy', icon: 'body-outline',    color: '#a78bfa' },
-  { title: 'Cardio',       type: 'cardio',      icon: 'pulse-outline',   color: '#34d399' },
-  { title: 'Mobilité',     type: 'mobility',    icon: 'leaf-outline',    color: '#f59e0b' },
+  { type: 'strength',    icon: 'barbell-outline', color: '#38bdf8' },
+  { type: 'hypertrophy', icon: 'body-outline',    color: '#818cf8' },
+  { type: 'cardio',      icon: 'pulse-outline',   color: '#34d399' },
+  { type: 'mobility',    icon: 'leaf-outline',    color: '#fb923c' },
 ];
 
 // ── ExercisePicker — catégories + recherche + custom ────────────────
@@ -45,19 +46,85 @@ const MUSCLE_GROUP_OPTIONS: Array<{ id: MuscleGroup; label: string }> = [
   { id: 'calves',    label: 'Mollets' },
 ];
 
+// ── Card exercice premium ─────────────────────────────────────────────
+function ExerciseCard_Picker({
+  ex, group, onPress,
+}: {
+  ex: ExerciseDefinition;
+  group: ExerciseGroup;
+  onPress: () => void;
+}) {
+  const iconName = ex.category === 'compound' ? 'barbell' : ex.category === 'isolation' ? 'fitness' : 'flash';
+  const muscles  = ex.muscleGroups.slice(0, 3)
+    .map((m) => MUSCLE_GROUP_OPTIONS.find((o) => o.id === m)?.label ?? m)
+    .join(' · ');
+  const catLabel = ex.category === 'compound' ? 'Compound' : ex.category === 'isolation' ? 'Isolation' : 'Accessoire';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: pressed ? 'rgba(255,255,255,0.07)' : 'rgba(12,12,22,0.90)',
+        overflow: 'hidden',
+      })}
+    >
+      {/* Bloc icône gauche avec dégradé */}
+      <LinearGradient
+        colors={[`${group.color}35`, `${group.color}12`] as [string, string]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={{ width: 68, height: 68, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Ionicons name={iconName as keyof typeof Ionicons.glyphMap} size={28} color={group.color} />
+      </LinearGradient>
+
+      {/* Séparateur vertical coloré */}
+      <View style={{ width: 1, height: 38, backgroundColor: `${group.color}30` }} />
+
+      {/* Texte */}
+      <View style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 15 }}>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: -0.2, marginBottom: 4 }}>
+          {ex.name}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.38)' }}>
+            {muscles}
+          </Text>
+          <View style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.20)' }} />
+          <Text style={{ fontSize: 11, fontWeight: '700', color: `${group.color}CC` }}>
+            {catLabel}
+          </Text>
+        </View>
+      </View>
+
+      {/* Flèche */}
+      <View style={{ marginRight: 16 }}>
+        <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.22)" />
+      </View>
+    </Pressable>
+  );
+}
+
+// ── Picker principal ─────────────────────────────────────────────────
 function ExercisePicker({ visible, onSelect, onClose }: {
   visible: boolean;
   onSelect: (exercise: Omit<ActiveExercise, 'isExpanded'>) => void;
   onClose: () => void;
 }) {
-  const [search, setSearch] = useState('');
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [customMode, setCustomMode] = useState(false);
-  const [customName, setCustomName] = useState('');
+  const t = useT();
+  const [search, setSearch]               = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<ExerciseGroup | null>(null);
+  const [customMode, setCustomMode]       = useState(false);
+  const [customName, setCustomName]       = useState('');
   const [customMuscles, setCustomMuscles] = useState<MuscleGroup[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const filteredGroups = filterGroups(search);
-  const searching = search.trim().length > 0;
+  const searching      = search.trim().length > 0;
+
+  const searchResults: Array<{ ex: ExerciseDefinition; group: ExerciseGroup }> = searching
+    ? filteredGroups.flatMap((g) => g.exercises.map((ex) => ({ ex, group: g })))
+    : [];
 
   const handlePick = (ex: ExerciseDefinition) => {
     onSelect({
@@ -68,6 +135,7 @@ function ExercisePicker({ visible, onSelect, onClose }: {
       sets: [{ weight: 0, reps: 8, setType: 'normal', completed: false }],
     });
     setSearch('');
+    setSelectedGroup(null);
     onClose();
   };
 
@@ -81,74 +149,161 @@ function ExercisePicker({ visible, onSelect, onClose }: {
       muscleGroups: customMuscles,
       sets: [{ weight: 0, reps: 8, setType: 'normal', completed: false }],
     });
-    setCustomMode(false);
-    setCustomName('');
-    setCustomMuscles([]);
-    setSearch('');
+    setCustomMode(false); setCustomName(''); setCustomMuscles([]);
+    setSearch(''); setSelectedGroup(null);
     onClose();
   };
 
-  const toggleMuscle = (m: MuscleGroup) => {
-    setCustomMuscles((prev) =>
-      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
-    );
+  const toggleMuscle = (m: MuscleGroup) =>
+    setCustomMuscles((p) => p.includes(m) ? p.filter((x) => x !== m) : [...p, m]);
+
+  const handleBack = () => {
+    if (customMode)     { setCustomMode(false); return; }
+    if (selectedGroup)  { setSelectedGroup(null); return; }
+    onClose();
   };
+
+  const accentColor = selectedGroup ? selectedGroup.color : BG_COLORS.accent;
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onDismiss={() => { setCustomMode(false); setSearch(''); }}
+      onDismiss={() => { setCustomMode(false); setSearch(''); setSelectedGroup(null); }}
     >
-      <View style={{ flex: 1, backgroundColor: BG_COLORS.base }}>
+      <View style={{ flex: 1, backgroundColor: '#08080f' }}>
         <ScreenBackground variant="session" topHalo={false} />
-
         <SafeAreaView style={{ flex: 1 }}>
-          {/* Header */}
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-            paddingHorizontal: 20, paddingVertical: 14,
-            borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)',
-          }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ fontSize: 10, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2, textTransform: 'uppercase' }}>
-                Exercices
-              </Text>
-              <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 }}>
-                {customMode ? 'Exercice personnalisé' : 'Ajouter un exercice'}
-              </Text>
+
+          {/* ══ HEADER PREMIUM ══ */}
+          <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+
+              {/* Titre + sous-titre */}
+              <View style={{ flex: 1 }}>
+                {/* Breadcrumb / back */}
+                {(customMode || selectedGroup) ? (
+                  <Pressable
+                    onPress={handleBack}
+                    hitSlop={10}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}
+                  >
+                    <Ionicons name="arrow-back" size={16} color={accentColor} />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: accentColor }}>
+                      {selectedGroup ? 'Groupes musculaires' : 'Retour'}
+                    </Text>
+                  </Pressable>
+                ) : null}
+
+                <Text style={{
+                  fontSize: 32, fontWeight: '900', color: '#fff',
+                  letterSpacing: -1, lineHeight: 36,
+                }}>
+                  {customMode
+                    ? t('picker.customTitle')
+                    : selectedGroup
+                    ? selectedGroup.label.toUpperCase()
+                    : 'Exercices'}
+                </Text>
+
+                <Text style={{
+                  fontSize: 13, fontWeight: '600', marginTop: 5,
+                  color: selectedGroup ? `${selectedGroup.color}BB` : 'rgba(255,255,255,0.38)',
+                }}>
+                  {customMode
+                    ? 'Crée ton exercice personnalisé'
+                    : selectedGroup
+                    ? `${selectedGroup.exercises.length} exercices · ${selectedGroup.hint}`
+                    : 'Sélectionne un groupe musculaire'}
+                </Text>
+              </View>
+
+              {/* Bouton fermer / icône search */}
+              {!selectedGroup && !customMode ? (
+                <Pressable
+                  onPress={onClose}
+                  hitSlop={10}
+                  style={({ pressed }) => ({
+                    width: 42, height: 42, borderRadius: 21,
+                    backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
+                    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+                    alignItems: 'center', justifyContent: 'center',
+                    marginTop: 2,
+                  })}
+                >
+                  <Ionicons name="close" size={20} color="rgba(255,255,255,0.75)" />
+                </Pressable>
+              ) : selectedGroup ? (
+                <Pressable
+                  onPress={onClose}
+                  hitSlop={10}
+                  style={({ pressed }) => ({
+                    width: 42, height: 42, borderRadius: 21,
+                    backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
+                    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+                    alignItems: 'center', justifyContent: 'center',
+                    marginTop: 2,
+                  })}
+                >
+                  <Ionicons name="close" size={20} color="rgba(255,255,255,0.75)" />
+                </Pressable>
+              ) : null}
             </View>
-            <Pressable
-              onPress={() => {
-                if (customMode) { setCustomMode(false); }
-                else { onClose(); }
-              }}
-              hitSlop={10}
-            >
-              <Ionicons name="close" size={26} color="rgba(255,255,255,0.55)" />
-            </Pressable>
+
+            {/* Barre de recherche — visible uniquement sur l'écran principal */}
+            {!selectedGroup && !customMode && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 10,
+                backgroundColor: 'rgba(255,255,255,0.06)',
+                borderWidth: 1.5,
+                borderColor: searchFocused || searching ? `${BG_COLORS.accent}70` : 'rgba(255,255,255,0.08)',
+                borderRadius: 16, paddingHorizontal: 14, marginTop: 16,
+                shadowColor: searchFocused ? BG_COLORS.accent : 'transparent',
+                shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 0 },
+              }}>
+                <Ionicons name="search-outline" size={18}
+                  color={searchFocused || searching ? BG_COLORS.accent : 'rgba(255,255,255,0.30)'} />
+                <TextInput
+                  style={{ flex: 1, fontSize: 15, color: '#fff', paddingVertical: 13, fontWeight: '600' }}
+                  placeholder="Rechercher un exercice…"
+                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  value={search}
+                  onChangeText={setSearch}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                />
+                {search.length > 0 && (
+                  <Pressable onPress={() => setSearch('')} hitSlop={10}>
+                    <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.35)" />
+                  </Pressable>
+                )}
+              </View>
+            )}
           </View>
 
-          {/* ─── MODE CUSTOM ─── */}
+          {/* ══ MODE CUSTOM ══ */}
           {customMode ? (
-            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 28, gap: 18 }}>
-              <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                  Nom de l'exercice
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, gap: 22 }}>
+              <View style={{ gap: 10 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.8, textTransform: 'uppercase' }}>
+                  {t('picker.customNameLabel')}
                 </Text>
                 <View style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 10,
+                  flexDirection: 'row', alignItems: 'center', gap: 12,
                   backgroundColor: 'rgba(255,255,255,0.05)',
                   borderWidth: 1.5,
-                  borderColor: customName.trim().length >= 2 ? BG_COLORS.accent : 'rgba(255,255,255,0.10)',
-                  borderRadius: 14, paddingHorizontal: 14,
+                  borderColor: customName.trim().length >= 2 ? BG_COLORS.accent : 'rgba(255,255,255,0.09)',
+                  borderRadius: 18, paddingHorizontal: 16,
+                  shadowColor: customName.trim().length >= 2 ? BG_COLORS.accent : 'transparent',
+                  shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 0 },
                 }}>
-                  <Ionicons name="create-outline" size={18} color={customName.trim().length >= 2 ? BG_COLORS.accent : 'rgba(255,255,255,0.40)'} />
+                  <Ionicons name="create-outline" size={20}
+                    color={customName.trim().length >= 2 ? BG_COLORS.accent : 'rgba(255,255,255,0.30)'} />
                   <TextInput
-                    style={{ flex: 1, fontSize: 16, color: '#fff', paddingVertical: 14, fontWeight: '700' }}
-                    placeholder="Ex: Hip abduction machine"
-                    placeholderTextColor="rgba(255,255,255,0.30)"
+                    style={{ flex: 1, fontSize: 17, color: '#fff', paddingVertical: 16, fontWeight: '700' }}
+                    placeholder={t('picker.customNamePlaceholder')}
+                    placeholderTextColor="rgba(255,255,255,0.22)"
                     value={customName}
                     onChangeText={setCustomName}
                     autoFocus
@@ -156,11 +311,11 @@ function ExercisePicker({ visible, onSelect, onClose }: {
                 </View>
               </View>
 
-              <View style={{ gap: 10 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                  Muscles travaillés (au moins 1)
+              <View style={{ gap: 12 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 1.8, textTransform: 'uppercase' }}>
+                  {t('picker.customMusclesLabel')}
                 </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                   {MUSCLE_GROUP_OPTIONS.map((m) => {
                     const isSel = customMuscles.includes(m.id);
                     return (
@@ -168,18 +323,17 @@ function ExercisePicker({ visible, onSelect, onClose }: {
                         key={m.id}
                         onPress={() => toggleMuscle(m.id)}
                         style={{
-                          paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12,
-                          backgroundColor: isSel ? `${BG_COLORS.accent}22` : 'rgba(255,255,255,0.05)',
+                          paddingHorizontal: 16, paddingVertical: 11, borderRadius: 14,
+                          backgroundColor: isSel ? `${BG_COLORS.accent}20` : 'rgba(255,255,255,0.05)',
                           borderWidth: 1.5,
-                          borderColor: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.10)',
-                          flexDirection: 'row', alignItems: 'center', gap: 6,
+                          borderColor: isSel ? `${BG_COLORS.accent}80` : 'rgba(255,255,255,0.09)',
+                          flexDirection: 'row', alignItems: 'center', gap: 8,
+                          shadowColor: isSel ? BG_COLORS.accent : 'transparent',
+                          shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 0 },
                         }}
                       >
                         {isSel && <Ionicons name="checkmark" size={14} color={BG_COLORS.accent} />}
-                        <Text style={{
-                          fontSize: 13, fontWeight: '800',
-                          color: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.60)',
-                        }}>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: isSel ? BG_COLORS.accent : 'rgba(255,255,255,0.50)' }}>
                           {m.label}
                         </Text>
                       </Pressable>
@@ -192,190 +346,181 @@ function ExercisePicker({ visible, onSelect, onClose }: {
                 onPress={handleSaveCustom}
                 disabled={customName.trim().length < 2 || customMuscles.length === 0}
                 style={({ pressed }) => ({
-                  borderRadius: 18, overflow: 'hidden', marginTop: 12,
-                  opacity: customName.trim().length < 2 || customMuscles.length === 0 ? 0.4 : 1,
+                  borderRadius: 20, marginTop: 8,
+                  opacity: customName.trim().length < 2 || customMuscles.length === 0 ? 0.35 : 1,
                   transform: [{ scale: pressed ? 0.97 : 1 }],
-                  shadowColor: BG_COLORS.accent,
-                  shadowOpacity: 0.45, shadowRadius: 20, shadowOffset: { width: 0, height: 8 },
-                  elevation: 10,
+                  shadowColor: BG_COLORS.accent, shadowOpacity: 0.50, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+                  elevation: 12,
                 })}
               >
-                <View style={{
-                  backgroundColor: BG_COLORS.accent, borderRadius: 18, paddingVertical: 18,
-                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-                }}>
-                  <Ionicons name="add-circle" size={18} color="#07090f" />
-                  <Text style={{ fontSize: 15, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                    Créer l'exercice
+                <LinearGradient
+                  colors={[BG_COLORS.accent, '#0ea5e9'] as [string, string]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={{
+                    borderRadius: 20, paddingVertical: 20,
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  }}
+                >
+                  <Ionicons name="add-circle" size={20} color="#fff" />
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', letterSpacing: 1 }}>
+                    {t('picker.createBtn')}
                   </Text>
-                </View>
+                </LinearGradient>
               </Pressable>
             </ScrollView>
+
+          ) : selectedGroup ? (
+            /* ══ LISTE EXERCICES ══ */
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
+              {/* Container glassmorphism */}
+              <View style={{
+                borderRadius: 22, overflow: 'hidden',
+                borderWidth: 1.5,
+                borderColor: `${selectedGroup.color}30`,
+                backgroundColor: 'rgba(12,12,22,0.85)',
+                shadowColor: selectedGroup.color,
+                shadowOpacity: 0.15, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+                elevation: 10,
+              }}>
+                {selectedGroup.exercises.map((ex, i) => (
+                  <React.Fragment key={`${ex.name}-${i}`}>
+                    <ExerciseCard_Picker
+                      ex={ex}
+                      group={selectedGroup}
+                      onPress={() => handlePick(ex)}
+                    />
+                    {i < selectedGroup.exercises.length - 1 && (
+                      <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginLeft: 68 }} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </View>
+            </ScrollView>
+
           ) : (
-            <>
-              {/* Barre de recherche */}
-              <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
-                <View style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 10,
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                  borderWidth: 1, borderColor: searching ? 'rgba(56,189,248,0.40)' : 'rgba(255,255,255,0.10)',
-                  borderRadius: 14, paddingHorizontal: 14,
-                }}>
-                  <Ionicons name="search-outline" size={18} color={searching ? BG_COLORS.accent : 'rgba(255,255,255,0.40)'} />
-                  <TextInput
-                    style={{ flex: 1, fontSize: 15, color: '#fff', paddingVertical: 13, fontWeight: '600' }}
-                    placeholder="Bench press, squat, curl..."
-                    placeholderTextColor="rgba(255,255,255,0.30)"
-                    value={search}
-                    onChangeText={setSearch}
-                  />
-                  {search.length > 0 && (
-                    <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                      <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.45)" />
-                    </Pressable>
+            /* ══ GRILLE GROUPES + RECHERCHE ══ */
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
+              {searching ? (
+                /* Résultats de recherche */
+                <View>
+                  {searchResults.length === 0 ? (
+                    <View style={{
+                      alignItems: 'center', paddingVertical: 56, gap: 16,
+                      backgroundColor: 'rgba(255,255,255,0.03)',
+                      borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+                    }}>
+                      <Ionicons name="search" size={44} color="rgba(255,255,255,0.15)" />
+                      <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', fontWeight: '700' }}>
+                        {t('picker.noResults')}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{
+                      borderRadius: 22, overflow: 'hidden',
+                      borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.09)',
+                      backgroundColor: 'rgba(12,12,22,0.85)',
+                    }}>
+                      {searchResults.map(({ ex, group }, i) => (
+                        <React.Fragment key={`${ex.name}-${i}`}>
+                          <ExerciseCard_Picker ex={ex} group={group} onPress={() => handlePick(ex)} />
+                          {i < searchResults.length - 1 && (
+                            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.06)', marginLeft: 68 }} />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </View>
                   )}
                 </View>
-              </View>
-
-              {/* Liste catégories */}
-              <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28, gap: 10 }}>
-                {filteredGroups.length === 0 ? (
-                  <View style={{
-                    alignItems: 'center', paddingVertical: 28, gap: 10,
-                    backgroundColor: 'rgba(255,255,255,0.03)',
-                    borderRadius: 18, borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.06)',
-                  }}>
-                    <Ionicons name="search" size={28} color="rgba(255,255,255,0.30)" />
-                    <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', fontWeight: '600', textAlign: 'center' }}>
-                      Aucun exercice trouvé.{'\n'}Crée-le ci-dessous.
-                    </Text>
-                  </View>
-                ) : (
-                  filteredGroups.map((group) => {
-                    const isOpen = searching || expanded[group.id] === true;
-                    return (
-                      <View
+              ) : (
+                /* ── Grille groupes musculaires premium ── */
+                <View style={{ gap: 12 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                    {EXERCISE_GROUPS.map((group) => (
+                      <Pressable
                         key={group.id}
-                        style={{
-                          backgroundColor: 'rgba(255,255,255,0.04)',
-                          borderRadius: 18, borderWidth: 1,
-                          borderColor: 'rgba(255,255,255,0.08)',
+                        onPress={() => setSelectedGroup(group)}
+                        style={({ pressed }) => ({
+                          width: '47.5%',
+                          borderRadius: 22,
                           overflow: 'hidden',
-                        }}
+                          borderWidth: 1.5,
+                          borderColor: pressed ? group.color : `${group.color}45`,
+                          transform: [{ scale: pressed ? 0.95 : 1 }],
+                          shadowColor: group.color,
+                          shadowOpacity: pressed ? 0.55 : 0.20,
+                          shadowRadius: pressed ? 22 : 14,
+                          shadowOffset: { width: 0, height: 6 },
+                          elevation: 10,
+                        })}
                       >
-                        <Pressable
-                          onPress={() => setExpanded((p) => ({ ...p, [group.id]: !p[group.id] }))}
-                          style={({ pressed }) => ({
-                            flexDirection: 'row', alignItems: 'center', gap: 12,
-                            paddingHorizontal: 14, paddingVertical: 14,
-                            backgroundColor: pressed ? 'rgba(56,189,248,0.06)' : 'transparent',
-                          })}
+                        <LinearGradient
+                          colors={[`${group.color}28`, `${group.color}08`, '#0a0a15'] as [string, string, string]}
+                          start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
+                          style={{ paddingTop: 24, paddingBottom: 20, paddingHorizontal: 16, alignItems: 'center', gap: 14 }}
                         >
+                          {/* Icône avec glow */}
                           <View style={{
-                            width: 38, height: 38, borderRadius: 11,
-                            backgroundColor: `${group.color}18`,
-                            borderWidth: 1, borderColor: `${group.color}32`,
+                            width: 62, height: 62, borderRadius: 20,
+                            backgroundColor: `${group.color}20`,
+                            borderWidth: 1.5, borderColor: `${group.color}55`,
                             alignItems: 'center', justifyContent: 'center',
+                            shadowColor: group.color, shadowOpacity: 0.60,
+                            shadowRadius: 14, shadowOffset: { width: 0, height: 4 },
+                            elevation: 8,
                           }}>
-                            <Ionicons name={group.icon as keyof typeof Ionicons.glyphMap} size={18} color={group.color} />
+                            <Ionicons name={group.icon as keyof typeof Ionicons.glyphMap} size={28} color={group.color} />
                           </View>
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff', letterSpacing: -0.2 }}>
+
+                          {/* Texte */}
+                          <View style={{ alignItems: 'center', gap: 5 }}>
+                            <Text style={{
+                              fontSize: 13, fontWeight: '900', color: '#fff',
+                              letterSpacing: 1.4, textTransform: 'uppercase', textAlign: 'center',
+                            }}>
                               {group.label}
                             </Text>
-                            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: '700', marginTop: 2 }}>
-                              {group.exercises.length} exercice{group.exercises.length > 1 ? 's' : ''} · {group.hint}
+                            <Text style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.40)', textAlign: 'center' }}>
+                              {group.exercises.length} exercices
                             </Text>
                           </View>
-                          <Ionicons
-                            name={isOpen ? 'chevron-up' : 'chevron-down'}
-                            size={18}
-                            color="rgba(255,255,255,0.45)"
-                          />
-                        </Pressable>
-
-                        {isOpen && (
-                          <View style={{ paddingHorizontal: 8, paddingBottom: 10, gap: 4 }}>
-                            {group.exercises.map((ex, i) => (
-                              <Pressable
-                                key={`${ex.name}-${i}`}
-                                onPress={() => handlePick(ex)}
-                                style={({ pressed }) => ({
-                                  flexDirection: 'row', alignItems: 'center', gap: 10,
-                                  paddingHorizontal: 12, paddingVertical: 11, borderRadius: 12,
-                                  backgroundColor: pressed ? `${group.color}14` : 'transparent',
-                                })}
-                              >
-                                <View style={{
-                                  width: 28, height: 28, borderRadius: 9,
-                                  backgroundColor: 'rgba(255,255,255,0.05)',
-                                  borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-                                  alignItems: 'center', justifyContent: 'center',
-                                }}>
-                                  <Ionicons
-                                    name={ex.category === 'compound' ? 'barbell' : ex.category === 'isolation' ? 'fitness' : 'flash'}
-                                    size={14}
-                                    color="rgba(255,255,255,0.55)"
-                                  />
-                                </View>
-                                <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: -0.1 }}>
-                                  {ex.name}
-                                </Text>
-                                <View style={{
-                                  paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
-                                  backgroundColor: ex.category === 'compound' ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.05)',
-                                  borderWidth: 1,
-                                  borderColor: ex.category === 'compound' ? 'rgba(56,189,248,0.26)' : 'rgba(255,255,255,0.08)',
-                                }}>
-                                  <Text style={{
-                                    fontSize: 9, fontWeight: '800', letterSpacing: 0.5,
-                                    color: ex.category === 'compound' ? '#7dd3fc' : 'rgba(255,255,255,0.50)',
-                                    textTransform: 'uppercase',
-                                  }}>
-                                    {ex.category === 'compound' ? 'Poly' : ex.category === 'isolation' ? 'Iso' : 'Acc'}
-                                  </Text>
-                                </View>
-                              </Pressable>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })
-                )}
-
-                {/* CTA exercice perso */}
-                <Pressable
-                  onPress={() => setCustomMode(true)}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row', alignItems: 'center', gap: 12,
-                    paddingVertical: 16, paddingHorizontal: 14, marginTop: 6,
-                    borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed',
-                    borderColor: pressed ? BG_COLORS.accent : 'rgba(56,189,248,0.40)',
-                    backgroundColor: pressed ? 'rgba(56,189,248,0.08)' : 'transparent',
-                  })}
-                >
-                  <View style={{
-                    width: 38, height: 38, borderRadius: 11,
-                    backgroundColor: 'rgba(56,189,248,0.16)',
-                    borderWidth: 1, borderColor: 'rgba(56,189,248,0.32)',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Ionicons name="add" size={20} color={BG_COLORS.accent} />
+                        </LinearGradient>
+                      </Pressable>
+                    ))}
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '900', color: BG_COLORS.accent, letterSpacing: -0.2 }}>
-                      Exercice personnalisé
-                    </Text>
-                    <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', fontWeight: '600', marginTop: 2 }}>
-                      Crée un exercice qui n'est pas dans la liste
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.45)" />
-                </Pressable>
-              </ScrollView>
-            </>
+
+                  {/* CTA exercice perso */}
+                  <Pressable
+                    onPress={() => setCustomMode(true)}
+                    style={({ pressed }) => ({
+                      flexDirection: 'row', alignItems: 'center', gap: 16,
+                      paddingVertical: 20, paddingHorizontal: 20, marginTop: 4,
+                      borderRadius: 22, borderWidth: 1.5, borderStyle: 'dashed',
+                      borderColor: pressed ? BG_COLORS.accent : `${BG_COLORS.accent}50`,
+                      backgroundColor: pressed ? 'rgba(56,189,248,0.08)' : 'transparent',
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    })}
+                  >
+                    <View style={{
+                      width: 50, height: 50, borderRadius: 16,
+                      backgroundColor: 'rgba(56,189,248,0.12)',
+                      borderWidth: 1.5, borderColor: `${BG_COLORS.accent}45`,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons name="add" size={24} color={BG_COLORS.accent} />
+                    </View>
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '900', color: BG_COLORS.accent, letterSpacing: -0.2 }}>
+                        {t('picker.customCta')}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', fontWeight: '600' }}>
+                        {t('picker.customCtaSub')}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.28)" />
+                  </Pressable>
+                </View>
+              )}
+            </ScrollView>
           )}
         </SafeAreaView>
       </View>
@@ -392,8 +537,17 @@ export default function SessionScreen() {
 
   const { addWorkout, getLastWorkoutForExercise } = useWorkoutStore();
   const { profile } = useProfileStore();
+  const showCelebration = useCelebrationStore((s) => s.show);
   const workouts = useWorkoutStore((s) => s.workouts);
   const defaultRestTime = useSettingsStore((s) => s.settings.defaultRestTime);
+  const t = useT();
+
+  const QUICK_STARTS = WORKOUT_MODES.map((m) => ({
+    ...m,
+    title:    t(`session.type.${m.type}.title` as any),
+    subtitle: t(`session.type.${m.type}.subtitle` as any),
+    hint:     t(`session.type.${m.type}.hint` as any),
+  }));
 
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [workoutName, setWorkoutName] = useState('');
@@ -438,18 +592,35 @@ export default function SessionScreen() {
     await addWorkout(finalWorkout);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
     setShowFinishModal(false);
+
+    // Détection PR — compare chaque exercice avec les PRs du profil
+    const currentPRs = profile?.prs ?? [];
+    for (const exercise of workout.exercises) {
+      if (exercise.sets.length === 0) continue;
+      const best1RM = Math.max(...exercise.sets.map((s) => calculate1RM(s.weight, s.reps)));
+      const existing = currentPRs.find((pr) => pr.exercise === exercise.name);
+      if (best1RM > (existing?.oneRepMax ?? 0) + 0.5) {
+        showCelebration({
+          type: 'pr',
+          title: t('dashboard.prTitle'),
+          subtitle: t('dashboard.prSubtitle', { exercise: exercise.name }),
+        });
+        break; // Une seule célébration par séance
+      }
+    }
   };
 
   const handleDiscard = () => {
-    Alert.alert('Abandonner la séance ?', 'Toutes les données seront perdues.', [
-      { text: 'Continuer', style: 'cancel' },
-      { text: 'Abandonner', style: 'destructive', onPress: () => discardSession() },
+    Alert.alert(t('session.discardTitle'), t('session.discardMessage'), [
+      { text: t('session.discardCancel'), style: 'cancel' },
+      { text: t('session.discardConfirm'), style: 'destructive', onPress: () => discardSession() },
     ]);
   };
 
   // ── PAS DE SÉANCE ACTIVE ─────────────────────────────────────────
   if (!activeSession) {
-    const suggested = profile ? getSuggestedSession(profile, workouts, null) : null;
+    const selectedQS = QUICK_STARTS.find((q) => q.type === selectedType) ?? QUICK_STARTS[0]!;
+    const suggested = profile ? getSuggestedSession(profile, workouts, null, selectedType) : null;
 
     return (
       <View style={{ flex: 1, backgroundColor: BG_COLORS.base }}>
@@ -464,22 +635,22 @@ export default function SessionScreen() {
               {/* ── HEADER ── */}
               <View style={{ paddingTop: 12, paddingBottom: 24 }}>
                 <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 6 }}>
-                  Aujourd'hui
+                  {t('session.today')}
                 </Text>
                 <Text style={{ fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1.6, lineHeight: 42 }}>
-                  Nouvelle séance
+                  {t('session.newSession')}
                 </Text>
                 <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', fontWeight: '600', marginTop: 8, lineHeight: 20 }}>
-                  Lance-toi avec une suggestion ou crée la tienne.
+                  {t('session.subtitle')}
                 </Text>
               </View>
 
               {/* ── TYPE DE SÉANCE ── */}
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 12 }}>
-                  Type
+              <View style={{ marginBottom: 28 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.28)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>
+                  {t('session.modeLabel')}
                 </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                <View style={{ gap: 14 }}>
                   {QUICK_STARTS.map((qs) => {
                     const isSel = selectedType === qs.type;
                     return (
@@ -487,27 +658,95 @@ export default function SessionScreen() {
                         key={qs.type}
                         onPress={() => setSelectedType(qs.type)}
                         style={({ pressed }) => ({
-                          borderRadius: 14, overflow: 'hidden',
-                          transform: [{ scale: pressed ? 0.96 : 1 }],
+                          transform: [{ scale: pressed ? 0.983 : 1 }],
+                          borderRadius: 24,
+                          shadowColor: '#000',
+                          shadowOpacity: isSel ? 0.60 : 0.45,
+                          shadowRadius: isSel ? 28 : 18,
+                          shadowOffset: { width: 0, height: isSel ? 12 : 7 },
+                          elevation: isSel ? 14 : 8,
                         })}
                       >
-                        <View style={{
-                          paddingHorizontal: 16, paddingVertical: 12,
-                          flexDirection: 'row', alignItems: 'center', gap: 8,
-                          backgroundColor: isSel ? `${qs.color}22` : 'rgba(255,255,255,0.04)',
-                          borderWidth: 1.5,
-                          borderColor: isSel ? qs.color : 'rgba(255,255,255,0.09)',
-                          borderRadius: 14,
-                        }}>
-                          <Ionicons name={qs.icon} size={16} color={isSel ? qs.color : 'rgba(255,255,255,0.40)'} />
-                          <Text style={{
-                            fontSize: 14, fontWeight: '800',
-                            color: isSel ? qs.color : 'rgba(255,255,255,0.60)',
-                            letterSpacing: -0.1,
+                        <LinearGradient
+                          colors={isSel ? ['#1e1e32', '#161628'] : ['#16162a', '#111120']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={{
+                            height: 92,
+                            borderRadius: 24,
+                            borderWidth: isSel ? 1 : 0.5,
+                            borderColor: isSel ? `${qs.color}50` : 'rgba(255,255,255,0.10)',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: 20,
+                            gap: 16,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {/* Accent bar gauche */}
+                          <View style={{
+                            width: 3,
+                            height: 42,
+                            borderRadius: 2,
+                            backgroundColor: isSel ? qs.color : 'rgba(255,255,255,0.10)',
+                            opacity: isSel ? 0.90 : 1,
+                          }} />
+
+                          {/* Icône */}
+                          <View style={{
+                            width: 46,
+                            height: 46,
+                            borderRadius: 14,
+                            backgroundColor: `${qs.color}18`,
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }}>
-                            {qs.title}
-                          </Text>
-                        </View>
+                            <Ionicons
+                              name={qs.icon}
+                              size={22}
+                              color={isSel ? qs.color : `${qs.color}90`}
+                            />
+                          </View>
+
+                          {/* Texte */}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{
+                              fontSize: 17,
+                              fontWeight: '800',
+                              color: isSel ? '#fff' : 'rgba(255,255,255,0.68)',
+                              letterSpacing: -0.5,
+                            }}>
+                              {qs.title}
+                            </Text>
+                            <Text style={{
+                              fontSize: 12,
+                              color: isSel ? 'rgba(255,255,255,0.42)' : 'rgba(255,255,255,0.26)',
+                              fontWeight: '600',
+                              marginTop: 4,
+                              letterSpacing: 0.1,
+                            }}>
+                              {qs.subtitle}
+                            </Text>
+                          </View>
+
+                          {/* Hint + chevron */}
+                          <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                            <Text style={{
+                              fontSize: 9,
+                              fontWeight: '800',
+                              color: isSel ? qs.color : 'rgba(255,255,255,0.20)',
+                              letterSpacing: 1.4,
+                              textTransform: 'uppercase',
+                            }}>
+                              {qs.hint}
+                            </Text>
+                            <Ionicons
+                              name="chevron-forward"
+                              size={14}
+                              color={isSel ? `${qs.color}80` : 'rgba(255,255,255,0.18)'}
+                            />
+                          </View>
+                        </LinearGradient>
                       </Pressable>
                     );
                   })}
@@ -518,16 +757,16 @@ export default function SessionScreen() {
               {suggested && (
                 <View style={{ marginBottom: 24 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 12 }}>
-                    Suggestion
+                    {t('session.suggestionLabel')}
                   </Text>
                   <View style={{
                     backgroundColor: 'rgba(255,255,255,0.04)',
                     borderRadius: 22, borderWidth: 1,
-                    borderColor: 'rgba(56,189,248,0.22)',
+                    borderColor: `${selectedQS.color}38`,
                     overflow: 'hidden',
                   }}>
                     <LinearGradient
-                      colors={['rgba(56,189,248,0.14)', 'transparent']}
+                      colors={[`${selectedQS.color}22`, 'transparent']}
                       style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140 }}
                     />
                     <View style={{ padding: 22, gap: 14 }}>
@@ -557,10 +796,10 @@ export default function SessionScreen() {
                         {suggested.focus.map((m) => (
                           <View key={m} style={{
                             paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999,
-                            backgroundColor: 'rgba(56,189,248,0.14)',
-                            borderWidth: 1, borderColor: 'rgba(56,189,248,0.32)',
+                            backgroundColor: `${selectedQS.color}20`,
+                            borderWidth: 1, borderColor: `${selectedQS.color}45`,
                           }}>
-                            <Text style={{ fontSize: 11, fontWeight: '800', color: '#7dd3fc', textTransform: 'uppercase', letterSpacing: 1 }}>
+                            <Text style={{ fontSize: 11, fontWeight: '800', color: selectedQS.color, textTransform: 'uppercase', letterSpacing: 1 }}>
                               {MUSCLE_LABELS[m]}
                             </Text>
                           </View>
@@ -569,7 +808,7 @@ export default function SessionScreen() {
 
                       <Pressable
                         onPress={() => {
-                          handleStart(suggested.title, 'strength');
+                          handleStart(suggested.title, selectedType);
                           suggested.exercises.forEach((ex) => {
                             handleAddExercise({
                               id: `${ex.name}-${Date.now()}`,
@@ -592,7 +831,7 @@ export default function SessionScreen() {
                         }}>
                           <Ionicons name="flame" size={18} color="#07090f" />
                           <Text style={{ fontSize: 15, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                            Démarrer
+                            {t('common.start')}
                           </Text>
                         </View>
                       </Pressable>
@@ -604,7 +843,7 @@ export default function SessionScreen() {
               {/* ── SÉANCE LIBRE ── */}
               <View style={{ marginBottom: 24 }}>
                 <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 12 }}>
-                  Ou séance libre
+                  {t('session.freeSectionLabel')}
                 </Text>
                 <Pressable
                   onPress={() => handleStart('Séance', selectedType)}
@@ -621,7 +860,7 @@ export default function SessionScreen() {
                   }}>
                     <Ionicons name="add" size={18} color="#fff" />
                     <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                      Démarrer sans programme
+                      {t('session.freeStart')}
                     </Text>
                   </View>
                 </Pressable>
@@ -638,7 +877,7 @@ export default function SessionScreen() {
                 }}>
                   <Mascot pose="mimi_target" height={140} animate float />
                   <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', fontWeight: '600', lineHeight: 20 }}>
-                    On va construire ton premier entraînement.{'\n'}Choisis un type ci-dessus et go.
+                    {t('session.zeroState')}
                   </Text>
                 </View>
               )}
@@ -668,7 +907,7 @@ export default function SessionScreen() {
 
           <View style={{ alignItems: 'center', flex: 1 }}>
             <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-              Séries
+              {t('session.sets')}
             </Text>
             <Text style={{ fontSize: 19, fontWeight: '900', color: '#fff', letterSpacing: -0.4 }}>
               {completedSets}<Text style={{ color: 'rgba(255,255,255,0.40)', fontSize: 14 }}>/{totalSets}</Text>
@@ -679,7 +918,7 @@ export default function SessionScreen() {
             <Pressable
               onPress={() => setShowFinishModal(true)}
               style={({ pressed }) => ({
-                borderRadius: 12, overflow: 'hidden',
+                borderRadius: 20, overflow: 'hidden',
                 shadowColor: BG_COLORS.accent,
                 shadowOpacity: pressed ? 0.2 : 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
                 elevation: 6,
@@ -687,10 +926,11 @@ export default function SessionScreen() {
             >
               <View style={{
                 backgroundColor: BG_COLORS.accent,
-                paddingHorizontal: 14, paddingVertical: 8,
+                paddingHorizontal: 16, paddingVertical: 10,
+                borderRadius: 20,
               }}>
                 <Text style={{ fontSize: 12, fontWeight: '900', color: '#07090f', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                  Terminer
+                  {t('session.finish')}
                 </Text>
               </View>
             </Pressable>
@@ -730,7 +970,7 @@ export default function SessionScreen() {
           >
             <Ionicons name="add" size={20} color={BG_COLORS.accent} />
             <Text style={{ fontSize: 14, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-              Ajouter un exercice
+              {t('session.addExercise')}
             </Text>
           </Pressable>
         </ScrollView>
@@ -755,19 +995,19 @@ export default function SessionScreen() {
         />
 
         {/* Modal terminer */}
-        <Modal visible={showFinishModal} transparent animationType="slide" presentationStyle="pageSheet">
+        <Modal visible={showFinishModal} animationType="slide" presentationStyle="pageSheet">
           <View style={{ flex: 1, backgroundColor: BG_COLORS.base }}>
             <ScreenBackground variant="session" topHalo={false} />
 
             <SafeAreaView style={{ flex: 1 }}>
               <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 24, paddingBottom: 32, gap: 24 }}>
                 <Text style={{ fontSize: 32, fontWeight: '900', color: '#fff', letterSpacing: -1.2 }}>
-                  Terminer la séance
+                  {t('session.finishTitle')}
                 </Text>
 
                 <View style={{ gap: 10 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 2, textTransform: 'uppercase' }}>
-                    Nom de la séance
+                    {t('session.sessionName')}
                   </Text>
                   <TextInput
                     style={{
@@ -784,7 +1024,7 @@ export default function SessionScreen() {
 
                 <View style={{ gap: 10 }}>
                   <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 2, textTransform: 'uppercase' }}>
-                    Comment tu te sens ?
+                    {t('session.howFeel')}
                   </Text>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     {([1, 2, 3, 4, 5] as const).map((f) => (
@@ -811,9 +1051,9 @@ export default function SessionScreen() {
 
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {[
-                    { label: 'Durée', value: `${Math.floor(activeSession.elapsedSeconds / 60)} min` },
-                    { label: 'Exercices', value: String(activeSession.exercises.length) },
-                    { label: 'Séries', value: `${completedSets}/${totalSets}` },
+                    { label: t('session.duration'), value: `${Math.floor(activeSession.elapsedSeconds / 60)} ${t('unit.min')}` },
+                    { label: t('session.exercises'), value: String(activeSession.exercises.length) },
+                    { label: t('session.sets'), value: `${completedSets}/${totalSets}` },
                   ].map((s) => (
                     <View key={s.label} style={{
                       flex: 1,
@@ -848,14 +1088,14 @@ export default function SessionScreen() {
                     }}>
                       <Ionicons name="checkmark-circle" size={18} color="#07090f" />
                       <Text style={{ fontSize: 15, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                        Sauvegarder
+                        {t('session.saveSession')}
                       </Text>
                     </View>
                   </Pressable>
 
                   <Pressable onPress={() => setShowFinishModal(false)} style={{ paddingVertical: 14, alignItems: 'center' }}>
                     <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontWeight: '700' }}>
-                      Continuer la séance
+                      {t('session.continueSession')}
                     </Text>
                   </Pressable>
                 </View>
