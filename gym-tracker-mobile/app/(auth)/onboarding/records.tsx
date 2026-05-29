@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
 import { Stepper } from '@/components/onboarding/Stepper';
 import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
+import { AnimatedMultiFrameMascot } from '@/components/mascot/Mascot';
 
 export default function OnboardingRecordsScreen() {
   const params = useLocalSearchParams<{
     name: string; goal: string; level: string; frequency: string;
     muscleFocus: string; height: string; weight: string;
   }>();
-  const total = getTotalSteps(parseGoal(params.goal));
+  const goal  = parseGoal(params.goal);
+  const total = getTotalSteps(goal);
 
   const [bench, setBench] = useState(60);
   const [squat, setSquat] = useState(80);
@@ -19,7 +21,7 @@ export default function OnboardingRecordsScreen() {
 
   const goNext = (skip: boolean) =>
     router.push({
-      pathname: '/(auth)/onboarding/done',
+      pathname: '/(auth)/onboarding/connect',
       params: {
         ...params,
         benchW: String(skip ? 0 : bench), benchR: '5',
@@ -28,10 +30,18 @@ export default function OnboardingRecordsScreen() {
       },
     });
 
+  const mascot = goal === 'hypertrophy' ? (
+    <AnimatedMultiFrameMascot
+      frames={['ecrit_4', 'ecrit_5', 'ecrit_6', 'ecrit_5']}
+      height={150}
+      frameDuration={130}
+      fadeDuration={0}
+    />
+  ) : undefined;
+
   return (
     <OnboardingFrame
-      pose="mimi2_bench"
-      mascotHeight={130}
+      {...(mascot ? { customMascot: mascot } : { pose: 'mimi2_bench', mascotHeight: 130 })}
       question="Tes records actuels ?"
       subtext="Tes meilleures charges sur les 3 mouvements clés. Optionnel."
       step={7}
@@ -62,9 +72,9 @@ function RecordRow({
   return (
     <View style={{
       flexDirection: 'row', alignItems: 'center', gap: 12,
-      backgroundColor: 'rgba(255,255,255,0.04)',
+      backgroundColor: 'rgba(12,14,26,0.82)',
       borderRadius: 16, paddingVertical: 10, paddingHorizontal: 12,
-      borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+      borderWidth: 1, borderColor: 'rgba(12,14,26,0.88)',
     }}>
       <View style={{
         width: 42, height: 42, borderRadius: 12,
@@ -80,9 +90,10 @@ function RecordRow({
           Charge max (1RM ou top set)
         </Text>
       </View>
-      <View style={{ width: 130 }}>
-        <Stepper value={value} onChange={onChange} min={0} max={500} step={2.5} label="" unit="kg" />
+      <View style={{ width: 120 }}>
+        <Stepper value={value} onChange={onChange} min={0} max={500} step={2.5} label="" unit="kg" compact />
       </View>
     </View>
   );
 }
+

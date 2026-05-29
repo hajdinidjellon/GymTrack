@@ -1,13 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import {
   View, Text, Pressable, ScrollView, Animated, Easing,
-  KeyboardAvoidingView, Platform, Dimensions,
+  KeyboardAvoidingView, Platform, Dimensions, ImageBackground,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mascot, AnimatedExerciseMascot, type MascotPose } from '@/components/mascot/Mascot';
+
+const BG_QR = require('@/assets/images/background-qr.png') as number;
 
 const { width: W } = Dimensions.get('window');
 
@@ -103,19 +105,18 @@ export function OnboardingFrame({
       style={{ flex: 1, backgroundColor: '#07090f' }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Fond subtil */}
-      <LinearGradient
-        colors={['#0c0e1a', '#07090f']}
+      {/* Image de fond */}
+      <ImageBackground
+        source={BG_QR}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        resizeMode="cover"
+        imageStyle={{ opacity: 0.70 }}
       />
-      {/* Halo haut */}
+      {/* Overlay sombre pour lisibilité */}
       <LinearGradient
-        colors={['rgba(56,189,248,0.08)', 'transparent']}
-        start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
-        style={{
-          position: 'absolute', top: -W * 0.3, left: 0, right: 0,
-          height: W * 0.9, borderRadius: W,
-        }}
+        colors={['rgba(7,9,15,0.10)', 'rgba(7,9,15,0.35)', 'rgba(7,9,15,0.80)']}
+        locations={[0, 0.5, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>

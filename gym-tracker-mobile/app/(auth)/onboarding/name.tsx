@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -20,7 +20,6 @@ export default function OnboardingNameScreen() {
       subtext="Ton prénom sera utilisé pour personnaliser ton expérience."
       step={1}
       total={TOTAL}
-      hideBack
       canContinue={canContinue}
       onContinue={() =>
         router.push({ pathname: '/(auth)/onboarding/goal', params: { name: trimmed } })
@@ -33,9 +32,9 @@ export default function OnboardingNameScreen() {
     >
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(12,14,26,0.82)',
         borderRadius: 18, borderWidth: 1.5,
-        borderColor: canContinue ? '#38bdf8' : 'rgba(255,255,255,0.12)',
+        borderColor: canContinue ? '#38bdf8' : 'rgba(255,255,255,0.18)',
         paddingHorizontal: 18,
       }}>
         <Ionicons name="person-outline" size={20} color={canContinue ? '#38bdf8' : 'rgba(255,255,255,0.30)'} />
@@ -56,3 +55,4 @@ export default function OnboardingNameScreen() {
     </OnboardingFrame>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
@@ -63,3 +63,4 @@ export default function OnboardingSquatScreen() {
     </OnboardingFrame>
   );
 }
+

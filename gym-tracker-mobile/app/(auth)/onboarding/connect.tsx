@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, Pressable, Animated, Easing,
-  Dimensions, ImageBackground, KeyboardAvoidingView, Platform, ScrollView,
+  Dimensions, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Input } from '@/components/ui/Input';
@@ -15,7 +15,9 @@ import { colors } from '@/constants/theme';
 const BG = require('@/assets/images/register-progress.png') as number;
 const { height: H } = Dimensions.get('window');
 
-export default function RegisterScreen() {
+export default function ConnectScreen() {
+  const params = useLocalSearchParams<Record<string, string>>();
+
   const [mode, setMode]                       = useState<'choose' | 'email'>('choose');
   const [email, setEmail]                     = useState('');
   const [password, setPassword]               = useState('');
@@ -24,23 +26,25 @@ export default function RegisterScreen() {
   const [error, setError]                     = useState<string | null>(null);
 
   const fadeIn  = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(30)).current;
+  const slideUp = useRef(new Animated.Value(28)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeIn,  { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(slideUp, { toValue: 0, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(fadeIn,  { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(slideUp, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
 
-  const handleRegister = async () => {
+  const goToDone = () => router.push({ pathname: '/(auth)/onboarding/done', params });
+
+  const handleEmailSignup = async () => {
     if (!email.trim() || !password || !confirmPassword) { setError('Veuillez remplir tous les champs'); return; }
     if (password !== confirmPassword) { setError('Les mots de passe ne correspondent pas'); return; }
     if (password.length < 6) { setError('Le mot de passe doit faire au moins 6 caractères'); return; }
     setLoading(true); setError(null);
     const { error: authError } = await signUpWithEmail(email.trim(), password);
     if (authError) { setError(authError); setLoading(false); return; }
-    router.replace('/(auth)/onboarding/name');
+    goToDone();
   };
 
   // ── Formulaire email ─────────────────────────────────────────────
@@ -74,7 +78,7 @@ export default function RegisterScreen() {
               </View>
 
               <Pressable
-                onPress={handleRegister}
+                onPress={handleEmailSignup}
                 disabled={loading}
                 style={({ pressed }) => ({
                   borderRadius: 20, overflow: 'hidden', marginBottom: 24,
@@ -91,12 +95,14 @@ export default function RegisterScreen() {
                 </View>
               </Pressable>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', fontWeight: '600' }}>Déjà un compte ?</Text>
-                <Pressable onPress={() => router.push('/(auth)/login')}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#38bdf8' }}>Se connecter</Text>
-                </Pressable>
-              </View>
+              <Pressable
+                onPress={goToDone}
+                style={{ paddingVertical: 14, alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.40)' }}>
+                  Continuer sans compte →
+                </Text>
+              </Pressable>
 
             </ScrollView>
           </Animated.View>
@@ -105,12 +111,12 @@ export default function RegisterScreen() {
     );
   }
 
-  // ── Écran de choix (mode === 'choose') ───────────────────────────
+  // ── Écran de choix ───────────────────────────────────────────────
   return (
     <View style={{ flex: 1, backgroundColor: '#07090f' }}>
       <StatusBar style="light" />
 
-      <ImageBackground source={BG} style={{ flex: 1 }} resizeMode="cover">
+      <ImageBackground source={BG} style={{ flex: 1 }} resizeMode="cover" imageStyle={{ top: -120 }}>
         <LinearGradient
           colors={['rgba(7,9,15,0.0)', 'rgba(7,9,15,0.10)', 'rgba(7,9,15,0.75)', '#07090f']}
           locations={[0, 0.40, 0.72, 1]}
@@ -122,16 +128,20 @@ export default function RegisterScreen() {
               {/* Bouton retour */}
               <Pressable
                 onPress={() => router.back()}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, margin: 20, alignSelf: 'flex-start' }}
+                style={({ pressed }) => ({
+                  width: 48, height: 48, borderRadius: 16, margin: 16,
+                  backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
+                  borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+                  alignItems: 'center', justifyContent: 'center',
+                  alignSelf: 'flex-start',
+                })}
               >
-                <Ionicons name="arrow-back" size={18} color="rgba(255,255,255,0.65)" />
-                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)', fontWeight: '700' }}>Retour</Text>
+                <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.80)" />
               </Pressable>
 
-              {/* Spacer — pousse le texte vers le bas */}
               <View style={{ flex: 1 }} />
 
-              {/* Titre positionné bas */}
+              {/* Titre bas */}
               <View style={{ paddingHorizontal: 24, marginBottom: 28, gap: 8 }}>
                 <Text style={{ fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.50)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
                   GymTrack
@@ -140,15 +150,16 @@ export default function RegisterScreen() {
                   Sauvegarde{'\n'}tes progrès
                 </Text>
                 <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', fontWeight: '600', lineHeight: 22 }}>
-                  Accède à tes données sur tous tes appareils
+                  Choisis comment te connecter pour synchroniser tes données
                 </Text>
               </View>
 
               {/* Boutons */}
-              <View style={{ paddingHorizontal: 24, paddingBottom: 32, gap: 14 }}>
+              <View style={{ paddingHorizontal: 24, paddingBottom: 24, gap: 14 }}>
 
                 {/* Google */}
                 <Pressable
+                  onPress={() => Alert.alert('Bientôt disponible', 'La connexion Google arrive prochainement !')}
                   style={({ pressed }) => ({
                     borderRadius: 20,
                     transform: [{ scale: pressed ? 0.97 : 1 }],
@@ -158,8 +169,7 @@ export default function RegisterScreen() {
                 >
                   <View style={{
                     backgroundColor: '#fff', borderRadius: 20,
-                    paddingVertical: 18, paddingHorizontal: 24,
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+                    paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
                   }}>
                     <Ionicons name="logo-google" size={20} color="#1a1a2e" />
                     <Text style={{ fontSize: 16, fontWeight: '900', color: '#1a1a2e', letterSpacing: 0.3 }}>
@@ -179,8 +189,7 @@ export default function RegisterScreen() {
                   <View style={{
                     backgroundColor: 'rgba(255,255,255,0.10)',
                     borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.22)',
-                    paddingVertical: 18, paddingHorizontal: 24,
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+                    paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
                     borderRadius: 20,
                   }}>
                     <Ionicons name="mail-outline" size={20} color="#fff" />
@@ -188,6 +197,19 @@ export default function RegisterScreen() {
                       Continuer avec l'email
                     </Text>
                   </View>
+                </Pressable>
+
+                {/* Sans compte */}
+                <Pressable
+                  onPress={goToDone}
+                  style={({ pressed }) => ({
+                    paddingVertical: 14, alignItems: 'center', borderRadius: 16,
+                    backgroundColor: pressed ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  })}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.40)' }}>
+                    Continuer sans compte →
+                  </Text>
                 </Pressable>
 
               </View>

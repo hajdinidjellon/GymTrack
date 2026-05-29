@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
@@ -19,7 +19,7 @@ export default function OnboardingDeadliftScreen() {
 
   const goNext = () =>
     router.push({
-      pathname: '/(auth)/onboarding/done',
+      pathname: '/(auth)/onboarding/connect',
       params: { ...params, deadW: String(weight), deadR: String(reps) },
     });
 
@@ -34,7 +34,7 @@ export default function OnboardingDeadliftScreen() {
       canContinue={true}
       skipLabel="Je ne sais pas encore"
       onSkip={() => router.push({
-        pathname: '/(auth)/onboarding/done',
+        pathname: '/(auth)/onboarding/connect',
         params: { ...params, deadW: '0', deadR: '3' },
       })}
       onContinue={goNext}
@@ -63,3 +63,4 @@ export default function OnboardingDeadliftScreen() {
     </OnboardingFrame>
   );
 }
+

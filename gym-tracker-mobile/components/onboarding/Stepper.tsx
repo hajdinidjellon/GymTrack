@@ -9,10 +9,11 @@ interface StepperProps {
   step?: number;
   label: string;
   unit?: string;
+  compact?: boolean;
 }
 
 export function Stepper({
-  value, onChange, min = 0, max = 999, step = 1, label, unit,
+  value, onChange, min = 0, max = 999, step = 1, label, unit, compact = false,
 }: StepperProps) {
   const clamp = (v: number) => Math.min(Math.max(v, min), max);
   const dec = () => onChange(clamp(value - step));
@@ -58,22 +59,22 @@ export function Stepper({
       </Text>
 
       <View style={{
-        flexDirection: 'row', alignItems: 'center', gap: 10,
+        flexDirection: 'row', alignItems: 'center', gap: compact ? 6 : 10,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 16, borderWidth: 1,
         borderColor: editing ? '#38bdf8' : 'rgba(255,255,255,0.10)',
-        padding: 12, width: '100%', justifyContent: 'space-between',
+        padding: compact ? 8 : 12, width: '100%', justifyContent: 'space-between',
       }}>
         {/* Bouton − */}
         <Pressable
           onPress={dec}
           style={({ pressed }) => ({
-            width: 38, height: 38, borderRadius: 12,
+            width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: 10,
             backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
             alignItems: 'center', justifyContent: 'center',
           })}
         >
-          <Text style={{ fontSize: 22, color: 'rgba(255,255,255,0.85)', fontWeight: '700', lineHeight: 26 }}>−</Text>
+          <Text style={{ fontSize: compact ? 18 : 22, color: 'rgba(255,255,255,0.85)', fontWeight: '700', lineHeight: compact ? 22 : 26 }}>−</Text>
         </Pressable>
 
         {/* Valeur — tap pour éditer */}
@@ -81,7 +82,7 @@ export function Stepper({
           {editing ? (
             <TextInput
               ref={inputRef}
-              style={{ fontSize: 30, fontWeight: '900', color: '#38bdf8', letterSpacing: -1, textAlign: 'center', minWidth: 60 }}
+              style={{ fontSize: compact ? 22 : 30, fontWeight: '900', color: '#38bdf8', letterSpacing: -1, textAlign: 'center', minWidth: 40 }}
               value={raw}
               onChangeText={handleChange}
               onBlur={handleBlur}
@@ -92,7 +93,7 @@ export function Stepper({
               autoFocus
             />
           ) : (
-            <Text style={{ fontSize: 30, fontWeight: '900', color: '#fff', letterSpacing: -1 }}>
+            <Text style={{ fontSize: compact ? 22 : 30, fontWeight: '900', color: '#fff', letterSpacing: -1 }}>
               {display}
             </Text>
           )}
@@ -105,13 +106,13 @@ export function Stepper({
         <Pressable
           onPress={inc}
           style={({ pressed }) => ({
-            width: 38, height: 38, borderRadius: 12,
+            width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: 10,
             backgroundColor: pressed ? 'rgba(56,189,248,0.25)' : 'rgba(56,189,248,0.12)',
             borderWidth: 1, borderColor: 'rgba(56,189,248,0.30)',
             alignItems: 'center', justifyContent: 'center',
           })}
         >
-          <Text style={{ fontSize: 22, color: '#38bdf8', fontWeight: '700', lineHeight: 26 }}>+</Text>
+          <Text style={{ fontSize: compact ? 18 : 22, color: '#38bdf8', fontWeight: '700', lineHeight: compact ? 22 : 26 }}>+</Text>
         </Pressable>
       </View>
     </View>

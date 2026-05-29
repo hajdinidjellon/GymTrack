@@ -28,6 +28,7 @@ export function MuscleHeatmap({
   compact = false,
 }: MuscleHeatmapProps) {
   const [selected, setSelected] = useState<MuscleGroup | null>(null);
+  const [muscleView, setMuscleView] = useState<'front' | 'back'>('front');
   const muscleLabels = useMuscleLabels();
   const activity = getMuscleActivity(workouts, period);
 
@@ -37,25 +38,48 @@ export function MuscleHeatmap({
 
   return (
     <View style={{ gap: 16 }}>
-      {/* Sélecteur période */}
+      {/* Sélecteurs période + vue */}
       {onPeriodChange && (
-        <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
-          {([7, 30] as const).map((p) => (
-            <Pressable
-              key={p}
-              onPress={() => onPeriodChange(p)}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: period === p ? '#7c3aed' : 'transparent',
-              }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '500', color: period === p ? 'white' : 'rgba(248,250,252,0.55)' }}>
-                {p === 7 ? '7 jours' : '30 jours'}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* 7j / 30j */}
+          <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 4 }}>
+            {([7, 30] as const).map((p) => (
+              <Pressable
+                key={p}
+                onPress={() => onPeriodChange(p)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: period === p ? '#7c3aed' : 'transparent',
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '500', color: period === p ? 'white' : 'rgba(248,250,252,0.55)' }}>
+                  {p === 7 ? '7 jours' : '30 jours'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Avant / Arrière */}
+          <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 4 }}>
+            {(['front', 'back'] as const).map((v) => (
+              <Pressable
+                key={v}
+                onPress={() => setMuscleView(v)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: muscleView === v ? '#7c3aed' : 'transparent',
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '500', color: muscleView === v ? 'white' : 'rgba(248,250,252,0.55)' }}>
+                  {v === 'front' ? 'Avant' : 'Arrière'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       )}
 
@@ -67,7 +91,7 @@ export function MuscleHeatmap({
             selected={selected}
             onMusclePress={handlePress}
             size="md"
-            showBoth
+            view={muscleView}
             showLegend
           />
         </View>

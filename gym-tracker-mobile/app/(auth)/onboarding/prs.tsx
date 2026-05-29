@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 
 export default function OnboardingPRsRedirect() {
@@ -10,3 +10,4 @@ export default function OnboardingPRsRedirect() {
 
   return null;
 }
+

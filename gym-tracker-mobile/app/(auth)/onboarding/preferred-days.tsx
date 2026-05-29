@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+﻿import React, { useState } from 'react';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
 import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
 import type { DayOfWeek } from '@/types';
+import { OptionCard } from '@/components/onboarding/OptionCard';
 
 const DAYS: Array<{ id: DayOfWeek; short: string; long: string }> = [
   { id: 'mon', short: 'L', long: 'Lundi'    },
@@ -45,48 +46,32 @@ export default function OnboardingPreferredDaysScreen() {
         params: { ...params, preferredDays: selected.join(',') },
       })}
     >
-      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'space-between' }}>
-        {DAYS.map((d) => {
-          const isSel = selected.includes(d.id);
-          return (
-            <Pressable
-              key={d.id}
-              onPress={() => toggle(d.id)}
-              style={({ pressed }) => ({
-                flex: 1,
-                aspectRatio: 0.85,
-                borderRadius: 14,
-                backgroundColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.05)',
-                borderWidth: 1.5,
-                borderColor: isSel ? '#38bdf8' : 'rgba(255,255,255,0.10)',
-                alignItems: 'center', justifyContent: 'center',
-                transform: [{ scale: pressed ? 0.94 : 1 }],
-              })}
-            >
-              <Text style={{
-                fontSize: 20, fontWeight: '900',
-                color: isSel ? '#07090f' : 'rgba(255,255,255,0.70)',
-                letterSpacing: -0.5,
-              }}>
-                {d.short}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View style={{ gap: 8 }}>
+        {DAYS.map((d) => (
+          <OptionCard
+            key={d.id}
+            icon="calendar-outline"
+            title={d.long}
+            subtitle={d.short}
+            color="#38bdf8"
+            selected={selected.includes(d.id)}
+            onPress={() => toggle(d.id)}
+          />
+        ))}
       </View>
 
       {/* Indicateur de match avec la fréquence */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: isMatch ? 'rgba(52,211,153,0.10)' : 'rgba(255,255,255,0.04)',
+        backgroundColor: isMatch ? 'rgba(52,211,153,0.10)' : 'rgba(12,14,26,0.82)',
         borderRadius: 14, paddingVertical: 14, paddingHorizontal: 18,
         borderWidth: 1,
-        borderColor: isMatch ? 'rgba(52,211,153,0.30)' : 'rgba(255,255,255,0.08)',
+        borderColor: isMatch ? 'rgba(52,211,153,0.30)' : 'rgba(12,14,26,0.88)',
         marginTop: 4,
       }}>
         <View style={{
           width: 36, height: 36, borderRadius: 11,
-          backgroundColor: isMatch ? 'rgba(52,211,153,0.22)' : 'rgba(255,255,255,0.08)',
+          backgroundColor: isMatch ? 'rgba(52,211,153,0.22)' : 'rgba(12,14,26,0.88)',
           alignItems: 'center', justifyContent: 'center',
         }}>
           <Ionicons
@@ -106,3 +91,4 @@ export default function OnboardingPreferredDaysScreen() {
     </OnboardingFrame>
   );
 }
+

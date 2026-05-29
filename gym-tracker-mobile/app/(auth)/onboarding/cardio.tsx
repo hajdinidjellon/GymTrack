@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -42,7 +42,7 @@ export default function OnboardingCardioScreen() {
       total={total}
       canContinue={true}
       onContinue={() => router.push({
-        pathname: '/(auth)/onboarding/done',
+        pathname: '/(auth)/onboarding/connect',
         params: { ...params, cardioPerWeek: String(n) },
       })}
     >
@@ -55,9 +55,9 @@ export default function OnboardingCardioScreen() {
               width: '31%',
               paddingVertical: 20,
               borderRadius: 18,
-              backgroundColor: n === o.n ? `${o.color}22` : 'rgba(255,255,255,0.04)',
+              backgroundColor: n === o.n ? `${o.color}22` : 'rgba(12,14,26,0.82)',
               borderWidth: 2,
-              borderColor: n === o.n ? o.color : 'rgba(255,255,255,0.09)',
+              borderColor: n === o.n ? o.color : 'rgba(255,255,255,0.15)',
               alignItems: 'center', gap: 4,
               transform: [{ scale: pressed ? 0.95 : 1 }],
             })}
@@ -97,3 +97,4 @@ export default function OnboardingCardioScreen() {
     </OnboardingFrame>
   );
 }
+

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, Animated, Easing, Dimensions,
+  View, Text, Pressable, Animated, Easing, Dimensions, ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -16,6 +16,7 @@ import type {
   HealthFocus, SportBackground, BodyStats,
 } from '@/types';
 
+const BG_QR = require('@/assets/images/background-qr.png') as number;
 const { width: W, height: H } = Dimensions.get('window');
 
 // ── Confetti minimaliste ──────────────────────────────────────────
@@ -114,12 +115,19 @@ export default function OnboardingDoneScreen() {
       <StatusBar style="light" backgroundColor="#07090f" />
 
       {/* Fond */}
+      <ImageBackground
+        source={BG_QR}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        resizeMode="cover"
+        imageStyle={{ opacity: 0.70 }}
+      />
       <LinearGradient
-        colors={['#0c0e1a', '#07090f']}
+        colors={['rgba(7,9,15,0.10)', 'rgba(7,9,15,0.35)', 'rgba(7,9,15,0.85)']}
+        locations={[0, 0.5, 1]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
       <LinearGradient
-        colors={['rgba(56,189,248,0.14)', 'transparent']}
+        colors={['rgba(56,189,248,0.18)', 'transparent']}
         start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: H * 0.55 }}
       />

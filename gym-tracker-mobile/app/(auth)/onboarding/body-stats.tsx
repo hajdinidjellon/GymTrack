@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -24,31 +24,17 @@ export default function OnboardingBodyStatsScreen() {
     bmi < 25   ? '#34d399' :
     bmi < 30   ? '#fbbf24' : '#f87171';
 
-  return (
-    <OnboardingFrame
-      pose="mimi_mesure"
-      mascotHeight={160}
-      question="Tes mesures actuelles ?"
-      subtext="Pour suivre ta progression et calibrer les charges."
-      step={6}
-      total={total}
-      canContinue={true}
-      onContinue={() => router.push({
-        pathname: '/(auth)/onboarding/records',
-        params: { ...params, height: String(height), weight: String(weight) },
-      })}
-    >
+  const statsNode = (
+    <View style={{ gap: 12, paddingBottom: 8 }}>
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <Stepper value={height} onChange={setHeight} min={120} max={230} step={1}   label="Taille" unit="cm" />
         <Stepper value={weight} onChange={setWeight} min={30}  max={250} step={0.5} label="Poids"  unit="kg" />
       </View>
-
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
         backgroundColor: `${bmiColor}10`,
         borderRadius: 14, paddingVertical: 14, paddingHorizontal: 18,
         borderWidth: 1, borderColor: `${bmiColor}28`,
-        marginTop: 4,
       }}>
         <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: `${bmiColor}22`, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="analytics-outline" size={18} color={bmiColor} />
@@ -62,6 +48,26 @@ export default function OnboardingBodyStatsScreen() {
           </Text>
         </View>
       </View>
+    </View>
+  );
+
+  return (
+    <OnboardingFrame
+      pose="mimi_mesure"
+      mascotHeight={110}
+      question="Tes mesures actuelles ?"
+      subtext="Pour suivre ta progression et calibrer les charges."
+      step={6}
+      total={total}
+      canContinue={true}
+      aboveCta={statsNode}
+      onContinue={() => router.push({
+        pathname: '/(auth)/onboarding/records',
+        params: { ...params, height: String(height), weight: String(weight) },
+      })}
+    >
+      <View />
     </OnboardingFrame>
   );
 }
+

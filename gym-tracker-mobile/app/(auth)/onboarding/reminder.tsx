@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -38,11 +38,11 @@ export default function OnboardingReminderScreen() {
       canContinue={true}
       skipLabel="Pas de rappel"
       onSkip={() => router.push({
-        pathname: '/(auth)/onboarding/done',
+        pathname: '/(auth)/onboarding/connect',
         params: { ...params, reminderTime: '' },
       })}
       onContinue={() => router.push({
-        pathname: '/(auth)/onboarding/done',
+        pathname: '/(auth)/onboarding/connect',
         params: { ...params, reminderTime: formatted },
       })}
     >
@@ -69,7 +69,7 @@ export default function OnboardingReminderScreen() {
 
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: 'rgba(255,255,255,0.04)',
+        backgroundColor: 'rgba(12,14,26,0.82)',
         borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16,
         marginTop: 4,
       }}>
@@ -81,3 +81,4 @@ export default function OnboardingReminderScreen() {
     </OnboardingFrame>
   );
 }
+
