@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, Pressable, Alert, Switch, TextInput,
-  Animated, Easing, Image,
+  Animated, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
 import { router } from 'expo-router';
 import { useT } from '@/lib/i18n';
 import { BadgeGrid } from '@/components/gamification/BadgeGrid';
+import { BadgeImage } from '@/components/ui/BadgeImage';
 import { NumericInput } from '@/components/ui/Input';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ScreenBackground, BG_COLORS } from '@/components/ui/ScreenBackground';
@@ -26,36 +28,6 @@ import { getRankGradient } from '@/constants/theme';
 import type { Rank, RankTier, UserProfile } from '@/types';
 
 // ── Badge image inlined (extrait de RankCard pour le hero) ────
-const RANK_IMAGE = require('@/assets/rank.png') as number;
-const RANK_IMG_W = 1408;
-const RANK_IMG_H = 768;
-const BADGE_CROPS: Record<string, { x: number; y: number; w: number; h: number }> = {
-  bronze:   { x: 36,   y: 254, w: 242, h: 250 },
-  silver:   { x: 279,  y: 253, w: 195, h: 249 },
-  gold:     { x: 495,  y: 250, w: 199, h: 254 },
-  platinum: { x: 715,  y: 252, w: 197, h: 250 },
-  diamond:  { x: 928,  y: 254, w: 205, h: 249 },
-  legend:   { x: 1133, y: 220, w: 242, h: 290 },
-};
-
-function BadgeImage({ tier, size }: { tier: string; size: number }) {
-  const crop = BADGE_CROPS[tier] ?? BADGE_CROPS.bronze!;
-  const scale = size / crop.h;
-  return (
-    <View style={{ width: crop.w * scale, height: size, overflow: 'hidden' }}>
-      <Image
-        source={RANK_IMAGE}
-        style={{
-          width:      RANK_IMG_W * scale,
-          height:     RANK_IMG_H * scale,
-          marginLeft: -crop.x * scale,
-          marginTop:  -crop.y * scale,
-        }}
-        resizeMode="stretch"
-      />
-    </View>
-  );
-}
 
 type Section = 'stats' | 'badges' | 'settings';
 type Level = UserProfile['experienceLevel'];
@@ -122,6 +94,7 @@ function SettingRow({ icon, label, children, last = false }: {
 
 // ── Écran principal ────────────────────────────────────────────
 export default function ProfileScreen() {
+  const bottomPad = useBottomNavPadding();
   const { profile, updateProfile, getTotalXP, getCurrentRank } = useProfileStore();
   const { workouts } = useWorkoutStore();
   const { settings, updateSettings } = useSettingsStore();
@@ -201,7 +174,7 @@ export default function ProfileScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
           <ScrollView
-            contentContainerStyle={{ paddingBottom: 48 }}
+            contentContainerStyle={{ paddingBottom: bottomPad }}
             showsVerticalScrollIndicator={false}
           >
             {/* ── HERO HEADER unifié ── */}

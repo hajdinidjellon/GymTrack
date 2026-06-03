@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
 import { format } from 'date-fns';
 import { useT, useDateLocale } from '@/lib/i18n';
 import { ProgressChart } from '@/components/charts/ProgressChart';
@@ -26,6 +27,7 @@ const TAB_ICONS: Record<ProgressTab, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function ProgressScreen() {
+  const bottomPad = useBottomNavPadding();
   const { workouts } = useWorkoutStore();
   const { profile }  = useProfileStore();
   const units        = useSettingsStore((s) => s.settings.units);
@@ -92,7 +94,7 @@ export default function ProgressScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
           <ScrollView
-            contentContainerStyle={{ paddingBottom: 48 }}
+            contentContainerStyle={{ paddingBottom: bottomPad }}
             showsVerticalScrollIndicator={false}
           >
             {/* ── HEADER ── */}

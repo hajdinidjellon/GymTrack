@@ -5,6 +5,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useT } from '@/lib/i18n';
@@ -52,6 +53,7 @@ function SectionHeader({ icon, title, subtitle }: {
 }
 
 export default function PlannerScreen() {
+  const bottomPad = useBottomNavPadding();
   const { workouts } = useWorkoutStore();
   const { profile, goals } = useProfileStore();
   const { startSession, addExercise } = useSessionStore();
@@ -114,7 +116,7 @@ export default function PlannerScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
           <ScrollView
-            contentContainerStyle={{ paddingBottom: 48 }}
+            contentContainerStyle={{ paddingBottom: bottomPad }}
             showsVerticalScrollIndicator={false}
           >
             {/* ── HEADER ── */}

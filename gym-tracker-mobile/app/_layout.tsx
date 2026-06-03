@@ -5,6 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  useFonts,
+  Rajdhani_400Regular,
+  Rajdhani_500Medium,
+  Rajdhani_600SemiBold,
+  Rajdhani_700Bold,
+} from '@expo-google-fonts/rajdhani';
 import '@/global.css';
 
 import { supabase } from '@/lib/supabase';
@@ -42,6 +49,12 @@ export default function RootLayout() {
 }
 
 function AppNavigator() {
+  const [fontsLoaded] = useFonts({
+    'Rajdhani-Regular':  Rajdhani_400Regular,
+    'Rajdhani-Medium':   Rajdhani_500Medium,
+    'Rajdhani-SemiBold': Rajdhani_600SemiBold,
+    'Rajdhani-Bold':     Rajdhani_700Bold,
+  });
   const [isReady, setIsReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
@@ -141,7 +154,7 @@ function AppNavigator() {
     }
   }, [isReady, isAuthenticated, hasProfile]);
 
-  if (!isReady) {
+  if (!isReady || !fontsLoaded) {
     return (
       <View
         style={{

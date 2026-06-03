@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
 import * as Haptics from 'expo-haptics';
 import { useT } from '@/lib/i18n';
 import { ExerciseCard } from '@/components/session/ExerciseCard';
@@ -530,6 +531,7 @@ function ExercisePicker({ visible, onSelect, onClose }: {
 
 // ── Écran principal ─────────────────────────────────────────────────
 export default function SessionScreen() {
+  const bottomPad = useBottomNavPadding();
   const {
     activeSession, startSession, addExercise,
     finishSession, discardSession, startRestTimer, stopRestTimer,
@@ -629,7 +631,7 @@ export default function SessionScreen() {
         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
             <ScrollView
-              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: bottomPad }}
               showsVerticalScrollIndicator={false}
             >
               {/* ── HEADER ── */}
@@ -948,7 +950,7 @@ export default function SessionScreen() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 12, paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 12, paddingBottom: bottomPad }}>
           {activeSession.exercises.map((exercise) => (
             <ExerciseCard
               key={exercise.id}
