@@ -675,7 +675,7 @@ export default function DashboardScreen() {
                 target={target}
                 total={workouts.length}
                 volumeT={weeklyVolumeT}
-                rank={rank}
+                rank={rank!}
                 totalXp={totalXp}
               />
             </View>

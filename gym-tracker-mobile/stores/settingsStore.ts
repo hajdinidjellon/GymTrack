@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
   notifications: true,
   language: 'fr',
+  trainingMode: 'hypertrophy',
 };
 
 async function loadSettings(): Promise<AppSettings> {

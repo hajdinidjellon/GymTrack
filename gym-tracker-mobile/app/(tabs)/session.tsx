@@ -1,12 +1,26 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, Pressable, Alert, TextInput, Modal,
-  Animated, Easing,
+  Animated, Easing, Image, StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Polygon, Circle, Line, Defs, LinearGradient as SvgGradient, Stop, Text as SvgText } from 'react-native-svg';
+import {
+  Canvas,
+  Path as SkPath,
+  Circle as SkCircle,
+  Group as SkGroup,
+  BlurMask,
+  LinearGradient as SkLinearGradient,
+  vec,
+  Skia,
+  Text as SkiaText,
+  useFont,
+} from '@shopify/react-native-skia';
 import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
+import { differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { useT } from '@/lib/i18n';
 import { ExerciseCard } from '@/components/session/ExerciseCard';
@@ -22,7 +36,8 @@ import { getSuggestedSession, calculate1RM } from '@/lib/aiPlanner';
 import { MUSCLE_LABELS } from '@/lib/gamification';
 import { useCelebrationStore } from '@/stores/celebrationStore';
 import { EXERCISE_GROUPS, filterGroups, type ExerciseDefinition, type ExerciseGroup } from '@/lib/exerciseDatabase';
-import type { ActiveExercise, MuscleGroup, WorkoutSet, WorkoutType } from '@/types';
+import type { ActiveExercise, MuscleGroup, Workout, WorkoutSet, WorkoutType } from '@/types';
+import { router } from 'expo-router';
 
 const WORKOUT_MODES: Array<{
   type: WorkoutType;
@@ -34,6 +49,852 @@ const WORKOUT_MODES: Array<{
   { type: 'cardio',      icon: 'pulse-outline',   color: '#34d399' },
   { type: 'mobility',    icon: 'leaf-outline',    color: '#fb923c' },
 ];
+
+// ═══════════════════════════════════════════════════════════════════
+// HUD DESIGN — Page Séance (état "pas de séance active")
+// ═══════════════════════════════════════════════════════════════════
+
+const HUD_CYAN     = '#1DC4FF';
+const HUD_CYAN_HI  = '#5DD8FF';
+const HUD_BG       = '#050B16';
+const HUD_BG_CARD  = 'rgba(8,20,38,0.85)';
+const HUD_BORDER   = 'rgba(29,196,255,0.30)';
+
+// ── Skia path constants (created once, never re-created on render) ──
+// Octagon (bell button) — canvas 64x64, octagon 48x48 centered with 8px padding for blur
+const SK_OCTAGON_CANVAS = 64;
+const SK_OCTAGON_PATH = Skia.Path.MakeFromSVGString(
+  'M 20,8 L 44,8 L 56,20 L 56,44 L 44,56 L 20,56 L 8,44 L 8,20 Z'
+)!;
+// Top highlight stroke of the octagon (subtle reflet sur le bord supérieur)
+const SK_OCTAGON_HIGHLIGHT = Skia.Path.MakeFromSVGString(
+  'M 20,8 L 44,8 L 56,20'
+)!;
+
+// Hexagon (step badge) — canvas 40x40, hex 32x32 centered with 4px padding for blur
+const SK_HEX_CANVAS = 40;
+const SK_HEX_PATH = Skia.Path.MakeFromSVGString(
+  'M 20,5 L 34,13 L 34,27 L 20,35 L 6,27 L 6,13 Z'
+)!;
+
+// Mode-selector card — 78x88 (4 cartes × 78 + 3 gaps de 8 = 336 → tient sur iPhone SE)
+// L'encadrement est dessiné via PNG (mode-card-active.png / mode-card-inactive.png).
+// Le fond intérieur (octogonal) est dessiné en Skia DERRIÈRE le PNG pour donner
+// du contraste avec l'arrière-plan sombre de la page.
+const SK_MODE_CARD_W = 78;
+const SK_MODE_CARD_H = 88;
+const SK_MODE_BEVEL  = 17;
+const SK_MODE_PAD    = 8;
+// Gap fixe garanti entre chaque carte (jamais "space-between" qui peut décaler au pixel près)
+const SK_MODE_GAP    = 8;
+const SK_MODE_CANVAS_W = SK_MODE_CARD_W + SK_MODE_PAD * 2; // 94
+const SK_MODE_CANVAS_H = SK_MODE_CARD_H + SK_MODE_PAD * 2; // 104
+// Octogone du fond intérieur, exprimé en coordonnées du canvas (offset par SK_MODE_PAD)
+const SK_MODE_FILL_PATH = Skia.Path.MakeFromSVGString(
+  `M ${SK_MODE_PAD + SK_MODE_BEVEL},${SK_MODE_PAD} ` +
+  `L ${SK_MODE_PAD + SK_MODE_CARD_W - SK_MODE_BEVEL},${SK_MODE_PAD} ` +
+  `L ${SK_MODE_PAD + SK_MODE_CARD_W},${SK_MODE_PAD + SK_MODE_BEVEL} ` +
+  `L ${SK_MODE_PAD + SK_MODE_CARD_W},${SK_MODE_PAD + SK_MODE_CARD_H - SK_MODE_BEVEL} ` +
+  `L ${SK_MODE_PAD + SK_MODE_CARD_W - SK_MODE_BEVEL},${SK_MODE_PAD + SK_MODE_CARD_H} ` +
+  `L ${SK_MODE_PAD + SK_MODE_BEVEL},${SK_MODE_PAD + SK_MODE_CARD_H} ` +
+  `L ${SK_MODE_PAD},${SK_MODE_PAD + SK_MODE_CARD_H - SK_MODE_BEVEL} ` +
+  `L ${SK_MODE_PAD},${SK_MODE_PAD + SK_MODE_BEVEL} Z`
+)!;
+
+// Active indicator arrows (▼ above, ▲ below) — 14px wide, 8px tall, drawn in 22x14 canvas
+const SK_ARROW_DOWN = Skia.Path.MakeFromSVGString('M 4,2 L 18,2 L 11,10 Z')!;
+const SK_ARROW_UP   = Skia.Path.MakeFromSVGString('M 4,10 L 18,10 L 11,2 Z')!;
+
+// Rajdhani Bold TTF — used by Skia for the SÉANCE title & # filigree
+const RAJDHANI_BOLD_TTF = require('@expo-google-fonts/rajdhani/700Bold/Rajdhani_700Bold.ttf');
+
+const SEANCE_FRAME = require('@/assets/images/seance-frame4.png') as number;
+const SESSION_BG   = require('@/assets/images/background-session.png') as number;
+const MODE_CARD_ACTIVE   = require('@/assets/images/mode-card-active.png') as number;
+const MODE_CARD_INACTIVE = require('@/assets/images/mode-card-inactive.png') as number;
+
+// ── Icônes pro pour le sélecteur de mode : MaterialCommunityIcons (Expo)
+//    Bien plus détaillées et "fitness-friendly" que les Ionicons génériques.
+//    Wrappers typés pour matcher la signature { color: string }.
+
+const ICON_SIZE = 34;
+
+function ModeIconBarbell({ color }: { color: string }) {
+  // weight-lifter : silhouette qui soulève un haltère — emblématique de l'hypertrophie
+  return <MaterialCommunityIcons name="weight-lifter" size={ICON_SIZE} color={color} />;
+}
+
+function ModeIconKettlebell({ color }: { color: string }) {
+  // arm-flex : biceps fléchi — symbole universel de la force pure
+  return <MaterialCommunityIcons name="arm-flex" size={ICON_SIZE} color={color} />;
+}
+
+function ModeIconPulse({ color }: { color: string }) {
+  // heart-pulse : cœur avec ligne ECG intégrée — cardio / endurance
+  return <MaterialCommunityIcons name="heart-pulse" size={ICON_SIZE} color={color} />;
+}
+
+function ModeIconBody({ color }: { color: string }) {
+  // run-fast : silhouette complète en mouvement — full body / athlète
+  return <MaterialCommunityIcons name="run-fast" size={ICON_SIZE} color={color} />;
+}
+
+// ── Définition complète des 6 modes pour la nouvelle UI ─────────────
+type TrainingMode = {
+  type: WorkoutType;
+  label: string;
+  Icon: React.ComponentType<{ color: string }>;
+  info: string;          // barre d'info dynamique sous le sélecteur
+  duration: string;      // ex "75-90 MIN"
+  exercises: string;     // ex "5 EXERCICES"
+  volume: string;        // ex "6 800-9 200 KG"
+  sessionName: string;   // ex "PUSH"
+  sessionSubLabel: string; // ex "(POUSSER)"
+  muscles: string;       // ex "PECTORAUX · ÉPAULES · BRAS"
+};
+
+const TRAINING_MODES: TrainingMode[] = [
+  {
+    type: 'hypertrophy', label: 'HYPERTROPHIE', Icon: ModeIconBarbell,
+    info: '8-12 REPS · REPOS 60-90S · VOLUME ÉLEVÉ',
+    duration: '75-90 MIN', exercises: '5 EXERCICES', volume: '6 800-9 200 KG',
+    sessionName: 'PUSH', sessionSubLabel: '(POUSSER)',
+    muscles: 'PECTORAUX · ÉPAULES · BRAS',
+  },
+  {
+    type: 'strength', label: 'FORCE', Icon: ModeIconKettlebell,
+    info: '3-6 REPS · REPOS 3-5MIN · CHARGE LOURDE',
+    duration: '90-110 MIN', exercises: '4 EXERCICES', volume: '4 500-6 000 KG',
+    sessionName: 'PUSH', sessionSubLabel: '(POUSSER)',
+    muscles: 'PECTORAUX · ÉPAULES · TRICEPS',
+  },
+  {
+    type: 'endurance', label: 'ENDURANCE', Icon: ModeIconPulse,
+    info: '15-25 REPS · REPOS 30-45S · TEMPO RAPIDE',
+    duration: '45-60 MIN', exercises: '6 EXERCICES', volume: '3 500-5 000 KG',
+    sessionName: 'FULL', sessionSubLabel: '(CIRCUIT)',
+    muscles: 'CORPS ENTIER · CARDIO',
+  },
+  {
+    type: 'fullbody', label: 'FULL BODY', Icon: ModeIconBody,
+    info: 'TOUS GROUPES · 3 SÉANCES/SEM',
+    duration: '60-80 MIN', exercises: '7 EXERCICES', volume: '5 500-7 500 KG',
+    sessionName: 'FULL', sessionSubLabel: '(COMPLET)',
+    muscles: 'CORPS ENTIER',
+  },
+];
+
+// ── HUD ambient corner decoration (Skia) ────────────────────────────
+function HudCornerDeco({ side }: { side: 'left' | 'right' }) {
+  const isLeft = side === 'left';
+  const mainPath = isLeft
+    ? 'M 0,14 L 32,14 L 42,4 L 78,4'
+    : 'M 140,14 L 108,14 L 98,4 L 62,4';
+  const tailPath = isLeft
+    ? 'M 84,4 L 118,4'
+    : 'M 56,4 L 22,4';
+  const bigDotCx  = isLeft ? 42 : 98;
+  const midDotCx  = isLeft ? 78 : 62;
+  const tinyDotCx = isLeft ? 122 : 18;
+
+  return (
+    <Canvas style={{ width: 140, height: 28 }} pointerEvents="none">
+      <SkPath path={mainPath} color={HUD_CYAN} style="stroke" strokeWidth={1} opacity={0.55} />
+      <SkPath path={tailPath} color={HUD_CYAN} style="stroke" strokeWidth={0.8} opacity={0.35} />
+      <SkGroup>
+        <SkCircle cx={bigDotCx} cy={4} r={2.5} color={HUD_CYAN_HI}>
+          <BlurMask blur={3} style="solid" />
+        </SkCircle>
+      </SkGroup>
+      <SkCircle cx={midDotCx} cy={4} r={1.6} color={HUD_CYAN_HI} opacity={0.75} />
+      <SkCircle cx={tinyDotCx} cy={4} r={1} color={HUD_CYAN_HI} opacity={0.55} />
+    </Canvas>
+  );
+}
+
+// ── Scan-line decoration (Skia, glow on lumineux points) ───────────
+function ScanLines({ width = 140 }: { width?: number }) {
+  const p1x = Math.round(width * 0.30);
+  const p2x = Math.round(width * 0.36);
+  const p3x = Math.round(width * 0.40);
+  const p4x = Math.round(width * 0.70);
+  const p5x = Math.round(width * 0.76);
+  const p6x = Math.round(width * 0.80);
+  return (
+    <Canvas style={{ width, height: 16 }} pointerEvents="none">
+      <SkGroup>
+        <SkCircle cx={4} cy={8} r={2.5} color={HUD_CYAN_HI}>
+          <BlurMask blur={3} style="solid" />
+        </SkCircle>
+      </SkGroup>
+      <SkPath path={`M 12,8 L ${p1x},8`} color={HUD_CYAN} style="stroke" strokeWidth={1} opacity={0.7} />
+      <SkGroup>
+        <SkCircle cx={p2x} cy={8} r={1.8} color={HUD_CYAN_HI} opacity={0.85}>
+          <BlurMask blur={2} style="solid" />
+        </SkCircle>
+      </SkGroup>
+      <SkPath path={`M ${p3x},8 L ${p4x},8`} color={HUD_CYAN} style="stroke" strokeWidth={1} opacity={0.5} />
+      <SkCircle cx={p5x} cy={8} r={1} color={HUD_CYAN_HI} opacity={0.6} />
+      <SkPath path={`M ${p6x},8 L ${width - 2},8`} color={HUD_CYAN} style="stroke" strokeWidth={0.8} opacity={0.3} />
+    </Canvas>
+  );
+}
+
+// ── Titre SÉANCE (Skia gradient + glow externe) ────────────────────
+function SeanceTitle() {
+  const TITLE_SIZE = 38;
+  const PAD_X = 16; // marge intérieure pour laisser respirer le glow horizontal
+  const PAD_TOP = 8;
+  const HEIGHT = 56;
+
+  const font = useFont(RAJDHANI_BOLD_TTF, TITLE_SIZE);
+  const text = 'SÉANCE';
+
+  // Fallback natif quand la font Skia n'est pas encore prête (premier frame)
+  if (!font) {
+    return (
+      <View>
+        <Text style={{
+          position: 'absolute', top: 2, left: 2,
+          fontSize: TITLE_SIZE - 2, fontWeight: '900',
+          color: '#0090C8',
+          letterSpacing: 1.5, textTransform: 'uppercase',
+          opacity: 0.85,
+        }}>
+          {text}
+        </Text>
+        <Text style={{
+          fontSize: TITLE_SIZE - 2, fontWeight: '900',
+          color: HUD_CYAN_HI,
+          letterSpacing: 1.5, textTransform: 'uppercase',
+          textShadowColor: '#00B4F0',
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 12,
+        }}>
+          {text}
+        </Text>
+      </View>
+    );
+  }
+
+  const textWidth = font.measureText(text).width;
+  const canvasWidth = Math.ceil(textWidth + PAD_X * 2);
+  // baseline visuelle ≈ taille × 0.85 + padding top
+  const baselineY = PAD_TOP + TITLE_SIZE * 0.85;
+
+  return (
+    <Canvas style={{ width: canvasWidth, height: HEIGHT }}>
+      {/* Glow externe — texte flou cyan en arrière-plan */}
+      <SkGroup>
+        <SkiaText
+          x={PAD_X}
+          y={baselineY}
+          text={text}
+          font={font}
+          color="#00B4F0"
+          opacity={0.75}
+        >
+          <BlurMask blur={12} style="normal" />
+        </SkiaText>
+      </SkGroup>
+
+      {/* Texte principal avec gradient vertical (clair → cyan → foncé) */}
+      <SkiaText
+        x={PAD_X}
+        y={baselineY}
+        text={text}
+        font={font}
+      >
+        <SkLinearGradient
+          start={vec(0, PAD_TOP)}
+          end={vec(0, PAD_TOP + TITLE_SIZE)}
+          colors={['#7FE5FF', '#1DC4FF', '#0090C8']}
+        />
+      </SkiaText>
+    </Canvas>
+  );
+}
+
+// ── Octagonal bell button (Skia, 4 couches : glow / fond / bordure / highlight) ──
+function OctagonalBellButton({ onPress, hasNotification = true }: {
+  onPress?: () => void; hasNotification?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => ({
+        width: SK_OCTAGON_CANVAS, height: SK_OCTAGON_CANVAS,
+        opacity: pressed ? 0.78 : 1,
+      })}
+    >
+      <Canvas style={{ width: SK_OCTAGON_CANVAS, height: SK_OCTAGON_CANVAS }}>
+        {/* Couche 1 — Glow externe (octogone flou cyan) */}
+        <SkGroup>
+          <SkPath path={SK_OCTAGON_PATH} color="#00B4F0" opacity={0.45}>
+            <BlurMask blur={10} style="solid" />
+          </SkPath>
+        </SkGroup>
+
+        {/* Couche 2 — Fond dégradé vertical */}
+        <SkPath path={SK_OCTAGON_PATH}>
+          <SkLinearGradient
+            start={vec(0, 8)}
+            end={vec(0, 56)}
+            colors={['#0A1828', '#04101D', '#020810']}
+          />
+        </SkPath>
+
+        {/* Couche 3 — Bordure cyan */}
+        <SkPath
+          path={SK_OCTAGON_PATH}
+          color={HUD_CYAN}
+          style="stroke"
+          strokeWidth={1.5}
+          opacity={0.85}
+        />
+
+        {/* Couche 4 — Highlight subtil sur le bord supérieur */}
+        <SkPath
+          path={SK_OCTAGON_HIGHLIGHT}
+          color={HUD_CYAN_HI}
+          style="stroke"
+          strokeWidth={0.8}
+          opacity={0.6}
+        />
+      </Canvas>
+
+      {/* Icône cloche centrée sur l'octogone (qui est à [8,8]-[56,56] dans le canvas 64x64) */}
+      <View style={{
+        position: 'absolute',
+        top: 8, left: 8, width: 48, height: 48,
+        justifyContent: 'center', alignItems: 'center',
+      }} pointerEvents="none">
+        <Ionicons name="notifications-outline" size={22} color={HUD_CYAN_HI} />
+      </View>
+
+      {/* Pastille de notification (avec glow + bord détaché) */}
+      {hasNotification && (
+        <View style={{
+          position: 'absolute',
+          top: 12, right: 12,
+          width: 10, height: 10, borderRadius: 5,
+          backgroundColor: HUD_CYAN_HI,
+          borderWidth: 1.5, borderColor: '#020810',
+          shadowColor: '#00B4F0', shadowOpacity: 1, shadowRadius: 5,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 8,
+        }} pointerEvents="none" />
+      )}
+    </Pressable>
+  );
+}
+
+// ── Mode indicator arrows (▼ above / ▲ below active card) ──────────
+function ModeIndicator({ direction }: { direction: 'down' | 'up' }) {
+  const path = direction === 'down' ? SK_ARROW_DOWN : SK_ARROW_UP;
+  const positionStyle =
+    direction === 'down'
+      ? { top: -14 as const }
+      : { bottom: -14 as const };
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: 0, right: 0,
+        alignItems: 'center',
+        ...positionStyle,
+      }}
+    >
+      <Canvas style={{ width: 22, height: 14 }}>
+        <SkGroup>
+          <SkPath path={path} color="#00B4F0" opacity={0.75}>
+            <BlurMask blur={4} style="solid" />
+          </SkPath>
+        </SkGroup>
+        <SkPath path={path} color="#5DD8FF" />
+      </Canvas>
+    </View>
+  );
+}
+
+// ── Mode info bar (Skia HUD bevel + side ◂ ▸ accents) ──────────────
+function ModeInfoBar({ text }: { text: string }) {
+  const { width: screenWidth } = useWindowDimensions();
+  // Barre compacte : largeur réduite (pas pleine largeur), hauteur basse.
+  const BAR_W = Math.min(290, screenWidth - 48);
+  const BAR_H = 34;
+  const BEVEL = 8;
+  const ACCENT_REACH = 3;
+  const PAD_X = ACCENT_REACH + 2; // espace canvas pour les accents qui sortent
+
+  // Path principal (octogone aplati) + accents — mémoïsés par largeur
+  const { mainPath, leftAccent, rightAccent } = useMemo(() => {
+    const innerW = BAR_W;
+    const ox = PAD_X; // offset x dans le canvas
+    const main = Skia.Path.MakeFromSVGString(
+      `M ${ox + BEVEL},0 ` +
+      `L ${ox + innerW - BEVEL},0 ` +
+      `L ${ox + innerW},${BEVEL} ` +
+      `L ${ox + innerW},${BAR_H - BEVEL} ` +
+      `L ${ox + innerW - BEVEL},${BAR_H} ` +
+      `L ${ox + BEVEL},${BAR_H} ` +
+      `L ${ox},${BAR_H - BEVEL} ` +
+      `L ${ox},${BEVEL} Z`
+    )!;
+    const left = Skia.Path.MakeFromSVGString(
+      `M ${ox},${BAR_H / 2 - 6} L ${ox - ACCENT_REACH},${BAR_H / 2} L ${ox},${BAR_H / 2 + 6}`
+    )!;
+    const right = Skia.Path.MakeFromSVGString(
+      `M ${ox + innerW},${BAR_H / 2 - 6} L ${ox + innerW + ACCENT_REACH},${BAR_H / 2} L ${ox + innerW},${BAR_H / 2 + 6}`
+    )!;
+    return { mainPath: main, leftAccent: left, rightAccent: right };
+  }, [BAR_W]);
+
+  const canvasWidth = BAR_W + PAD_X * 2;
+
+  return (
+    <View style={{ height: BAR_H, width: BAR_W, alignSelf: 'center', marginBottom: 12 }}>
+      <Canvas style={{
+        position: 'absolute',
+        width: canvasWidth, height: BAR_H,
+        left: -PAD_X,
+      }}>
+        {/* Fond dégradé */}
+        <SkPath path={mainPath}>
+          <SkLinearGradient
+            start={vec(0, 0)}
+            end={vec(0, BAR_H)}
+            colors={['#0A1828', '#04101D']}
+          />
+        </SkPath>
+        {/* Bordure cyan */}
+        <SkPath path={mainPath} color={HUD_CYAN} style="stroke" strokeWidth={1.5} opacity={0.75} />
+        {/* Accents décoratifs ◂ ▸ sur les côtés */}
+        <SkPath path={leftAccent} color="#5DD8FF" style="stroke" strokeWidth={1.5} />
+        <SkPath path={rightAccent} color="#5DD8FF" style="stroke" strokeWidth={1.5} />
+      </Canvas>
+
+      {/* Contenu textuel par-dessus */}
+      <View style={{
+        flex: 1, flexDirection: 'row',
+        alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: 12,
+        gap: 7,
+      }} pointerEvents="none">
+        <Ionicons name="information-circle-outline" size={14} color={HUD_CYAN} />
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={{
+            color: HUD_CYAN, fontSize: 11, fontWeight: '700',
+            letterSpacing: 0.9, textTransform: 'uppercase',
+            flexShrink: 1,
+          }}
+        >
+          {text}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Octogonal Mode Card (Skia, Pressable comme container flex) ──────
+function OctagonalModeCard({
+  mode, active, onPress,
+}: { mode: TrainingMode; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.78 : 1,
+        width: SK_MODE_CARD_W, height: SK_MODE_CARD_H,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+      })}
+    >
+      {/* Fond bleu octogonal DERRIÈRE le PNG → contraste avec l'arrière-plan */}
+      <Canvas
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          width: SK_MODE_CANVAS_W, height: SK_MODE_CANVAS_H,
+          top: -SK_MODE_PAD, left: -SK_MODE_PAD,
+        }}
+      >
+        <SkPath path={SK_MODE_FILL_PATH}>
+          <SkLinearGradient
+            start={vec(0, SK_MODE_PAD)}
+            end={vec(0, SK_MODE_PAD + SK_MODE_CARD_H)}
+            colors={
+              active
+                ? ['#0F3A5C', '#0A2742', '#06182C']
+                : ['#0A1E3A', '#06142A', '#04101F']
+            }
+          />
+        </SkPath>
+      </Canvas>
+
+      {/* Encadrement PNG (actif / inactif) — l'Image ne capture pas les touches, la Pressable les reçoit */}
+      <Image
+        source={active ? MODE_CARD_ACTIVE : MODE_CARD_INACTIVE}
+        resizeMode="stretch"
+        style={{
+          position: 'absolute',
+          width: SK_MODE_CANVAS_W, height: SK_MODE_CANVAS_H,
+          top: -SK_MODE_PAD, left: -SK_MODE_PAD,
+        }}
+      />
+
+      {/* Icône + label dans un wrapper en flow flex normal (la Pressable les centre),
+          décalé via transform car le PNG n'est pas optiquement centré
+          → contenu glissé +15px vers le bas (cartes désormais 78x88). */}
+      <View
+        style={{
+          alignItems: 'center',
+          gap: 5,
+          transform: [{ translateY: 15 }],
+        }}
+      >
+        {/* Icône SVG custom (style line-art HUD, cohérent avec le dock) +
+            glow cyan derrière quand actif → effet "verre lumineux" */}
+        <View
+          style={
+            active
+              ? {
+                  shadowColor: '#46C6F5',
+                  shadowOpacity: 0.85,
+                  shadowRadius: 10,
+                  shadowOffset: { width: 0, height: 0 },
+                  elevation: 6,
+                }
+              : undefined
+          }
+        >
+          <mode.Icon color={active ? '#9CE7FF' : HUD_CYAN} />
+        </View>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+          style={{
+            fontSize: 12, fontWeight: '800',
+            color: active ? '#FFFFFF' : 'rgba(255,255,255,0.75)',
+            letterSpacing: 0.4, textTransform: 'uppercase',
+            textAlign: 'center',
+            paddingHorizontal: 4,
+          }}
+        >
+          {mode.label}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+// ── Hexagonal step badge (Skia) with # filigree ─────────────────────
+function StepBadge({ n }: { n: number }) {
+  const filigreeFont = useFont(RAJDHANI_BOLD_TTF, 18);
+  return (
+    <View style={{
+      width: SK_HEX_CANVAS, height: SK_HEX_CANVAS,
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      <Canvas style={{ width: SK_HEX_CANVAS, height: SK_HEX_CANVAS, position: 'absolute' }}>
+        {/* Glow externe */}
+        <SkGroup>
+          <SkPath path={SK_HEX_PATH} color="#00B4F0" opacity={0.35}>
+            <BlurMask blur={6} style="solid" />
+          </SkPath>
+        </SkGroup>
+
+        {/* Fond dégradé */}
+        <SkPath path={SK_HEX_PATH}>
+          <SkLinearGradient
+            start={vec(0, 5)}
+            end={vec(0, 35)}
+            colors={['#0A1828', '#03070F']}
+          />
+        </SkPath>
+
+        {/* # en filigrane (Skia Text avec Rajdhani Bold) */}
+        {filigreeFont && (
+          <SkiaText
+            x={13}
+            y={26}
+            text="#"
+            font={filigreeFont}
+            color={HUD_CYAN}
+            opacity={0.22}
+          />
+        )}
+
+        {/* Bordure cyan */}
+        <SkPath
+          path={SK_HEX_PATH}
+          color={HUD_CYAN}
+          style="stroke"
+          strokeWidth={1.5}
+        />
+      </Canvas>
+
+      {/* "1" par-dessus, avec textShadow cyan */}
+      <Text style={{
+        color: HUD_CYAN_HI,
+        fontSize: 14,
+        fontWeight: '900',
+        textShadowColor: '#00B4F0',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 5,
+        zIndex: 10,
+      }}>{n}</Text>
+    </View>
+  );
+}
+
+// ── Bouton DÉMARRER LA SÉANCE — style chevron HUD ────────────────────
+function StartHUDButton({ onPress, label = 'DÉMARRER LA SÉANCE' }: {
+  onPress: () => void; label?: string;
+}) {
+  const W = 300, H = 56, tip = 24, body = W - tip, r = 4;
+  const tipLen = Math.sqrt(tip * tip + (H / 2) * (H / 2));
+  const rt = 3;
+  const rtx  = Math.round(W  - rt * (tip / tipLen));
+  const rty1 = Math.round(H / 2 - rt * ((H / 2) / tipLen));
+  const rty2 = Math.round(H / 2 + rt * ((H / 2) / tipLen));
+  const d = `M ${r} 0 L ${body} 0 L ${rtx} ${rty1} Q ${W} ${H / 2} ${rtx} ${rty2} L ${body} ${H} L ${r} ${H} Q 0 ${H} 0 ${H - r} L 0 ${r} Q 0 0 ${r} 0 Z`;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        alignSelf: 'center',
+        opacity: pressed ? 0.85 : 1,
+        shadowColor: HUD_CYAN, shadowOpacity: 0.85,
+        shadowRadius: 24, shadowOffset: { width: 0, height: 6 },
+        elevation: 14,
+      })}
+    >
+      <View style={{ width: W, height: H }}>
+        <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
+          <Defs>
+            <SvgGradient id="startBtnGrad" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0"    stopColor="#2196F3" stopOpacity={1} />
+              <Stop offset="0.45" stopColor="#0D5BC8" stopOpacity={1} />
+              <Stop offset="1"    stopColor="#072B6A" stopOpacity={1} />
+            </SvgGradient>
+            <SvgGradient id="startBtnShine" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0"    stopColor="#FFFFFF" stopOpacity={0.25} />
+              <Stop offset="0.5"  stopColor="#FFFFFF" stopOpacity={0} />
+            </SvgGradient>
+          </Defs>
+          <Path d={d} fill="url(#startBtnGrad)" />
+          <Path d={d} fill="url(#startBtnShine)" />
+          <Path d={d} fill="none" stroke={HUD_CYAN_HI} strokeWidth={1.2} strokeLinejoin="round" strokeOpacity={0.85} />
+        </Svg>
+
+        <View pointerEvents="none" style={{
+          position: 'absolute', top: 0, left: 0,
+          width: body, height: H,
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+          gap: 6,
+          // Label descendu de 5px et décalé de 8px vers la droite par rapport au centre du bouton.
+          transform: [{ translateX: 8 }, { translateY: 5 }],
+        }}>
+          <Text style={{
+            fontSize: 12, fontWeight: '900', color: '#fff',
+            letterSpacing: 1.1, textTransform: 'uppercase',
+          }}>
+            {label}
+          </Text>
+          <Text style={{ fontSize: 12, fontWeight: '900', color: HUD_CYAN_HI, letterSpacing: -1 }}>›››</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// ── COPIE EXACTE depuis index.tsx pour la section "SÉANCES RÉCENTES" ──
+// Couleur cyan d'index.tsx, légèrement différente du HUD cyan local.
+const HOME_CYAN = '#17B8FF';
+
+type SessionType = 'push' | 'pull' | 'legs' | 'other';
+
+const SESSION_LABEL: Record<SessionType, string> = {
+  push: 'PUSH', pull: 'PULL', legs: 'LEGS', other: 'SESSION',
+};
+
+function detectSessionType(name: string): SessionType {
+  const n = name.toLowerCase();
+  if (n.includes('push') || n.includes('pec') || n.includes('chest') || n.includes('pouss') || n.includes('épaule') || n.includes('tricep') || n.includes('développé')) return 'push';
+  if (n.includes('pull') || n.includes('dos') || n.includes('traction') || n.includes('tirage') || n.includes('bicep')) return 'pull';
+  if (n.includes('leg') || n.includes('jamb') || n.includes('squat') || n.includes('quad') || n.includes('fess') || n.includes('hinge')) return 'legs';
+  return 'other';
+}
+
+function homeWorkoutDuration(w: Workout): number {
+  if (w.duration && w.duration > 0) return w.duration;
+  const sets = w.exercises.reduce(
+    (s, ex) => s + ex.sets.filter((set) => set.completed !== false).length,
+    0,
+  );
+  return Math.max(20, Math.round(sets * 2.5));
+}
+
+function SessionIcon({ type, color, size = 13 }: { type: SessionType; color: string; size?: number }) {
+  if (type === 'legs') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 16 16">
+        <Path d="M 2 2 L 14 14" stroke={color} strokeWidth={2}   strokeLinecap="round" />
+        <Path d="M 14 2 L 2 14" stroke={color} strokeWidth={2}   strokeLinecap="round" />
+      </Svg>
+    );
+  }
+  // push / pull / other → horizontal dumbbell
+  return (
+    <Svg width={size} height={Math.round(size * 0.7)} viewBox="0 0 15 10">
+      <Path d="M 4 5 H 11"  stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+      <Path d="M 2 2 V 8"   stroke={color} strokeWidth={2}   strokeLinecap="round" />
+      <Path d="M 0.5 3 V 7" stroke={color} strokeWidth={1.4} strokeLinecap="round" />
+      <Path d="M 13 2 V 8"  stroke={color} strokeWidth={2}   strokeLinecap="round" />
+      <Path d="M 14.5 3 V 7" stroke={color} strokeWidth={1.4} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function OctagonIcon({ type }: { type: SessionType }) {
+  return (
+    <View style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={30} height={30} viewBox="0 0 24 24" style={StyleSheet.absoluteFill}>
+        <Path
+          d="M 6 0 H 18 L 24 6 V 18 L 18 24 H 6 L 0 18 V 6 Z"
+          fill="rgba(0,200,255,0.10)"
+          stroke="rgba(93,222,255,0.40)"
+          strokeWidth={0.9}
+        />
+      </Svg>
+      <SessionIcon type={type} color={HOME_CYAN} size={15} />
+    </View>
+  );
+}
+
+function ChevronBox() {
+  return (
+    <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={24} height={24} viewBox="0 0 18 18" style={StyleSheet.absoluteFill}>
+        <Path
+          d="M 4 0 H 14 L 18 4 V 14 L 14 18 H 4 L 0 14 V 4 Z"
+          fill="rgba(0,200,255,0.06)"
+          stroke="rgba(93,222,255,0.28)"
+          strokeWidth={0.9}
+        />
+      </Svg>
+      <Text style={{ color: HOME_CYAN, fontSize: 13, fontFamily: 'Rajdhani-SemiBold', lineHeight: 14 }}>›</Text>
+    </View>
+  );
+}
+
+function RecentRow({ workout, isLast }: { workout: Workout; isLast: boolean }) {
+  const type = detectSessionType(workout.name);
+  const dur  = homeWorkoutDuration(workout);
+  const days = differenceInDays(new Date(), new Date(workout.date));
+
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/workout/[id]', params: { id: workout.id } })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+    >
+      <View
+        style={{
+          width: '100%',
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 11,
+          borderBottomWidth: isLast ? 0 : 1,
+          borderBottomColor: 'rgba(93,222,255,0.10)',
+        }}
+      >
+        <OctagonIcon type={type} />
+        <Text
+          numberOfLines={1}
+          style={{
+            width: 56,
+            marginLeft: 12,
+            fontFamily: 'Rajdhani-SemiBold',
+            fontSize: 14,
+            letterSpacing: 0.8,
+            color: '#FFFFFF',
+          }}
+        >
+          {SESSION_LABEL[type]}
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            marginLeft: 12,
+            fontFamily: 'Rajdhani-Regular',
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.45)',
+          }}
+        >
+          Il y a {days} jour{days > 1 ? 's' : ''}
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={{
+            marginLeft: 12,
+            fontFamily: 'Rajdhani-SemiBold',
+            fontSize: 12,
+            letterSpacing: 1,
+            color: '#FFFFFF',
+          }}
+        >
+          {dur} MIN
+        </Text>
+        <View style={{ marginLeft: 12 }}>
+          <ChevronBox />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// ── Hex-cadred icon (utilisé dans historique) ───────────────────────
+function HexIconBox({ icon, size = 38 }: { icon: keyof typeof Ionicons.glyphMap; size?: number }) {
+  const W = size, H = size, cut = size * 0.30;
+  const d = `M ${cut} 0 L ${W - cut} 0 L ${W} ${H / 2} L ${W - cut} ${H} L ${cut} ${H} L 0 ${H / 2} Z`;
+  return (
+    <View style={{ width: W, height: H, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
+        <Path d={d} fill="rgba(29,196,255,0.10)" stroke={HUD_CYAN} strokeWidth={1} />
+      </Svg>
+      <Ionicons name={icon} size={size * 0.45} color={HUD_CYAN} />
+    </View>
+  );
+}
+
+// ── Helper: map WorkoutType -> label affiché historique ─────────────
+const TYPE_LABEL_FALLBACK: Record<WorkoutType, string> = {
+  strength: 'FORCE', hypertrophy: 'HYPERTROPHIE', power: 'PUISSANCE',
+  endurance: 'ENDURANCE', cardio: 'CARDIO', mobility: 'MOBILITÉ',
+  ppl: 'PPL', fullbody: 'FULL BODY',
+};
+
+function workoutDurationMin(w: { duration?: number; exercises: { sets: { completed?: boolean }[] }[] }): number {
+  if (w.duration && w.duration > 0) return w.duration;
+  const sets = w.exercises.reduce((s, ex) => s + ex.sets.filter((set) => set.completed !== false).length, 0);
+  return Math.max(20, Math.round(sets * 2.5));
+}
+
+function relativeDay(date: string): string {
+  const d = differenceInDays(new Date(), new Date(date));
+  if (d === 0) return "Aujourd'hui";
+  if (d === 1) return 'Hier';
+  return `Il y a ${d} jours`;
+}
 
 // ── ExercisePicker — catégories + recherche + custom ────────────────
 const MUSCLE_GROUP_OPTIONS: Array<{ id: MuscleGroup; label: string }> = [
@@ -553,7 +1414,19 @@ export default function SessionScreen() {
 
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [workoutName, setWorkoutName] = useState('');
-  const [selectedType, setSelectedType] = useState<WorkoutType>('strength');
+  const persistedMode = useSettingsStore((s) => s.settings.trainingMode);
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const [selectedType, _setSelectedType] = useState<WorkoutType>(persistedMode ?? 'hypertrophy');
+  const setSelectedType = useCallback((t: WorkoutType) => {
+    _setSelectedType(t);
+    updateSettings({ trainingMode: t });
+  }, [updateSettings]);
+  // Si le mode persisté n'est plus dans TRAINING_MODES (ex. ancien 'power'/'ppl' retirés), fallback
+  useEffect(() => {
+    if (!TRAINING_MODES.some((m) => m.type === selectedType)) {
+      setSelectedType('hypertrophy');
+    }
+  }, [selectedType, setSelectedType]);
   const [feeling, setFeeling] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [showFinishModal, setShowFinishModal] = useState(false);
 
@@ -621,266 +1494,392 @@ export default function SessionScreen() {
 
   // ── PAS DE SÉANCE ACTIVE ─────────────────────────────────────────
   if (!activeSession) {
-    const selectedQS = QUICK_STARTS.find((q) => q.type === selectedType) ?? QUICK_STARTS[0]!;
-    const suggested = profile ? getSuggestedSession(profile, workouts, null, selectedType) : null;
+    const mode = TRAINING_MODES.find((m) => m.type === selectedType) ?? TRAINING_MODES[0]!;
+    const recent = workouts.slice(0, 3);
+
+    const handleStartSuggested = () => {
+      const suggested = profile ? getSuggestedSession(profile, workouts, null, mode.type) : null;
+      handleStart(suggested?.title ?? mode.sessionName, mode.type);
+      if (suggested) {
+        suggested.exercises.forEach((ex) => {
+          handleAddExercise({
+            id: `${ex.name}-${Date.now()}`,
+            name: ex.name, category: ex.category,
+            muscleGroups: suggested.focus, sets: [],
+          });
+        });
+      }
+    };
 
     return (
-      <View style={{ flex: 1, backgroundColor: BG_COLORS.base }}>
-        <ScreenBackground variant="session" />
-
+      <View style={{ flex: 1, backgroundColor: HUD_BG }}>
+        {/* Background PNG plein écran, derrière tout le contenu */}
+        <Image
+          source={SESSION_BG}
+          resizeMode="cover"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+        />
         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
             <ScrollView
-              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: bottomPad }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomPad + 12 }}
               showsVerticalScrollIndicator={false}
             >
-              {/* ── HEADER ── */}
-              <View style={{ paddingTop: 12, paddingBottom: 24 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 6 }}>
-                  {t('session.today')}
-                </Text>
-                <Text style={{ fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1.6, lineHeight: 42 }}>
-                  {t('session.newSession')}
-                </Text>
-                <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', fontWeight: '600', marginTop: 8, lineHeight: 20 }}>
-                  {t('session.subtitle')}
-                </Text>
-              </View>
+              {/* ═══ HEADER ═══ */}
+              <View style={{ paddingTop: 4, paddingBottom: 6 }}>
+                {/* Ligne 1 : SÉANCE (profondeur + glow) + bouton cloche octogonal */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+                  {/* Titre SÉANCE — Skia gradient + glow externe */}
+                  <SeanceTitle />
 
-              {/* ── TYPE DE SÉANCE ── */}
-              <View style={{ marginBottom: 28 }}>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.28)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 16 }}>
-                  {t('session.modeLabel')}
-                </Text>
-                <View style={{ gap: 14 }}>
-                  {QUICK_STARTS.map((qs) => {
-                    const isSel = selectedType === qs.type;
-                    return (
-                      <Pressable
-                        key={qs.type}
-                        onPress={() => setSelectedType(qs.type)}
-                        style={({ pressed }) => ({
-                          transform: [{ scale: pressed ? 0.983 : 1 }],
-                          borderRadius: 24,
-                          shadowColor: '#000',
-                          shadowOpacity: isSel ? 0.60 : 0.45,
-                          shadowRadius: isSel ? 28 : 18,
-                          shadowOffset: { width: 0, height: isSel ? 12 : 7 },
-                          elevation: isSel ? 14 : 8,
-                        })}
-                      >
-                        <LinearGradient
-                          colors={isSel ? ['#1e1e32', '#161628'] : ['#16162a', '#111120']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={{
-                            height: 92,
-                            borderRadius: 24,
-                            borderWidth: isSel ? 1 : 0.5,
-                            borderColor: isSel ? `${qs.color}50` : 'rgba(255,255,255,0.10)',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingHorizontal: 20,
-                            gap: 16,
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {/* Accent bar gauche */}
-                          <View style={{
-                            width: 3,
-                            height: 42,
-                            borderRadius: 2,
-                            backgroundColor: isSel ? qs.color : 'rgba(255,255,255,0.10)',
-                            opacity: isSel ? 0.90 : 1,
-                          }} />
-
-                          {/* Icône */}
-                          <View style={{
-                            width: 46,
-                            height: 46,
-                            borderRadius: 14,
-                            backgroundColor: `${qs.color}18`,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}>
-                            <Ionicons
-                              name={qs.icon}
-                              size={22}
-                              color={isSel ? qs.color : `${qs.color}90`}
-                            />
-                          </View>
-
-                          {/* Texte */}
-                          <View style={{ flex: 1 }}>
-                            <Text style={{
-                              fontSize: 17,
-                              fontWeight: '800',
-                              color: isSel ? '#fff' : 'rgba(255,255,255,0.68)',
-                              letterSpacing: -0.5,
-                            }}>
-                              {qs.title}
-                            </Text>
-                            <Text style={{
-                              fontSize: 12,
-                              color: isSel ? 'rgba(255,255,255,0.42)' : 'rgba(255,255,255,0.26)',
-                              fontWeight: '600',
-                              marginTop: 4,
-                              letterSpacing: 0.1,
-                            }}>
-                              {qs.subtitle}
-                            </Text>
-                          </View>
-
-                          {/* Hint + chevron */}
-                          <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                            <Text style={{
-                              fontSize: 9,
-                              fontWeight: '800',
-                              color: isSel ? qs.color : 'rgba(255,255,255,0.20)',
-                              letterSpacing: 1.4,
-                              textTransform: 'uppercase',
-                            }}>
-                              {qs.hint}
-                            </Text>
-                            <Ionicons
-                              name="chevron-forward"
-                              size={14}
-                              color={isSel ? `${qs.color}80` : 'rgba(255,255,255,0.18)'}
-                            />
-                          </View>
-                        </LinearGradient>
-                      </Pressable>
-                    );
-                  })}
+                  {/* Bouton cloche OCTOGONAL */}
+                  <OctagonalBellButton
+                    onPress={() => Haptics.selectionAsync().catch(() => null)}
+                  />
                 </View>
               </View>
 
-              {/* ── SUGGESTION ── */}
-              {suggested && (
-                <View style={{ marginBottom: 24 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 12 }}>
-                    {t('session.suggestionLabel')}
-                  </Text>
-                  <View style={{
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    borderRadius: 22, borderWidth: 1,
-                    borderColor: `${selectedQS.color}38`,
-                    overflow: 'hidden',
-                  }}>
-                    <LinearGradient
-                      colors={[`${selectedQS.color}22`, 'transparent']}
-                      style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140 }}
-                    />
-                    <View style={{ padding: 22, gap: 14 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                        <Text style={{ flex: 1, fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: -1, lineHeight: 30 }}>
-                          {suggested.title}
-                        </Text>
-                        <View style={{
-                          backgroundColor: 'rgba(255,255,255,0.08)',
-                          borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5,
-                          flexDirection: 'row', alignItems: 'center', gap: 4,
-                        }}>
-                          <Ionicons name="time-outline" size={11} color="rgba(255,255,255,0.55)" />
-                          <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.65)' }}>
-                            ~{suggested.estimatedDuration}min
-                          </Text>
-                        </View>
-                      </View>
+              {/* ═══ (1) CHOISIS TON MODE D'ENTRAÎNEMENT ═══ */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <StepBadge n={1} />
+                <Text style={{
+                  marginHorizontal: 10,
+                  color: HUD_CYAN,
+                  fontSize: 18, fontWeight: '900',
+                  textShadowColor: '#00B4F0',
+                  textShadowOffset: { width: 0, height: 0 },
+                  textShadowRadius: 4,
+                }}>·</Text>
+                <Text style={{
+                  fontSize: 12, fontWeight: '800',
+                  color: '#FFFFFF',
+                  letterSpacing: 0.8, textTransform: 'uppercase',
+                  flexShrink: 1,
+                }}>
+                  CHOISIS TON MODE D'ENTRAÎNEMENT
+                </Text>
+              </View>
 
-                      {suggested.reason && (
-                        <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: '600', lineHeight: 18 }}>
-                          {suggested.reason}
-                        </Text>
-                      )}
-
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                        {suggested.focus.map((m) => (
-                          <View key={m} style={{
-                            paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999,
-                            backgroundColor: `${selectedQS.color}20`,
-                            borderWidth: 1, borderColor: `${selectedQS.color}45`,
-                          }}>
-                            <Text style={{ fontSize: 11, fontWeight: '800', color: selectedQS.color, textTransform: 'uppercase', letterSpacing: 1 }}>
-                              {MUSCLE_LABELS[m]}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-
-                      <Pressable
+              {/* ═══ SÉLECTEUR DE MODE — cartes larges (chevrons décoratifs supprimés
+                  pour laisser plus d'espace aux cartes) ═══ */}
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 6,
+                paddingVertical: 14, // = hauteur des indicateurs ▼▲ qui dépassent (jamais clippé)
+                gap: SK_MODE_GAP,    // ← gap FIXE entre cartes
+              }}>
+                {TRAINING_MODES.map((m) => {
+                  const active = selectedType === m.type;
+                  return (
+                    <View
+                      key={m.type}
+                      style={{
+                        position: 'relative',
+                        // width/height EXPLICITES → wrappers strictement identiques (pas de variation au pixel)
+                        width: SK_MODE_CARD_W,
+                        height: SK_MODE_CARD_H,
+                        overflow: 'visible', // glow Canvas + indicateurs ▼▲ qui dépassent
+                      }}
+                    >
+                      {active && <ModeIndicator direction="down" />}
+                      <OctagonalModeCard
+                        mode={m}
+                        active={active}
                         onPress={() => {
-                          handleStart(suggested.title, selectedType);
-                          suggested.exercises.forEach((ex) => {
-                            handleAddExercise({
-                              id: `${ex.name}-${Date.now()}`,
-                              name: ex.name, category: ex.category,
-                              muscleGroups: suggested.focus, sets: [],
-                            });
-                          });
+                          Haptics.selectionAsync().catch(() => null);
+                          setSelectedType(m.type);
                         }}
-                        style={({ pressed }) => ({
-                          borderRadius: 18, overflow: 'hidden',
-                          transform: [{ scale: pressed ? 0.97 : 1 }],
-                          shadowColor: BG_COLORS.accent,
-                          shadowOpacity: 0.50, shadowRadius: 22, shadowOffset: { width: 0, height: 10 },
-                          elevation: 10, marginTop: 4,
-                        })}
-                      >
-                        <View style={{
-                          backgroundColor: BG_COLORS.accent, borderRadius: 18, paddingVertical: 18,
-                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-                        }}>
-                          <Ionicons name="flame" size={18} color="#07090f" />
-                          <Text style={{ fontSize: 15, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                            {t('common.start')}
-                          </Text>
-                        </View>
-                      </Pressable>
+                      />
+                      {active && <ModeIndicator direction="up" />}
                     </View>
+                  );
+                })}
+              </View>
+
+              {/* ═══ BARRE INFO MODE (Skia HUD bevel + accents) ═══ */}
+              <ModeInfoBar text={mode.info} />
+
+              {/* ═══ CARTE SÉANCE DU JOUR (avec frame PNG seance-frame4 — 1313×1198) ═══ */}
+              {/* Le PNG contient déjà la fente bouton "chevron" en bas → on n'ajoute
+                  PAS de Svg pour le bouton, juste un Pressable transparent à la
+                  bonne position avec le texte par-dessus. */}
+              <View
+                style={{
+                  alignSelf: 'stretch',
+                  // Asymétrique : décalée encore plus à gauche par rapport au centre
+                  // (marge gauche négative + marge droite plus grande).
+                  marginLeft: -8,
+                  marginRight: 26,
+                  aspectRatio: 1313 / 1198,
+                  marginTop: -50,
+                  marginBottom: 20,
+                }}
+              >
+                {/* Frame PNG en background */}
+                <View style={{ width: '100%', height: '100%' }}>
+                  <Image
+                    source={SEANCE_FRAME}
+                    style={{ width: '100%', height: '100%', position: 'absolute' }}
+                    resizeMode="contain"
+                  />
+
+                  {/* AI Coach badge — top right (remonté, texte réduit) */}
+                  <View style={{
+                    position: 'absolute', top: '3%', right: '7%',
+                    flexDirection: 'row', alignItems: 'center', gap: 3,
+                    paddingHorizontal: 7, paddingVertical: 3,
+                    borderRadius: 999,
+                    borderWidth: 1, borderColor: HUD_CYAN,
+                    backgroundColor: 'rgba(5,11,22,0.85)',
+                  }}>
+                    <Ionicons name="sparkles" size={7} color={HUD_CYAN_HI} />
+                    <Text style={{ fontSize: 7, fontWeight: '800', color: HUD_CYAN, letterSpacing: 0.5 }}>
+                      AI Coach
+                    </Text>
+                  </View>
+
+                  {/* SÉANCE DU JOUR label + text content — décalé vers la droite
+                      pour laisser respirer le hex mascotte en haut-gauche du PNG */}
+                  <View style={{
+                    position: 'absolute', left: '32%', top: '18%', width: '42%',
+                  }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                      <Text style={{
+                        fontSize: 10, fontWeight: '900', color: HUD_CYAN,
+                        letterSpacing: 1.2, textTransform: 'uppercase',
+                      }}>
+                        SÉANCE DU JOUR
+                      </Text>
+                      <Ionicons name="flash" size={10} color={HUD_CYAN_HI} />
+                    </View>
+                    <Text
+                      numberOfLines={1} adjustsFontSizeToFit
+                      style={{
+                        fontSize: 38, fontWeight: '900', color: '#fff',
+                        letterSpacing: -1.2, lineHeight: 40,
+                      }}
+                    >
+                      {mode.sessionName}
+                    </Text>
+                    <Text style={{
+                      fontSize: 14, fontWeight: '700', color: '#fff',
+                      letterSpacing: 0.5, marginTop: 2,
+                    }}>
+                      {mode.sessionSubLabel}
+                    </Text>
+                    <Text style={{
+                      fontSize: 11, fontWeight: '900', color: HUD_CYAN_HI,
+                      letterSpacing: 1, textTransform: 'uppercase', marginTop: 6,
+                    }}>
+                      {mode.label}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={{
+                        fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.85)',
+                        letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 4,
+                      }}
+                    >
+                      {mode.muscles}
+                    </Text>
                   </View>
                 </View>
-              )}
 
-              {/* ── SÉANCE LIBRE ── */}
-              <View style={{ marginBottom: 24 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 12 }}>
-                  {t('session.freeSectionLabel')}
-                </Text>
+                {/* Stats row — légèrement remonté par-dessus le bas du frame,
+                    mais positionné plus BAS qu'avant (marginTop moins négatif). */}
+                <View style={{
+                  marginTop: -130,
+                  paddingHorizontal: 18, gap: 14,
+                }}>
+                  <View style={{
+                    flexDirection: 'row', justifyContent: 'space-between',
+                    borderWidth: 1,
+                    borderColor: 'rgba(93,222,255,0.18)',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(8,14,28,0.35)',
+                    paddingVertical: 8,
+                    paddingHorizontal: 4,
+                  }}>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Ionicons name="time-outline" size={11} color={HUD_CYAN} />
+                        <Text style={{ fontSize: 11, fontWeight: '900', color: '#fff', letterSpacing: 0.4 }}>
+                          {mode.duration}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 8, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>
+                        DURÉE ESTIMÉE
+                      </Text>
+                    </View>
+
+                    <View style={{ width: 1, backgroundColor: HUD_BORDER, marginVertical: 4 }} />
+
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Ionicons name="barbell-outline" size={11} color={HUD_CYAN} />
+                        <Text style={{ fontSize: 11, fontWeight: '900', color: '#fff', letterSpacing: 0.4 }}>
+                          {mode.exercises}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 8, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1, marginTop: 3, textTransform: 'uppercase' }}>
+                        SUGGÉRÉS
+                      </Text>
+                    </View>
+
+                    <View style={{ width: 1, backgroundColor: HUD_BORDER, marginVertical: 4 }} />
+
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <Text
+                        numberOfLines={1} adjustsFontSizeToFit
+                        style={{ fontSize: 11, fontWeight: '900', color: '#fff', letterSpacing: 0.3 }}
+                      >
+                        {mode.volume}
+                      </Text>
+                      <Text style={{ fontSize: 8, fontWeight: '800', color: 'rgba(255,255,255,0.45)', letterSpacing: 1, textTransform: 'uppercase', marginTop: 3 }}>
+                        VOLUME
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Bouton DÉMARRER LA SÉANCE — wrappé dans une View qui porte les offsets
+                      (Pressable parfois ignore marginTop/transform via sa fonction style). */}
+                  <View
+                    style={{
+                      alignSelf: 'center',
+                      marginTop: 22,
+                      transform: [{ translateX: -40 }],
+                    }}
+                  >
+                    <Pressable
+                      onPress={handleStartSuggested}
+                      style={({ pressed }) => ({
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        paddingVertical: 8,
+                        paddingHorizontal: 20,
+                        opacity: pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <Text style={{
+                        fontSize: 12, fontWeight: '900', color: '#fff',
+                        letterSpacing: 1.2, textTransform: 'uppercase',
+                      }}>
+                        DÉMARRER LA SÉANCE
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+
+              {/* ═══ SÉPARATEUR "ou" — juste sous SÉANCE DU JOUR ═══ */}
+              <Text style={{
+                textAlign: 'center', color: 'rgba(255,255,255,0.40)',
+                fontStyle: 'italic', fontSize: 14,
+                marginTop: -16,
+                marginBottom: 6,
+              }}>
+                ou
+              </Text>
+
+              {/* ═══ CARTE SÉANCE LIBRE — bannière fortement remontée ═══ */}
+              {/* Wrapper View qui porte les marges — Pressable seul ignore parfois
+                  marginTop/transform via sa fonction style (voir le bouton
+                  "DÉMARRER LA SÉANCE" ci-dessus pour le même pattern). */}
+              <View
+                style={{
+                  marginTop: -80,
+                  marginHorizontal: -10,
+                  marginBottom: -80,
+                }}
+              >
                 <Pressable
                   onPress={() => handleStart('Séance', selectedType)}
                   style={({ pressed }) => ({
-                    borderRadius: 18, overflow: 'hidden',
-                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                    flexDirection: 'column', alignItems: 'stretch',
+                    paddingTop: 0, paddingBottom: 0, paddingHorizontal: 0,
+                    opacity: pressed ? 0.85 : 1,
                   })}
                 >
-                  <View style={{
-                    backgroundColor: 'rgba(255,255,255,0.08)',
-                    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.18)',
-                    paddingVertical: 18, alignItems: 'center', borderRadius: 18,
-                    flexDirection: 'row', justifyContent: 'center', gap: 10,
-                  }}>
-                    <Ionicons name="add" size={18} color="#fff" />
-                    <Text style={{ fontSize: 15, fontWeight: '900', color: '#fff', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                      {t('session.freeStart')}
+                  {/* Bannière encadrement avec texte SÉANCE LIBRE superposé */}
+                  <View style={{ width: 410, height: 246, alignSelf: 'center', justifyContent: 'center', alignItems: 'center' }}>
+                    <Image
+                      source={require('@/assets/images/session-free.png')}
+                      resizeMode="contain"
+                      style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    />
+                    <Text style={{
+                      fontSize: 18, fontWeight: '900', color: '#FFFFFF',
+                      letterSpacing: 1.6, textTransform: 'uppercase',
+                      textShadowColor: 'rgba(0,0,0,0.85)',
+                      textShadowRadius: 6,
+                      textShadowOffset: { width: 0, height: 1 },
+                      marginTop: -8,
+                    }}>
+                      SÉANCE LIBRE
                     </Text>
                   </View>
                 </Pressable>
               </View>
 
-              {/* ── ZERO STATE Mimi (si jamais de profile) ── */}
-              {!suggested && workouts.length === 0 && (
-                <View style={{
-                  alignItems: 'center', paddingVertical: 24, paddingHorizontal: 18,
-                  backgroundColor: 'rgba(255,255,255,0.03)',
-                  borderRadius: 24, borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.06)',
-                  gap: 16, marginTop: 8,
-                }}>
-                  <Mascot pose="mimi_target" height={140} animate float />
-                  <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', fontWeight: '600', lineHeight: 20 }}>
-                    {t('session.zeroState')}
-                  </Text>
+              {/* ═══ SÉANCES RÉCENTES — en bas, sous SÉANCE LIBRE ═══ */}
+              {/* paddingHorizontal réduit + marginHorizontal négatif → la carte
+                  est nettement plus large que la version home. */}
+              {recent.length > 0 && (
+                <View style={{ paddingHorizontal: 0, marginHorizontal: -10, marginTop: 4 }}>
+                  {/* Carte extérieure — fond opaque pour ne pas laisser passer le hero */}
+                  <View
+                    style={{
+                      backgroundColor: 'rgba(8,14,28,0.98)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(93,222,255,0.22)',
+                      borderRadius: 12,
+                      paddingHorizontal: 16,
+                      paddingTop: 14,
+                      paddingBottom: 8,
+                    }}
+                  >
+                    {/* Header */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 12,
+                      }}
+                    >
+                      <Text style={{ fontFamily: 'Rajdhani-SemiBold', fontSize: 13, letterSpacing: 2, color: 'rgba(255,255,255,0.92)' }}>
+                        SÉANCES RÉCENTES
+                      </Text>
+                      <Pressable onPress={() => router.push('/(tabs)/progress')} hitSlop={10} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Text style={{ fontFamily: 'Rajdhani-SemiBold', fontSize: 11, letterSpacing: 1.4, color: 'rgba(255,255,255,0.42)' }}>
+                          VOIR TOUT
+                        </Text>
+                        <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>→</Text>
+                      </Pressable>
+                    </View>
+
+                    {/* 2e encadrement : la liste */}
+                    <View
+                      style={{
+                        borderWidth: 1,
+                        borderColor: 'rgba(93,222,255,0.20)',
+                        borderRadius: 10,
+                        backgroundColor: 'rgba(0,200,255,0.035)',
+                        paddingHorizontal: 14,
+                      }}
+                    >
+                      {recent.map((w, i, arr) => (
+                        <RecentRow key={w.id} workout={w} isLast={i === arr.length - 1} />
+                      ))}
+                    </View>
+                  </View>
                 </View>
               )}
             </ScrollView>

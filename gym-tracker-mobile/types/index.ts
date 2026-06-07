@@ -28,7 +28,9 @@ export type WorkoutType =
   | 'power'
   | 'endurance'
   | 'cardio'
-  | 'mobility';
+  | 'mobility'
+  | 'ppl'
+  | 'fullbody';
 
 export type ExerciseCategory = 'compound' | 'isolation' | 'accessory';
 
@@ -164,6 +166,7 @@ export interface AppSettings {
   theme: 'dark' | 'light' | 'system';
   notifications: boolean;
   language: 'fr' | 'en';
+  trainingMode?: WorkoutType;
 }
 
 // ============================================================
