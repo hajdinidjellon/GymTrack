@@ -159,6 +159,48 @@ export function getRankGradient(tier: string): [string, string] {
   return (gradients as Record<string, [string, string]>)[tier] ?? gradients.brand;
 }
 
+// ============================================================
+// HUD TOKENS — palette sci-fi alignée sur Home + Home Séance.
+// Utilisée par SessionDashboard, ExerciseCard, PremiumFrame, etc.
+// Ne JAMAIS hardcoder de hex sur ces écrans — toujours passer par hud.*.
+// ============================================================
+export const hud = {
+  bg: {
+    app:         '#050B16', // fond global (HUD_BG pre-séance)
+    surface:     '#0A1424', // carte neutre (BG Home)
+    surfaceElev: '#0A1E3A', // carte active / élévation
+    surfaceDeep: '#020810', // zone interne la plus sombre
+    scrim:       'rgba(0,0,0,0.85)',
+  },
+  border: {
+    subtle:   'rgba(93,222,255,0.20)',
+    active:   '#1DC4FF',
+    hairline: 'rgba(93,222,255,0.10)',
+    neutral:  'rgba(255,255,255,0.09)',
+  },
+  cyan: {
+    primary: '#1DC4FF', // HUD_CYAN
+    bright:  '#5DD8FF', // HUD_CYAN_HI
+    soft:    '#17B8FF', // CYAN Home (fallback)
+    deep:    '#061840', // bas de gradient bouton bevel
+  },
+  glow: {
+    cyan:      'rgba(29,196,255,0.30)',
+    cyanSoft:  'rgba(0,200,255,0.10)',
+    cyanFaint: 'rgba(0,200,255,0.035)',
+  },
+  text: {
+    primary:   '#FFFFFF',
+    secondary: 'rgba(255,255,255,0.55)',
+    muted:     'rgba(255,255,255,0.40)',
+    faint:     'rgba(255,255,255,0.30)',
+    onLight:   '#0A0A0A',
+  },
+  gradient: {
+    bevelBtn: ['#2196F3', '#1050C0', '#061840'] as [string, string, string],
+  },
+} as const;
+
 export const animation = {
   fast: 150,
   normal: 250,

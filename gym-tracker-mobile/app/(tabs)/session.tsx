@@ -26,6 +26,7 @@ import { useT } from '@/lib/i18n';
 import { ExerciseCard } from '@/components/session/ExerciseCard';
 import { RestTimer } from '@/components/session/RestTimer';
 import { SessionTimer } from '@/components/session/TimerRing';
+import { SessionDashboard } from '@/components/session/SessionDashboard';
 import { Mascot } from '@/components/mascot/Mascot';
 import { ScreenBackground, BG_COLORS } from '@/components/ui/ScreenBackground';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -1429,6 +1430,7 @@ export default function SessionScreen() {
   }, [selectedType, setSelectedType]);
   const [feeling, setFeeling] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [focusedExerciseId, setFocusedExerciseId] = useState<string | null>(null);
 
   const fade  = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(20)).current;
@@ -1500,15 +1502,34 @@ export default function SessionScreen() {
     const handleStartSuggested = () => {
       const suggested = profile ? getSuggestedSession(profile, workouts, null, mode.type) : null;
       handleStart(suggested?.title ?? mode.sessionName, mode.type);
-      if (suggested) {
-        suggested.exercises.forEach((ex) => {
-          handleAddExercise({
-            id: `${ex.name}-${Date.now()}`,
-            name: ex.name, category: ex.category,
-            muscleGroups: suggested.focus, sets: [],
-          });
+      if (!suggested) return;
+      suggested.exercises.forEach((ex, i) => {
+        const last = getLastWorkoutForExercise(ex.name);
+        const prevSets = last?.exercises.find(
+          (e) => e.name.toLowerCase() === ex.name.toLowerCase(),
+        )?.sets;
+        const targetReps = Array.isArray(ex.targetReps) ? ex.targetReps[0] : ex.targetReps;
+        const sets: WorkoutSet[] = prevSets?.length
+          ? prevSets.map((p) => ({
+              weight: p.weight, reps: p.reps, setType: p.setType,
+              restTime: ex.restTime ?? defaultRestTime, completed: false,
+            }))
+          : Array.from({ length: ex.targetSets }, () => ({
+              weight: ex.targetWeight ?? 0,
+              reps: targetReps,
+              setType: 'normal' as const,
+              restTime: ex.restTime ?? defaultRestTime,
+              completed: false,
+            }));
+        addExercise({
+          id: `${ex.name}-${Date.now()}-${i}`,
+          name: ex.name,
+          category: ex.category,
+          muscleGroups: suggested.focus,
+          sets,
+          isExpanded: i === 0,
         });
-      }
+      });
     };
 
     return (
@@ -1603,6 +1624,10 @@ export default function SessionScreen() {
               {/* Le PNG contient déjà la fente bouton "chevron" en bas → on n'ajoute
                   PAS de Svg pour le bouton, juste un Pressable transparent à la
                   bonne position avec le texte par-dessus. */}
+              {/* zIndex + pointerEvents="box-none" → la frame est au-dessus de la
+                  carte SÉANCE LIBRE (rendue ensuite avec marginTop: -80) pour la
+                  capture des touches, mais les zones décoratives laissent passer
+                  les clics qui ne touchent pas le bouton DÉMARRER LA SÉANCE. */}
               <View
                 style={{
                   alignSelf: 'stretch',
@@ -1613,10 +1638,13 @@ export default function SessionScreen() {
                   aspectRatio: 1313 / 1198,
                   marginTop: -50,
                   marginBottom: 20,
+                  zIndex: 10,
+                  elevation: 10,
                 }}
+                pointerEvents="box-none"
               >
                 {/* Frame PNG en background */}
-                <View style={{ width: '100%', height: '100%' }}>
+                <View style={{ width: '100%', height: '100%' }} pointerEvents="box-none">
                   <Image
                     source={SEANCE_FRAME}
                     style={{ width: '100%', height: '100%', position: 'absolute' }}
@@ -1889,105 +1917,57 @@ export default function SessionScreen() {
     );
   }
 
-  // ── SÉANCE ACTIVE ────────────────────────────────────────────────
-  const totalSets     = activeSession.exercises.reduce((t, e) => t + e.sets.length, 0);
-  const completedSets = activeSession.exercises.reduce((t, e) => t + e.sets.filter((s) => s.completed).length, 0);
+  // ── SÉANCE ACTIVE — Dashboard VARIANTE C ─────────────────────────
+  const focusedExercise = focusedExerciseId
+    ? activeSession.exercises.find((e) => e.id === focusedExerciseId) ?? null
+    : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG_COLORS.base }}>
-      <ScreenBackground variant="session" topHalo={false} />
+    <>
+      {focusedExercise ? (
+        <ExerciseCard
+          exercise={focusedExercise}
+          lastWorkout={getLastWorkoutForExercise(focusedExercise.name)}
+          onStartRest={(s) => startRestTimer(s)}
+          onBack={() => setFocusedExerciseId(null)}
+          bottomPad={bottomPad}
+        />
+      ) : (
+        <SessionDashboard
+          activeSession={activeSession}
+          bottomPad={bottomPad}
+          onPressExercise={(id) => setFocusedExerciseId(id)}
+          onAddExercise={() => setShowExercisePicker(true)}
+          onFinishSession={() => setShowFinishModal(true)}
+          onDiscard={handleDiscard}
+        />
+      )}
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        {/* Header séance active */}
-        <View style={{
-          borderBottomWidth: 1, borderBottomColor: 'rgba(56,189,248,0.15)',
-          paddingHorizontal: 16, paddingVertical: 12,
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-        }}>
-          <SessionTimer elapsedSeconds={activeSession.elapsedSeconds} />
-
-          <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text style={{ fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 1.4, textTransform: 'uppercase' }}>
-              {t('session.sets')}
-            </Text>
-            <Text style={{ fontSize: 19, fontWeight: '900', color: '#fff', letterSpacing: -0.4 }}>
-              {completedSets}<Text style={{ color: 'rgba(255,255,255,0.40)', fontSize: 14 }}>/{totalSets}</Text>
-            </Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            <Pressable
-              onPress={() => setShowFinishModal(true)}
-              style={({ pressed }) => ({
-                borderRadius: 20, overflow: 'hidden',
-                shadowColor: BG_COLORS.accent,
-                shadowOpacity: pressed ? 0.2 : 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
-                elevation: 6,
-              })}
-            >
-              <View style={{
-                backgroundColor: BG_COLORS.accent,
-                paddingHorizontal: 16, paddingVertical: 10,
-                borderRadius: 20,
-              }}>
-                <Text style={{ fontSize: 12, fontWeight: '900', color: '#07090f', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                  {t('session.finish')}
-                </Text>
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={handleDiscard}
-              style={{
-                width: 32, height: 32, borderRadius: 16,
-                backgroundColor: 'rgba(239,68,68,0.15)',
-                borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)',
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Ionicons name="close" size={16} color="#ef4444" />
-            </Pressable>
-          </View>
-        </View>
-
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 12, paddingBottom: bottomPad }}>
-          {activeSession.exercises.map((exercise) => (
-            <ExerciseCard
-              key={exercise.id}
-              exercise={exercise}
-              lastWorkout={getLastWorkoutForExercise(exercise.name)}
-              onStartRest={(s) => startRestTimer(s)}
-            />
-          ))}
-
-          <Pressable
-            onPress={() => setShowExercisePicker(true)}
-            style={({ pressed }) => ({
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-              paddingVertical: 18, borderRadius: 18,
-              borderWidth: 1.5, borderStyle: 'dashed',
-              borderColor: pressed ? BG_COLORS.accent : 'rgba(56,189,248,0.40)',
-              backgroundColor: pressed ? 'rgba(56,189,248,0.08)' : 'transparent',
-            })}
-          >
-            <Ionicons name="add" size={20} color={BG_COLORS.accent} />
-            <Text style={{ fontSize: 14, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-              {t('session.addExercise')}
-            </Text>
-          </Pressable>
-        </ScrollView>
-
+      <SafeAreaView style={{ position: 'absolute', top: 0, left: 0, right: 0 }} pointerEvents="box-none">
         {/* Rest timer */}
-        {activeSession.isResting && activeSession.restSecondsLeft !== null && (
-          <RestTimer
-            secondsLeft={activeSession.restSecondsLeft}
-            totalSeconds={defaultRestTime}
-            isVisible={activeSession.isResting}
-            onSkip={stopRestTimer}
-            onAddTime={(s) =>
-              useSessionStore.getState().startRestTimer((activeSession.restSecondsLeft ?? 0) + s)
-            }
-          />
-        )}
+        {activeSession.isResting && activeSession.restSecondsLeft !== null && (() => {
+          const ex = focusedExercise;
+          const lastIdx = activeSession.lastCompletedSetIndex;
+          const lastSet = ex && lastIdx !== null ? ex.sets[lastIdx] : null;
+          return (
+            <RestTimer
+              secondsLeft={activeSession.restSecondsLeft}
+              totalSeconds={defaultRestTime}
+              isVisible={activeSession.isResting}
+              onSkip={stopRestTimer}
+              onAddTime={(s) =>
+                useSessionStore.getState().startRestTimer(
+                  Math.max(1, (activeSession.restSecondsLeft ?? 0) + s),
+                )
+              }
+              exerciseName={ex?.name}
+              setNumber={lastIdx !== null ? lastIdx + 1 : undefined}
+              setsTotal={ex?.sets.length}
+              lastWeight={lastSet?.weight}
+              lastReps={lastSet?.reps}
+            />
+          );
+        })()}
 
         <ExercisePicker
           visible={showExercisePicker}
@@ -2054,7 +2034,7 @@ export default function SessionScreen() {
                   {[
                     { label: t('session.duration'), value: `${Math.floor(activeSession.elapsedSeconds / 60)} ${t('unit.min')}` },
                     { label: t('session.exercises'), value: String(activeSession.exercises.length) },
-                    { label: t('session.sets'), value: `${completedSets}/${totalSets}` },
+                    { label: t('session.sets'), value: `${activeSession.exercises.reduce((t, e) => t + e.sets.filter((s) => s.completed).length, 0)}/${activeSession.exercises.reduce((t, e) => t + e.sets.length, 0)}` },
                   ].map((s) => (
                     <View key={s.label} style={{
                       flex: 1,
@@ -2105,6 +2085,6 @@ export default function SessionScreen() {
           </View>
         </Modal>
       </SafeAreaView>
-    </View>
+    </>
   );
 }

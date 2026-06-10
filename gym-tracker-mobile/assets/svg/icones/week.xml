@@ -1,0 +1,33 @@
+<!-- CETTE SEMAINE -->
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="weekGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00D4FF"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="64" cy="64" r="52" fill="#0A1020"/>
+
+  <circle
+    cx="64"
+    cy="64"
+    r="32"
+    stroke="url(#weekGradient)"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-dasharray="160"
+    stroke-dashoffset="38"
+    filter="url(#glow)"
+  />
+
+  <circle cx="64" cy="64" r="8" fill="#00D4FF"/>
+</svg>

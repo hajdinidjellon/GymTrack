@@ -17,11 +17,13 @@ import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-nati
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useCelebrationStore } from '@/stores/celebrationStore';
 import { getSuggestedSession } from '@/lib/aiPlanner';
 import { MUSCLE_LABELS } from '@/lib/gamification';
 import { initialSync } from '@/lib/sync';
-import type { Workout } from '@/types';
+import * as Haptics from 'expo-haptics';
+import type { Workout, WorkoutSet, SuggestedSession } from '@/types';
 
 // ── Assets ───────────────────────────────────────────────────────────
 const BG_SUNNY  = require('@/assets/images/sunny-background.png') as number;
@@ -476,9 +478,10 @@ export default function DashboardScreen() {
   const { width: sw, height: sh } = useWindowDimensions();
   const HERO_H      = Math.round(sh * 0.50);
 
-  const { workouts, loadWorkouts, setWorkouts } = useWorkoutStore();
+  const { workouts, loadWorkouts, setWorkouts, getLastWorkoutForExercise } = useWorkoutStore();
   const { profile, loadProfile, saveProfile, getStreak, getCurrentRank, getTotalXP } = useProfileStore();
-  const { activeSession } = useSessionStore();
+  const { activeSession, startSession, addExercise } = useSessionStore();
+  const defaultRestTime = useSettingsStore((s) => s.settings.defaultRestTime);
   const showCelebration   = useCelebrationStore((s) => s.show);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -540,6 +543,42 @@ export default function DashboardScreen() {
     const raw = format(new Date(), 'EEEE d MMMM', { locale: dateLocale });
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   }, [dateLocale]);
+
+  // Démarrage de la séance suggérée — pré-remplit titre, type, exercices et séries
+  // (reprend les charges/reps de la dernière séance de l'exo si dispo,
+  // sinon utilise les targets de la suggestion).
+  const handleStartSuggested = (s: SuggestedSession) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
+    startSession(s.title, 'strength');
+    s.exercises.forEach((ex, i) => {
+      const last = getLastWorkoutForExercise(ex.name);
+      const prevSets = last?.exercises.find(
+        (e) => e.name.toLowerCase() === ex.name.toLowerCase(),
+      )?.sets;
+      const targetReps = Array.isArray(ex.targetReps) ? ex.targetReps[0] : ex.targetReps;
+      const sets: WorkoutSet[] = prevSets?.length
+        ? prevSets.map((p) => ({
+            weight: p.weight, reps: p.reps, setType: p.setType,
+            restTime: ex.restTime ?? defaultRestTime, completed: false,
+          }))
+        : Array.from({ length: ex.targetSets }, () => ({
+            weight: ex.targetWeight ?? 0,
+            reps: targetReps,
+            setType: 'normal' as const,
+            restTime: ex.restTime ?? defaultRestTime,
+            completed: false,
+          }));
+      addExercise({
+        id: `${ex.name}-${Date.now()}-${i}`,
+        name: ex.name,
+        category: ex.category,
+        muscleGroups: s.focus,
+        sets,
+        isExpanded: i === 0,
+      });
+    });
+    router.push('/(tabs)/session');
+  };
 
   // Session du jour
   const todayType     = suggested ? detectSessionType(suggested.title) : 'other';
@@ -648,7 +687,7 @@ export default function DashboardScreen() {
                   </View>
 
                   <View style={{ marginTop: 18 }}>
-                    <BevelButton onPress={() => router.push('/(tabs)/session')} />
+                    <BevelButton onPress={() => handleStartSuggested(suggested)} />
                   </View>
                 </View>
 
