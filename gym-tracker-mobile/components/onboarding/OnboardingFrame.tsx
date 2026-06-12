@@ -7,46 +7,29 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { Mascot, AnimatedExerciseMascot, type MascotPose } from '@/components/mascot/Mascot';
+import { ProgressRail } from '@/components/ui/hud/ProgressRail';
+import { hud } from '@/constants/theme';
 
 const BG_QR = require('@/assets/images/background-qr.png') as number;
 
 const { width: W } = Dimensions.get('window');
 
-// ── Barre de progression ──────────────────────────────────────────
+// ── Barre de progression « calibration » ──────────────────────────
+// Rail segmenté HUD : 1 segment = 1 étape (DESIGN-GYMTRACK.md §B.3).
 function StepProgress({ current, total }: { current: number; total: number }) {
-  const progress = useRef(new Animated.Value((current - 1) / total)).current;
-
-  useEffect(() => {
-    Animated.timing(progress, {
-      toValue: current / total,
-      duration: 400,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: false,
-    }).start();
-  }, [current]);
-
-  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
-
   return (
     <View style={{ gap: 6 }}>
-      <View style={{
-        height: 3, borderRadius: 3,
-        backgroundColor: 'rgba(255,255,255,0.10)',
-        overflow: 'hidden',
-      }}>
-        <Animated.View style={{
-          height: 3, width,
-          backgroundColor: '#38bdf8',
-          borderRadius: 3,
-        }} />
-      </View>
+      <ProgressRail progress={current / total} segments={total} height={5} />
       <Text style={{
-        fontSize: 11, fontWeight: '700',
-        color: 'rgba(255,255,255,0.35)',
-        letterSpacing: 1.4,
+        fontFamily: 'Rajdhani-Medium',
+        fontSize: 11,
+        color: hud.text.muted,
+        letterSpacing: 2.5,
+        textTransform: 'uppercase',
       }}>
-        {String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}
+        Calibration {String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}
       </Text>
     </View>
   );
@@ -220,7 +203,10 @@ export function OnboardingFrame({
 
             {!hideCta && onContinue && (
               <Pressable
-                onPress={onContinue}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => null);
+                  onContinue();
+                }}
                 disabled={!canContinue || loading}
                 style={({ pressed }) => ({
                   borderRadius: 20, overflow: 'hidden',

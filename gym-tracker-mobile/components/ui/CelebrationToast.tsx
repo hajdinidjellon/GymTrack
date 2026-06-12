@@ -212,7 +212,8 @@ export function CelebrationToast() {
   const accent = isPR ? '#fbbf24' : '#38bdf8';
 
   useEffect(() => {
-    if (!event) return;
+    // Les PR sont pris en charge par PRCelebration (plein écran).
+    if (!event || event.type === 'pr') return;
 
     scaleAnim.setValue(0.7);
     opacityAnim.setValue(0);
@@ -235,7 +236,7 @@ export function CelebrationToast() {
     return () => clearTimeout(timer);
   }, [event?.type, event?.title]);
 
-  if (!event) return null;
+  if (!event || event.type === 'pr') return null;
 
   return (
     <Modal visible transparent animationType="none" onRequestClose={dismiss}>

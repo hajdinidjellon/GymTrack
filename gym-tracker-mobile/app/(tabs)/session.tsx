@@ -1481,6 +1481,9 @@ export default function SessionScreen() {
           type: 'pr',
           title: t('dashboard.prTitle'),
           subtitle: t('dashboard.prSubtitle', { exercise: exercise.name }),
+          exercise: exercise.name,
+          prevValue: existing?.oneRepMax ?? 0,
+          newValue: best1RM,
         });
         break; // Une seule célébration par séance
       }

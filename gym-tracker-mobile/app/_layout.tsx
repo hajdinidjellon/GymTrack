@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -22,9 +22,12 @@ import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useBadgeQueueStore } from '@/stores/badgeQueueStore';
 import { requestPermissions, refreshAllNotifications, cancelAllTrainingReminders, notifyBadgeUnlocked } from '@/lib/notifications';
-import { calculateStreakFromWorkouts, getUnlockedBadges } from '@/lib/gamification';
+import { calculateStreakFromWorkouts, getUnlockedBadges, RANKS } from '@/lib/gamification';
 import { BadgeUnlockModal } from '@/components/gamification/BadgeUnlockModal';
 import { CelebrationToast } from '@/components/ui/CelebrationToast';
+import { PRCelebration } from '@/components/gamification/PRCelebration';
+import { RankUpOverlay } from '@/components/gamification/RankUpOverlay';
+import { useCelebrationStore } from '@/stores/celebrationStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,11 +66,25 @@ function AppNavigator() {
   const { loadProfile, profile } = useProfileStore();
   const { loadSettings } = useSettingsStore();
   const { hydrate: hydrateBadges, checkUnlocks, queue, dismissCurrent } = useBadgeQueueStore();
+  const prevRankIdxRef = useRef<number | null>(null);
 
   // Watcher : détecte les nouveaux badges et notifie + queue le modal
   useEffect(() => {
     if (!isReady) return;
     const totalXP = useProfileStore.getState().getTotalXP();
+
+    // Watcher rank-up : si l'index de rang augmente pendant la session,
+    // déclenche l'overlay de montée de rang (DESIGN-GYMTRACK.md §B.9-4).
+    const rank = useProfileStore.getState().getCurrentRank();
+    if (rank) {
+      const idx = RANKS.findIndex((r) => r.tier === rank.tier && r.level === rank.level);
+      const prev = prevRankIdxRef.current;
+      if (prev !== null && idx > prev) {
+        const from = RANKS[prev];
+        if (from) useCelebrationStore.getState().showRankUp({ from, to: rank });
+      }
+      prevRankIdxRef.current = idx;
+    }
     const streak  = calculateStreakFromWorkouts(workouts);
     const data    = { workouts, profile: profile ?? null, totalXP, streak };
     const unlocked = getUnlockedBadges(data);
@@ -196,8 +213,14 @@ function AppNavigator() {
         onClose={dismissCurrent}
       />
 
-      {/* Toast de célébration PR / objectif hebdo */}
+      {/* Toast de célébration objectif hebdo */}
       <CelebrationToast />
+
+      {/* Célébration PR plein écran (volt + compteur + confettis) */}
+      <PRCelebration />
+
+      {/* Montée de rang — cadre tracé, éclat, onde de choc */}
+      <RankUpOverlay />
     </>
   );
 }

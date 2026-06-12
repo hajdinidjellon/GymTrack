@@ -199,6 +199,14 @@ const T = {
     'rank.max': 'Max',
     'rank.towards': 'Vers',
     'rank.xpTotal': 'XP total',
+    'rank.ladder': 'Échelle des rangs',
+    'rank.youAreHere': 'TU ES ICI',
+
+    // Célébrations
+    'celebration.newRecord': 'Nouveau record',
+    'celebration.previous': 'Précédent',
+    'celebration.tapToContinue': 'Appuie pour continuer',
+    'celebration.rankUp': 'Montée de rang',
     'tier.bronze': 'BRONZE',
     'tier.silver': 'ARGENT',
     'tier.gold': 'OR',
@@ -471,6 +479,14 @@ const T = {
     'rank.max': 'Max',
     'rank.towards': 'Towards',
     'rank.xpTotal': 'Total XP',
+    'rank.ladder': 'Rank ladder',
+    'rank.youAreHere': 'YOU ARE HERE',
+
+    // Celebrations
+    'celebration.newRecord': 'New record',
+    'celebration.previous': 'Previous',
+    'celebration.tapToContinue': 'Tap to continue',
+    'celebration.rankUp': 'Rank up',
     'tier.bronze': 'BRONZE',
     'tier.silver': 'SILVER',
     'tier.gold': 'GOLD',

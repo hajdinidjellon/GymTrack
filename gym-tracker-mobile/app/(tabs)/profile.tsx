@@ -10,6 +10,7 @@ import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
 import { router } from 'expo-router';
 import { useT } from '@/lib/i18n';
 import { BadgeGrid } from '@/components/gamification/BadgeGrid';
+import { RankLadder } from '@/components/gamification/RankLadder';
 import { BadgeImage } from '@/components/ui/BadgeImage';
 import { NumericInput } from '@/components/ui/Input';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -264,6 +265,9 @@ export default function ProfileScreen() {
                     </View>
                   ))}
                 </View>
+
+                {/* ── Échelle des rangs ── */}
+                {rank && <RankLadder currentRank={rank} />}
 
                 {/* ── Records personnels ── */}
                 <View style={{ gap: 12 }}>

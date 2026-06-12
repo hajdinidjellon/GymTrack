@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withSpring,
+  cancelAnimation,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { hud, motion } from '@/constants/theme';
+import { useSessionStore } from '@/stores/sessionStore';
 
 // ─── Tokens ─────────────────────────────────────────────────────────────
 const CYAN     = '#46C6F5';
@@ -71,13 +83,83 @@ const NAV_RIGHT = [
 
 // ─── Single nav tab item ───────────────────────────────────────────────────────
 
+// Point ember pulsant — signal « séance en cours » sur l'onglet Séance.
+function EmberDot() {
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(withTiming(0.35, { duration: 600 }), withTiming(1, { duration: 600 })),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(opacity);
+  }, []);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          top: -2,
+          right: 12,
+          width: 7,
+          height: 7,
+          borderRadius: 4,
+          backgroundColor: hud.accent.ember,
+          shadowColor: hud.accent.ember,
+          shadowOpacity: 0.9,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 0 },
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+// Trait lumineux animé sous l'onglet actif — scale-in horizontal (spring).
+function ActiveBar({ focused }: { focused: boolean }) {
+  const scaleX = useSharedValue(focused ? 1 : 0);
+  useEffect(() => {
+    scaleX.value = withSpring(focused ? 1 : 0, motion.spring);
+  }, [focused]);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scaleX: scaleX.value }],
+    opacity: scaleX.value,
+  }));
+  return (
+    <View
+      pointerEvents="none"
+      style={{ position: 'absolute', top: -14, left: 0, right: 0, alignItems: 'center' }}
+    >
+      <Animated.View
+        style={[
+          {
+            width: 22,
+            height: 3,
+            borderRadius: 3,
+            backgroundColor: CYAN,
+            shadowColor: CYAN,
+            shadowOpacity: 1,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 0 },
+          },
+          style,
+        ]}
+      />
+    </View>
+  );
+}
+
 function NavItem({
-  label, Icon, focused, onPress,
+  label, Icon, focused, onPress, emberDot = false,
 }: {
   label: string;
   Icon: React.ComponentType<{ color: string }>;
   focused: boolean;
   onPress: () => void;
+  emberDot?: boolean;
 }) {
   const color = focused ? CYAN : INACTIVE;
   return (
@@ -97,30 +179,8 @@ function NavItem({
         position: 'relative',
       })}
     >
-      {/* Cyan glowing bar above active item — same centering technique */}
-      {focused && (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: -14,
-            left: 0,
-            right: 0,
-            alignItems: 'center',
-          }}
-        >
-          <View style={{
-            width: 22,
-            height: 3,
-            borderRadius: 3,
-            backgroundColor: CYAN,
-            shadowColor: CYAN,
-            shadowOpacity: 1,
-            shadowRadius: 14,
-            shadowOffset: { width: 0, height: 0 },
-          }} />
-        </View>
-      )}
+      <ActiveBar focused={focused} />
+      {emberDot && <EmberDot />}
 
       {/* Icon — wrapped in an explicit width:60 column so the cross-axis
           center is computed from the column, not from the wider child. */}
@@ -224,6 +284,12 @@ export function BottomNav({ state, navigation }: { state: any; navigation: any }
   const insets = useSafeAreaInsets();
   const focusedName: string = state.routes[state.index]?.name ?? '';
   const isCoachActive = focusedName === 'planner';
+  const hasActiveSession = useSessionStore((s) => s.activeSession !== null);
+
+  const navigateTo = (name: string) => {
+    if (name !== focusedName) Haptics.selectionAsync();
+    navigation.navigate(name);
+  };
 
   return (
     <View
@@ -264,7 +330,7 @@ export function BottomNav({ state, navigation }: { state: any; navigation: any }
         >
           <CoachItem
             active={isCoachActive}
-            onPress={() => navigation.navigate('planner')}
+            onPress={() => navigateTo('planner')}
           />
         </View>
 
@@ -319,7 +385,8 @@ export function BottomNav({ state, navigation }: { state: any; navigation: any }
                       label={label}
                       Icon={Icon}
                       focused={focusedName === name}
-                      onPress={() => navigation.navigate(name)}
+                      emberDot={name === 'session' && hasActiveSession}
+                      onPress={() => navigateTo(name)}
                     />
                   ))}
 
@@ -332,7 +399,7 @@ export function BottomNav({ state, navigation }: { state: any; navigation: any }
                       label={label}
                       Icon={Icon}
                       focused={focusedName === name}
-                      onPress={() => navigation.navigate(name)}
+                      onPress={() => navigateTo(name)}
                     />
                   ))}
                 </View>

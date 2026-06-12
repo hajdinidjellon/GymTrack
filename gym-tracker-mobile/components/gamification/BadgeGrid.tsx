@@ -28,11 +28,13 @@ const BADGE_ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   award:          'ribbon-outline',
 };
 
+// Raretés alignées sur rarityPalette (DESIGN-GYMTRACK.md §A.2) :
+// common gris · rare cyan HUD · epic violet · legendary or volt.
 const RARITY_GRADIENT: Record<string, [string, string]> = {
   common:    ['#6B7280', '#9CA3AF'],
-  rare:      ['#3b82f6', '#60A5FA'],
-  epic:      ['#7c3aed', '#a78bfa'],
-  legendary: ['#D97706', '#FCD34D'],
+  rare:      ['#0B6E96', '#1DC4FF'],
+  epic:      ['#6D28D9', '#A855F7'],
+  legendary: ['#B8860B', '#FFD75E'],
 };
 
 interface BadgeGridProps {
