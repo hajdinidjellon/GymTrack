@@ -12,4 +12,19 @@ export { HudInput, type HudInputProps } from './HudInput';
 export { SegmentedHud, type SegmentedHudProps } from './SegmentedHud';
 export { AnimatedNumber, type AnimatedNumberProps } from './AnimatedNumber';
 export { PowerOn, type PowerOnProps } from './PowerOn';
-export { octagonPath, octagonSVG, notchedOctagonPath, cornerTickPaths } from './octagon';
+export {
+  HudFrame,
+  type HudFrameProps,
+  type HudFrameShape,
+  type HudFrameIntensity,
+  type HudFrameLayer,
+  type PremiumIntensity,
+} from './HudFrame';
+export {
+  octagonPath,
+  octagonSVG,
+  notchedOctagonPath,
+  cornerTickPaths,
+  arrowRightSVG,
+  topBevelSVG,
+} from './octagon';

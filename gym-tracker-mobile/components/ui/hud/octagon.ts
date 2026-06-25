@@ -25,6 +25,44 @@ export function octagonPath(x: number, y: number, w: number, h: number, b: numbe
 }
 
 /**
+ * Forme HUD à pointe droite (CTA « DÉMARRER ») : octogone dont le côté droit
+ * est remplacé par une flèche. `depth` = profondeur de la pointe.
+ */
+export function arrowRightSVG(
+  x: number, y: number, w: number, h: number, b: number, depth = 28,
+): string {
+  return [
+    `M ${x + b} ${y}`,
+    `L ${x + w - depth - b} ${y}`,
+    `L ${x + w - depth} ${y + b}`,
+    `L ${x + w} ${y + h / 2}`,
+    `L ${x + w - depth} ${y + h - b}`,
+    `L ${x + w - depth - b} ${y + h}`,
+    `L ${x + b} ${y + h}`,
+    `L ${x} ${y + h - b}`,
+    `L ${x} ${y + b}`,
+    'Z',
+  ].join(' ');
+}
+
+/**
+ * Path du highlight haut : uniquement les 3 segments supérieurs (chanfrein
+ * gauche + arête horizontale + chanfrein droit) — simule la lumière du dessus.
+ * Variante `arrow` : s'arrête avant la pointe droite.
+ */
+export function topBevelSVG(
+  x: number, y: number, w: number, h: number, b: number, arrowDepth = 0,
+): string {
+  const right = arrowDepth > 0 ? x + w - arrowDepth : x + w - b;
+  return [
+    `M ${x} ${y + b}`,
+    `L ${x + b} ${y}`,
+    `L ${right} ${y}`,
+    arrowDepth > 0 ? `L ${right + b} ${y + b}` : `L ${x + w} ${y + b}`,
+  ].join(' ');
+}
+
+/**
  * Octogone héros avec encoches triangulaires centrées en haut et en bas
  * (cf. mode-card-active.png). notch = demi-largeur de l'encoche.
  */

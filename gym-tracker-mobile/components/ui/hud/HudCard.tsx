@@ -31,8 +31,23 @@ import {
 } from 'react-native-reanimated';
 import { hud, type HudGlowLevel } from '@/constants/theme';
 import { octagonPath, notchedOctagonPath, cornerTickPaths } from './octagon';
+import { ScanLines } from './effects/ScanLines';
+import {
+  type PremiumIntensity,
+  type LightDirection,
+  NoiseOverlay, NOISE_OPACITY,
+  AsymmetricHalos, ASYM_OFFSET, LIGHT_HX,
+  ColorVarHalo, COLORVAR_OPACITY,
+  Vignette, VIGNETTE_DARKNESS,
+  CornerLightLeaks, LEAK_OPACITY,
+  EdgeBloom,
+  SCANLINES_OPACITY,
+  ChromaticAberration, CHROMA_SHIFT,
+} from './effects/premiumLayers';
 
+// Premium → marge de glow agrandie pour absorber les halos asymétriques.
 const HALO_PAD = 36;
+const HALO_PAD_PREMIUM = 56;
 
 export type HudCardProps = {
   /** Niveau d'élévation lumineuse. */
@@ -47,10 +62,24 @@ export type HudCardProps = {
   scanline?: boolean;
   /** Couleur de bordure custom (ex : rang, regen) — remplace le cyan. */
   borderColor?: string;
+  /**
+   * Dégradé de bordure (diagonal ↘) — rend l'encadrement NON-uniforme :
+   * clair/intense d'un côté, bleu profond de l'autre, comme la maquette.
+   * Prioritaire sur `borderColor`. Ex : ['#9BECFF', '#1DC4FF', '#0C63D6'].
+   */
+  borderGradient?: readonly string[];
+  /** Positions des stops du dégradé (0→1), même longueur que borderGradient. */
+  borderGradientPositions?: readonly number[];
   /** Couleur de glow custom. */
   glowColor?: string;
   /** Fond en dégradé vertical (cartes héros) au lieu du fond plat. */
   gradientFill?: boolean;
+  /** Couches premium « painted » partagées (grain, halos, vignette…). Défaut false. */
+  premium?: boolean;
+  /** Intensité des couches premium. Défaut 'medium'. */
+  premiumIntensity?: PremiumIntensity;
+  /** Direction de la lumière simulée (halos asymétriques). Défaut 'top-left'. */
+  lightDirection?: LightDirection;
   padding?: number;
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
@@ -63,14 +92,24 @@ export function HudCard({
   cornerTicks = false,
   scanline = false,
   borderColor,
+  borderGradient,
+  borderGradientPositions,
   glowColor,
   gradientFill = false,
+  premium = false,
+  premiumIntensity = 'medium',
+  lightDirection = 'top-left',
   padding = 16,
   style,
   children,
 }: HudCardProps) {
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const spec = hud.glowLevel[level];
+
+  // Premium → marge agrandie pour absorber les halos asymétriques.
+  const pad = premium ? HALO_PAD_PREMIUM : HALO_PAD;
+  // Blur de base des halos premium (plancher pour éviter un halo net en g0/g1).
+  const pOuterBlur = Math.max(spec.blur, 16);
 
   // ── G3 : pulse du halo (0.15 → 0.35, 2.8s, sinusoïdal) ───────────
   const pulse = useSharedValue(level === 'g3' ? 0.15 : 1);
@@ -104,7 +143,7 @@ export function HudCard({
     );
     return () => cancelAnimation(scanY);
   }, [scanline, size?.h]);
-  const scanRectY = useDerivedValue(() => HALO_PAD + Math.min(scanY.value, size?.h ?? 0));
+  const scanRectY = useDerivedValue(() => pad + Math.min(scanY.value, size?.h ?? 0));
   const scanOpacity = useDerivedValue(() =>
     scanY.value >= (size?.h ?? 0) - 1 ? 0 : 0.06,
   );
@@ -113,11 +152,11 @@ export function HudCard({
     if (!size) return null;
     const { w, h } = size;
     const main = notched
-      ? notchedOctagonPath(HALO_PAD, HALO_PAD, w, h, cut)
-      : octagonPath(HALO_PAD, HALO_PAD, w, h, cut);
-    const ticks = cornerTicks ? cornerTickPaths(HALO_PAD, HALO_PAD, w, h, cut) : [];
+      ? notchedOctagonPath(pad, pad, w, h, cut)
+      : octagonPath(pad, pad, w, h, cut);
+    const ticks = cornerTicks ? cornerTickPaths(pad, pad, w, h, cut) : [];
     return { main, ticks };
-  }, [size?.w, size?.h, cut, notched, cornerTicks]);
+  }, [size?.w, size?.h, cut, notched, cornerTicks, pad]);
 
   const border = borderColor ?? spec.border;
   const glow = glowColor ?? spec.glowColor;
@@ -136,12 +175,22 @@ export function HudCard({
           pointerEvents="none"
           style={{
             position: 'absolute',
-            top: -HALO_PAD,
-            left: -HALO_PAD,
-            width: size.w + HALO_PAD * 2,
-            height: size.h + HALO_PAD * 2,
+            top: -pad,
+            left: -pad,
+            width: size.w + pad * 2,
+            height: size.h + pad * 2,
           }}
         >
+          {/* PREMIUM #2 — Multi-halo asymétrique (tout au fond) */}
+          {premium && (
+            <AsymmetricHalos
+              path={paths.main}
+              outerBlur={pOuterBlur}
+              offset={ASYM_OFFSET[premiumIntensity]}
+              hx={LIGHT_HX[lightDirection]}
+            />
+          )}
+
           {/* Halo (glow externe) */}
           {showGlow && (
             <SkPath path={paths.main} color={glow} style="fill" opacity={pulse}>
@@ -149,12 +198,22 @@ export function HudCard({
             </SkPath>
           )}
 
+          {/* PREMIUM #3 — Color variation (SweepGradient cyan sur le halo) */}
+          {premium && (
+            <ColorVarHalo
+              path={paths.main}
+              center={vec(pad + size.w / 2, pad + size.h / 2)}
+              blur={pOuterBlur}
+              opacity={COLORVAR_OPACITY[premiumIntensity]}
+            />
+          )}
+
           {/* Fond */}
           {gradientFill ? (
             <SkPath path={paths.main} style="fill">
               <SkLinearGradient
-                start={vec(HALO_PAD + size.w / 2, HALO_PAD)}
-                end={vec(HALO_PAD + size.w / 2, HALO_PAD + size.h)}
+                start={vec(pad + size.w / 2, pad)}
+                end={vec(pad + size.w / 2, pad + size.h)}
                 colors={[hud.bg.surfaceElev, hud.bg.surface, hud.bg.surfaceDeep]}
                 positions={[0, 0.5, 1]}
               />
@@ -163,10 +222,32 @@ export function HudCard({
             <SkPath path={paths.main} color={hud.bg.surface} style="fill" />
           )}
 
-          {/* Scanline */}
+          {/* PREMIUM #4/#5 — Vignette interne + corner light leaks */}
+          {premium && (
+            <>
+              <Vignette
+                path={paths.main}
+                center={vec(pad + size.w / 2, pad + size.h / 2)}
+                radius={Math.min(size.w, size.h) * 0.6}
+                darkness={VIGNETTE_DARKNESS[premiumIntensity]}
+              />
+              <CornerLightLeaks
+                path={paths.main}
+                fx={pad}
+                fy={pad}
+                w={size.w}
+                h={size.h}
+                bevel={cut}
+                opTop={LEAK_OPACITY[premiumIntensity]}
+                opBottom={LEAK_OPACITY[premiumIntensity] * 0.6}
+              />
+            </>
+          )}
+
+          {/* Scanline (faisceau animé — effet distinct des scan lines CRT) */}
           {scanline && (
             <SkRect
-              x={HALO_PAD}
+              x={pad}
               y={scanRectY}
               width={size.w}
               height={1}
@@ -175,13 +256,33 @@ export function HudCard({
             />
           )}
 
-          {/* Bordure */}
+          {/* Bordure — dégradé diagonal non-uniforme si fourni, sinon couleur unie */}
           <SkPath
             path={paths.main}
             color={border}
             style="stroke"
             strokeWidth={spec.borderWidth}
-          />
+          >
+            {borderGradient && (
+              <SkLinearGradient
+                start={vec(pad, pad)}
+                end={vec(pad + size.w, pad + size.h)}
+                colors={[...borderGradient]}
+                positions={borderGradientPositions ? [...borderGradientPositions] : undefined}
+              />
+            )}
+          </SkPath>
+
+          {/* PREMIUM #6 — Edge bloom (dégradé diagonal sur la bordure) */}
+          {premium && (
+            <EdgeBloom
+              path={paths.main}
+              start={vec(pad, pad)}
+              end={vec(pad + size.w, pad + size.h)}
+              strokeWidth={spec.borderWidth}
+              opacity={0.9}
+            />
+          )}
 
           {/* Ticks de coin */}
           {paths.ticks.map((p, i) => (
@@ -195,6 +296,26 @@ export function HudCard({
               strokeCap="square"
             />
           ))}
+
+          {/* PREMIUM #7/#8/#1 — Scan lines CRT + chroma + grain (par-dessus tout) */}
+          {premium && (
+            <>
+              <ScanLines
+                x={pad}
+                y={pad}
+                width={size.w}
+                height={size.h}
+                clip={paths.main}
+                opacity={SCANLINES_OPACITY[premiumIntensity]}
+              />
+              <ChromaticAberration
+                path={paths.main}
+                shift={CHROMA_SHIFT[premiumIntensity]}
+                opacity={0.3}
+              />
+              <NoiseOverlay path={paths.main} opacity={NOISE_OPACITY[premiumIntensity]} />
+            </>
+          )}
         </Canvas>
       )}
 

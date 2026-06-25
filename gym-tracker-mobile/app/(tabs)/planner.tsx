@@ -17,6 +17,7 @@ import {
   vec,
   useImage,
   Image as SkImage,
+  ColorMatrix,
   Mask,
   RadialGradient as SkRadialGradient,
 } from '@shopify/react-native-skia';
@@ -31,6 +32,7 @@ import Animated, {
   withSequence,
   cancelAnimation,
   Easing,
+  ReduceMotion,
 } from 'react-native-reanimated';
 import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
 import { router } from 'expo-router';
@@ -50,6 +52,10 @@ import type { MuscleGroup } from '@/types';
 
 const SESSION_BG = require('@/assets/images/background-session.png') as number;
 const BODY_HOLO  = require('@/assets/images/body-holo.png') as number;
+
+// Dégradé d'arête HUD : cyan clair ↘ bleu profond → bordure NON-uniforme
+// (certaines parties plus intenses / plus bleues), comme la maquette.
+const EDGE_CYAN: readonly string[] = ['#AEEFFF', '#26C9FF', '#0B5FD6'];
 
 // ── Détection du type de séance (même logique que l'accueil) ────────
 type SessionType = 'push' | 'pull' | 'legs' | 'other';
@@ -154,10 +160,12 @@ function AIOrb({ size = 46 }: { size?: number }) {
   );
 }
 
-/** Anneau circulaire avec glow qui respire + anneau pointillé rotatif. */
-function RingIcon({ size = 48, spinDuration = 14000, children }: {
+/** Anneau circulaire avec glow qui respire + anneau pointillé rotatif.
+ *  `tint` permet de colorer l'anneau (cyan par défaut, ou un accent sémantique). */
+function RingIcon({ size = 48, spinDuration = 14000, tint = hud.cyan.primary, children }: {
   size?: number;
   spinDuration?: number;
+  tint?: string;
   children: React.ReactNode;
 }) {
   const PAD = 12;
@@ -185,13 +193,14 @@ function RingIcon({ size = 48, spinDuration = 14000, children }: {
         pointerEvents="none"
         style={{ position: 'absolute', top: -PAD, left: -PAD, width: S, height: S }}
       >
-        <SkCircle cx={c} cy={c} r={r} color={hud.cyan.primary} opacity={breath}>
+        {/* halo coloré qui respire */}
+        <SkCircle cx={c} cy={c} r={r} color={tint} opacity={breath}>
           <BlurMask blur={9} style="normal" />
         </SkCircle>
         <SkCircle cx={c} cy={c} r={r} color="#06121F" />
-        <SkCircle cx={c} cy={c} r={r} color={hud.cyan.primary} style="stroke" strokeWidth={1.2} opacity={0.85} />
+        <SkCircle cx={c} cy={c} r={r} color={tint} style="stroke" strokeWidth={1.2} opacity={0.85} />
         <SkGroup origin={vec(c, c)} transform={t}>
-          <SkCircle cx={c} cy={c} r={r - 4} color={hud.cyan.primary} style="stroke" strokeWidth={0.8} opacity={0.4}>
+          <SkCircle cx={c} cy={c} r={r - 4} color={tint} style="stroke" strokeWidth={0.8} opacity={0.4}>
             <DashPathEffect intervals={[3, 5]} />
           </SkCircle>
         </SkGroup>
@@ -215,40 +224,29 @@ function HoloRing({ size = 172 }: { size?: number }) {
   const rOuter = size / 2 - 2;
   const img = useImage(BODY_HOLO);
 
-  const rot   = useSharedValue(0);
   const halo  = useSharedValue(0.06);
-  const scanY = useSharedValue(0);
-
-  const BODY_TOP = 14;
-  const BODY_H = H - 28;
 
   useEffect(() => {
-    rot.value   = withRepeat(withTiming(Math.PI * 2, { duration: 16000, easing: Easing.linear }), -1, false);
-    halo.value  = withRepeat(withTiming(0.16, { duration: 2600, easing: Easing.inOut(Easing.sin) }), -1, true);
-    scanY.value = withRepeat(
-      withSequence(
-        withTiming(BODY_H - 22, { duration: 2600, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0,           { duration: 2600, easing: Easing.inOut(Easing.quad) }),
-      ),
+    halo.value  = withRepeat(
+      withTiming(0.16, { duration: 2600, easing: Easing.inOut(Easing.sin), reduceMotion: ReduceMotion.Never }),
       -1,
-      false,
+      true,
+      undefined,
+      ReduceMotion.Never,
     );
     return () => {
-      cancelAnimation(rot);
       cancelAnimation(halo);
-      cancelAnimation(scanY);
     };
   }, []);
 
-  const tCW  = useDerivedValue(() => [{ rotate: rot.value }]);
-  const orbX = useDerivedValue(() => cx + rOuter * Math.cos(-rot.value * 0.7));
-  const orbY = useDerivedValue(() => cy + rOuter * Math.sin(-rot.value * 0.7));
-  const scanStyle = useAnimatedStyle(() => ({ transform: [{ translateY: scanY.value }] }));
+  // Centre d'orbite des particules (le torse, un peu au-dessus du centre du canvas).
+  const orbitCx = cx;
+  const orbitCy = cy - 14;
 
   return (
     <View style={{ width: size, height: H }}>
       <Canvas style={{ position: 'absolute', width: size, height: H }} pointerEvents="none">
-        {/* Illustration fondue dans la page par un masque radial */}
+        {/* Mannequin — statique, fondu dans la page par un masque radial */}
         <Mask
           mask={
             <SkCircle cx={cx} cy={cy} r={H / 2}>
@@ -261,39 +259,116 @@ function HoloRing({ size = 172 }: { size?: number }) {
             </SkCircle>
           }
         >
-          {img && <SkImage image={img} x={0} y={0} width={size} height={H} fit="cover" />}
+          {img && (
+            <SkImage image={img} x={0} y={0} width={size} height={H} fit="cover">
+              {/* Rend le fond sombre transparent, garde les zones cyan lumineuses */}
+              <ColorMatrix matrix={[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2.0, 0.5, 0, -0.45]} />
+            </SkImage>
+          )}
         </Mask>
 
         {/* Halo qui respire par-dessus l'illustration */}
         <SkCircle cx={cx} cy={cy} r={rOuter - 10} color="#00B4F0" opacity={halo}>
           <BlurMask blur={26} style="normal" />
         </SkCircle>
-
-        {/* Anneau pointillé en rotation lente */}
-        <SkGroup origin={vec(cx, cy)} transform={tCW}>
-          <SkCircle cx={cx} cy={cy} r={rOuter} color={hud.cyan.primary} style="stroke" strokeWidth={1} opacity={0.40}>
-            <DashPathEffect intervals={[3, 7]} />
-          </SkCircle>
-        </SkGroup>
-
-        {/* Particule en orbite */}
-        <SkGroup>
-          <SkCircle cx={orbX} cy={orbY} r={2.6} color={hud.cyan.bright}>
-            <BlurMask blur={4} style="solid" />
-          </SkCircle>
-        </SkGroup>
       </Canvas>
 
-      {/* Scanline qui balaye le corps */}
-      <View style={{ position: 'absolute', top: BODY_TOP, left: 14, right: 14, height: BODY_H, overflow: 'hidden' }}>
-        <Animated.View style={[{ position: 'absolute', left: 0, right: 0, top: 0, height: 22 }, scanStyle]}>
-          <LinearGradient
-            colors={['rgba(93,222,255,0)', 'rgba(93,222,255,0.30)', 'rgba(93,222,255,0)']}
-            style={{ flex: 1 }}
-          />
-        </Animated.View>
-      </View>
+      {/* Champ de petites particules cyan qui ORBITENT en cercle autour du mannequin
+          (corps fixe). Plusieurs anneaux, tailles / vitesses / sens variés. */}
+      {ORBIT_FIELD.map((p) => (
+        <OrbitParticle
+          key={p.key}
+          cx={orbitCx}
+          cy={orbitCy}
+          radius={rOuter + p.dr}
+          startDeg={p.deg}
+          duration={p.duration}
+          size={p.size}
+          dir={p.dir}
+          opacity={p.opacity}
+        />
+      ))}
     </View>
+  );
+}
+
+// Champ dense de particules : 6 anneaux concentriques (du bord jusqu'au centre, donc
+// par-dessus le corps), sens alternés, tailles / vitesses / opacités variées. Couvre la
+// zone des étincelles peintes dans le PNG → l'ensemble paraît bouger.
+const ORBIT_FIELD = (() => {
+  const rings = [
+    { dr: 0,   n: 8, duration: 9000,  dir: 1  as 1 | -1 },
+    { dr: -16, n: 7, duration: 11000, dir: -1 as 1 | -1 },
+    { dr: -32, n: 6, duration: 13000, dir: 1  as 1 | -1 },
+    { dr: -48, n: 6, duration: 15000, dir: -1 as 1 | -1 },
+    { dr: -64, n: 5, duration: 17000, dir: 1  as 1 | -1 },
+    { dr: -80, n: 4, duration: 19000, dir: -1 as 1 | -1 },
+  ];
+  const out: { key: string; dr: number; deg: number; duration: number; size: number; dir: 1 | -1; opacity: number }[] = [];
+  rings.forEach((ring, ri) => {
+    for (let i = 0; i < ring.n; i++) {
+      const t = (i + ri) % 3;
+      out.push({
+        key: `${ri}-${i}`,
+        dr: ring.dr,
+        deg: (360 / ring.n) * i + ri * 23,   // décalage par anneau → réparti, pas aligné
+        duration: ring.duration,
+        size: 1.4 + t * 0.8,                 // 1.4 / 2.2 / 3.0 px
+        dir: ring.dir,
+        opacity: 0.5 + t * 0.18,             // 0.5 / 0.68 / 0.86
+      });
+    }
+  });
+  return out;
+})();
+
+/** Particule cyan en orbite circulaire continue autour de (cx, cy). */
+function OrbitParticle({ cx, cy, radius, startDeg, duration, size = 3, dir = 1, opacity = 1 }: {
+  cx: number; cy: number; radius: number; startDeg: number; duration: number;
+  size?: number; dir?: 1 | -1; opacity?: number;
+}) {
+  const a = useSharedValue(0);
+  useEffect(() => {
+    // reduceMotion: Never → l'orbite décorative tourne même si « Réduire les animations » est activé.
+    a.value = withRepeat(
+      withTiming(1, { duration, easing: Easing.linear, reduceMotion: ReduceMotion.Never }),
+      -1,
+      false,
+      undefined,
+      ReduceMotion.Never,
+    );
+    return () => cancelAnimation(a);
+  }, [duration]);
+  const style = useAnimatedStyle(() => {
+    const ang = (startDeg * Math.PI) / 180 + dir * a.value * Math.PI * 2;
+    return {
+      transform: [
+        { translateX: radius * Math.cos(ang) },
+        { translateY: radius * Math.sin(ang) },
+      ],
+    };
+  });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          left: cx - size / 2,
+          top: cy - size / 2,
+          width: size,
+          height: size,
+          borderRadius: size,
+          backgroundColor: hud.cyan.bright,
+          opacity,
+          shadowColor: hud.cyan.bright,
+          shadowOpacity: 0.9,
+          shadowRadius: 3,
+          shadowOffset: { width: 0, height: 0 },
+        },
+        style,
+      ]}
+    />
   );
 }
 
@@ -301,9 +376,16 @@ function HoloRing({ size = 172 }: { size?: number }) {
 function Particle({ x, delay, travel }: { x: number; delay: number; travel: number }) {
   const p = useSharedValue(0);
   useEffect(() => {
+    // reduceMotion: Never → ces particules ambiantes bougent même si « Réduire les animations » est activé.
     p.value = withDelay(
       delay,
-      withRepeat(withTiming(1, { duration: 4200, easing: Easing.linear }), -1, false),
+      withRepeat(
+        withTiming(1, { duration: 4200, easing: Easing.linear, reduceMotion: ReduceMotion.Never }),
+        -1,
+        false,
+        undefined,
+        ReduceMotion.Never,
+      ),
     );
     return () => cancelAnimation(p);
   }, []);
@@ -445,11 +527,15 @@ function StatCol({ icon, value, label }: {
   );
 }
 
-/** Carte outil IA (Échauffement / Progression / Analyse). */
-function ToolCard({ icon, title, sub, active, spinDuration, onPress }: {
+/** Carte outil IA (Échauffement / Progression / Analyse).
+ *  `accent` colore l'anneau + le glow ; quand `active`, la carte s'illumine
+ *  de sa couleur (bordure + halo) au lieu du cyan neutre. */
+function ToolCard({ icon, title, sub, accent = hud.cyan.bright, accentGlow = hud.glow.cyan, active, spinDuration, onPress }: {
   icon: React.ReactNode;
   title: string;
   sub: string;
+  accent?: string;
+  accentGlow?: string;
   active?: boolean;
   spinDuration?: number;
   onPress: () => void;
@@ -468,9 +554,18 @@ function ToolCard({ icon, title, sub, active, spinDuration, onPress }: {
         }}
         style={{ flex: 1 }}
       >
-        <HudCard level={active ? 'g2' : 'g1'} cut={hud.cut.md} padding={12} style={{ flex: 1 }}>
+        <HudCard
+          level={active ? 'g2' : 'g1'}
+          cut={hud.cut.md}
+          cornerTicks
+          borderGradient={EDGE_CYAN}
+          glowColor={active ? accentGlow : undefined}
+          gradientFill
+          padding={12}
+          style={{ flex: 1 }}
+        >
           <View style={{ alignItems: 'center', gap: 8, paddingVertical: 4 }}>
-            <RingIcon size={44} spinDuration={spinDuration ?? 14000}>
+            <RingIcon size={44} spinDuration={spinDuration ?? 14000} tint={accent}>
               {active ? <Pulsing amount={1.15}>{icon}</Pulsing> : icon}
             </RingIcon>
             <View style={{ alignItems: 'center', gap: 1 }}>
@@ -641,29 +736,45 @@ export default function PlannerScreen() {
                 {' '}aujourd'hui.
               </Text>
 
-              {/* Carte récupération */}
-              <View style={styles.recoveryCard}>
-                <OctoIcon size={34} level="g0">
-                  <FlickerLightning />
-                </OctoIcon>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={styles.recoveryLabel}>RÉCUPÉRATION</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                    <AnimatedNumber
-                      value={recoveryPct}
-                      animateOnMount
-                      duration={1100}
-                      style={[hudType.displayStat, { fontSize: 26 }]}
-                    />
-                    <Text style={[hudType.labelHud, { color: hud.text.muted }]}>%</Text>
+              {/* Carte récupération — octogone HUD compact (court en Y, large en X) */}
+              <HudCard
+                level="g2"
+                cut={hud.cut.sm}
+                cornerTicks
+                borderGradient={EDGE_CYAN}
+                glowColor={hud.glow.cyan}
+                premium
+                premiumIntensity="strong"
+                padding={11}
+                style={{ marginTop: 12, marginRight: -6 }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+                  <OctoIcon size={30} level="g0">
+                    <FlickerLightning />
+                  </OctoIcon>
+                  <View style={{ flex: 1, gap: 5 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                      <Text style={styles.recoveryLabel}>RÉCUPÉRATION</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 1 }}>
+                        <AnimatedNumber
+                          value={recoveryPct}
+                          animateOnMount
+                          duration={1100}
+                          style={[hudType.displayStat, { fontSize: 21 }]}
+                        />
+                        <Text style={[hudType.labelHud, { color: hud.text.muted }]}>%</Text>
+                      </View>
+                    </View>
+                    <ProgressRail progress={recoveryPct / 100} height={4} ticks={false} />
                   </View>
-                  <ProgressRail progress={recoveryPct / 100} height={5} ticks={false} />
+                  <PopCheck ok={recoveryPct >= 50} />
                 </View>
-                <PopCheck ok={recoveryPct >= 50} />
-              </View>
+              </HudCard>
             </View>
 
-            <HoloRing size={172} />
+            <View style={{ alignSelf: 'flex-end', marginTop: 36, marginBottom: -24 }}>
+              <HoloRing size={210} />
+            </View>
           </PowerOn>
 
           {/* ── SUGGESTION DU JOUR ── */}
@@ -671,7 +782,7 @@ export default function PlannerScreen() {
             <SectionTag label="SUGGESTION DU JOUR" />
 
             {suggested ? (
-              <HudCard level="g2" cut={hud.cut.lg} cornerTicks gradientFill scanline padding={18}>
+              <HudCard level="g3" cut={hud.cut.lg} notched cornerTicks borderGradient={EDGE_CYAN} gradientFill scanline premium premiumIntensity="strong" padding={18}>
                 <View style={{ gap: 14 }}>
                   {/* Type + titre + emblème */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -734,9 +845,11 @@ export default function PlannerScreen() {
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <ToolCard
-                icon={<Flame size={20} color={hud.cyan.bright} weight="duotone" />}
+                icon={<Flame size={20} color={hud.accent.ember} weight="duotone" />}
                 title="ÉCHAUFFEMENT"
                 sub="ADAPTATIF"
+                accent={hud.accent.ember}
+                accentGlow="rgba(255,122,26,0.28)"
                 active={openTool === 'warmup'}
                 spinDuration={12000}
                 onPress={() => setOpenTool((v) => (v === 'warmup' ? null : 'warmup'))}
@@ -745,13 +858,17 @@ export default function PlannerScreen() {
                 icon={<ChartLineUp size={20} color={hud.cyan.bright} weight="duotone" />}
                 title="PROGRESSION"
                 sub="SUIVI & OBJECTIFS"
+                accent={hud.cyan.bright}
+                accentGlow={hud.glow.cyan}
                 spinDuration={16000}
                 onPress={() => router.push('/(tabs)/progress')}
               />
               <ToolCard
-                icon={<Pulse size={20} color={hud.cyan.bright} weight="duotone" />}
+                icon={<Pulse size={20} color={hud.accent.regen} weight="duotone" />}
                 title="ANALYSE"
                 sub="RÉCUPÉRATION"
+                accent={hud.accent.regen}
+                accentGlow="rgba(43,232,160,0.28)"
                 active={openTool === 'analyse'}
                 spinDuration={20000}
                 onPress={() => setOpenTool((v) => (v === 'analyse' ? null : 'analyse'))}
@@ -793,7 +910,7 @@ export default function PlannerScreen() {
 
           {/* ── CONSEIL DU COACH ── */}
           <PowerOn index={4} style={{ paddingHorizontal: 16, marginTop: 16 }}>
-            <HudCard level="g1" cut={hud.cut.md} padding={14}>
+            <HudCard level="g1" cut={hud.cut.md} premium premiumIntensity="strong" padding={14}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}>
                 <OctoIcon size={42} level="g1">
                   <Pulsing amount={1.12} duration={1600}>
@@ -909,17 +1026,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: hud.text.secondary,
     marginTop: 8,
-  },
-  recoveryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: hud.border.subtle,
-    borderRadius: 4,
-    backgroundColor: 'rgba(8,14,28,0.85)',
   },
   recoveryLabel: {
     fontFamily: 'Rajdhani-SemiBold',

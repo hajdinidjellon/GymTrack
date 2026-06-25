@@ -182,12 +182,27 @@ export const hud = {
     primary: '#1DC4FF', // HUD_CYAN
     bright:  '#5DD8FF', // HUD_CYAN_HI
     soft:    '#17B8FF', // CYAN Home (fallback)
-    deep:    '#061840', // bas de gradient bouton bevel
+    dim:     '#0090C8', // cyan profond (edge bloom bas-droite, chroma) — ≠ deep
+    deep:    '#061840', // bas de gradient bouton bevel (navy quasi-noir)
   },
   glow: {
     cyan:      'rgba(29,196,255,0.30)',
     cyanSoft:  'rgba(0,200,255,0.10)',
     cyanFaint: 'rgba(0,200,255,0.035)',
+    deep:      '#00B4F0', // 3e nuance — halo profond HudFrame (HUD_CYAN_GLOW)
+  },
+  // ── Encadrement HUD (HudFrame) ─────────────────────────────────
+  // Fonds VOLONTAIREMENT plus bleus que hud.bg.surface : la profondeur
+  // sci-fi du spec exige un dégradé visible bleu→noir, pas un fond plat.
+  frame: {
+    // variante active (carte sélectionnée / héros)
+    bgTop:    '#0E3550',
+    bgMid:    '#082138',
+    bgBottom: '#04101D',
+    // variante neutre (plus sombre, mais encore lisiblement bleue en haut)
+    bgTopDim:    '#0A2A40',
+    bgMidDim:    '#06182A',
+    bgBottomDim: '#03101D',
   },
   text: {
     primary:   '#FFFFFF',
