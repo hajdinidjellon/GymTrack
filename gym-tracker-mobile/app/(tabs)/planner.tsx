@@ -3,9 +3,10 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Brain, Lightning, Flame, ChartLineUp, Pulse, Barbell, Timer,
-  StackSimple, CheckCircle, ArrowsClockwise, Minus, Plus, HourglassMedium,
+  Brain, Lightning, Barbell,
+  CheckCircle, ArrowsClockwise, Minus, Plus, HourglassMedium,
 } from 'phosphor-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Canvas,
@@ -41,6 +42,7 @@ import { Mascot } from '@/components/mascot/Mascot';
 import {
   HudCard, BevelButton, OctoIcon, HudPill, ProgressRail, AnimatedNumber, PowerOn,
 } from '@/components/ui/hud';
+import { DailySessionCard } from '@/components/workout/DailySessionCard';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -52,6 +54,15 @@ import type { MuscleGroup } from '@/types';
 
 const SESSION_BG = require('@/assets/images/background-session.png') as number;
 const BODY_HOLO  = require('@/assets/images/body-holo.png') as number;
+// Encadrement PNG des cartes OUTILS IA (672×905) — s'affiche en <Image>,
+// jamais recréé en Skia/SVG. Étiré en carré (demande : hauteur = largeur).
+const TOOL_FRAME = require('@/assets/frames/frame-encadrement-transparent.png') as number;
+const TOOL_FRAME_RATIO = 1;
+// Encadrement PNG du Conseil du coach (1840×577) — cerveau holographique
+// et chevrons >>> déjà peints dans l'image.
+const COACH_FRAME = require('@/assets/frames/conseil-coach-frame-transparent.png') as number;
+// Encadrement PNG de la carte RÉCUPÉRATION (recadré au trait : 1263×360).
+const RECOVERY_FRAME = require('@/assets/frames/frame-recuperation.png') as number;
 
 // Dégradé d'arête HUD : cyan clair ↘ bleu profond → bordure NON-uniforme
 // (certaines parties plus intenses / plus bleues), comme la maquette.
@@ -156,56 +167,6 @@ function AIOrb({ size = 46 }: { size?: number }) {
       </Canvas>
 
       <Brain size={size * 0.42} color={hud.cyan.bright} weight="duotone" />
-    </View>
-  );
-}
-
-/** Anneau circulaire avec glow qui respire + anneau pointillé rotatif.
- *  `tint` permet de colorer l'anneau (cyan par défaut, ou un accent sémantique). */
-function RingIcon({ size = 48, spinDuration = 14000, tint = hud.cyan.primary, children }: {
-  size?: number;
-  spinDuration?: number;
-  tint?: string;
-  children: React.ReactNode;
-}) {
-  const PAD = 12;
-  const S = size + PAD * 2;
-  const c = S / 2;
-  const r = size / 2 - 1;
-
-  const rot    = useSharedValue(0);
-  const breath = useSharedValue(0.25);
-
-  useEffect(() => {
-    rot.value    = withRepeat(withTiming(Math.PI * 2, { duration: spinDuration, easing: Easing.linear }), -1, false);
-    breath.value = withRepeat(withTiming(0.6, { duration: 2100, easing: Easing.inOut(Easing.sin) }), -1, true);
-    return () => {
-      cancelAnimation(rot);
-      cancelAnimation(breath);
-    };
-  }, [spinDuration]);
-
-  const t = useDerivedValue(() => [{ rotate: rot.value }]);
-
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Canvas
-        pointerEvents="none"
-        style={{ position: 'absolute', top: -PAD, left: -PAD, width: S, height: S }}
-      >
-        {/* halo coloré qui respire */}
-        <SkCircle cx={c} cy={c} r={r} color={tint} opacity={breath}>
-          <BlurMask blur={9} style="normal" />
-        </SkCircle>
-        <SkCircle cx={c} cy={c} r={r} color="#06121F" />
-        <SkCircle cx={c} cy={c} r={r} color={tint} style="stroke" strokeWidth={1.2} opacity={0.85} />
-        <SkGroup origin={vec(c, c)} transform={t}>
-          <SkCircle cx={c} cy={c} r={r - 4} color={tint} style="stroke" strokeWidth={0.8} opacity={0.4}>
-            <DashPathEffect intervals={[3, 5]} />
-          </SkCircle>
-        </SkGroup>
-      </Canvas>
-      {children}
     </View>
   );
 }
@@ -528,16 +489,13 @@ function StatCol({ icon, value, label }: {
 }
 
 /** Carte outil IA (Échauffement / Progression / Analyse).
- *  `accent` colore l'anneau + le glow ; quand `active`, la carte s'illumine
- *  de sa couleur (bordure + halo) au lieu du cyan neutre. */
-function ToolCard({ icon, title, sub, accent = hud.cyan.bright, accentGlow = hud.glow.cyan, active, spinDuration, onPress }: {
+ *  Encadrement = PNG frame-encadrement-transparent (ratio 672/905),
+ *  contenu posé par-dessus ; quand `active`, l'icône pulse. */
+function ToolCard({ icon, title, sub, active, onPress }: {
   icon: React.ReactNode;
   title: string;
   sub: string;
-  accent?: string;
-  accentGlow?: string;
   active?: boolean;
-  spinDuration?: number;
   onPress: () => void;
 }) {
   const scale = useSharedValue(1);
@@ -552,28 +510,32 @@ function ToolCard({ icon, title, sub, accent = hud.cyan.bright, accentGlow = hud
           Haptics.selectionAsync();
           onPress();
         }}
-        style={{ flex: 1 }}
+        style={{ aspectRatio: TOOL_FRAME_RATIO }}
       >
-        <HudCard
-          level={active ? 'g2' : 'g1'}
-          cut={hud.cut.md}
-          cornerTicks
-          borderGradient={EDGE_CYAN}
-          glowColor={active ? accentGlow : undefined}
-          gradientFill
-          padding={12}
-          style={{ flex: 1 }}
-        >
-          <View style={{ alignItems: 'center', gap: 8, paddingVertical: 4 }}>
-            <RingIcon size={44} spinDuration={spinDuration ?? 14000} tint={accent}>
-              {active ? <Pulsing amount={1.15}>{icon}</Pulsing> : icon}
-            </RingIcon>
-            <View style={{ alignItems: 'center', gap: 1 }}>
-              <Text style={styles.toolTitle} numberOfLines={1} adjustsFontSizeToFit>{title}</Text>
-              <Text style={styles.toolSub} numberOfLines={1} adjustsFontSizeToFit>{sub}</Text>
-            </View>
-          </View>
-        </HudCard>
+        {/* Fond bleu foncé DERRIÈRE le PNG (l'intérieur du frame est
+            transparent) → contraste avec l'arrière-plan de la page */}
+        <LinearGradient
+          colors={[hud.frame.bgMidDim, hud.frame.bgBottomDim, hud.bg.surfaceDeep]}
+          style={{
+            position: 'absolute',
+            top: '5%', bottom: '5%', left: '5%', right: '5%',
+            borderRadius: 12,
+          }}
+        />
+        {/* Encadrement PNG par-dessus le fond */}
+        <ExpoImage
+          source={TOOL_FRAME}
+          contentFit="fill"
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 14 }}>
+          {/* Icône premium : octogone HUD bordure cyan + glow (g2) */}
+          <OctoIcon size={44} level="g2" glowColor={hud.glow.cyan}>
+            {active ? <Pulsing amount={1.15}>{icon}</Pulsing> : icon}
+          </OctoIcon>
+          <Text style={[styles.toolTitle, { marginTop: 10 }]} numberOfLines={1} adjustsFontSizeToFit>{title}</Text>
+          <Text style={styles.toolSub} numberOfLines={1} adjustsFontSizeToFit>{sub}</Text>
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -647,9 +609,6 @@ export default function PlannerScreen() {
     recoveryPct >= 75 ? 'optimal' :
     recoveryPct >= 50 ? 'bon'     : 'en construction';
 
-  const todayType   = suggested ? detectSessionType(suggested.title) : 'other';
-  const totalSeries = suggested ? suggested.exercises.reduce((s, e) => s + e.targetSets, 0) : 0;
-
   // Rotation du bouton refresh (header droit)
   const spin = useSharedValue(0);
   const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
@@ -657,30 +616,6 @@ export default function PlannerScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
     spin.value = 0;
     spin.value = withTiming(360, { duration: 700, easing: Easing.out(Easing.cubic) });
-  };
-
-  const handleStartSuggested = () => {
-    if (!suggested) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
-    startSession(suggested.title, 'strength');
-    suggested.exercises.forEach((ex, i) => {
-      const targetReps = Array.isArray(ex.targetReps) ? ex.targetReps[0] : ex.targetReps;
-      addExercise({
-        id: `${ex.name}-${Date.now()}-${i}`,
-        name: ex.name,
-        category: ex.category,
-        muscleGroups: suggested.focus,
-        sets: Array.from({ length: ex.targetSets }, () => ({
-          weight: ex.targetWeight ?? 0,
-          reps: targetReps,
-          setType: 'normal' as const,
-          restTime: ex.restTime ?? defaultRestTime,
-          completed: false,
-        })),
-        isExpanded: i === 0,
-      });
-    });
-    router.push('/(tabs)/session');
   };
 
   // Conseil du coach : raison de l'IA, sinon conseil basé récupération
@@ -736,31 +671,30 @@ export default function PlannerScreen() {
                 {' '}aujourd'hui.
               </Text>
 
-              {/* Carte récupération — octogone HUD compact (court en Y, large en X) */}
-              <HudCard
-                level="g2"
-                cut={hud.cut.sm}
-                cornerTicks
-                borderGradient={EDGE_CYAN}
-                glowColor={hud.glow.cyan}
-                premium
-                premiumIntensity="strong"
-                padding={11}
-                style={{ marginTop: 12, marginRight: -6 }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-                  <OctoIcon size={30} level="g0">
+              {/* Carte récupération — encadrement PNG compact, à sa place
+                  d'origine sous le paragraphe */}
+              <View style={{ marginTop: 20, marginLeft: -8, marginRight: -102, aspectRatio: 1263 / 360 }}>
+                <ExpoImage
+                  source={RECOVERY_FRAME}
+                  contentFit="fill"
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={{
+                  flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9,
+                  paddingHorizontal: '7%', paddingVertical: '5%',
+                }}>
+                  <OctoIcon size={28} level="g0">
                     <FlickerLightning />
                   </OctoIcon>
-                  <View style={{ flex: 1, gap: 5 }}>
+                  <View style={{ flex: 1, gap: 4 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                      <Text style={styles.recoveryLabel}>RÉCUPÉRATION</Text>
+                      <Text style={styles.recoveryLabel} numberOfLines={1} adjustsFontSizeToFit>RÉCUPÉRATION</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 1 }}>
                         <AnimatedNumber
                           value={recoveryPct}
                           animateOnMount
                           duration={1100}
-                          style={[hudType.displayStat, { fontSize: 21 }]}
+                          style={[hudType.displayStat, { fontSize: 10 }]}
                         />
                         <Text style={[hudType.labelHud, { color: hud.text.muted }]}>%</Text>
                       </View>
@@ -769,7 +703,7 @@ export default function PlannerScreen() {
                   </View>
                   <PopCheck ok={recoveryPct >= 50} />
                 </View>
-              </HudCard>
+              </View>
             </View>
 
             <View style={{ alignSelf: 'flex-end', marginTop: 36, marginBottom: -24 }}>
@@ -777,100 +711,48 @@ export default function PlannerScreen() {
             </View>
           </PowerOn>
 
-          {/* ── SUGGESTION DU JOUR ── */}
-          <PowerOn index={2} style={{ paddingHorizontal: 16, marginTop: 18, gap: 12 }}>
+          {/* ── SUGGESTION DU JOUR — même composant que la carte Séance du jour
+              de l'onglet Séance (lit le même store → pages synchronisées) ── */}
+          <PowerOn index={2} style={{ paddingHorizontal: 16, marginTop: 2, gap: 12 }}>
             <SectionTag label="SUGGESTION DU JOUR" />
 
-            {suggested ? (
-              <HudCard level="g3" cut={hud.cut.lg} notched cornerTicks borderGradient={EDGE_CYAN} gradientFill scanline premium premiumIntensity="strong" padding={18}>
-                <View style={{ gap: 14 }}>
-                  {/* Type + titre + emblème */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <View style={{ flex: 1, gap: 6 }}>
-                      <HudPill label={SESSION_LABEL[todayType]} />
-                      <Text style={styles.cardTitle}>FORCE</Text>
-                      <Text style={styles.cardSub}>Charges lourdes · Faibles reps</Text>
-                    </View>
-                    <RingIcon size={76} spinDuration={10000}>
-                      <Barbell size={32} color={hud.cyan.bright} weight="duotone" />
-                    </RingIcon>
-                  </View>
-
-                  {/* Muscles ciblés */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {suggested.focus.slice(0, 3).map((m) => (
-                      <MusclePill key={m} muscle={m} />
-                    ))}
-                  </View>
-
-                  {/* Stats */}
-                  <View style={styles.statsRow}>
-                    <StatCol
-                      icon={<Barbell size={14} color={hud.cyan.primary} weight="duotone" />}
-                      value={suggested.exercises.length}
-                      label="EXERCICES"
-                    />
-                    <View style={styles.statDivider} />
-                    <StatCol
-                      icon={<StackSimple size={14} color={hud.cyan.primary} weight="duotone" />}
-                      value={totalSeries}
-                      label="SÉRIES"
-                    />
-                    <View style={styles.statDivider} />
-                    <StatCol
-                      icon={<Timer size={14} color={hud.cyan.primary} weight="duotone" />}
-                      value={suggested.estimatedDuration}
-                      label="MINUTES"
-                    />
-                  </View>
-
-                  <BevelButton label="DÉMARRER CETTE SÉANCE" heroChevrons onPress={handleStartSuggested} />
-                </View>
-              </HudCard>
-            ) : (
-              <HudCard level="g1" cut={hud.cut.lg} gradientFill padding={22}>
-                <View style={{ alignItems: 'center', gap: 14 }}>
-                  <Mascot pose="mimi_calendar" height={120} animate float />
-                  <Text style={[hudType.body, { textAlign: 'center' }]}>
-                    Complète ton profil pour recevoir une suggestion du coach.
-                  </Text>
-                </View>
-              </HudCard>
-            )}
+            <DailySessionCard
+              buttonLabel="DÉMARRER CETTE SÉANCE"
+              onAfterStart={() => router.push('/(tabs)/session')}
+              style={{
+                // Le PNG a des zones transparentes : mêmes offsets horizontaux
+                // que sur l'onglet Séance, verticaux adaptés à cette page.
+                marginLeft: -8,
+                marginRight: 26,
+                marginTop: -30,
+                marginBottom: 0,
+              }}
+            />
           </PowerOn>
 
           {/* ── OUTILS IA ── */}
-          <PowerOn index={3} style={{ paddingHorizontal: 16, marginTop: 22, gap: 12 }}>
+          <PowerOn index={3} style={{ paddingHorizontal: 16, marginTop: 14, gap: 12 }}>
             <SectionTag label="OUTILS IA" align="right" />
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <ToolCard
-                icon={<Flame size={20} color={hud.accent.ember} weight="duotone" />}
+                icon={<MaterialCommunityIcons name="fire" size={26} color={hud.cyan.bright} />}
                 title="ÉCHAUFFEMENT"
                 sub="ADAPTATIF"
-                accent={hud.accent.ember}
-                accentGlow="rgba(255,122,26,0.28)"
                 active={openTool === 'warmup'}
-                spinDuration={12000}
                 onPress={() => setOpenTool((v) => (v === 'warmup' ? null : 'warmup'))}
               />
               <ToolCard
-                icon={<ChartLineUp size={20} color={hud.cyan.bright} weight="duotone" />}
+                icon={<MaterialCommunityIcons name="chart-line" size={24} color={hud.cyan.bright} />}
                 title="PROGRESSION"
                 sub="SUIVI & OBJECTIFS"
-                accent={hud.cyan.bright}
-                accentGlow={hud.glow.cyan}
-                spinDuration={16000}
                 onPress={() => router.push('/(tabs)/progress')}
               />
               <ToolCard
-                icon={<Pulse size={20} color={hud.accent.regen} weight="duotone" />}
+                icon={<MaterialCommunityIcons name="heart-pulse" size={24} color={hud.cyan.bright} />}
                 title="ANALYSE"
                 sub="RÉCUPÉRATION"
-                accent={hud.accent.regen}
-                accentGlow="rgba(43,232,160,0.28)"
                 active={openTool === 'analyse'}
-                spinDuration={20000}
                 onPress={() => setOpenTool((v) => (v === 'analyse' ? null : 'analyse'))}
               />
             </View>
@@ -908,21 +790,32 @@ export default function PlannerScreen() {
             )}
           </PowerOn>
 
-          {/* ── CONSEIL DU COACH ── */}
-          <PowerOn index={4} style={{ paddingHorizontal: 16, marginTop: 16 }}>
-            <HudCard level="g1" cut={hud.cut.md} premium premiumIntensity="strong" padding={14}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}>
-                <OctoIcon size={42} level="g1">
-                  <Pulsing amount={1.12} duration={1600}>
-                    <Brain size={20} color={hud.cyan.bright} weight="duotone" />
-                  </Pulsing>
-                </OctoIcon>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={styles.adviceTitle}>Conseil du coach</Text>
-                  <Text style={styles.adviceText}>{advice}</Text>
-                </View>
+          {/* ── CONSEIL DU COACH — encadrement PNG (cerveau + chevrons >>> déjà
+              dans l'image : on n'ajoute AUCUNE icône, uniquement le texte) ── */}
+          <PowerOn index={4} style={{ paddingHorizontal: 16, marginTop: 10 }}>
+            <View style={{ marginHorizontal: -8, aspectRatio: 1840 / 577 }}>
+              <ExpoImage
+                source={COACH_FRAME}
+                contentFit="fill"
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Voile sombre par-dessus le PNG → encadrement un peu plus foncé */}
+              <View
+                pointerEvents="none"
+                style={[StyleSheet.absoluteFill, { backgroundColor: hud.bg.app, opacity: 0.3 }]}
+              />
+              {/* Zone de texte : à droite du cerveau (~30% gauche du PNG),
+                  14% de marge droite pour ne pas chevaucher les chevrons */}
+              <View style={{
+                position: 'absolute',
+                left: '30%', right: '14%',
+                top: 0, bottom: 0,
+                justifyContent: 'center',
+              }}>
+                <Text style={styles.adviceTitle}>Conseil du coach</Text>
+                <Text style={[styles.adviceText, { marginTop: 4 }]} numberOfLines={3}>{advice}</Text>
               </View>
-            </HudCard>
+            </View>
           </PowerOn>
         </ScrollView>
       </SafeAreaView>
@@ -1090,15 +983,20 @@ const styles = StyleSheet.create({
   },
   toolTitle: {
     fontFamily: 'Rajdhani-Bold',
-    fontSize: 11,
-    letterSpacing: 0.8,
+    fontSize: 13,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textAlign: 'center',
     color: hud.text.primary,
   },
   toolSub: {
     fontFamily: 'Rajdhani-Medium',
-    fontSize: 8,
-    letterSpacing: 1.2,
-    color: hud.text.muted,
+    fontSize: 9,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    color: hud.text.secondary,
+    marginTop: 4,
   },
   adviceTitle: {
     fontFamily: 'Rajdhani-SemiBold',
