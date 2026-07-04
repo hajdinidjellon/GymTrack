@@ -15,8 +15,8 @@
 | B7 | **Suppression de compte + export données** | Exigence Apple/Google + RGPD. Bouton profil → wipe Supabase + local. | M |
 | B8 | **Politique de confidentialité** | Rédaction + hébergement (page statique suffit) + liens stores. | M |
 | B9 | **Optimiser les assets** | 56 MB → < 15 MB : WebP, resize, purge des non-référencés. Voir [07-PERFORMANCE.md](07-PERFORMANCE.md). | M |
-| B10 | **Nettoyage repo & app** | Supprimer `app/hud-test.tsx`, les ~25 PNG/HTML à la racine du repo, `IMG_*.png`. | S |
-| B11 | **Permissions app.json** | Retirer HealthKit (aucune intégration dans le code) et caméra si le scan QR n'est pas shippé. | S |
+| B10 | ✅ **FAIT 2026-07-04** — Nettoyage repo & app | `app/hud-test.tsx` supprimé ; ~30 maquettes de la racine déplacées dans `design/` (gitignoré, rien de perdu). | S |
+| B11 | ✅ **FAIT 2026-07-04** — Permissions app.json | HealthKit (aucune intégration) et caméra (aucun usage) retirés d'`app.json` ; `expo-camera` désinstallé (son config plugin ré-injectait la permission au build). | S |
 | B12 | **`eas.json` + secrets + premier build preview** | Voir [06-DEPLOYMENT.md](06-DEPLOYMENT.md). | M |
 | B13 | **Tests unitaires `lib/gamification` + `lib/aiPlanner`** | Le strict minimum de filet avant release — setup Jest inclus. Voir [04-TESTING.md](04-TESTING.md). | L |
 
@@ -31,7 +31,7 @@
 | I3 | **Tokens couleur** | Résorber les 426 hex hardcodés — au minimum les 3 cyans concurrents (`#1DC4FF`, `#17B8FF`, `#5DD8FF`) vers `hud.cyan.*`. Faire au fil de I1. | M (diffus) |
 | I4 | **Sentry** | Crash reporting — voir [08-ERROR-HANDLING.md](08-ERROR-HANDLING.md) §3. Idéalement AVANT release si le temps le permet. | S |
 | I5 | **NetInfo pour la sync** | Remplacer la sonde `isOnline()` (requête Supabase par flush) par un listener `@react-native-community/netinfo`. | S |
-| I6 | **Supprimer les deps mortes** | `@tanstack/react-query` (provider monté, zéro usage), `ansi-escapes` (?), auditer `expo-camera`/`expo-blur`/`lottie`. | S |
+| I6 | ✅ **FAIT 2026-07-04** — Supprimer les deps mortes | Désinstallés : `@tanstack/react-query` (provider retiré de `_layout`), `expo-camera`, `lottie-react-native`, `ansi-escapes`. `expo-blur` conservé (utilisé par BottomNav et home). | S |
 | I7 | **ESLint + Prettier** | `eslint-config-expo` + règle `no-restricted-syntax` sur les hex hardcodés et `no-explicit-any`. | S |
 | I8 | **Éliminer les `as any`** | 12 occurrences : helper `tDyn()` i18n, `BottomTabBarProps` pour BottomNav, `ImageSourcePropType` pour RankCore. | S |
 | I9 | **Mémoïser XP/streak/rank** | `getTotalXP()` reparcourt tout l'historique à chaque appel. | S |

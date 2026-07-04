@@ -5,3 +5,6 @@
 
 # Local assistant/editor metadata
 .claude/
+
+# Références visuelles / maquettes (jamais dans le repo — voir docs/10)
+design/

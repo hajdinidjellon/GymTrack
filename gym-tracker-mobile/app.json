@@ -11,12 +11,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.gymtrack.mobile",
-      "infoPlist": {
-        "NSHealthShareUsageDescription": "GymTrack lit votre poids depuis Apple Santé pour suivre votre progression.",
-        "NSHealthUpdateUsageDescription": "GymTrack peut enregistrer vos séances dans Apple Santé.",
-        "NSCameraUsageDescription": "GymTrack utilise la caméra pour scanner des QR codes."
-      }
+      "bundleIdentifier": "com.gymtrack.mobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,8 +25,7 @@
       "package": "com.gymtrack.mobile",
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.VIBRATE",
-        "android.permission.CAMERA"
+        "android.permission.VIBRATE"
       ]
     },
     "web": {
