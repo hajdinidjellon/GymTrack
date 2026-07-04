@@ -260,6 +260,8 @@ export interface ActiveExercise extends Exercise {
 
 export interface ActiveSession {
   workoutId: string;
+  name: string;
+  type: WorkoutType;
   startedAt: string;
   exercises: ActiveExercise[];
   elapsedSeconds: number;

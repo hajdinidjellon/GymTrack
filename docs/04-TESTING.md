@@ -190,12 +190,13 @@ Scénarios à couvrir : onboarding complet (happy path), création de séance ci
 
 Tenir ce registre à jour à chaque bug corrigé (aujourd'hui : bugs connus non corrigés) :
 
-| # | Scénario | Origine |
-|---|---|---|
-| NR-1 | Séance en cours perdue après kill de l'app | `sessionStore` non persisté (audit 2026-07) |
-| NR-2 | Timers accumulés après plusieurs séances (batterie/perf) | fuite interval `startSession` (audit 2026-07) |
-| NR-3 | Workout sauvé avec `name='Séance'`/`type='strength'` quel que soit le mode choisi | `finishSession` hardcodé (audit 2026-07) |
-| NR-4 | Badge re-célébré au redémarrage | vérifier `badgeQueueStore.seenIds` à chaque évolution badges |
+| # | Scénario | Origine | Statut |
+|---|---|---|---|
+| NR-1 | Séance en cours perdue après kill de l'app | `sessionStore` non persisté (audit 2026-07) | Corrigé 2026-07-04 (persist + `resumeSession`) — re-tester à chaque release : kill en pleine séance ET pendant un repos |
+| NR-2 | Timers accumulés après plusieurs séances (batterie/perf) | fuite interval `startSession` (audit 2026-07) | Corrigé 2026-07-04 — vérifier au profiler qu'aucun interval ne survit à `finishSession`/`discardSession` |
+| NR-3 | Workout sauvé avec `name='Séance'`/`type='strength'` quel que soit le mode choisi | `finishSession` hardcodé (audit 2026-07) | Corrigé 2026-07-04 — vérifier le nom/type depuis chaque point d'entrée (session, planner, home, DailySessionCard) |
+| NR-4 | Badge re-célébré au redémarrage | vérifier `badgeQueueStore.seenIds` à chaque évolution badges | Ouvert (préventif) |
+| NR-5 | Séance « fantôme » vieille de plusieurs jours proposée à la reprise | seuil 12 h dans `resumeSession` | À tester : séance > 12 h → jetée silencieusement au restart |
 
 ## Objectif de couverture
 

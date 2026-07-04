@@ -6,9 +6,9 @@
 
 | # | Tâche | Détail | Effort |
 |---|---|---|---|
-| B1 | **Persister `activeSession`** | `sessionStore` non persisté (le commentaire « MMKV » est faux). Middleware `persist` Zustand sur AsyncStorage, `partialize` sur `activeSession` seul, recalcul de `elapsedSeconds`/`restSecondsLeft` depuis `startedAt`/`restEndsAt` à la réhydratation + proposer « Reprendre la séance ? » au démarrage. | M |
-| B2 | **Fix fuite du chrono de séance** | L'interval de `startSession` (`sessionStore.ts:68-81`, hack `_sessionInterval`) n'est jamais nettoyé. En faire un champ normal du store et le `clearInterval` dans `finishSession`/`discardSession`. Dérive du tick en background : calculer `elapsedSeconds` depuis `startedAt` plutôt que d'incrémenter. | S |
-| B3 | **Fix `finishSession` hardcodé** | `name: 'Séance'`, `type: 'strength'`, `feeling: 3` en dur (`sessionStore.ts:100-108`) → stocker nom/type/mode dans `ActiveSession` au démarrage, demander le feeling à la fin. | S |
+| B1 | ✅ **FAIT 2026-07-04** — Persister `activeSession` | Middleware `persist` Zustand sur AsyncStorage, `partialize` sur `activeSession` seul. À la réhydratation, `resumeSession()` recalcule le chrono depuis `startedAt`, relance les timers, gère un repos expiré pendant le kill, et jette les séances > 12 h (seuil `MAX_RESUMABLE_AGE_MS`). Reprise automatique (pas de prompt — choix assumé, l'indicateur BottomNav signale la séance active). | M |
+| B2 | ✅ **FAIT 2026-07-04** — Fix fuite du chrono de séance | `sessionInterval` est un champ normal du store, `clearInterval` dans `finishSession`/`discardSession`. `elapsedSeconds` recalculé depuis `startedAt` à chaque tick (plus de dérive en background). | S |
+| B3 | ✅ **FAIT 2026-07-04** — Fix `finishSession` hardcodé | `name`/`type` stockés dans `ActiveSession` au `startSession` et repris dans le workout final ; `finishSession(feeling)` reçoit le ressenti du modal de fin (l'écran le collectait déjà). | S |
 | B4 | **Error Boundary global + écran session** | Voir [08-ERROR-HANDLING.md](08-ERROR-HANDLING.md) §1. Inclut : sortir du spinner infini si `getDb()` échoue au boot. | M |
 | B5 | **RLS Supabase vérifié + testé** | Les 4 tables (`workouts`, `profiles`, `plans`, `goals`) — voir [05-SECURITY.md](05-SECURITY.md) §3. | S |
 | B6 | **Tokens auth → SecureStore** | Session Supabase actuellement dans AsyncStorage en clair. | M |

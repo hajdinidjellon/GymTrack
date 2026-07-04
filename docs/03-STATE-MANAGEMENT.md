@@ -7,7 +7,7 @@ Zustand v5, 6 stores, **pas de Context custom, pas de Redux**. React Query est i
 | Store | État | Persistance | Rôle |
 |---|---|---|---|
 | `workoutStore` | `workouts[]`, `isLoading` | SQLite (`workouts`) | Historique des séances, CRUD, sélecteurs (`getWorkoutById`, `getWorkoutsThisWeek`, `getLastWorkoutForExercise`) |
-| `sessionStore` | `activeSession`, `restInterval` | ⚠️ **AUCUNE** (bug critique — voir ci-dessous) | Séance en cours : exercices, séries, chrono, timer de repos, haptics |
+| `sessionStore` | `activeSession`, `sessionInterval`, `restInterval` | AsyncStorage via `persist` (`activeSession` seul, `partialize`) — reprise auto par `resumeSession()` à la réhydratation, séances > 12 h jetées | Séance en cours : exercices, séries, chrono, timer de repos, haptics |
 | `profileStore` | `profile`, `goals` | SQLite (`profile`, `goals`) | Profil, PRs, body stats + sélecteurs gamification (`getTotalXP`, `getStreak`, `getCurrentRank`, `getXPProgress`) |
 | `settingsStore` | `settings` | AsyncStorage (`@gymtrack/settings`) | Unités, rest time, thème, langue, notifications, mode d'entraînement |
 | `badgeQueueStore` | `queue`, `seenIds` | AsyncStorage | File des badges à célébrer, déduplication |
@@ -67,8 +67,13 @@ Exemple : ajouter des « exercices favoris ».
 - S'abonner avec un **sélecteur** : `useSessionStore((s) => s.activeSession?.restSecondsLeft)` — jamais `const store = useSessionStore()` entier dans un composant qui re-rend souvent.
 - `_layout.tsx` déstructure des stores entiers — acceptable là (racine), pas ailleurs.
 
-## ⚠️ Dette connue sur ce chapitre (détail en roadmap)
+## Cas particulier : `sessionStore` et ses timers
 
-1. **`sessionStore` n'est pas persisté** alors que son en-tête prétend « Persiste sur MMKV ». Une séance en cours est perdue si l'OS tue l'app. Fix prévu : `zustand/middleware` `persist` sur `activeSession` (AsyncStorage suffit ; recalcul de `elapsedSeconds`/`restSecondsLeft` depuis `startedAt`/`restEndsAt` à la réhydratation). **Bloquant avant release.**
-2. **Fuite du chrono global** : l'interval créé dans `startSession` (`sessionStore.ts:68`) n'est jamais nettoyé — `finishSession`/`discardSession` doivent le `clearInterval`. Le hack `(get() as ...)._sessionInterval` doit devenir un champ normal du store (comme `restInterval`).
-3. `finishSession` hardcode `name: 'Séance'`, `type: 'strength'`, `feeling: 3` — le type/mode choisi par l'utilisateur doit être stocké dans `ActiveSession` au `startSession` et repris ici.
+*(Les 3 bugs critiques de l'audit 2026-07 — persistance manquante, fuite d'interval, métadonnées hardcodées — ont été corrigés le 2026-07-04, voir roadmap B1-B3.)*
+
+Règles à préserver dans ce store :
+
+1. **`activeSession` est le seul champ persisté** (`partialize`) — les handles d'interval (`sessionInterval`, `restInterval`) ne doivent JAMAIS être sérialisés.
+2. **Les timers ne comptent pas, ils recalculent** : `elapsedSeconds` dérive de `startedAt`, `restSecondsLeft` de `restEndsAt`. Ne jamais revenir à un compteur incrémental (JS est gelé en background → dérive).
+3. **Tout interval créé a son clear** : `finishSession` et `discardSession` arrêtent chrono + repos. Si tu ajoutes un timer, il suit le même cycle de vie.
+4. `resumeSession()` est appelé automatiquement par `onRehydrateStorage` — ne pas l'appeler manuellement depuis un écran.
