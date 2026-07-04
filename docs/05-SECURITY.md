@@ -9,11 +9,11 @@
 | Secrets dans le code | Aucun — `EXPO_PUBLIC_SUPABASE_URL/ANON_KEY` via env | ✅ |
 | `.env.local` gitignoré | Oui (+ `*.jks`, `*.p8`, `*.p12`, `*.key`) | ✅ |
 | `.env.example` | Créé (audit) | ✅ |
-| Tokens Supabase | **AsyncStorage en clair** (`lib/supabase.ts:16`) | 🔴 à corriger |
-| RLS Supabase | À vérifier côté dashboard | 🔴 à vérifier |
+| Tokens Supabase | Chiffrés — `lib/secureStorage.ts` (AES + Keychain/Keystore, 2026-07-05) | ✅ |
+| RLS Supabase | Script prêt (`supabase/setup.sql`) — **à exécuter au dashboard puis tester** | 🟠 exécution requise |
 | Données santé locales | SQLite non chiffrée | 🟡 acceptable, à documenter |
-| Politique de confidentialité | Inexistante | 🔴 bloquant stores |
-| Suppression de compte | Inexistante | 🔴 bloquant App Store |
+| Politique de confidentialité | Rédigée (`docs/legal/privacy-policy.html`) — **à héberger + lier aux stores** | 🟠 hébergement requis |
+| Suppression de compte + export | In-app (Profil → Réglages, `lib/account.ts`, 2026-07-05) | ✅ |
 
 ## 1. Stockage sécurisé
 

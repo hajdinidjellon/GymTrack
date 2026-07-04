@@ -296,6 +296,16 @@ const T = {
     'error.auth.weakPassword': 'Mot de passe trop court (6 caractères minimum)',
     'error.auth.network': 'Connexion impossible — vérifie ton réseau',
     'error.auth.generic': 'Une erreur est survenue, réessaie',
+
+    // Compte — export & suppression (RGPD)
+    'account.exportBtn': 'Exporter mes données',
+    'account.exportError': "L'export a échoué, réessaie",
+    'account.deleteBtn': 'Supprimer mon compte',
+    'account.deleteTitle': 'Supprimer le compte ?',
+    'account.deleteMsg': 'Toutes tes données (séances, records, profil) seront définitivement effacées de cet appareil et du cloud. Cette action est irréversible. Pense à exporter tes données avant.',
+    'account.deleteCancel': 'Annuler',
+    'account.deleteConfirm': 'Tout supprimer',
+    'account.deleteError': 'La suppression a échoué — vérifie ta connexion et réessaie. Tes données locales sont intactes.',
   },
 
   en: {
@@ -589,6 +599,16 @@ const T = {
     'error.auth.weakPassword': 'Password too short (6 characters minimum)',
     'error.auth.network': 'Connection failed — check your network',
     'error.auth.generic': 'Something went wrong, please try again',
+
+    // Account — export & deletion (GDPR)
+    'account.exportBtn': 'Export my data',
+    'account.exportError': 'Export failed, please try again',
+    'account.deleteBtn': 'Delete my account',
+    'account.deleteTitle': 'Delete account?',
+    'account.deleteMsg': 'All your data (workouts, records, profile) will be permanently erased from this device and the cloud. This cannot be undone. Consider exporting your data first.',
+    'account.deleteCancel': 'Cancel',
+    'account.deleteConfirm': 'Delete everything',
+    'account.deleteError': 'Deletion failed — check your connection and try again. Your local data is untouched.',
   },
 } as const;
 
