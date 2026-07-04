@@ -40,6 +40,21 @@ module.exports = {
           diamond: '#7C3AED',
           legend: '#DC2626',
         },
+        hud: {
+          app: '#050B16',
+          surface: '#0A1424',
+          'surface-elev': '#0A1E3A',
+          'surface-deep': '#020810',
+          cyan: '#1DC4FF',
+          'cyan-bright': '#5DD8FF',
+        },
+        accent: {
+          volt: '#C8FF1D',
+          ember: '#FF7A1A',
+          pulse: '#FF3D6E',
+          regen: '#2BE8A0',
+          warn: '#FFB020',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'System'],

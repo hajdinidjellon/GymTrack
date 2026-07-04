@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+﻿import React, { useState } from 'react';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
 import { ToggleMascot } from '@/components/mascot/Mascot';
+import { OptionCard } from '@/components/onboarding/OptionCard';
 
 type Goal = 'pr' | 'hypertrophy' | 'weight_loss' | 'consistency' | 'health';
 
@@ -51,87 +51,19 @@ export default function OnboardingGoalScreen() {
       hideCta
     >
         <View style={{ gap: 10, marginTop: -18 }}>
-          {GOALS.map((g) => {
-            const isSel = selected === g.id;
-            return (
-              <Pressable
-                key={g.id}
-                onPress={() => handleSelect(g.id)}
-                style={({ pressed }) => ({
-                  borderRadius: 18,
-                  overflow: 'hidden',
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                  borderWidth: 2,
-                  borderColor: isSel ? g.color : 'rgba(255,255,255,0.09)',
-                })}
-              >
-                {isSel && (
-                  <LinearGradient
-                    colors={[`${g.color}28`, `${g.color}10`]}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 16 }}
-                  />
-                )}
-
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'stretch',
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                  backgroundColor: isSel ? 'transparent' : 'rgba(255,255,255,0.04)',
-                }}>
-                  <View style={{
-                    width: 72,
-                    backgroundColor: isSel ? `${g.color}28` : 'rgba(255,255,255,0.06)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingVertical: 20,
-                  }}>
-                    <Ionicons
-                      name={g.icon as keyof typeof Ionicons.glyphMap}
-                      size={32}
-                      color={isSel ? g.color : 'rgba(255,255,255,0.38)'}
-                    />
-                  </View>
-
-                  <View style={{
-                    flex: 1,
-                    justifyContent: 'center',
-                    paddingVertical: 18,
-                    paddingHorizontal: 16,
-                  }}>
-                    <Text style={{
-                      fontSize: 18, fontWeight: '900',
-                      color: isSel ? '#fff' : 'rgba(255,255,255,0.85)',
-                      letterSpacing: -0.3, marginBottom: 3,
-                    }}>
-                      {g.title}
-                    </Text>
-                    <Text style={{
-                      fontSize: 13,
-                      color: isSel ? `${g.color}CC` : 'rgba(255,255,255,0.38)',
-                      fontWeight: '600',
-                    }}>
-                      {g.subtitle}
-                    </Text>
-                  </View>
-
-                  <View style={{ justifyContent: 'center', paddingRight: 18 }}>
-                    <View style={{
-                      width: 24, height: 24, borderRadius: 12,
-                      backgroundColor: isSel ? g.color : 'transparent',
-                      borderWidth: isSel ? 0 : 2,
-                      borderColor: 'rgba(255,255,255,0.25)',
-                      alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      {isSel && <Ionicons name="checkmark" size={14} color="#07090f" />}
-                    </View>
-                  </View>
-                </View>
-              </Pressable>
-            );
-          })}
+          {GOALS.map((g) => (
+            <OptionCard
+              key={g.id}
+              icon={g.icon}
+              title={g.title}
+              subtitle={g.subtitle}
+              color={g.color}
+              selected={selected === g.id}
+              onPress={() => handleSelect(g.id)}
+            />
+          ))}
         </View>
     </OnboardingFrame>
   );
 }
+

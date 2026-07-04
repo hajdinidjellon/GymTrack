@@ -159,6 +159,178 @@ export function getRankGradient(tier: string): [string, string] {
   return (gradients as Record<string, [string, string]>)[tier] ?? gradients.brand;
 }
 
+// ============================================================
+// HUD TOKENS — palette sci-fi alignée sur Home + Home Séance.
+// Utilisée par SessionDashboard, ExerciseCard, PremiumFrame, etc.
+// Ne JAMAIS hardcoder de hex sur ces écrans — toujours passer par hud.*.
+// ============================================================
+export const hud = {
+  bg: {
+    app:         '#050B16', // fond global (HUD_BG pre-séance)
+    surface:     '#0A1424', // carte neutre (BG Home)
+    surfaceElev: '#0A1E3A', // carte active / élévation
+    surfaceDeep: '#020810', // zone interne la plus sombre
+    scrim:       'rgba(0,0,0,0.85)',
+  },
+  border: {
+    subtle:   'rgba(93,222,255,0.20)',
+    active:   '#1DC4FF',
+    hairline: 'rgba(93,222,255,0.10)',
+    neutral:  'rgba(255,255,255,0.09)',
+  },
+  cyan: {
+    primary: '#1DC4FF', // HUD_CYAN
+    bright:  '#5DD8FF', // HUD_CYAN_HI
+    soft:    '#17B8FF', // CYAN Home (fallback)
+    dim:     '#0090C8', // cyan profond (edge bloom bas-droite, chroma) — ≠ deep
+    deep:    '#061840', // bas de gradient bouton bevel (navy quasi-noir)
+  },
+  glow: {
+    cyan:      'rgba(29,196,255,0.30)',
+    cyanSoft:  'rgba(0,200,255,0.10)',
+    cyanFaint: 'rgba(0,200,255,0.035)',
+    deep:      '#00B4F0', // 3e nuance — halo profond HudFrame (HUD_CYAN_GLOW)
+  },
+  // ── Encadrement HUD (HudFrame) ─────────────────────────────────
+  // Fonds VOLONTAIREMENT plus bleus que hud.bg.surface : la profondeur
+  // sci-fi du spec exige un dégradé visible bleu→noir, pas un fond plat.
+  frame: {
+    // variante active (carte sélectionnée / héros)
+    bgTop:    '#0E3550',
+    bgMid:    '#082138',
+    bgBottom: '#04101D',
+    // variante neutre (plus sombre, mais encore lisiblement bleue en haut)
+    bgTopDim:    '#0A2A40',
+    bgMidDim:    '#06182A',
+    bgBottomDim: '#03101D',
+  },
+  text: {
+    primary:   '#FFFFFF',
+    secondary: 'rgba(255,255,255,0.55)',
+    muted:     'rgba(255,255,255,0.40)',
+    faint:     'rgba(255,255,255,0.30)',
+    onLight:   '#0A0A0A',
+  },
+  gradient: {
+    bevelBtn: ['#2196F3', '#1050C0', '#061840'] as [string, string, string],
+  },
+  // ── Accents sémantiques ────────────────────────────────────────
+  // volt est RÉSERVÉ aux PR/records — jamais pour autre chose.
+  accent: {
+    volt:      '#C8FF1D', // PR / record battu
+    voltDim:   'rgba(200,255,29,0.15)',
+    ember:     '#FF7A1A', // streak / feu
+    emberDim:  'rgba(255,122,26,0.15)',
+    pulse:     '#FF3D6E', // effort max : AMRAP, failure, RPE >= 9
+    pulseDim:  'rgba(255,61,110,0.15)',
+    regen:     '#2BE8A0', // récupération, validation, succès
+    regenDim:  'rgba(43,232,160,0.15)',
+    warn:      '#FFB020', // avertissements doux
+    warnDim:   'rgba(255,176,32,0.15)',
+  },
+  // ── Échelle de biseau (chamfer) ────────────────────────────────
+  cut: {
+    sm: 6,   // pills, mini-cartes, inputs
+    md: 12,  // cartes standard, boutons
+    lg: 20,  // cartes héros (+ encoches + ticks de coin)
+  },
+  // ── Niveaux d'élévation par glow (G0 → G3) ─────────────────────
+  // L'élévation est lumineuse, jamais une ombre noire.
+  glowLevel: {
+    g0: { border: 'rgba(93,222,255,0.10)', borderWidth: 1,   blur: 0,  glowColor: 'transparent',            glowOpacity: 0 },
+    g1: { border: 'rgba(93,222,255,0.20)', borderWidth: 1,   blur: 8,  glowColor: 'rgba(0,200,255,0.035)',  glowOpacity: 1 },
+    g2: { border: '#1DC4FF',               borderWidth: 1.5, blur: 16, glowColor: 'rgba(29,196,255,0.30)',  glowOpacity: 1 },
+    g3: { border: '#1DC4FF',               borderWidth: 1.5, blur: 32, glowColor: 'rgba(29,196,255,0.30)',  glowOpacity: 1 }, // + pulse 0.15→0.35 (2.8s) côté composant
+  },
+} as const;
+
+export type HudGlowLevel = keyof typeof hud.glowLevel;
+
+// ── Rangs : duo bord/cœur pour dégradés Skia + glow du tier ──────
+export const rankPalette = {
+  bronze:   { edge: '#8C5A2B', core: '#E0A45C', glow: 'rgba(224,164,92,0.35)' },
+  silver:   { edge: '#7E8CA0', core: '#D9E4F2', glow: 'rgba(217,228,242,0.40)' },
+  gold:     { edge: '#B8860B', core: '#FFD75E', glow: 'rgba(255,215,94,0.45)' },
+  platinum: { edge: '#0E7490', core: '#67E8F9', glow: 'rgba(103,232,249,0.50)' },
+  diamond:  { edge: '#6D28D9', core: '#C4B5FD', glow: 'rgba(196,181,253,0.55)' },
+  legend:   { edge: '#B91C1C', core: '#FF6B6B', glow: 'rgba(255,107,107,0.60)' }, // seul tier à glow animé en continu
+} satisfies Record<RankTier, { edge: string; core: string; glow: string }>;
+
+// ── Raretés de badge ──────────────────────────────────────────────
+export const rarityPalette = {
+  common:    { color: '#9CA3AF', glow: 'transparent',             animated: false },
+  rare:      { color: '#1DC4FF', glow: 'rgba(29,196,255,0.30)',   animated: false },
+  epic:      { color: '#A855F7', glow: 'rgba(168,85,247,0.35)',   animated: false },
+  legendary: { color: '#FFD75E', glow: 'rgba(255,215,94,0.45)',   animated: true }, // pulse 2.4s
+} as const;
+
+// ── Échelle de durées motion (voir DESIGN-GYMTRACK.md §A.7) ──────
+export const motion = {
+  instant: 90,    // feedback tap
+  quick: 180,     // états, toggles
+  move: 320,      // entrées de cartes, navigation
+  dramatic: 600,  // célébrations uniquement
+  stagger: 50,    // cascade power-on
+  easing: [0.2, 0.8, 0.2, 1] as const, // standard cubic-bezier
+  spring: { damping: 18, stiffness: 220, mass: 0.8 },
+  springCelebration: { damping: 12, stiffness: 180, mass: 0.9 }, // overshoot autorisé
+} as const;
+
+// ── Presets typographiques HUD (voir DESIGN-GYMTRACK.md §A.3) ────
+// Toute valeur qui change (timer, compteur) DOIT utiliser tabular-nums.
+export const hudType = {
+  displayHero: {
+    fontFamily: 'Rajdhani-Bold',
+    fontSize: 64,
+    letterSpacing: -1,
+    fontVariant: ['tabular-nums'] as ('tabular-nums')[],
+    color: hud.text.primary,
+  },
+  displayTitle: {
+    fontFamily: 'Rajdhani-Bold',
+    fontSize: 34,
+    letterSpacing: 1,
+    textTransform: 'uppercase' as const,
+    color: hud.text.primary,
+  },
+  displayStat: {
+    fontFamily: 'Rajdhani-SemiBold',
+    fontSize: 28,
+    fontVariant: ['tabular-nums'] as ('tabular-nums')[],
+    color: hud.text.primary,
+  },
+  labelHud: {
+    fontFamily: 'Rajdhani-Medium',
+    fontSize: 11,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase' as const,
+    color: hud.text.secondary,
+  },
+  labelValue: {
+    fontFamily: 'Rajdhani-SemiBold',
+    fontSize: 17,
+    letterSpacing: 0.5,
+    color: hud.text.primary,
+  },
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: hud.text.secondary,
+  },
+  bodyDim: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: hud.text.muted,
+  },
+  button: {
+    fontFamily: 'Rajdhani-Bold',
+    fontSize: 16,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+    color: hud.text.primary,
+  },
+} as const;
+
 export const animation = {
   fast: 150,
   normal: 250,

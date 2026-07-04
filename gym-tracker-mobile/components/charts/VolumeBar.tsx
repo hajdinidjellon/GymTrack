@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { colors } from '@/constants/theme';
-import { MUSCLE_LABELS } from '@/lib/gamification';
+import { useMuscleLabels } from '@/lib/i18n';
 import type { MuscleGroup } from '@/types';
 
 interface VolumeBarProps {
@@ -11,6 +11,7 @@ interface VolumeBarProps {
 }
 
 export function VolumeBar({ data, metric = 'sets', height = 180 }: VolumeBarProps) {
+  const muscleLabels = useMuscleLabels();
   if (data.length === 0) {
     return (
       <View style={{ height }} className="items-center justify-center rounded-2xl bg-white/[0.04]">
@@ -41,7 +42,7 @@ export function VolumeBar({ data, metric = 'sets', height = 180 }: VolumeBarProp
               }}
             />
             <Text className="text-xs text-text-muted" numberOfLines={1}>
-              {MUSCLE_LABELS[d.muscle].slice(0, 3)}
+              {muscleLabels[d.muscle].slice(0, 3)}
             </Text>
           </View>
         );
@@ -58,6 +59,7 @@ interface MiniVolumeBarProps {
 }
 
 export function MiniVolumeBar({ muscle, sets, maxSets, recommended }: MiniVolumeBarProps) {
+  const muscleLabels = useMuscleLabels();
   const pct  = maxSets > 0 ? (sets / maxSets) * 100 : 0;
   const [minRec, maxRec] = recommended ?? [12, 20];
   const isUndertrained = sets < minRec;
@@ -67,7 +69,7 @@ export function MiniVolumeBar({ muscle, sets, maxSets, recommended }: MiniVolume
   return (
     <View className="flex-row items-center gap-2 py-1">
       <Text className="text-xs text-text-muted w-16" numberOfLines={1}>
-        {MUSCLE_LABELS[muscle]}
+        {muscleLabels[muscle]}
       </Text>
       <View className="flex-1 h-1.5 rounded-full bg-white/[0.08]">
         <View style={{ width: `${pct}%`, height: 6, borderRadius: 3, backgroundColor: barColor }} />

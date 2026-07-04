@@ -15,6 +15,7 @@ import type {
   SuggestedSession,
   TrainingGoal,
   ExerciseCategory,
+  WorkoutType,
 } from '@/types';
 
 import { getRecoveredMuscles } from '@/lib/gamification';
@@ -54,7 +55,7 @@ export function generateWarmupSets(workingWeight: number, targetReps: number = 5
   // Set 1 — toujours : très léger, activer les muscles
   warmups.push({
     reps: Math.min(15, targetReps + 8),
-    weight: Math.max(20, Math.round((workingWeight * 0.35) / 2.5) * 2.5),
+    weight: Math.max(0, Math.round((workingWeight * 0.35) / 2.5) * 2.5),
     setType: 'warmup',
     restTime: 60,
   });
@@ -161,11 +162,42 @@ const PPL_SPLITS: Array<{ name: string; muscles: MuscleGroup[] }> = [
   { name: 'Legs (Jambes)', muscles: ['legs', 'glutes', 'calves'] },
 ];
 
+const CARDIO_SUGGESTION: SuggestedSession = {
+  title: 'Circuit Cardio',
+  focus: [],
+  exercises: [
+    { name: 'Corde à sauter', category: 'accessory', targetSets: 5, targetReps: 60, restTime: 30, targetRPE: 8 },
+    { name: 'Burpees', category: 'accessory', targetSets: 4, targetReps: 15, restTime: 45, targetRPE: 8 },
+    { name: 'Mountain climbers', category: 'accessory', targetSets: 4, targetReps: 20, restTime: 30, targetRPE: 7 },
+    { name: 'Jumping jacks', category: 'accessory', targetSets: 4, targetReps: 30, restTime: 20, targetRPE: 6 },
+  ],
+  estimatedDuration: 30,
+  reason: 'Boost ton endurance cardiovasculaire et brûle des calories efficacement',
+};
+
+const MOBILITY_SUGGESTION: SuggestedSession = {
+  title: 'Mobilité & Récupération',
+  focus: [],
+  exercises: [
+    { name: 'Échauffement articulaire', category: 'accessory', targetSets: 2, targetReps: 10, restTime: 15, targetRPE: 2 },
+    { name: 'World greatest stretch', category: 'accessory', targetSets: 3, targetReps: 8, restTime: 20, targetRPE: 3 },
+    { name: 'Hip flexor stretch', category: 'accessory', targetSets: 2, targetReps: 30, restTime: 15, targetRPE: 3 },
+    { name: 'Cat-cow', category: 'accessory', targetSets: 3, targetReps: 12, restTime: 10, targetRPE: 2 },
+    { name: 'Pigeon pose', category: 'accessory', targetSets: 2, targetReps: 30, restTime: 15, targetRPE: 3 },
+  ],
+  estimatedDuration: 25,
+  reason: 'Améliore ta mobilité articulaire et accélère la récupération musculaire',
+};
+
 export function getSuggestedSession(
   profile: UserProfile,
   workouts: Workout[],
   activePlan: TrainingPlan | null,
+  workoutType: WorkoutType = 'strength',
 ): SuggestedSession {
+  if (workoutType === 'cardio') return CARDIO_SUGGESTION;
+  if (workoutType === 'mobility') return MOBILITY_SUGGESTION;
+
   // 1. Si plan actif, retourner la prochaine session du plan
   if (activePlan) {
     const nextSession = getNextPlanSession(activePlan, workouts);
@@ -192,16 +224,24 @@ export function getSuggestedSession(
     { split: PPL_SPLITS[0]!, score: -1 },
   );
 
-  const focusMuscles = bestSplit.split.muscles.filter((m) =>
-    recovered.includes(m),
-  );
+  const focusMuscles = bestSplit.split.muscles.filter((m) => recovered.includes(m));
   const finalFocus = focusMuscles.length > 0 ? focusMuscles : bestSplit.split.muscles;
 
-  // 4. Construit la liste d'exercices pour les muscles focus
+  // Paramètres spécifiques au type
+  const isStrength = workoutType === 'strength';
+  const targetSetsCompound = isStrength ? 5 : 4;
+  const targetSetsIsolation = isStrength ? 4 : 3;
+  const targetRepsRange: [number, number] = isStrength ? [3, 5] : [8, 12];
+  const restTimeCompound = isStrength ? 240 : 90;
+  const restTimeIsolation = isStrength ? 180 : 60;
+  const intensityPct = isStrength ? 85 : 70;
+
+  // 4. Construit la liste d'exercices — force : composés uniquement
   const exercises: PlannedExercise[] = [];
   for (const muscle of finalFocus.slice(0, 3)) {
     const available = EXERCISE_DB[muscle] ?? [];
-    const picked = available.slice(0, muscle === 'arms' ? 2 : 3);
+    const filtered = isStrength ? available.filter((ex) => ex.category === 'compound') : available;
+    const picked = filtered.slice(0, muscle === 'arms' ? 2 : isStrength ? 2 : 3);
     for (const ex of picked) {
       const pr = profile.prs.find((p) =>
         p.exercise.toLowerCase().includes(ex.name.toLowerCase().split(' ')[0] ?? ''),
@@ -209,11 +249,11 @@ export function getSuggestedSession(
       exercises.push({
         name: ex.name,
         category: ex.category,
-        targetSets: ex.category === 'compound' ? 4 : 3,
-        targetReps: ex.category === 'compound' ? [5, 8] : [10, 15],
-        targetWeight: pr ? calculateWeight(pr.oneRepMax, 75) : undefined,
-        targetRPE: 8,
-        restTime: ex.category === 'compound' ? 180 : 90,
+        targetSets: ex.category === 'compound' ? targetSetsCompound : targetSetsIsolation,
+        targetReps: targetRepsRange,
+        targetWeight: pr ? calculateWeight(pr.oneRepMax, intensityPct) : undefined,
+        targetRPE: isStrength ? 9 : 8,
+        restTime: ex.category === 'compound' ? restTimeCompound : restTimeIsolation,
       });
     }
   }
@@ -225,9 +265,12 @@ export function getSuggestedSession(
   }, 0);
 
   const recoveredCount = finalFocus.length;
+  const typeLabel = isStrength
+    ? 'Charges lourdes, faibles reps — développe ta force max'
+    : 'Volume modéré, tension musculaire — optimise l\'hypertrophie';
   const reason =
     recoveredCount > 0
-      ? `${recoveredCount} groupe(s) musculaire(s) récupéré(s) depuis +48h`
+      ? typeLabel
       : 'Suggestion basée sur ton historique d\'entraînement';
 
   return {

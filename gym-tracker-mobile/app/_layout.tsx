@@ -1,10 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  useFonts,
+  Rajdhani_400Regular,
+  Rajdhani_500Medium,
+  Rajdhani_600SemiBold,
+  Rajdhani_700Bold,
+} from '@expo-google-fonts/rajdhani';
 import '@/global.css';
 
 import { supabase } from '@/lib/supabase';
@@ -13,6 +20,14 @@ import { colors } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useBadgeQueueStore } from '@/stores/badgeQueueStore';
+import { requestPermissions, refreshAllNotifications, cancelAllTrainingReminders, notifyBadgeUnlocked } from '@/lib/notifications';
+import { calculateStreakFromWorkouts, getUnlockedBadges, RANKS } from '@/lib/gamification';
+import { BadgeUnlockModal } from '@/components/gamification/BadgeUnlockModal';
+import { CelebrationToast } from '@/components/ui/CelebrationToast';
+import { PRCelebration } from '@/components/gamification/PRCelebration';
+import { RankUpOverlay } from '@/components/gamification/RankUpOverlay';
+import { useCelebrationStore } from '@/stores/celebrationStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,20 +52,61 @@ export default function RootLayout() {
 }
 
 function AppNavigator() {
+  const [fontsLoaded] = useFonts({
+    'Rajdhani-Regular':  Rajdhani_400Regular,
+    'Rajdhani-Medium':   Rajdhani_500Medium,
+    'Rajdhani-SemiBold': Rajdhani_600SemiBold,
+    'Rajdhani-Bold':     Rajdhani_700Bold,
+  });
   const [isReady, setIsReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
 
-  const { loadWorkouts } = useWorkoutStore();
-  const { loadProfile } = useProfileStore();
+  const { loadWorkouts, workouts } = useWorkoutStore();
+  const { loadProfile, profile } = useProfileStore();
   const { loadSettings } = useSettingsStore();
+  const { hydrate: hydrateBadges, checkUnlocks, queue, dismissCurrent } = useBadgeQueueStore();
+  const prevRankIdxRef = useRef<number | null>(null);
+
+  // Watcher : détecte les nouveaux badges et notifie + queue le modal
+  useEffect(() => {
+    if (!isReady) return;
+    const totalXP = useProfileStore.getState().getTotalXP();
+
+    // Watcher rank-up : si l'index de rang augmente pendant la session,
+    // déclenche l'overlay de montée de rang (DESIGN-GYMTRACK.md §B.9-4).
+    const rank = useProfileStore.getState().getCurrentRank();
+    if (rank) {
+      const idx = RANKS.findIndex((r) => r.tier === rank.tier && r.level === rank.level);
+      const prev = prevRankIdxRef.current;
+      if (prev !== null && idx > prev) {
+        const from = RANKS[prev];
+        if (from) useCelebrationStore.getState().showRankUp({ from, to: rank });
+      }
+      prevRankIdxRef.current = idx;
+    }
+    const streak  = calculateStreakFromWorkouts(workouts);
+    const data    = { workouts, profile: profile ?? null, totalXP, streak };
+    const unlocked = getUnlockedBadges(data);
+
+    // Capture les anciens badges avant l'update pour notification push
+    const beforeIds = new Set(useBadgeQueueStore.getState().seenIds);
+    checkUnlocks(unlocked);
+
+    // Si de nouveaux badges ont été ajoutés à la queue, déclenche aussi
+    // une notif push (seulement si l'app est en background ; sinon le modal suffit)
+    const newBadges = unlocked.filter((b) => !beforeIds.has(b.id));
+    if (newBadges.length > 0 && useSettingsStore.getState().settings.notifications) {
+      newBadges.forEach((b) => notifyBadgeUnlocked(b.name));
+    }
+  }, [isReady, workouts, profile]);
 
   useEffect(() => {
     let mounted = true;
 
     async function init() {
-      // 1. Init base de données locale + settings
-      await Promise.all([getDb(), loadSettings()]);
+      // 1. Init base de données locale + settings + badges seen
+      await Promise.all([getDb(), loadSettings(), hydrateBadges()]);
 
       // 2. Charge les données locales immédiatement (offline-first)
       await loadWorkouts();
@@ -67,6 +123,23 @@ function AppNavigator() {
       setIsAuthenticated(!!session);
       setHasProfile(!!profile);
       setIsReady(true);
+
+      // 4. Notifications — demande permission + reschedule
+      // Best-effort, ne bloque pas l'app si ça échoue
+      (async () => {
+        const { settings } = useSettingsStore.getState();
+        if (!settings.notifications) {
+          await cancelAllTrainingReminders();
+          return;
+        }
+        const granted = await requestPermissions();
+        if (!granted || !profile) return;
+
+        const workouts    = useWorkoutStore.getState().workouts;
+        const streak      = calculateStreakFromWorkouts(workouts);
+        const lastWorkout = workouts[0]?.date;
+        await refreshAllNotifications(profile.onboarding, streak, lastWorkout);
+      })().catch((err) => console.warn('Notification setup failed', err));
     }
 
     init().catch(console.error);
@@ -98,7 +171,7 @@ function AppNavigator() {
     }
   }, [isReady, isAuthenticated, hasProfile]);
 
-  if (!isReady) {
+  if (!isReady || !fontsLoaded) {
     return (
       <View
         style={{
@@ -114,23 +187,40 @@ function AppNavigator() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.bg.primary },
-        animation: 'fade',
-      }}
-    >
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="workout/[id]"
-        options={{ animation: 'slide_from_right' }}
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bg.primary },
+          animation: 'fade',
+        }}
+      >
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="workout/[id]"
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="exercise/[id]"
+          options={{ animation: 'slide_from_right' }}
+        />
+      </Stack>
+
+      {/* Modal de célébration badge — affiche le premier de la queue */}
+      <BadgeUnlockModal
+        badge={queue[0] ?? null}
+        onClose={dismissCurrent}
       />
-      <Stack.Screen
-        name="exercise/[id]"
-        options={{ animation: 'slide_from_right' }}
-      />
-    </Stack>
+
+      {/* Toast de célébration objectif hebdo */}
+      <CelebrationToast />
+
+      {/* Célébration PR plein écran (volt + compteur + confettis) */}
+      <PRCelebration />
+
+      {/* Montée de rang — cadre tracé, éclat, onde de choc */}
+      <RankUpOverlay />
+    </>
   );
 }

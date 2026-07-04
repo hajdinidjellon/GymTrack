@@ -72,15 +72,67 @@ interface RankCardProps {
   rank: Rank;
   totalXP: number;
   compact?: boolean;
+  homeHero?: boolean;
 }
 
-export function RankCard({ rank, totalXP, compact = false }: RankCardProps) {
+export function RankCard({ rank, totalXP, compact = false, homeHero = false }: RankCardProps) {
   const progress     = getProgressToNextRank(totalXP);
   const nextRank     = getNextRank(rank.tier, rank.level);
   const rankGradient = getRankGradient(rank.tier);
   const tierLabel    = TIER_LABEL[rank.tier] ?? rank.tier.toUpperCase();
 
-  /* ── Compact : une ligne (home screen) ───────────────────── */
+  /* ── Home Hero : card immersive (accueil) ─────────────────── */
+  if (homeHero) {
+    const xpToNext = nextRank ? Math.max(0, nextRank.minXP - totalXP) : 0;
+    return (
+      <LinearGradient
+        colors={[`${rank.color}22`, `${rank.color}08`, 'transparent']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 24, padding: 20,
+          borderWidth: 1, borderColor: `${rank.color}35`,
+          shadowColor: rank.color,
+          shadowOpacity: 0.28, shadowRadius: 20, shadowOffset: { width: 0, height: 6 },
+          elevation: 8,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+          <BadgeImage tier={rank.tier} size={100} />
+
+          <View style={{ flex: 1, gap: 10 }}>
+            <View>
+              <Text style={{
+                fontSize: 10, fontWeight: '900', color: rank.color,
+                letterSpacing: 2.8, textTransform: 'uppercase',
+              }}>
+                {tierLabel}
+              </Text>
+              <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: -1, lineHeight: 30, marginTop: 2 }}>
+                {rank.name}
+              </Text>
+            </View>
+
+            <ProgressBar progress={progress} gradient={rankGradient} backgroundColor="rgba(255,255,255,0.08)" height={7} animated />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)', fontWeight: '700' }}>
+                {totalXP.toLocaleString('fr-FR')} XP
+              </Text>
+              {nextRank ? (
+                <Text style={{ fontSize: 11, fontWeight: '900', color: rank.color }}>
+                  +{xpToNext.toLocaleString('fr-FR')} XP → {nextRank.name}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 11, fontWeight: '900', color: rank.color }}>★ Rang max</Text>
+              )}
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  /* ── Compact : une ligne ──────────────────────────────────── */
   if (compact) {
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

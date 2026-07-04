@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { MuscleMapSVG, MuscleHeatmapList } from './MuscleMapSVG';
-import { MUSCLE_LABELS } from '@/lib/gamification';
+import { useMuscleLabels } from '@/lib/i18n';
 import { getMuscleActivity } from '@/lib/gamification';
 import type { MuscleGroup, Workout } from '@/types';
 
@@ -28,6 +28,8 @@ export function MuscleHeatmap({
   compact = false,
 }: MuscleHeatmapProps) {
   const [selected, setSelected] = useState<MuscleGroup | null>(null);
+  const [muscleView, setMuscleView] = useState<'front' | 'back'>('front');
+  const muscleLabels = useMuscleLabels();
   const activity = getMuscleActivity(workouts, period);
 
   const handlePress = (muscle: MuscleGroup) => {
@@ -36,25 +38,48 @@ export function MuscleHeatmap({
 
   return (
     <View style={{ gap: 16 }}>
-      {/* Sélecteur période */}
+      {/* Sélecteurs période + vue */}
       {onPeriodChange && (
-        <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 4, alignSelf: 'flex-start' }}>
-          {([7, 30] as const).map((p) => (
-            <Pressable
-              key={p}
-              onPress={() => onPeriodChange(p)}
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: period === p ? '#7c3aed' : 'transparent',
-              }}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '500', color: period === p ? 'white' : 'rgba(248,250,252,0.55)' }}>
-                {p === 7 ? '7 jours' : '30 jours'}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* 7j / 30j */}
+          <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 4 }}>
+            {([7, 30] as const).map((p) => (
+              <Pressable
+                key={p}
+                onPress={() => onPeriodChange(p)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: period === p ? '#7c3aed' : 'transparent',
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '500', color: period === p ? 'white' : 'rgba(248,250,252,0.55)' }}>
+                  {p === 7 ? '7 jours' : '30 jours'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Avant / Arrière */}
+          <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 4 }}>
+            {(['front', 'back'] as const).map((v) => (
+              <Pressable
+                key={v}
+                onPress={() => setMuscleView(v)}
+                style={{
+                  paddingHorizontal: 16,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: muscleView === v ? '#7c3aed' : 'transparent',
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '500', color: muscleView === v ? 'white' : 'rgba(248,250,252,0.55)' }}>
+                  {v === 'front' ? 'Avant' : 'Arrière'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       )}
 
@@ -66,7 +91,7 @@ export function MuscleHeatmap({
             selected={selected}
             onMusclePress={handlePress}
             size="md"
-            showBoth
+            view={muscleView}
             showLegend
           />
         </View>
@@ -81,13 +106,13 @@ export function MuscleHeatmap({
 
       {/* Détail muscle sélectionné */}
       {selected && (
-        <MuscleDetail muscle={selected} intensity={activity[selected] ?? 0} />
+        <MuscleDetail muscle={selected} intensity={activity[selected] ?? 0} muscleLabels={muscleLabels} />
       )}
     </View>
   );
 }
 
-function MuscleDetail({ muscle, intensity }: { muscle: MuscleGroup; intensity: number }) {
+function MuscleDetail({ muscle, intensity, muscleLabels }: { muscle: MuscleGroup; intensity: number; muscleLabels: Record<MuscleGroup, string> }) {
   const color = muscleDetailColor(intensity);
   const status =
     intensity === 0   ? 'Aucun travail récent' :
@@ -112,7 +137,7 @@ function MuscleDetail({ muscle, intensity }: { muscle: MuscleGroup; intensity: n
       <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: color, opacity: 0.8 }} />
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 15, fontWeight: '600', color: '#f8fafc' }}>
-          {MUSCLE_LABELS[muscle]}
+          {muscleLabels[muscle]}
         </Text>
         <Text style={{ fontSize: 13, color: 'rgba(248,250,252,0.55)' }}>{status}</Text>
       </View>

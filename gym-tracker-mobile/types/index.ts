@@ -28,7 +28,9 @@ export type WorkoutType =
   | 'power'
   | 'endurance'
   | 'cardio'
-  | 'mobility';
+  | 'mobility'
+  | 'ppl'
+  | 'fullbody';
 
 export type ExerciseCategory = 'compound' | 'isolation' | 'accessory';
 
@@ -159,11 +161,12 @@ export interface UserProfile {
 
 export interface AppSettings {
   units: 'kg' | 'lbs';
-  defaultRestTime: 60 | 90 | 120 | 180;
+  defaultRestTime: 5 | 60 | 90 | 120 | 180;
   restTimerEnabled: boolean;
   theme: 'dark' | 'light' | 'system';
   notifications: boolean;
   language: 'fr' | 'en';
+  trainingMode?: WorkoutType;
 }
 
 // ============================================================
@@ -261,6 +264,7 @@ export interface ActiveSession {
   exercises: ActiveExercise[];
   elapsedSeconds: number;
   restSecondsLeft: number | null;
+  restEndsAt: number | null;
   isResting: boolean;
   lastCompletedSetIndex: number | null;
 }

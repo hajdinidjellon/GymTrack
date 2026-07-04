@@ -5,6 +5,7 @@
  * mascotte-mimi3.png           : 1536×1024 — mimi3 (deadlift statique, célébration)
  * mascotte-mimi5.png           : 1536×1024 — Mimi onboarding goals (balance, target, cardio, anatomy, mesure, calendar, clock, sports, bell)
  * mascotte-mimi-mouvement1.png : 1417×1110 — 9 frames animées squat/bench/deadlift (3×3)
+ * mascotte-mimi-ecrit.png      : 1448×1086 — 6 frames Mimi réfléchit et écrit (3×2)
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -15,6 +16,9 @@ const SHEET_MIMI2 = require('@/assets/mascot/mascotte-mimi2.png')             as
 const SHEET_MIMI3 = require('@/assets/mascot/mascotte-mimi3.png')             as number;
 const SHEET_MIMI5 = require('@/assets/mascot/mascotte-mimi5.png')             as number;
 const SHEET_MOUV1 = require('@/assets/mascot/mascotte-mimi-mouvement1.png')   as number;
+const SHEET_CELEB    = require('@/assets/mascot/mascotte-celebration.png')    as number;
+const SHEET_TROPHY   = require('@/assets/mascot/mascotte-trophy.png')         as number;
+const SHEET_ECRIT    = require('@/assets/mascot/mascotte-mimi-ecrit.png')     as number;
 
 type PoseDef = {
   x: number; y: number; w: number; h: number;
@@ -42,7 +46,14 @@ export type MascotPose =
   // ── mascotte-mimi-mouvement1 1417×1110 — frames animées ─────────
   | 'mouv_squat_1'  | 'mouv_squat_2'  | 'mouv_squat_3'
   | 'mouv_bench_1'  | 'mouv_bench_2'  | 'mouv_bench_3'
-  | 'mouv_dead_1'   | 'mouv_dead_2'   | 'mouv_dead_3';
+  | 'mouv_dead_1'   | 'mouv_dead_2'   | 'mouv_dead_3'
+  // ── mascotte-celebration 1536×1024 — 3 frames célébration ────────
+  | 'celebrate_1' | 'celebrate_2' | 'celebrate_3'
+  // ── mascotte-trophy 1536×1024 — 2 frames trophée ─────────────────
+  | 'trophy_1' | 'trophy_2'
+  // ── mascotte-mimi-ecrit 1448×1086 — 6 frames écriture/réflexion ──
+  | 'ecrit_1' | 'ecrit_2' | 'ecrit_3'
+  | 'ecrit_4' | 'ecrit_5' | 'ecrit_6';
 
 export const POSES: Record<MascotPose, PoseDef> = {
   // ── mimi 1630×965 ────────────────────────────────────────────────
@@ -81,6 +92,25 @@ export const POSES: Record<MascotPose, PoseDef> = {
   // ── mascotte-cache4 1536×1024 — goal screen ───────────────────────
   cache4_pos1: { x: 52,  y: 44, w: 143, h: 236, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache4.png') as number },
   cache4_pos2: { x: 198, y: 44, w: 161, h: 236, imgW: 1536, imgH: 1024, src: require('@/assets/mascot/mascotte-cache4.png') as number },
+
+  // ── mascotte-celebration 1536×1024 — célébration PR ─────────────
+  celebrate_1: { x: 117,  y: 468, w: 294, h: 311, imgW: 1536, imgH: 1024, src: SHEET_CELEB },
+  celebrate_2: { x: 606,  y: 293, w: 360, h: 486, imgW: 1536, imgH: 1024, src: SHEET_CELEB },
+  celebrate_3: { x: 1112, y: 422, w: 322, h: 358, imgW: 1536, imgH: 1024, src: SHEET_CELEB },
+
+  // ── mascotte-trophy 1536×1024 — objectif / badge ─────────────────
+  trophy_1: { x: 266, y: 320, w: 387, h: 471, imgW: 1536, imgH: 1024, src: SHEET_TROPHY },
+  trophy_2: { x: 832, y: 210, w: 429, h: 581, imgW: 1536, imgH: 1024, src: SHEET_TROPHY },
+
+  // ── mascotte-mimi-ecrit 1448×1086 — 6 frames écriture/réflexion ──
+  // Crops centrés sur le personnage (300×383 chacun) pour que Mimi
+  // reste fixe visuellement pendant l'animation — seul le crayon bouge.
+  ecrit_1: { x: 153, y:  96, w: 300, h: 383, imgW: 1448, imgH: 1086, src: SHEET_ECRIT },
+  ecrit_2: { x: 572, y: 101, w: 300, h: 383, imgW: 1448, imgH: 1086, src: SHEET_ECRIT },
+  ecrit_3: { x: 987, y: 105, w: 300, h: 383, imgW: 1448, imgH: 1086, src: SHEET_ECRIT },
+  ecrit_4: { x: 141, y: 580, w: 300, h: 383, imgW: 1448, imgH: 1086, src: SHEET_ECRIT },
+  ecrit_5: { x: 557, y: 581, w: 300, h: 383, imgW: 1448, imgH: 1086, src: SHEET_ECRIT },
+  ecrit_6: { x: 980, y: 582, w: 300, h: 383, imgW: 1448, imgH: 1086, src: SHEET_ECRIT },
 
   // ── mascotte-mimi-mouvement1 1417×1110 — squat ───────────────────
   mouv_squat_1: { x: 19,   y: 27,  w: 360, h: 306, imgW: 1417, imgH: 1110, src: SHEET_MOUV1 },
@@ -239,6 +269,100 @@ export function AnimatedExerciseMascot({
       {renderFrame(frames[0], opA, 0)}
       {renderFrame(frames[1], opB, 1)}
     </View>
+  );
+}
+
+// ── Animation N frames avec cross-fade + float (premium) ─────────
+export function AnimatedMultiFrameMascot({
+  frames,
+  height = 160,
+  frameDuration = 480,
+  fadeDuration = 70,
+  float = true,
+}: {
+  frames: MascotPose[];
+  height?: number;
+  frameDuration?: number;
+  fadeDuration?: number;
+  float?: boolean;
+}) {
+  const n = frames.length;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const opacities = useRef(frames.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
+  const floatY    = useRef(new Animated.Value(0)).current;
+  const entranceY = useRef(new Animated.Value(16)).current;
+  const entranceOp = useRef(new Animated.Value(0)).current;
+
+  const maxW = Math.max(...frames.map(p => POSES[p].w * (height / POSES[p].h)));
+
+  // Entrée
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(entranceOp, { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.spring(entranceY,  { toValue: 0, speed: 14, bounciness: 8, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  // Flottement
+  useEffect(() => {
+    if (!float) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatY, { toValue: -5, duration: 1900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(floatY, { toValue: 0,  duration: 1900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [float]);
+
+  // Cycle des frames
+  useEffect(() => {
+    opacities.forEach((op, i) => op.setValue(i === 0 ? 1 : 0));
+
+    const steps: Animated.CompositeAnimation[] = [];
+    for (let i = 0; i < n; i++) {
+      const next = (i + 1) % n;
+      const hideOp = opacities[i];
+      const showOp = opacities[next];
+      if (!hideOp || !showOp) continue;
+      steps.push(Animated.delay(frameDuration));
+      steps.push(
+        Animated.parallel([
+          Animated.timing(hideOp, { toValue: 0, duration: fadeDuration, useNativeDriver: true }),
+          Animated.timing(showOp, { toValue: 1, duration: fadeDuration, useNativeDriver: true }),
+        ]),
+      );
+    }
+
+    const loop = Animated.loop(Animated.sequence(steps));
+    loop.start();
+    return () => loop.stop();
+  }, [frameDuration, fadeDuration]);
+
+  return (
+    <Animated.View style={{
+      opacity: entranceOp,
+      transform: [{ translateY: Animated.add(entranceY, floatY) }],
+    }}>
+      <View style={{ width: maxW, height }}>
+        {frames.map((pose, i) => {
+          const crop  = POSES[pose];
+          const scale = height / crop.h;
+          const dispW = crop.w * scale;
+          const op    = opacities[i];
+          if (!op) return null;
+          return (
+            <Animated.View
+              key={i}
+              style={{ position: 'absolute', top: 0, left: (maxW - dispW) / 2, opacity: op }}
+            >
+              <SpriteFrame pose={pose} height={height} />
+            </Animated.View>
+          );
+        })}
+      </View>
+    </Animated.View>
   );
 }
 

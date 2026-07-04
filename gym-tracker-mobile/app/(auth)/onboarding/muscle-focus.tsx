@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+﻿import React, { useState } from 'react';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
 import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
 import type { MuscleGroup } from '@/types';
+import { OptionCard } from '@/components/onboarding/OptionCard';
 
 type Choice = {
   id: MuscleGroup;
@@ -55,56 +55,21 @@ export default function OnboardingMuscleFocusScreen() {
         params: { ...params, muscleFocus: selected.join(',') },
       })}
     >
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        {CHOICES.map((c) => {
-          const isSel = selected.includes(c.id);
-          return (
-            <Pressable
-              key={c.id}
-              onPress={() => toggle(c.id)}
-              style={({ pressed }) => ({
-                width: '48%',
-                borderRadius: 16,
-                overflow: 'hidden',
-                transform: [{ scale: pressed ? 0.96 : 1 }],
-                borderWidth: 2,
-                borderColor: isSel ? c.color : 'rgba(255,255,255,0.09)',
-                backgroundColor: isSel ? 'transparent' : 'rgba(255,255,255,0.04)',
-              })}
-            >
-              {isSel && (
-                <LinearGradient
-                  colors={[`${c.color}28`, `${c.color}10`]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                />
-              )}
-              <View style={{
-                flexDirection: 'row', alignItems: 'center', gap: 12,
-                paddingVertical: 16, paddingHorizontal: 14,
-              }}>
-                <View style={{
-                  width: 38, height: 38, borderRadius: 12,
-                  backgroundColor: isSel ? `${c.color}28` : 'rgba(255,255,255,0.06)',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Ionicons name={c.icon} size={20} color={isSel ? c.color : 'rgba(255,255,255,0.40)'} />
-                </View>
-                <Text style={{
-                  flex: 1, fontSize: 15, fontWeight: '800',
-                  color: isSel ? '#fff' : 'rgba(255,255,255,0.75)',
-                  letterSpacing: -0.2,
-                }}>
-                  {c.label}
-                </Text>
-                {isSel && (
-                  <Ionicons name="checkmark-circle" size={18} color={c.color} />
-                )}
-              </View>
-            </Pressable>
-          );
-        })}
+      <View style={{ gap: 10 }}>
+        {CHOICES.map((c) => (
+          <OptionCard
+            key={c.id}
+            icon={c.icon}
+            title={c.label}
+            subtitle=""
+            color={c.color}
+            selected={selected.includes(c.id)}
+            onPress={() => toggle(c.id)}
+            iconSize={24}
+          />
+        ))}
       </View>
     </OnboardingFrame>
   );
 }
+

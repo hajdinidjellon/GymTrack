@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+﻿import React, { useState } from 'react';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
 import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
 import type { TimeOfDay } from '@/types';
+import { OptionCard } from '@/components/onboarding/OptionCard';
 
 type Slot = {
   id: TimeOfDay;
@@ -51,66 +51,19 @@ export default function OnboardingTimeOfDayScreen() {
       hideCta
     >
       <View style={{ gap: 12 }}>
-        {SLOTS.map((s) => {
-          const isSel = selected === s.id;
-          return (
-            <Pressable
-              key={s.id}
-              onPress={() => handleSelect(s)}
-              style={({ pressed }) => ({
-                borderRadius: 18,
-                overflow: 'hidden',
-                transform: [{ scale: pressed ? 0.97 : 1 }],
-                borderWidth: 2,
-                borderColor: isSel ? s.color : 'rgba(255,255,255,0.09)',
-              })}
-            >
-              {isSel && (
-                <LinearGradient
-                  colors={[`${s.color}28`, `${s.color}10`]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                />
-              )}
-              <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: isSel ? 'transparent' : 'rgba(255,255,255,0.04)',
-              }}>
-                <View style={{
-                  width: 76, paddingVertical: 22,
-                  backgroundColor: isSel ? `${s.color}28` : 'rgba(255,255,255,0.06)',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Ionicons name={s.icon} size={32} color={isSel ? s.color : 'rgba(255,255,255,0.40)'} />
-                </View>
-                <View style={{ flex: 1, paddingVertical: 18, paddingHorizontal: 16 }}>
-                  <Text style={{
-                    fontSize: 19, fontWeight: '900',
-                    color: isSel ? '#fff' : 'rgba(255,255,255,0.88)',
-                    letterSpacing: -0.4, marginBottom: 3,
-                  }}>
-                    {s.title}
-                  </Text>
-                  <Text style={{
-                    fontSize: 13, fontWeight: '600',
-                    color: isSel ? `${s.color}CC` : 'rgba(255,255,255,0.40)',
-                  }}>
-                    {s.hint}
-                  </Text>
-                </View>
-                <View style={{ paddingRight: 18 }}>
-                  <Text style={{
-                    fontSize: 14, fontWeight: '800', letterSpacing: 0.5,
-                    color: isSel ? s.color : 'rgba(255,255,255,0.30)',
-                  }}>
-                    {s.defaultHour}
-                  </Text>
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
+        {SLOTS.map((s) => (
+          <OptionCard
+            key={s.id}
+            icon={s.icon}
+            title={s.title}
+            subtitle={s.hint}
+            color={s.color}
+            selected={selected === s.id}
+            onPress={() => handleSelect(s)}
+          />
+        ))}
       </View>
     </OnboardingFrame>
   );
 }
+

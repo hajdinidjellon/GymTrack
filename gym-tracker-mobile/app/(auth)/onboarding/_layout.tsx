@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+﻿import { Stack } from 'expo-router';
 import { colors } from '@/constants/theme';
 
 export default function OnboardingLayout() {
@@ -12,3 +12,4 @@ export default function OnboardingLayout() {
     />
   );
 }
+

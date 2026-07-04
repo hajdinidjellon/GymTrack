@@ -3,6 +3,7 @@ import { View, Text, Pressable, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/theme';
+import { useT } from '@/lib/i18n';
 import type { WorkoutSet, SetType } from '@/types';
 import { calculate1RM } from '@/lib/aiPlanner';
 
@@ -27,6 +28,8 @@ const SET_TYPE_LABELS: Record<SetType, string> = {
 const SET_TYPES: SetType[] = ['warmup', 'normal', 'top', 'backoff', 'amrap', 'drop', 'failure'];
 
 // ── Stepper compact intégré ──────────────────────────────────────
+// Le TextInput n'est monté QUE pendant l'édition active (tap sur la valeur).
+// Hors édition, on affiche un Text pressable — imperméable aux re-renders.
 function Stepper({
   value, onChange, step = 1, min = 0, max = 999, label,
 }: {
@@ -37,8 +40,31 @@ function Stepper({
   max?: number;
   label: string;
 }) {
-  const clamp = (v: number) => Math.min(Math.max(v, min), max);
-  const display = Number.isInteger(value) ? String(value) : value.toFixed(1);
+  const clamp            = (v: number) => Math.min(Math.max(v, min), max);
+  const [editing, setEditing]   = React.useState(false);
+  const [editText, setEditText] = React.useState('');
+  // Ref toujours à jour — évite le problème de closure stale entre onChangeText et onBlur
+  const editTextRef = React.useRef('');
+
+  const fmt = (v: number) => Number.isInteger(v) ? String(v) : v.toFixed(1);
+
+  const startEdit = () => {
+    const initial = fmt(value);
+    editTextRef.current = initial;
+    setEditText(initial);
+    setEditing(true);
+  };
+
+  const commit = () => {
+    const n = parseFloat(editTextRef.current.replace(',', '.'));
+    onChange(isNaN(n) ? min : clamp(n));
+    setEditing(false);
+  };
+
+  const handleButton = (newVal: number) => {
+    setEditing(false);
+    onChange(clamp(newVal));
+  };
 
   return (
     <View style={{ alignItems: 'center', gap: 6, flex: 1 }}>
@@ -47,29 +73,41 @@ function Stepper({
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', overflow: 'hidden' }}>
         <Pressable
-          onPress={() => onChange(clamp(value - step))}
+          onPress={() => handleButton(value - step)}
           style={{ paddingHorizontal: 14, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' }}
           hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
         >
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text.secondary, lineHeight: 22 }}>−</Text>
         </Pressable>
 
-        <TextInput
-          style={{
-            fontSize: 26, fontWeight: '900', color: colors.text.primary,
-            textAlign: 'center', minWidth: 52, paddingHorizontal: 4,
-          }}
-          value={display}
-          onChangeText={(t) => {
-            const n = parseFloat(t.replace(',', '.'));
-            if (!isNaN(n)) onChange(clamp(n));
-          }}
-          keyboardType="numeric"
-          selectTextOnFocus
-        />
+        {editing ? (
+          <TextInput
+            autoFocus
+            style={{
+              fontSize: 26, fontWeight: '900', color: colors.text.primary,
+              textAlign: 'center', minWidth: 52, paddingHorizontal: 4,
+            }}
+            value={editText}
+            onChangeText={(t) => { editTextRef.current = t; setEditText(t); }}
+            onBlur={commit}
+            onSubmitEditing={commit}
+            keyboardType="numeric"
+            selectTextOnFocus
+          />
+        ) : (
+          <Pressable
+            onPress={startEdit}
+            style={{ minWidth: 52, paddingHorizontal: 4, paddingVertical: 12, alignItems: 'center' }}
+            hitSlop={{ top: 4, bottom: 4, left: 8, right: 8 }}
+          >
+            <Text style={{ fontSize: 26, fontWeight: '900', color: colors.text.primary, textAlign: 'center' }}>
+              {fmt(value)}
+            </Text>
+          </Pressable>
+        )}
 
         <Pressable
-          onPress={() => onChange(clamp(value + step))}
+          onPress={() => handleButton(value + step)}
           style={{ paddingHorizontal: 14, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' }}
           hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
         >
@@ -84,6 +122,7 @@ function Stepper({
 
 export function SetRow({ setIndex, set, previousSet, onUpdate, onComplete, onDelete, isCompleted, units }: SetRowProps) {
   const [showTypePicker, setShowTypePicker] = React.useState(false);
+  const t = useT();
 
   const hasPrev       = !!previousSet;
   const currentScore  = calculate1RM(set.weight, set.reps);
@@ -122,7 +161,7 @@ export function SetRow({ setIndex, set, previousSet, onUpdate, onComplete, onDel
             {hasPrev ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={{ fontSize: 12, color: colors.text.muted }}>
-                  Avant · <Text style={{ fontWeight: '600' }}>{previousSet.weight}{units} × {previousSet.reps}</Text>
+                  {t('setRow.prev')} · <Text style={{ fontWeight: '600' }}>{previousSet.weight}{units} × {previousSet.reps}</Text>
                 </Text>
                 {!isEqual && (
                   <View style={{
@@ -136,7 +175,7 @@ export function SetRow({ setIndex, set, previousSet, onUpdate, onComplete, onDel
                 )}
               </View>
             ) : (
-              <Text style={{ fontSize: 12, color: colors.text.muted }}>Première fois</Text>
+              <Text style={{ fontSize: 12, color: colors.text.muted }}>{t('setRow.firstTime')}</Text>
             )}
           </View>
 
@@ -159,7 +198,7 @@ export function SetRow({ setIndex, set, previousSet, onUpdate, onComplete, onDel
             value={set.weight}
             onChange={(v) => onUpdate({ weight: v })}
             step={2.5} min={0} max={500}
-            label={`Poids (${units})`}
+            label={t('setRow.weight', { units })}
           />
 
           {/* Séparateur */}

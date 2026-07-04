@@ -1,50 +1,35 @@
 import React, { useEffect, useRef } from 'react';
 import {
   View, Text, Pressable, ScrollView, Animated, Easing,
-  KeyboardAvoidingView, Platform, Dimensions,
+  KeyboardAvoidingView, Platform, Dimensions, ImageBackground,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { Mascot, AnimatedExerciseMascot, type MascotPose } from '@/components/mascot/Mascot';
+import { ProgressRail } from '@/components/ui/hud/ProgressRail';
+import { hud } from '@/constants/theme';
+
+const BG_QR = require('@/assets/images/background-qr.png') as number;
 
 const { width: W } = Dimensions.get('window');
 
-// ── Barre de progression ──────────────────────────────────────────
+// ── Barre de progression « calibration » ──────────────────────────
+// Rail segmenté HUD : 1 segment = 1 étape (DESIGN-GYMTRACK.md §B.3).
 function StepProgress({ current, total }: { current: number; total: number }) {
-  const progress = useRef(new Animated.Value((current - 1) / total)).current;
-
-  useEffect(() => {
-    Animated.timing(progress, {
-      toValue: current / total,
-      duration: 400,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: false,
-    }).start();
-  }, [current]);
-
-  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
-
   return (
     <View style={{ gap: 6 }}>
-      <View style={{
-        height: 3, borderRadius: 3,
-        backgroundColor: 'rgba(255,255,255,0.10)',
-        overflow: 'hidden',
-      }}>
-        <Animated.View style={{
-          height: 3, width,
-          backgroundColor: '#38bdf8',
-          borderRadius: 3,
-        }} />
-      </View>
+      <ProgressRail progress={current / total} segments={total} height={5} />
       <Text style={{
-        fontSize: 11, fontWeight: '700',
-        color: 'rgba(255,255,255,0.35)',
-        letterSpacing: 1.4,
+        fontFamily: 'Rajdhani-Medium',
+        fontSize: 11,
+        color: hud.text.muted,
+        letterSpacing: 2.5,
+        textTransform: 'uppercase',
       }}>
-        {String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}
+        Calibration {String(current).padStart(2, '0')} / {String(total).padStart(2, '0')}
       </Text>
     </View>
   );
@@ -103,19 +88,18 @@ export function OnboardingFrame({
       style={{ flex: 1, backgroundColor: '#07090f' }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Fond subtil */}
-      <LinearGradient
-        colors={['#0c0e1a', '#07090f']}
+      {/* Image de fond */}
+      <ImageBackground
+        source={BG_QR}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        resizeMode="cover"
+        imageStyle={{ opacity: 0.70 }}
       />
-      {/* Halo haut */}
+      {/* Overlay sombre pour lisibilité */}
       <LinearGradient
-        colors={['rgba(56,189,248,0.08)', 'transparent']}
-        start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
-        style={{
-          position: 'absolute', top: -W * 0.3, left: 0, right: 0,
-          height: W * 0.9, borderRadius: W,
-        }}
+        colors={['rgba(7,9,15,0.10)', 'rgba(7,9,15,0.35)', 'rgba(7,9,15,0.80)']}
+        locations={[0, 0.5, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -219,7 +203,10 @@ export function OnboardingFrame({
 
             {!hideCta && onContinue && (
               <Pressable
-                onPress={onContinue}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => null);
+                  onContinue();
+                }}
                 disabled={!canContinue || loading}
                 style={({ pressed }) => ({
                   borderRadius: 20, overflow: 'hidden',
