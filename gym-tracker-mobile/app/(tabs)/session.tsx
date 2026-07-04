@@ -39,7 +39,15 @@ import { MUSCLE_LABELS } from '@/lib/gamification';
 import { useCelebrationStore } from '@/stores/celebrationStore';
 import { EXERCISE_GROUPS, filterGroups, type ExerciseDefinition, type ExerciseGroup } from '@/lib/exerciseDatabase';
 import type { ActiveExercise, MuscleGroup, Workout, WorkoutSet, WorkoutType } from '@/types';
-import { router } from 'expo-router';
+import { router, type ErrorBoundaryProps } from 'expo-router';
+import { ErrorFallback } from '@/components/ui/ErrorFallback';
+
+// Boundary dédié : l'écran le plus complexe de l'app (Skia + saisie temps réel).
+// En cas de crash de rendu, la séance en cours reste dans le sessionStore
+// (persisté) — le retry re-monte l'écran et la reprend, rien n'est perdu.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <ErrorFallback error={error} context="[boundary:session]" retry={retry} />;
+}
 
 const WORKOUT_MODES: Array<{
   type: WorkoutType;

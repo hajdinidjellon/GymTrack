@@ -1,6 +1,6 @@
 # 08 — Gestion d'erreurs
 
-> État actuel : **aucun Error Boundary, aucun crash reporting**, nombreux `catch` muets. Une exception de rendu = écran blanc définitif. Ce document définit la stratégie cible.
+> État au 2026-07-04 : Error Boundaries en place (global + écran session, via `components/ui/ErrorFallback.tsx`) et échec de boot géré avec retry. Reste à faire : **crash reporting (Sentry, §3)** et résorption des `catch` muets.
 
 ## 1. Error Boundaries
 
@@ -39,11 +39,11 @@ Style du fallback : mêmes tokens que l'app (fond `#080810`, ton HUD), **jamais 
 
 | Couche | Stratégie | Exemple existant |
 |---|---|---|
-| Rendu React | Error Boundaries (§1) | — (à créer) |
+| Rendu React | Error Boundaries (§1) | ✅ `ErrorFallback` + boundaries root/session (2026-07-04) |
 | Action UI (login, save) | `loading`/`error` en state local + message i18n | ✅ `login.tsx:66-69` — c'est le modèle |
 | Data layer (`db.ts`) | **Laisser remonter** (throw) — l'appelant décide. Un échec d'écriture SQLite ne doit JAMAIS être avalé : l'utilisateur croirait sa séance sauvée | ✅ actuellement rien n'est catché dans db.ts, c'est correct |
 | Sync (`sync.ts`) | Best-effort silencieux TOLÉRÉ (retry au prochain flush) mais **loggé** | ⚠️ `flushSyncQueue` catch muet — ajouter `console.warn`/breadcrumb Sentry |
-| Init (`_layout.tsx`) | Best-effort pour le non-critique (notifications ✅) ; pour le critique (DB), afficher un écran d'erreur au lieu du spinner infini actuel | ⚠️ si `getDb()` throw, l'app reste bloquée sur le spinner |
+| Init (`_layout.tsx`) | Best-effort pour le non-critique (notifications ✅) ; pour le critique (DB), écran d'erreur avec retry | ✅ `bootError` + `ErrorFallback` boot (2026-07-04) |
 
 ### Règles
 

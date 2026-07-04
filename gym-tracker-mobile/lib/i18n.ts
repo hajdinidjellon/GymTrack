@@ -283,6 +283,13 @@ const T = {
     'badge.all_muscles.desc': 'Travaille tous les groupes musculaires',
     'badge.gold_rank.name': 'Statut Or',
     'badge.gold_rank.desc': 'Atteindre le rang Or',
+
+    // Erreurs
+    'error.generic.title': 'Oups, quelque chose a cassé',
+    'error.generic.message': 'Une erreur inattendue est survenue. Tes données sont en sécurité.',
+    'error.generic.retry': 'Réessayer',
+    'error.boot.title': 'Impossible de démarrer',
+    'error.boot.message': "La base de données locale n'a pas pu s'initialiser. Réessaie ; si le problème persiste, réinstalle l'application.",
   },
 
   en: {
@@ -563,11 +570,34 @@ const T = {
     'badge.all_muscles.desc': 'Train every muscle group',
     'badge.gold_rank.name': 'Gold Status',
     'badge.gold_rank.desc': 'Reach Gold rank',
+
+    // Errors
+    'error.generic.title': 'Oops, something broke',
+    'error.generic.message': 'An unexpected error occurred. Your data is safe.',
+    'error.generic.retry': 'Retry',
+    'error.boot.title': 'Unable to start',
+    'error.boot.message': 'The local database could not be initialised. Try again; if the problem persists, reinstall the app.',
   },
 } as const;
 
 type TranslationKey = keyof typeof T.fr;
 type Params = Record<string, string | number>;
+
+/**
+ * Version non-réactive de t() — pour les contextes où les hooks sont
+ * indisponibles ou risqués (ErrorBoundary, écran d'erreur de boot).
+ * Crash-proof : si le settingsStore est lui-même en panne, retombe sur le fr.
+ */
+export function tStatic(key: TranslationKey): string {
+  let lang: Lang = 'fr';
+  try {
+    lang = useSettingsStore.getState().settings.language as Lang;
+  } catch {
+    // settingsStore indisponible — fallback fr
+  }
+  const dict = (T[lang] ?? T.fr) as Record<string, string>;
+  return dict[key] ?? (T.fr as Record<string, string>)[key] ?? key;
+}
 
 // ── Hook principal ────────────────────────────────────────────────
 export function useT() {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -28,6 +28,13 @@ import { CelebrationToast } from '@/components/ui/CelebrationToast';
 import { PRCelebration } from '@/components/gamification/PRCelebration';
 import { RankUpOverlay } from '@/components/gamification/RankUpOverlay';
 import { useCelebrationStore } from '@/stores/celebrationStore';
+import { ErrorFallback } from '@/components/ui/ErrorFallback';
+
+// Boundary global — attrape toute erreur de rendu des routes enfants.
+// Ne dépend ni des fonts ni des stores : doit se rendre quoi qu'il arrive.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <ErrorFallback error={error} context="[boundary:root]" retry={retry} />;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +68,8 @@ function AppNavigator() {
   const [isReady, setIsReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+  const [bootError, setBootError] = useState<Error | null>(null);
+  const [initAttempt, setInitAttempt] = useState(0);
 
   const { loadWorkouts, workouts } = useWorkoutStore();
   const { loadProfile, profile } = useProfileStore();
@@ -142,7 +151,12 @@ function AppNavigator() {
       })().catch((err) => console.warn('Notification setup failed', err));
     }
 
-    init().catch(console.error);
+    // Si l'init critique échoue (SQLite corrompue, etc.), on affiche un
+    // écran d'erreur avec retry au lieu de rester bloqué sur le spinner.
+    init().catch((err) => {
+      console.error('[boot] init failed:', err);
+      if (mounted) setBootError(err instanceof Error ? err : new Error(String(err)));
+    });
 
     // Écoute les changements de session
     const {
@@ -156,7 +170,7 @@ function AppNavigator() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initAttempt]);
 
   // Redirect une fois l'état connu
   useEffect(() => {
@@ -170,6 +184,21 @@ function AppNavigator() {
       router.replace('/(tabs)');
     }
   }, [isReady, isAuthenticated, hasProfile]);
+
+  if (bootError) {
+    return (
+      <ErrorFallback
+        error={bootError}
+        context="[boot]"
+        titleKey="error.boot.title"
+        messageKey="error.boot.message"
+        retry={() => {
+          setBootError(null);
+          setInitAttempt((n) => n + 1);
+        }}
+      />
+    );
+  }
 
   if (!isReady || !fontsLoaded) {
     return (
