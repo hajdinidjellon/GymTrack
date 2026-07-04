@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { largeSecureStore } from '@/lib/secureStorage';
 import 'react-native-url-polyfill/auto';
 
 // Variables d'environnement — à définir dans .env.local
@@ -9,11 +9,13 @@ const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 export const isSupabaseConfigured = (): boolean =>
   SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
 
-// Le client Supabase utilise AsyncStorage pour la persistance de session
-// (comportement natif mobile : la session survit aux redémarrages)
+// Session persistée chiffrée : clé AES dans le Keychain/Keystore,
+// données dans AsyncStorage (voir lib/secureStorage.ts).
+// NB : les sessions stockées avant cette migration (AsyncStorage en clair)
+// ne sont pas reprises — reconnexion unique demandée à l'utilisateur.
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: AsyncStorage,
+    storage: largeSecureStore,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
