@@ -7,7 +7,19 @@
     "android": "node --max-old-space-size=4096 ./node_modules/.bin/expo start --android",
     "ios": "node --max-old-space-size=4096 ./node_modules/.bin/expo start --ios",
     "web": "expo start --web",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
+    "testMatch": [
+      "**/__tests__/**/*.test.ts",
+      "**/__tests__/**/*.test.tsx"
+    ]
   },
   "dependencies": {
     "@expo-google-fonts/rajdhani": "^0.4.1",
@@ -48,7 +60,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.1.0",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.17",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.0"
   },

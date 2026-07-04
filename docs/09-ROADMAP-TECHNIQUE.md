@@ -18,7 +18,7 @@
 | B10 | ✅ **FAIT 2026-07-04** — Nettoyage repo & app | `app/hud-test.tsx` supprimé ; ~30 maquettes de la racine déplacées dans `design/` (gitignoré, rien de perdu). | S |
 | B11 | ✅ **FAIT 2026-07-04** — Permissions app.json | HealthKit (aucune intégration) et caméra (aucun usage) retirés d'`app.json` ; `expo-camera` désinstallé (son config plugin ré-injectait la permission au build). | S |
 | B12 | **`eas.json` + secrets + premier build preview** | Voir [06-DEPLOYMENT.md](06-DEPLOYMENT.md). | M |
-| B13 | **Tests unitaires `lib/gamification` + `lib/aiPlanner`** | Le strict minimum de filet avant release — setup Jest inclus. Voir [04-TESTING.md](04-TESTING.md). | L |
+| B13 | ✅ **FAIT 2026-07-05** — Tests unitaires `lib/gamification` + `lib/aiPlanner` | Jest + jest-expo configurés (`npm test`), 60 tests dans `lib/__tests__/`. **Bonus : les tests ont révélé un vrai bug de fuseau horaire dans `calculateStreakFromWorkouts`** (mélange minuit local / date UTC → séance du jour jamais comptée pour UTC+), corrigé (NR-6). Suites stores/db/sync : voir [04-TESTING.md](04-TESTING.md) (post-launch, N3). | L |
 
 **Total estimé : ~3 semaines à temps partiel.** Ordre conseillé : B2→B3→B1 (même fichier), puis B4, B13, puis sécurité (B5-B8), puis packaging (B9-B12).
 

@@ -35,9 +35,10 @@ npm start            # dev server (Metro, 4 GB heap — required)
 npm run android      # target a platform
 npm run ios
 npm run type-check   # tsc --noEmit — must pass before any commit
+npm test             # Jest (jest-expo) — unit tests in lib/__tests__/
 ```
 
-There is no test suite and no linter configured yet (planned — see docs/04 and docs/09).
+No linter configured yet (planned — see docs/09 I7). Unit tests cover `lib/gamification` and `lib/aiPlanner`; run them before committing changes to those files.
 
 ## Architecture
 

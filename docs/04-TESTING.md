@@ -1,11 +1,12 @@
 # 04 — Stratégie de tests
 
-> État actuel : **zéro test, zéro linter**. Ce document définit la cible et l'ordre d'attaque. L'outillage à installer est une tâche bloquante de la [roadmap](09-ROADMAP-TECHNIQUE.md).
+> État au 2026-07-05 : **Jest + jest-expo installés, 60 tests unitaires sur `lib/gamification` et `lib/aiPlanner`** (`npm test`). Toujours aucun linter, ni tests composants/E2E. Preuve de la valeur du filet : la première exécution a révélé un bug de fuseau horaire dans le calcul de streak (NR-6).
 
-## Outillage recommandé
+## Outillage
+
+Installé : `jest ~29.7`, `jest-expo ~54.0`, `@types/jest` (config `jest` dans `package.json`, préset `jest-expo`, alias `@/` mappé). Reste à installer quand les tests composants arriveront :
 
 ```bash
-npx expo install jest-expo jest @types/jest
 npm i -D @testing-library/react-native
 ```
 
@@ -197,6 +198,7 @@ Tenir ce registre à jour à chaque bug corrigé (aujourd'hui : bugs connus non 
 | NR-3 | Workout sauvé avec `name='Séance'`/`type='strength'` quel que soit le mode choisi | `finishSession` hardcodé (audit 2026-07) | Corrigé 2026-07-04 — vérifier le nom/type depuis chaque point d'entrée (session, planner, home, DailySessionCard) |
 | NR-4 | Badge re-célébré au redémarrage | vérifier `badgeQueueStore.seenIds` à chaque évolution badges | Ouvert (préventif) |
 | NR-5 | Séance « fantôme » vieille de plusieurs jours proposée à la reprise | seuil 12 h dans `resumeSession` | À tester : séance > 12 h → jetée silencieusement au restart |
+| NR-6 | Streak décalé d'un jour pour tout fuseau ≠ UTC (séance du jour non comptée, trou de 2 jours non détecté) | `calculateStreakFromWorkouts` comparait minuit local à des dates `toISOString()` (UTC) | Corrigé 2026-07-05 — couvert par les tests unitaires (`gamification.test.ts`, describe `calculateStreakFromWorkouts`) |
 
 ## Objectif de couverture
 
