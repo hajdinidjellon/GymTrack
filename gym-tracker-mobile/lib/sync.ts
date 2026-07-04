@@ -5,9 +5,11 @@
  * 1. Toute écriture va en local immédiatement → UX sans latence
  * 2. Un worker en arrière-plan vide la sync_queue vers Supabase
  * 3. Au login/retour en ligne : pull complet + merge (cloud gagne sur les conflits)
- * 4. navigator.onLine absent en React Native → on catch les erreurs réseau
+ * 4. Connectivité via NetInfo (pas de requête sonde) ; le listener
+ *    startSyncConnectivityListener() draine la queue au retour en ligne
  */
 
+import NetInfo from '@react-native-community/netinfo';
 import { supabase, getCurrentUserId, isSupabaseConfigured } from '@/lib/supabase';
 import {
   loadWorkoutsLocal,
@@ -35,11 +37,31 @@ import type {
 async function isOnline(): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
   try {
-    const { error } = await supabase.from('workouts').select('id').limit(1);
-    return !error;
+    const state = await NetInfo.fetch();
+    return state.isConnected === true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Draine la sync_queue dès que la connexion revient.
+ * À démarrer une seule fois au boot (app/_layout.tsx) ; retourne l'unsubscribe.
+ */
+export function startSyncConnectivityListener(): () => void {
+  if (!isSupabaseConfigured()) return () => undefined;
+
+  let wasConnected: boolean | null = null;
+  return NetInfo.addEventListener((state) => {
+    const connected = state.isConnected === true;
+    // Ne flush qu'à la TRANSITION offline → online (pas à chaque event)
+    if (connected && wasConnected === false) {
+      flushSyncQueue().catch((err) =>
+        console.warn('[sync] flush on reconnect failed:', err),
+      );
+    }
+    wasConnected = connected;
+  });
 }
 
 // ============================================================
@@ -63,8 +85,12 @@ export async function flushSyncQueue(): Promise<void> {
         await deleteEntryFromCloud(userId, entry.table_name, entry.record_id);
       }
       await clearSyncQueueEntry(entry.id);
-    } catch {
-      // Silencieux : on réessaiera au prochain flush
+    } catch (err) {
+      // L'entrée reste en queue : on réessaiera au prochain flush
+      console.warn(
+        `[sync] ${entry.operation} ${entry.table_name}/${entry.record_id} failed:`,
+        err,
+      );
     }
   }
 }

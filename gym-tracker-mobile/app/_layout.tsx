@@ -14,6 +14,7 @@ import {
 import '@/global.css';
 
 import { supabase } from '@/lib/supabase';
+import { startSyncConnectivityListener } from '@/lib/sync';
 import { getDb } from '@/lib/db';
 import { colors } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -154,9 +155,13 @@ function AppNavigator() {
       setIsAuthenticated(!!session);
     });
 
+    // Draine la sync_queue au retour de connexion
+    const unsubscribeNetInfo = startSyncConnectivityListener();
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      unsubscribeNetInfo();
     };
   }, [initAttempt]);
 

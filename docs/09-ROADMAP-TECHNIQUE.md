@@ -30,13 +30,13 @@
 | I2 | **Fusionner les systèmes HUD** | `components/hud/` (3 fichiers) vs `components/ui/hud/` (14 fichiers) : garder `ui/hud/`, migrer/supprimer le reste. Trancher le doublon `XpRing` (2 implémentations différentes). | M |
 | I3 | **Tokens couleur** | Résorber les 426 hex hardcodés — au minimum les 3 cyans concurrents (`#1DC4FF`, `#17B8FF`, `#5DD8FF`) vers `hud.cyan.*`. Faire au fil de I1. | M (diffus) |
 | I4 | **Sentry** | Crash reporting — voir [08-ERROR-HANDLING.md](08-ERROR-HANDLING.md) §3. Idéalement AVANT release si le temps le permet. | S |
-| I5 | **NetInfo pour la sync** | Remplacer la sonde `isOnline()` (requête Supabase par flush) par un listener `@react-native-community/netinfo`. | S |
+| I5 | ✅ **FAIT 2026-07-05** — NetInfo pour la sync | `isOnline()` lit NetInfo (plus de requête sonde par flush) + `startSyncConnectivityListener()` draine la queue à la transition offline→online (branché au boot dans `_layout`). | S |
 | I6 | ✅ **FAIT 2026-07-04** — Supprimer les deps mortes | Désinstallés : `@tanstack/react-query` (provider retiré de `_layout`), `expo-camera`, `lottie-react-native`, `ansi-escapes`. `expo-blur` conservé (utilisé par BottomNav et home). | S |
 | I7 | **ESLint + Prettier** | `eslint-config-expo` + règle `no-restricted-syntax` sur les hex hardcodés et `no-explicit-any`. | S |
 | I8 | **Éliminer les `as any`** | 12 occurrences : helper `tDyn()` i18n, `BottomTabBarProps` pour BottomNav, `ImageSourcePropType` pour RankCore. | S |
 | I9 | **Mémoïser XP/streak/rank** | `getTotalXP()` reparcourt tout l'historique à chaque appel. | S |
 | I10 | **Messages d'erreur auth i18n** | `login.tsx` affiche l'erreur Supabase brute. | S |
-| I11 | **Catch muets → logs** | `flushSyncQueue`, `addWorkout`, etc. | S |
+| I11 | ✅ **FAIT 2026-07-05** — Catch muets → logs | `flushSyncQueue` (log par entrée échouée avec table/id), `addWorkout` (reschedule notifs), `secureStorage` (decrypt). Les `.catch(() => null)` restants sont du fire-and-forget assumé (haptics, notifs). | S |
 
 ## 🟢 Nice-to-have / plus tard
 
