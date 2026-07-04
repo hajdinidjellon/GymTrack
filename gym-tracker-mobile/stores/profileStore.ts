@@ -2,8 +2,26 @@ import { create } from 'zustand';
 import { saveProfileLocal, loadProfileLocal, loadGoalsLocal, saveGoalLocal } from '@/lib/db';
 import { flushSyncQueue } from '@/lib/sync';
 import { calculateXPFromWorkouts, calculateStreakFromWorkouts, getRankByXP } from '@/lib/gamification';
-import type { UserProfile, PersonalRecord, BodyStats, TrainingGoal, Rank } from '@/types';
+import type { UserProfile, PersonalRecord, BodyStats, TrainingGoal, Rank, Workout } from '@/types';
 import { useWorkoutStore } from './workoutStore';
+
+// Mémoïsation des dérivés coûteux (XP/streak reparcourent tout l'historique).
+// Invalide si le tableau workouts change (remplacé immutablement à chaque
+// écriture) OU si le jour change (bonus récence et streak dépendent de la date).
+const derivedCache = new Map<string, { workouts: Workout[]; day: string; value: number }>();
+
+function memoized(
+  key: string,
+  workouts: Workout[],
+  compute: (w: Workout[]) => number,
+): number {
+  const day = new Date().toDateString();
+  const hit = derivedCache.get(key);
+  if (hit && hit.workouts === workouts && hit.day === day) return hit.value;
+  const value = compute(workouts);
+  derivedCache.set(key, { workouts, day, value });
+  return value;
+}
 
 interface ProfileStore {
   profile: UserProfile | null;
@@ -104,12 +122,12 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
 
   getTotalXP: () => {
     const workouts = useWorkoutStore.getState().workouts;
-    return calculateXPFromWorkouts(workouts);
+    return memoized('xp', workouts, calculateXPFromWorkouts);
   },
 
   getStreak: () => {
     const workouts = useWorkoutStore.getState().workouts;
-    return calculateStreakFromWorkouts(workouts);
+    return memoized('streak', workouts, calculateStreakFromWorkouts);
   },
 
   getCurrentRank: () => {

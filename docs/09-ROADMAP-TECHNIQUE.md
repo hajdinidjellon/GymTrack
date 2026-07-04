@@ -17,7 +17,7 @@
 | B9 | **Optimiser les assets** | 56 MB → < 15 MB : WebP, resize, purge des non-référencés. Voir [07-PERFORMANCE.md](07-PERFORMANCE.md). | M |
 | B10 | ✅ **FAIT 2026-07-04** — Nettoyage repo & app | `app/hud-test.tsx` supprimé ; ~30 maquettes de la racine déplacées dans `design/` (gitignoré, rien de perdu). | S |
 | B11 | ✅ **FAIT 2026-07-04** — Permissions app.json | HealthKit (aucune intégration) et caméra (aucun usage) retirés d'`app.json` ; `expo-camera` désinstallé (son config plugin ré-injectait la permission au build). | S |
-| B12 | **`eas.json` + secrets + premier build preview** | Voir [06-DEPLOYMENT.md](06-DEPLOYMENT.md). | M |
+| B12 | 🔶 **PARTIEL 2026-07-05** — `eas.json` + secrets + premier build preview | `eas.json` créé (profils dev/preview/production). **Reste (nécessite ton compte Expo)** : `eas login && eas init` (projectId), `eas secret:create` pour les 2 vars Supabase, puis premier build preview Android. Voir [06-DEPLOYMENT.md](06-DEPLOYMENT.md). | M |
 | B13 | ✅ **FAIT 2026-07-05** — Tests unitaires `lib/gamification` + `lib/aiPlanner` | Jest + jest-expo configurés (`npm test`), 60 tests dans `lib/__tests__/`. **Bonus : les tests ont révélé un vrai bug de fuseau horaire dans `calculateStreakFromWorkouts`** (mélange minuit local / date UTC → séance du jour jamais comptée pour UTC+), corrigé (NR-6). Suites stores/db/sync : voir [04-TESTING.md](04-TESTING.md) (post-launch, N3). | L |
 
 **Total estimé : ~3 semaines à temps partiel.** Ordre conseillé : B2→B3→B1 (même fichier), puis B4, B13, puis sécurité (B5-B8), puis packaging (B9-B12).
@@ -34,8 +34,8 @@
 | I6 | ✅ **FAIT 2026-07-04** — Supprimer les deps mortes | Désinstallés : `@tanstack/react-query` (provider retiré de `_layout`), `expo-camera`, `lottie-react-native`, `ansi-escapes`. `expo-blur` conservé (utilisé par BottomNav et home). | S |
 | I7 | **ESLint + Prettier** | `eslint-config-expo` + règle `no-restricted-syntax` sur les hex hardcodés et `no-explicit-any`. | S |
 | I8 | **Éliminer les `as any`** | 12 occurrences : helper `tDyn()` i18n, `BottomTabBarProps` pour BottomNav, `ImageSourcePropType` pour RankCore. | S |
-| I9 | **Mémoïser XP/streak/rank** | `getTotalXP()` reparcourt tout l'historique à chaque appel. | S |
-| I10 | **Messages d'erreur auth i18n** | `login.tsx` affiche l'erreur Supabase brute. | S |
+| I9 | ✅ **FAIT 2026-07-05** — Mémoïser XP/streak/rank | Cache par référence du tableau `workouts` + clé de jour (les dérivés dépendent de la date) dans `profileStore`. | S |
+| I10 | ✅ **FAIT 2026-07-05** — Messages d'erreur auth i18n | `translateAuthError()` dans `lib/supabase.ts` mappe les messages Supabase vers `error.auth.*` (fr/en) — login ET register en bénéficient. | S |
 | I11 | ✅ **FAIT 2026-07-05** — Catch muets → logs | `flushSyncQueue` (log par entrée échouée avec table/id), `addWorkout` (reschedule notifs), `secureStorage` (decrypt). Les `.catch(() => null)` restants sont du fire-and-forget assumé (haptics, notifs). | S |
 
 ## 🟢 Nice-to-have / plus tard

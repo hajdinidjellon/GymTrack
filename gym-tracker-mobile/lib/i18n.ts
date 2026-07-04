@@ -290,6 +290,12 @@ const T = {
     'error.generic.retry': 'Réessayer',
     'error.boot.title': 'Impossible de démarrer',
     'error.boot.message': "La base de données locale n'a pas pu s'initialiser. Réessaie ; si le problème persiste, réinstalle l'application.",
+    'error.auth.invalidCredentials': 'Email ou mot de passe incorrect',
+    'error.auth.emailNotConfirmed': 'Confirme ton email avant de te connecter (vérifie ta boîte mail)',
+    'error.auth.userExists': 'Un compte existe déjà avec cet email',
+    'error.auth.weakPassword': 'Mot de passe trop court (6 caractères minimum)',
+    'error.auth.network': 'Connexion impossible — vérifie ton réseau',
+    'error.auth.generic': 'Une erreur est survenue, réessaie',
   },
 
   en: {
@@ -577,6 +583,12 @@ const T = {
     'error.generic.retry': 'Retry',
     'error.boot.title': 'Unable to start',
     'error.boot.message': 'The local database could not be initialised. Try again; if the problem persists, reinstall the app.',
+    'error.auth.invalidCredentials': 'Incorrect email or password',
+    'error.auth.emailNotConfirmed': 'Confirm your email before signing in (check your inbox)',
+    'error.auth.userExists': 'An account already exists with this email',
+    'error.auth.weakPassword': 'Password too short (6 characters minimum)',
+    'error.auth.network': 'Connection failed — check your network',
+    'error.auth.generic': 'Something went wrong, please try again',
   },
 } as const;
 
