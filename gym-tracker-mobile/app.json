@@ -40,6 +40,13 @@
     "experiments": {
       "typedRoutes": true
     },
-    "scheme": "gymtrack"
+    "scheme": "gymtrack",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e3bf537c-bfba-4a3d-91c1-4868d5f89032"
+      }
+    },
+    "owner": "2late"
   }
 }
