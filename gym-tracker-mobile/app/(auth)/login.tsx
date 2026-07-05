@@ -1,46 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
+/**
+ * LOGIN — reconnexion au compte (DA HUD ATLAS).
+ * NEXUS en listening pendant la saisie, champs HudInput, CTA BevelButton.
+ * Logique auth/sync inchangée.
+ */
+import React, { useState } from 'react';
 import {
   View, Text, KeyboardAvoidingView, Platform,
-  ScrollView, Pressable, Image, Animated, Easing, Dimensions,
+  ScrollView, Pressable, ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Input } from '@/components/ui/Input';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { NexusOrb } from '@/components/mascot/NexusOrb';
+import { HudInput } from '@/components/ui/hud/HudInput';
+import { BevelButton } from '@/components/ui/hud/BevelButton';
 import { signInWithEmail } from '@/lib/supabase';
 import { initialSync } from '@/lib/sync';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
-import { colors } from '@/constants/theme';
+import { hud, hudType } from '@/constants/theme';
 
-const LOGO = require('@/assets/logo.png') as number;
-const { width: W, height: H } = Dimensions.get('window');
-
-function Blob({ top, left, right, bottom, rotate }: {
-  top?: number; left?: number; right?: number; bottom?: number; rotate: string;
-}) {
-  return (
-    <View style={{ position: 'absolute', top, left, right, bottom }}>
-      <View style={{
-        width: W * 0.72, height: W * 0.62,
-        backgroundColor: '#0d2435',
-        borderTopLeftRadius: 40, borderTopRightRadius: 180,
-        borderBottomLeftRadius: 220, borderBottomRightRadius: 60,
-        transform: [{ rotate }],
-      }} />
-      <View style={{
-        position: 'absolute',
-        width: W * 0.52, height: W * 0.44,
-        backgroundColor: '#0e2a3f',
-        borderTopLeftRadius: 150, borderTopRightRadius: 40,
-        borderBottomLeftRadius: 60, borderBottomRightRadius: 160,
-        top: W * 0.12, left: W * 0.08,
-        transform: [{ rotate: '-20deg' }],
-      }} />
-    </View>
-  );
-}
+const SESSION_BG = require('@/assets/images/background-session.png') as number;
 
 export default function LoginScreen() {
   const [email, setEmail]               = useState('');
@@ -51,16 +34,6 @@ export default function LoginScreen() {
 
   const { setWorkouts, loadWorkouts }           = useWorkoutStore();
   const { saveProfile, loadGoals, loadProfile } = useProfileStore();
-
-  const fadeIn  = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(28)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeIn,  { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(slideUp, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, []);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) { setError('Veuillez remplir tous les champs'); return; }
@@ -89,156 +62,120 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07090f' }}>
-      <StatusBar style="light" backgroundColor="#07090f" />
+    <View style={{ flex: 1, backgroundColor: hud.bg.app }}>
+      <StatusBar style="light" />
 
-      {/* Blobs */}
-      <Blob top={-H * 0.10} left={-W * 0.24} rotate="-15deg" />
-      <Blob bottom={H * 0.08} right={-W * 0.20} rotate="160deg" />
-
-      {/* Dots décoratifs */}
-      <View style={{ position: 'absolute', top: H * 0.12, right: W * 0.08, width: 20, height: 20, borderRadius: 10, backgroundColor: '#1a4a63', opacity: 0.75 }} />
-      <View style={{ position: 'absolute', top: H * 0.38, left: W * 0.05, width: 14, height: 14, borderRadius: 7, backgroundColor: '#0e3050', opacity: 0.90 }} />
-      <View style={{ position: 'absolute', bottom: H * 0.22, right: W * 0.10, width: 10, height: 10, borderRadius: 5, backgroundColor: '#1a4a63', opacity: 0.65 }} />
+      <ImageBackground
+        source={SESSION_BG}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        resizeMode="cover"
+        imageStyle={{ opacity: 0.55 }}
+      />
+      <LinearGradient
+        colors={['rgba(5,11,22,0.30)', 'rgba(5,11,22,0.60)', 'rgba(5,11,22,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <SafeAreaView style={{ flex: 1 }}>
-          <Animated.View style={{ flex: 1, opacity: fadeIn, transform: [{ translateY: slideUp }] }}>
-            <ScrollView
-              contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Retour vers welcome */}
+            <Pressable
+              onPress={() => router.replace('/(auth)/welcome')}
+              hitSlop={8}
+              style={({ pressed }) => ({
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                marginTop: 16, marginBottom: 8, alignSelf: 'flex-start',
+                opacity: pressed ? 0.5 : 1,
+              })}
             >
-              {/* Retour vers welcome */}
-              <Pressable
-                onPress={() => router.replace('/(auth)/welcome')}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, marginBottom: 8, alignSelf: 'flex-start' }}
-              >
-                <Ionicons name="arrow-back" size={18} color="rgba(255,255,255,0.55)" />
-                <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontWeight: '700' }}>Retour</Text>
-              </Pressable>
+              <Ionicons name="chevron-back" size={16} color={hud.cyan.bright} />
+              <Text style={[hudType.labelHud, { color: hud.text.secondary }]}>Retour</Text>
+            </Pressable>
 
-              {/* Logo */}
-              <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 40 }}>
-                <Image source={LOGO} style={{ width: 44, height: 44 }} resizeMode="contain" />
-                <Text style={{
-                  fontSize: 46, fontWeight: '900', color: '#fff',
-                  letterSpacing: -1.5, marginTop: 14, lineHeight: 50,
-                }}>
-                  Bon retour !
-                </Text>
-                <Text style={{
-                  fontSize: 16, fontWeight: '600',
-                  color: 'rgba(255,255,255,0.45)',
-                  marginTop: 6, textAlign: 'center',
-                }}>
-                  Connecte-toi à ton compte
-                </Text>
-              </View>
+            {/* NEXUS + titre */}
+            <Animated.View
+              entering={FadeInDown.duration(400)}
+              style={{ alignItems: 'center', marginTop: 12, marginBottom: 32 }}
+            >
+              <NexusOrb size={88} mood={loading ? 'processing' : 'listening'} />
+              <Text style={[hudType.displayTitle, { fontSize: 30, marginTop: 18 }]}>
+                Bon retour
+              </Text>
+              <Text style={[hudType.body, { marginTop: 6, textAlign: 'center' }]}>
+                Reconnexion au système
+              </Text>
+            </Animated.View>
 
-              {/* Formulaire */}
-              <View style={{ gap: 14, marginBottom: 22 }}>
-                <Input
-                  label="Email"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  placeholder="ton@email.com"
-                />
-                <Input
-                  label="Mot de passe"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  placeholder="••••••••"
-                  rightIcon={
+            {/* Formulaire */}
+            <View style={{ gap: 16, marginBottom: 24 }}>
+              <HudInput
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                placeholder="ton@email.com"
+              />
+              <HudInput
+                label="Mot de passe"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholder="••••••••"
+                right={
+                  <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
                     <Ionicons
                       name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                       size={18}
-                      color="rgba(255,255,255,0.40)"
+                      color={hud.text.muted}
                     />
-                  }
-                  onRightIconPress={() => setShowPassword((v) => !v)}
-                />
+                  </Pressable>
+                }
+              />
 
-                {error && (
-                  <Text style={{ fontSize: 13, color: colors.status.danger, textAlign: 'center', fontWeight: '600' }}>
-                    {error}
-                  </Text>
-                )}
-              </View>
-
-              {/* Bouton principal — cyan comme welcome */}
-              <Pressable
-                onPress={handleLogin}
-                disabled={loading}
-                style={({ pressed }) => ({
-                  borderRadius: 20, overflow: 'hidden', marginBottom: 14,
-                  opacity: loading ? 0.75 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                  shadowColor: '#38bdf8', shadowOpacity: 0.45,
-                  shadowRadius: 20, shadowOffset: { width: 0, height: 8 },
-                  elevation: 10,
-                })}
-              >
-                <View style={{
-                  backgroundColor: '#38bdf8', borderRadius: 20,
-                  paddingVertical: 20, alignItems: 'center',
-                  flexDirection: 'row', justifyContent: 'center', gap: 10,
+              {error && (
+                <Text style={{
+                  fontFamily: 'Rajdhani-SemiBold', fontSize: 14,
+                  color: hud.accent.pulse, textAlign: 'center',
                 }}>
-                  {loading
-                    ? <Text style={{ fontSize: 16, fontWeight: '900', color: '#07090f', letterSpacing: 1 }}>
-                        Connexion…
-                      </Text>
-                    : <>
-                        <Ionicons name="log-in-outline" size={20} color="#07090f" />
-                        <Text style={{ fontSize: 16, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                          Se connecter
-                        </Text>
-                      </>
-                  }
-                </View>
-              </Pressable>
+                  {error}
+                </Text>
+              )}
+            </View>
 
-              {/* Séparateur */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 8 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.09)' }} />
-                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', fontWeight: '700', letterSpacing: 1 }}>OU</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.09)' }} />
-              </View>
+            <BevelButton
+              label="Se connecter"
+              onPress={handleLogin}
+              loading={loading}
+              heroChevrons
+            />
 
-              {/* Bouton sans compte — glassmorphism comme welcome */}
-              <Pressable
-                onPress={handleGuest}
-                style={({ pressed }) => ({
-                  borderRadius: 20, overflow: 'hidden', marginTop: 8,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                })}
-              >
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.10)',
-                  borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.22)',
-                  paddingVertical: 20, alignItems: 'center',
-                  flexDirection: 'row', justifyContent: 'center', gap: 10,
-                  borderRadius: 20,
-                }}>
-                  <Ionicons name="person-outline" size={18} color="rgba(255,255,255,0.80)" />
-                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                    Continuer sans compte
-                  </Text>
-                </View>
-              </Pressable>
+            {/* Séparateur */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 20 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: hud.border.hairline }} />
+              <Text style={[hudType.labelHud, { color: hud.text.faint }]}>OU</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: hud.border.hairline }} />
+            </View>
 
-            </ScrollView>
-          </Animated.View>
+            <BevelButton
+              label="Continuer sans compte"
+              variant="ghost"
+              height={48}
+              onPress={handleGuest}
+            />
+          </ScrollView>
         </SafeAreaView>
       </KeyboardAvoidingView>
-
     </View>
   );
 }

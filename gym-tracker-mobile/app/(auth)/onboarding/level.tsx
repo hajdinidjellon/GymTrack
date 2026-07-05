@@ -35,10 +35,9 @@ export default function OnboardingLevelScreen() {
 
   return (
     <OnboardingFrame
-      pose="mimi_level"
-      mascotHeight={110}
-      question="Quel est ton niveau ?"
+      question="Ton historique d'entraînement ?"
       subtext="Adapte ta progression dès le départ."
+      mood="listening"
       step={3}
       total={total}
       canContinue={false}

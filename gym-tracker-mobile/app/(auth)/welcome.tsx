@@ -1,101 +1,127 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  View, Text, Pressable, Animated, Easing,
-  Dimensions, ImageBackground,
-} from 'react-native';
+/**
+ * ÉCRAN 0 — RÉVEIL (MOBILE_PREMIUM.md storyboard).
+ * Fond spatial HUD, NEXUS se matérialise (spring bouncy + glow + haptique
+ * light), typewriter « Systèmes en ligne… », CTA octogonal « Initialiser ».
+ */
+import React, { useEffect, useState } from 'react';
+import { View, Text, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { NexusOrb, type NexusMood } from '@/components/mascot/NexusOrb';
+import { TypewriterText } from '@/components/mascot/TypewriterText';
+import { BevelButton } from '@/components/ui/hud/BevelButton';
+import { hud, hudType, motion } from '@/constants/theme';
 
-const BG = require('@/assets/images/welcome-background.png') as number;
-const { height: H } = Dimensions.get('window');
+const SESSION_BG = require('@/assets/images/background-session.png') as number;
+
+const WAKE_TEXT = 'Systèmes en ligne. Je suis NEXUS, ton copilote d’entraînement.';
 
 export default function WelcomeScreen() {
-  const fadeIn  = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(30)).current;
+  const [mood, setMood] = useState<NexusMood>('idle');
+
+  // Matérialisation : scale 0 → 1 (spring bouncy) + fade du glow
+  const orbScale = useSharedValue(0);
+  const orbOpacity = useSharedValue(0);
+  const uiOpacity = useSharedValue(0);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeIn,  { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(slideUp, { toValue: 0, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
+    orbOpacity.value = withDelay(250, withTiming(1, { duration: 200 }));
+    orbScale.value = withDelay(250, withSpring(1, motion.springCelebration));
+    uiOpacity.value = withDelay(500, withTiming(1, { duration: 500 }));
+    const haptic = setTimeout(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
+    }, 300);
+    return () => clearTimeout(haptic);
   }, []);
 
+  const orbStyle = useAnimatedStyle(() => ({
+    opacity: orbOpacity.value,
+    transform: [{ scale: orbScale.value }],
+  }));
+  const uiStyle = useAnimatedStyle(() => ({ opacity: uiOpacity.value }));
+
+  const handleStart = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
+    router.push('/(auth)/onboarding/name');
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#07090f' }}>
+    <View style={{ flex: 1, backgroundColor: hud.bg.app }}>
       <StatusBar style="light" />
 
-      <ImageBackground source={BG} style={{ flex: 1 }} resizeMode="cover">
-        <LinearGradient
-          colors={['rgba(7,9,15,0.0)', 'rgba(7,9,15,0.10)', 'rgba(7,9,15,0.75)', '#07090f']}
-          locations={[0, 0.42, 0.74, 1]}
-          style={{ flex: 1 }}
-        >
-          <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-            <Animated.View style={{ flex: 1, opacity: fadeIn, transform: [{ translateY: slideUp }] }}>
+      <ImageBackground
+        source={SESSION_BG}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        resizeMode="cover"
+        imageStyle={{ opacity: 0.55 }}
+      />
+      <LinearGradient
+        colors={['rgba(5,11,22,0.25)', 'rgba(5,11,22,0.55)', 'rgba(5,11,22,0.95)']}
+        locations={[0, 0.55, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+      />
 
-              {/* ── Titre en haut ─────────────────────────── */}
-              <View style={{ alignItems: 'center', marginTop: H * 0.07, gap: 10, paddingHorizontal: 24 }}>
-                <Text style={{
-                  fontSize: 52, fontWeight: '900', letterSpacing: -2,
-                  color: '#fff', textAlign: 'center', lineHeight: 56,
-                }}>
-                  GymTrack
-                </Text>
-                <Text style={{
-                  fontSize: 17, fontWeight: '600',
-                  color: 'rgba(255,255,255,0.65)',
-                  textAlign: 'center', lineHeight: 24,
-                }}>
-                  Soulève plus, progresse mieux, recommence.
-                </Text>
-              </View>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        {/* ── Marque ─────────────────────────────────── */}
+        <Animated.View style={[{ alignItems: 'center', marginTop: 32, gap: 6 }, uiStyle]}>
+          <Text style={[hudType.labelHud, { color: hud.cyan.bright }]}>
+            Système d'entraînement
+          </Text>
+          <Text style={[hudType.displayTitle, { fontSize: 40, letterSpacing: 4 }]}>
+            GymTrack
+          </Text>
+        </Animated.View>
 
-              <View style={{ flex: 1 }} />
+        {/* ── NEXUS se matérialise ───────────────────── */}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Animated.View style={orbStyle}>
+            <NexusOrb size={150} mood={mood} />
+          </Animated.View>
+        </View>
 
-              {/* ── Boutons en bas ────────────────────────── */}
-              <View style={{ paddingHorizontal: 24, paddingBottom: 32, gap: 14 }}>
-                <Pressable
-                  onPress={() => router.push('/(auth)/onboarding/name')}
-                  style={({ pressed }) => ({
-                    borderRadius: 20,
-                    transform: [{ scale: pressed ? 0.97 : 1 }],
-                    shadowColor: '#38bdf8', shadowOpacity: 0.50,
-                    shadowRadius: 22, shadowOffset: { width: 0, height: 8 },
-                    elevation: 12,
-                  })}
-                >
-                  <View style={{ backgroundColor: '#38bdf8', borderRadius: 20, paddingVertical: 20, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: '#07090f', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                      Commencer maintenant
-                    </Text>
-                  </View>
-                </Pressable>
+        {/* ── Dialogue + CTA ─────────────────────────── */}
+        <Animated.View style={[{ paddingHorizontal: 24, paddingBottom: 24, gap: 14 }, uiStyle]}>
+          <View style={{ minHeight: 64, marginBottom: 6 }}>
+            <TypewriterText
+              text={WAKE_TEXT}
+              delay={900}
+              onStart={() => setMood('talking')}
+              onDone={() => setMood('idle')}
+              style={{
+                fontFamily: 'Rajdhani-SemiBold',
+                fontSize: 20,
+                lineHeight: 27,
+                letterSpacing: 0.3,
+                color: hud.text.primary,
+                textAlign: 'center',
+              }}
+            />
+          </View>
 
-                <Pressable
-                  onPress={() => router.push('/(auth)/login')}
-                  style={({ pressed }) => ({
-                    borderRadius: 20,
-                    transform: [{ scale: pressed ? 0.97 : 1 }],
-                  })}
-                >
-                  <View style={{
-                    backgroundColor: 'rgba(255,255,255,0.10)',
-                    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.22)',
-                    paddingVertical: 20, alignItems: 'center', borderRadius: 20,
-                  }}>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: '#fff', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                      J'ai un compte
-                    </Text>
-                  </View>
-                </Pressable>
-              </View>
-
-            </Animated.View>
-          </SafeAreaView>
-        </LinearGradient>
-      </ImageBackground>
+          <BevelButton
+            label="Initialiser"
+            onPress={handleStart}
+            heroChevrons
+            haptic={false}
+          />
+          <BevelButton
+            label="J'ai un compte"
+            variant="ghost"
+            height={48}
+            onPress={() => router.push('/(auth)/login')}
+          />
+        </Animated.View>
+      </SafeAreaView>
     </View>
   );
 }

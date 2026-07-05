@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
-import { ToggleMascot } from '@/components/mascot/Mascot';
 import { OptionCard } from '@/components/onboarding/OptionCard';
 
 type Goal = 'pr' | 'hypertrophy' | 'weight_loss' | 'consistency' | 'health';
@@ -38,19 +37,14 @@ export default function OnboardingGoalScreen() {
 
   return (
     <OnboardingFrame
-      // Ancienne mascotte statique : pose="mimi_goal" mascotHeight={150}
-      customMascot={
-        <View style={{ marginLeft: -105 }}>
-          <ToggleMascot poseA="cache4_pos1" poseB="cache4_pos2" height={230} slideOffset={100} />
-        </View>
-      }
-      question={`Qu'est-ce qui t'amène ici${name ? `, ${name}` : ''} ?`}
+      question={`Quelle est ta mission principale${name ? `, ${name}` : ''} ?`}
+      mood="listening"
       step={2}
       total={TOTAL}
       canContinue={false}
       hideCta
     >
-        <View style={{ gap: 10, marginTop: -18 }}>
+        <View style={{ gap: 10 }}>
           {GOALS.map((g) => (
             <OptionCard
               key={g.id}
