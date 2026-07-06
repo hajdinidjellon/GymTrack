@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { NexusOrb } from '@/components/mascot/NexusOrb';
+import { JarvisMascot } from '@/components/mascot/JarvisMascot';
 import { HudInput } from '@/components/ui/hud/HudInput';
 import { BevelButton } from '@/components/ui/hud/BevelButton';
 import { signUpWithEmail } from '@/lib/supabase';
@@ -188,7 +188,7 @@ export default function ConnectScreen() {
         </Pressable>
 
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <NexusOrb size={120} mood="idle" />
+          <JarvisMascot size={120} mood="idle" />
         </View>
 
         <Animated.View

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { hud, hudType } from '@/constants/theme';
+import { playSfx } from '@/lib/sfx';
 
 interface StepperProps {
   value: number;
@@ -19,9 +20,15 @@ export function Stepper({
 }: StepperProps) {
   const clamp = (v: number) => Math.min(Math.max(v, min), max);
   const nudge = (delta: number) => {
-    Haptics.selectionAsync().catch(() => null);
-    onChange(clamp(value + delta));
+    const next = clamp(value + delta);
+    if (next !== value) {
+      Haptics.selectionAsync().catch(() => null);
+      playSfx('type', 0.5);
+    }
+    onChange(next);
   };
+  const dec = () => nudge(-step);
+  const inc = () => nudge(step);
 
   const [editing, setEditing] = useState(false);
   const [raw, setRaw]         = useState('');
@@ -62,23 +69,23 @@ export function Stepper({
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: compact ? 6 : 10,
         backgroundColor: hud.bg.surfaceDeep,
-        borderRadius: 4, borderWidth: 1,
-        borderColor: editing ? hud.cyan.primary : hud.border.hairline,
+        borderRadius: 12, borderWidth: 1,
+        borderColor: editing ? hud.cyan.primary : hud.border.subtle,
         padding: compact ? 8 : 12, width: '100%', justifyContent: 'space-between',
       }}>
         {/* Bouton − */}
         <Pressable
-          onPress={() => nudge(-step)}
+          onPress={dec}
           style={({ pressed }) => ({
-            width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: 4,
-            backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)',
-            borderWidth: 1, borderColor: hud.border.hairline,
+            width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: 10,
+            backgroundColor: pressed ? hud.bg.surfaceElev : hud.bg.surface,
+            borderWidth: 1, borderColor: hud.border.neutral,
             alignItems: 'center', justifyContent: 'center',
           })}
         >
           <Text style={{
-            fontFamily: 'Rajdhani-Bold', fontSize: compact ? 18 : 22,
-            color: hud.text.secondary, lineHeight: compact ? 22 : 26,
+            fontSize: compact ? 18 : 22, color: hud.text.secondary,
+            fontFamily: 'Rajdhani-Bold', lineHeight: compact ? 22 : 26,
           }}>−</Text>
         </Pressable>
 
@@ -88,11 +95,9 @@ export function Stepper({
             <TextInput
               ref={inputRef}
               style={{
-                fontFamily: 'Rajdhani-Bold',
-                fontSize: compact ? 22 : 30,
+                fontSize: compact ? 22 : 30, fontFamily: 'Rajdhani-Bold',
+                color: hud.cyan.primary, textAlign: 'center', minWidth: 40,
                 fontVariant: ['tabular-nums'],
-                color: hud.cyan.bright,
-                textAlign: 'center', minWidth: 40,
               }}
               value={raw}
               onChangeText={handleChange}
@@ -105,36 +110,35 @@ export function Stepper({
             />
           ) : (
             <Text style={{
-              fontFamily: 'Rajdhani-Bold',
-              fontSize: compact ? 22 : 30,
-              fontVariant: ['tabular-nums'],
-              color: hud.text.primary,
+              fontSize: compact ? 22 : 30, fontFamily: 'Rajdhani-Bold',
+              color: hud.text.primary, fontVariant: ['tabular-nums'],
             }}>
               {display}
             </Text>
           )}
-          <Text style={[hudType.labelHud, {
-            fontSize: 10,
+          <Text style={{
+            fontSize: 11, fontFamily: 'Rajdhani-SemiBold', letterSpacing: 1.2,
+            textTransform: 'uppercase',
             color: unit ? (editing ? hud.cyan.bright : hud.text.muted) : 'transparent',
             marginTop: -2,
-          }]}>
+          }}>
             {unit ?? ' '}
           </Text>
         </Pressable>
 
         {/* Bouton + */}
         <Pressable
-          onPress={() => nudge(step)}
+          onPress={inc}
           style={({ pressed }) => ({
-            width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: 4,
-            backgroundColor: pressed ? 'rgba(29,196,255,0.25)' : 'rgba(29,196,255,0.10)',
+            width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: 10,
+            backgroundColor: pressed ? hud.glow.cyan : hud.glow.cyanSoft,
             borderWidth: 1, borderColor: hud.border.subtle,
             alignItems: 'center', justifyContent: 'center',
           })}
         >
           <Text style={{
-            fontFamily: 'Rajdhani-Bold', fontSize: compact ? 18 : 22,
-            color: hud.cyan.bright, lineHeight: compact ? 22 : 26,
+            fontSize: compact ? 18 : 22, color: hud.cyan.primary,
+            fontFamily: 'Rajdhani-Bold', lineHeight: compact ? 22 : 26,
           }}>+</Text>
         </Pressable>
       </View>

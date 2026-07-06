@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { NexusOrb } from '@/components/mascot/NexusOrb';
+import { JarvisMascot } from '@/components/mascot/JarvisMascot';
 import { HudInput } from '@/components/ui/hud/HudInput';
 import { BevelButton } from '@/components/ui/hud/BevelButton';
 import { signInWithEmail } from '@/lib/supabase';
@@ -106,7 +106,7 @@ export default function LoginScreen() {
               entering={FadeInDown.duration(400)}
               style={{ alignItems: 'center', marginTop: 12, marginBottom: 32 }}
             >
-              <NexusOrb size={88} mood={loading ? 'processing' : 'listening'} />
+              <JarvisMascot size={88} mood={loading ? 'processing' : 'listening'} />
               <Text style={[hudType.displayTitle, { fontSize: 30, marginTop: 18 }]}>
                 Bon retour
               </Text>

@@ -1,11 +1,14 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
+import {
+  OnboardingFrame, REACTION_NAV_DELAY, type OnboardingReaction,
+} from '@/components/onboarding/OnboardingFrame';
 import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
 import type { TimeOfDay } from '@/types';
 import { OptionCard } from '@/components/onboarding/OptionCard';
+import { hud } from '@/constants/theme';
 
 type Slot = {
   id: TimeOfDay;
@@ -14,12 +17,13 @@ type Slot = {
   hint: string;
   color: string;
   defaultHour: string;
+  reaction: string;
 };
 
 const SLOTS: Slot[] = [
-  { id: 'morning', icon: 'sunny-outline',    title: 'Matin',  hint: 'Avant 12 h',        color: '#fbbf24', defaultHour: '07:00' },
-  { id: 'midday',  icon: 'partly-sunny',     title: 'Midi',   hint: 'Entre 12 h et 17 h', color: '#f59e0b', defaultHour: '12:30' },
-  { id: 'evening', icon: 'moon-outline',     title: 'Soir',   hint: 'Après 17 h',         color: '#818cf8', defaultHour: '19:00' },
+  { id: 'morning', icon: 'sunny-outline', title: 'Matin',  hint: 'Avant 12 h',         color: hud.accent.warn,  defaultHour: '07:00', reaction: 'Les aubes forgent les records.' },
+  { id: 'midday',  icon: 'partly-sunny',  title: 'Midi',   hint: 'Entre 12 h et 17 h', color: hud.accent.ember, defaultHour: '12:30', reaction: 'Créneau solaire verrouillé.' },
+  { id: 'evening', icon: 'moon-outline',  title: 'Soir',   hint: 'Après 17 h',         color: hud.cyan.primary, defaultHour: '19:00', reaction: 'Le soir, pleine puissance.' },
 ];
 
 export default function OnboardingTimeOfDayScreen() {
@@ -28,26 +32,28 @@ export default function OnboardingTimeOfDayScreen() {
   }>();
   const total = getTotalSteps(parseGoal(params.goal));
   const [selected, setSelected] = useState<TimeOfDay | null>(null);
+  const [reaction, setReaction] = useState<OnboardingReaction | null>(null);
 
   const handleSelect = (s: Slot) => {
+    if (selected) return; // une réponse = un engagement, pas de spam
     setSelected(s.id);
+    setReaction({ text: s.reaction });
     setTimeout(() => {
       router.push({
         pathname: '/(auth)/onboarding/reminder',
         params: { ...params, timeOfDay: s.id, defaultReminder: s.defaultHour },
       });
-    }, 250);
+    }, REACTION_NAV_DELAY);
   };
 
   return (
     <OnboardingFrame
-      pose="mimi_clock"
-      mascotHeight={170}
       question="À quel moment de la journée ?"
       subtext="Identifie ton créneau pour caler tes séances."
       step={6}
       total={total}
       canContinue={false}
+      reaction={reaction}
       hideCta
     >
       <View style={{ gap: 12 }}>
@@ -59,6 +65,7 @@ export default function OnboardingTimeOfDayScreen() {
             subtitle={s.hint}
             color={s.color}
             selected={selected === s.id}
+            dimmed={selected !== null && selected !== s.id}
             onPress={() => handleSelect(s)}
           />
         ))}
@@ -66,4 +73,3 @@ export default function OnboardingTimeOfDayScreen() {
     </OnboardingFrame>
   );
 }
-

@@ -1,10 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
 import { Stepper } from '@/components/onboarding/Stepper';
+import { HudCard } from '@/components/ui/hud';
 import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
+import { hud, hudType } from '@/constants/theme';
 
 function parseHHmm(raw: string | undefined, fallback: { h: number; m: number }) {
   if (!raw) return fallback;
@@ -29,8 +31,6 @@ export default function OnboardingReminderScreen() {
 
   return (
     <OnboardingFrame
-      pose="mimi_bell"
-      mascotHeight={170}
       question="Quand veux-tu être rappelé ?"
       subtext="Une petite notification pour ne pas oublier ta séance."
       step={7}
@@ -47,20 +47,20 @@ export default function OnboardingReminderScreen() {
       })}
     >
       {/* Aperçu de l'heure */}
-      <View style={{
-        alignItems: 'center', justifyContent: 'center',
-        paddingVertical: 18,
-        backgroundColor: 'rgba(56,189,248,0.10)',
-        borderRadius: 18,
-        borderWidth: 1.5, borderColor: 'rgba(56,189,248,0.28)',
-      }}>
-        <Text style={{ fontSize: 48, fontWeight: '900', color: '#38bdf8', letterSpacing: -2 }}>
-          {formatted}
-        </Text>
-        <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.40)', letterSpacing: 2, textTransform: 'uppercase', marginTop: -2 }}>
-          Tous les jours d'entraînement
-        </Text>
-      </View>
+      <HudCard level="g1" cut={hud.cut.md} padding={0}>
+        <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 18 }}>
+          <Text style={{
+            fontFamily: 'Rajdhani-Bold', fontSize: 48,
+            color: hud.cyan.bright, fontVariant: ['tabular-nums'],
+            letterSpacing: 1,
+          }}>
+            {formatted}
+          </Text>
+          <Text style={{ ...hudType.labelHud, marginTop: 2 }}>
+            Tous les jours d'entraînement
+          </Text>
+        </View>
+      </HudCard>
 
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <Stepper value={hour}   onChange={setHour}   min={0} max={23} step={1}  label="Heure"   unit="h"   />
@@ -69,16 +69,19 @@ export default function OnboardingReminderScreen() {
 
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        backgroundColor: 'rgba(12,14,26,0.82)',
-        borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16,
+        backgroundColor: hud.bg.surfaceDeep,
+        borderWidth: 1, borderColor: hud.border.hairline,
+        borderRadius: 10, paddingVertical: 12, paddingHorizontal: 16,
         marginTop: 4,
       }}>
-        <Ionicons name="notifications-outline" size={16} color="rgba(255,255,255,0.50)" />
-        <Text style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: '600' }}>
+        <Ionicons name="notifications-outline" size={16} color={hud.text.muted} />
+        <Text style={{
+          flex: 1, fontFamily: 'Rajdhani-Medium', fontSize: 13,
+          color: hud.text.secondary, lineHeight: 18,
+        }}>
           Tu pourras modifier ce rappel à tout moment depuis les paramètres.
         </Text>
       </View>
     </OnboardingFrame>
   );
 }
-

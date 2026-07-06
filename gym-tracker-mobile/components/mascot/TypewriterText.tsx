@@ -1,11 +1,13 @@
 /**
  * TYPEWRITER — le texte de NEXUS s'écrit caractère par caractère
  * (MOBILE_PREMIUM.md règle 4 : 20-30ms/caractère, TOUJOURS skippable au tap).
- * Curseur bloc cyan visible pendant la frappe.
+ * Curseur bloc cyan visible pendant la frappe. Tick sonore un caractère
+ * sur deux — la « voix » machine de NEXUS.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, type StyleProp, type TextStyle } from 'react-native';
 import { hud } from '@/constants/theme';
+import { playSfx } from '@/lib/sfx';
 
 export type TypewriterTextProps = {
   text: string;
@@ -41,7 +43,9 @@ export function TypewriterText({
 
     delayRef.current = setTimeout(() => {
       onStart?.();
+      let tick = 0;
       timerRef.current = setInterval(() => {
+        if (!doneRef.current && tick++ % 2 === 0) playSfx('type', 0.2);
         setCount((prev) => {
           if (prev + 1 >= text.length) {
             if (timerRef.current) clearInterval(timerRef.current);

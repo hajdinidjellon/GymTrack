@@ -1,8 +1,9 @@
 /**
  * ONBOARDING FRAME — cadre commun des écrans de calibration (DA HUD ATLAS).
  * Même langage que le planner/accueil : fond session, octogones, Rajdhani,
- * ProgressRail segmenté, CTA BevelButton. NEXUS pose la question en
- * typewriter (MOBILE_PREMIUM.md §2) et réagit via la prop `mood`.
+ * ProgressRail segmenté, CTA BevelButton. Jarvis (l'ourson holographique)
+ * pose la question en typewriter (MOBILE_PREMIUM.md §2) et réagit via les
+ * props `mood` / `reaction`.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -15,12 +16,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Canvas, Path as SkPath } from '@shopify/react-native-skia';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { NexusOrb, type NexusMood } from '@/components/mascot/NexusOrb';
+import {
+  JarvisMascot, JarvisExercise,
+  type JarvisMood, type JarvisExerciseName,
+} from '@/components/mascot/JarvisMascot';
 import { TypewriterText } from '@/components/mascot/TypewriterText';
 import { BevelButton } from '@/components/ui/hud/BevelButton';
 import { ProgressRail } from '@/components/ui/hud/ProgressRail';
 import { octagonPath } from '@/components/ui/hud/octagon';
 import { hud, hudType } from '@/constants/theme';
+import { playSfx } from '@/lib/sfx';
 
 const SESSION_BG = require('@/assets/images/background-session.png') as number;
 
@@ -47,7 +52,10 @@ function OctoBackButton() {
   );
   return (
     <Pressable
-      onPress={() => router.back()}
+      onPress={() => {
+        playSfx('back', 0.4);
+        router.back();
+      }}
       hitSlop={12}
       style={({ pressed }) => ({
         width: BACK_SIZE, height: BACK_SIZE,
@@ -67,6 +75,20 @@ function OctoBackButton() {
   );
 }
 
+// ── Réactions ─────────────────────────────────────────────────────
+/**
+ * Délai réaction → navigation (MOBILE_PREMIUM.md §2 règle 2) : le temps que
+ * NEXUS commente la réponse, sans jamais faire attendre l'utilisateur.
+ */
+export const REACTION_NAV_DELAY = 850;
+
+/** Réplique de la mascotte après une réponse — remplace la question le temps du délai. */
+export type OnboardingReaction = {
+  text: string;
+  /** Mood pendant la réaction (défaut : processing — elle « calcule » la suite). */
+  mood?: JarvisMood;
+};
+
 // ── Props ─────────────────────────────────────────────────────────
 interface OnboardingFrameProps {
   question: string;
@@ -74,10 +96,14 @@ interface OnboardingFrameProps {
   step: number;
   total: number;
   canContinue: boolean;
-  /** État émotionnel de NEXUS une fois la question posée (défaut : idle). */
-  mood?: NexusMood;
-  /** Taille de l'orbe (défaut 88 ; réduire sur les écrans à clavier). */
+  /** État émotionnel de Jarvis une fois la question posée (défaut : idle). */
+  mood?: JarvisMood;
+  /** Réaction à la réponse choisie : Jarvis la prononce à la place de la question. */
+  reaction?: OnboardingReaction | null;
+  /** Taille de la mascotte (défaut 88 ; réduire sur les écrans à clavier). */
   nexusSize?: number;
+  /** Remplace la mascotte par la démo animée de l'exercice (bench/squat/deadlift). */
+  exercise?: JarvisExerciseName;
   ctaLabel?: string;
   skipLabel?: string;
   onSkip?: () => void;
@@ -94,15 +120,24 @@ interface OnboardingFrameProps {
 export function OnboardingFrame({
   question, subtext,
   step, total, canContinue,
-  mood = 'idle', nexusSize = 88,
+  mood = 'idle', reaction = null, nexusSize = 88, exercise,
   ctaLabel = 'Continuer',
   skipLabel, onSkip, onContinue, aboveCta, hideCta = false, loading = false, hideBack = false,
   children,
 }: OnboardingFrameProps) {
-  // NEXUS parle pendant que la question s'écrit, puis reprend son mood
+  // NEXUS parle pendant que le texte s'écrit, puis reprend son mood.
+  // Une réaction remplace la question et se tape plus vite (l'écran suivant
+  // arrive après REACTION_NAV_DELAY — le texte doit tenir dedans).
+  const displayed = reaction?.text ?? question;
   const [typing, setTyping] = useState(true);
-  useEffect(() => setTyping(true), [question]);
-  const activeMood: NexusMood = typing ? 'talking' : mood;
+  useEffect(() => setTyping(true), [displayed]);
+  // Verrouillage d'une réponse : blip « processing » pendant que NEXUS calcule
+  useEffect(() => {
+    if (reaction) playSfx('processing', 0.5);
+  }, [reaction]);
+  const activeMood: JarvisMood = reaction
+    ? (reaction.mood ?? (typing ? 'talking' : 'processing'))
+    : typing ? 'talking' : mood;
 
   return (
     <KeyboardAvoidingView
@@ -145,23 +180,28 @@ export function OnboardingFrame({
         >
           {/* ── NEXUS ───────────────────────────────────── */}
           <View style={{ alignItems: 'center', marginTop: 4, marginBottom: 18 }}>
-            <NexusOrb size={nexusSize} mood={activeMood} />
+            {exercise ? (
+              <JarvisExercise exercise={exercise} size={nexusSize + 40} />
+            ) : (
+              <JarvisMascot size={nexusSize} mood={activeMood} />
+            )}
           </View>
 
-          {/* ── Question (typewriter, skippable) ────────── */}
+          {/* ── Question / réaction (typewriter, skippable) ── */}
           <View style={{ marginBottom: 24, minHeight: 68 }}>
             <TypewriterText
-              text={question}
+              text={displayed}
+              speed={reaction ? 14 : undefined}
               onDone={() => setTyping(false)}
               style={{
                 fontFamily: 'Rajdhani-Bold',
                 fontSize: 27,
                 lineHeight: 34,
                 letterSpacing: 0.3,
-                color: hud.text.primary,
+                color: reaction ? hud.cyan.bright : hud.text.primary,
               }}
             />
-            {subtext ? (
+            {subtext && !reaction ? (
               <Text style={[hudType.body, { marginTop: 8 }]}>
                 {subtext}
               </Text>
@@ -185,7 +225,10 @@ export function OnboardingFrame({
             {aboveCta}
             {skipLabel && onSkip && (
               <Pressable
-                onPress={onSkip}
+                onPress={() => {
+                  playSfx('back', 0.35);
+                  onSkip();
+                }}
                 style={({ pressed }) => ({
                   alignItems: 'center', paddingVertical: 10,
                   opacity: pressed ? 0.5 : 1,

@@ -14,13 +14,14 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { NexusOrb } from '@/components/mascot/NexusOrb';
+import { JarvisMascot } from '@/components/mascot/JarvisMascot';
 import { BevelButton } from '@/components/ui/hud/BevelButton';
 import { ProgressRail } from '@/components/ui/hud/ProgressRail';
 import { useProfileStore } from '@/stores/profileStore';
 import { calculate1RM } from '@/lib/aiPlanner';
 import { parseGoal } from '@/lib/onboardingFlow';
 import { hud, hudType } from '@/constants/theme';
+import { playSfx } from '@/lib/sfx';
 import type {
   UserProfile, PersonalRecord, MuscleGroup, DayOfWeek, TimeOfDay,
   HealthFocus, SportBackground, BodyStats,
@@ -69,12 +70,14 @@ export default function OnboardingDoneScreen() {
   }, []);
 
   useEffect(() => {
+    const stepTick = () => playSfx('processing', 0.35);
     const timers = [
-      setTimeout(() => setStepIdx(1), STEP_DURATION),
-      setTimeout(() => setStepIdx(2), STEP_DURATION * 2),
+      setTimeout(() => { setStepIdx(1); stepTick(); }, STEP_DURATION),
+      setTimeout(() => { setStepIdx(2); stepTick(); }, STEP_DURATION * 2),
       setTimeout(() => {
         setReady(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+        playSfx('celebrate', 0.7);
       }, STEP_DURATION * 3),
     ];
     return () => timers.forEach(clearTimeout);
@@ -103,7 +106,7 @@ export default function OnboardingDoneScreen() {
 
           {/* ── NEXUS : processing → celebrate ──────────── */}
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <NexusOrb size={150} mood={ready ? 'celebrate' : 'processing'} />
+            <JarvisMascot size={150} mood={ready ? 'celebrate' : 'processing'} />
           </View>
 
           {/* ── Console de construction ─────────────────── */}

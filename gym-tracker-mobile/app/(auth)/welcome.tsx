@@ -17,7 +17,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { NexusOrb, type NexusMood } from '@/components/mascot/NexusOrb';
+import { JarvisMascot } from '@/components/mascot/JarvisMascot';
+import type { NexusMood } from '@/components/mascot/NexusOrb';
 import { TypewriterText } from '@/components/mascot/TypewriterText';
 import { BevelButton } from '@/components/ui/hud/BevelButton';
 import { hud, hudType, motion } from '@/constants/theme';
@@ -85,7 +86,7 @@ export default function WelcomeScreen() {
         {/* ── NEXUS se matérialise ───────────────────── */}
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Animated.View style={orbStyle}>
-            <NexusOrb size={150} mood={mood} />
+            <JarvisMascot size={150} mood={mood} />
           </Animated.View>
         </View>
 

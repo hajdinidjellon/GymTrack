@@ -12,6 +12,7 @@ import Animated, {
 import { Canvas, Path as SkPath, BlurMask } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 import { hud, motion } from '@/constants/theme';
+import { playSfx } from '@/lib/sfx';
 import { octagonPath } from './octagon';
 
 export type SegmentedHudProps = {
@@ -85,6 +86,7 @@ export function SegmentedHud({ options, selectedIndex, onChange, height = 38 }: 
             onPress={() => {
               if (i === selectedIndex) return;
               Haptics.selectionAsync();
+              playSfx('select', 0.4);
               onChange(i);
             }}
           >

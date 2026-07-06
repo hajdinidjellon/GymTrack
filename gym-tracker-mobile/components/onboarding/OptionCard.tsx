@@ -10,32 +10,40 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { HudCard } from '@/components/ui/hud/HudCard';
 import { hud, motion } from '@/constants/theme';
+import { playSfx } from '@/lib/sfx';
 
 interface OptionCardProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   color: string;
   selected: boolean;
   onPress: () => void;
   iconSize?: number;
+  /** Estompe la carte quand une autre réponse vient d'être verrouillée. */
+  dimmed?: boolean;
 }
 
 export function OptionCard({
-  icon, title, subtitle, color, selected, onPress, iconSize = 26,
+  icon, title, subtitle, color, selected, onPress, iconSize = 26, dimmed = false,
 }: OptionCardProps) {
   const scale = useSharedValue(1);
-  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const pressStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(dimmed ? 0.35 : 1, { duration: 220 }),
+    transform: [{ scale: scale.value }],
+  }));
 
   return (
     <Animated.View style={pressStyle}>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync().catch(() => null);
+          playSfx('select', 0.5);
           onPress();
         }}
         onPressIn={() => { scale.value = withSpring(0.97, motion.spring); }}
@@ -72,22 +80,24 @@ export function OptionCard({
                 fontSize: 18,
                 letterSpacing: 0.4,
                 color: selected ? hud.text.primary : hud.text.secondary,
-                marginBottom: 2,
+                marginBottom: subtitle ? 2 : 0,
               }}>
                 {title}
               </Text>
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontFamily: 'Rajdhani-Medium',
-                  fontSize: 13,
-                  letterSpacing: 0.6,
-                  textTransform: 'uppercase',
-                  color: selected ? color : hud.text.muted,
-                }}
-              >
-                {subtitle}
-              </Text>
+              {subtitle ? (
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontFamily: 'Rajdhani-Medium',
+                    fontSize: 13,
+                    letterSpacing: 0.6,
+                    textTransform: 'uppercase',
+                    color: selected ? color : hud.text.muted,
+                  }}
+                >
+                  {subtitle}
+                </Text>
+              ) : null}
             </View>
 
             {/* Diode de sélection */}

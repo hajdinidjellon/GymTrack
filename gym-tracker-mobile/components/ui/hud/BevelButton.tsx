@@ -29,6 +29,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { hud, hudType, motion } from '@/constants/theme';
+import { playSfx, type SfxName } from '@/lib/sfx';
 import { octagonPath } from './octagon';
 
 const HALO_PAD = 24;
@@ -45,6 +46,8 @@ export type BevelButtonProps = {
   loading?: boolean;
   icon?: React.ReactNode;
   haptic?: boolean;
+  /** Blip joué à l'activation (défaut : confirm). `null` = silencieux. */
+  sound?: SfxName | null;
 };
 
 function GhostChevron({ index, animated }: { index: number; animated: boolean }) {
@@ -95,6 +98,7 @@ export function BevelButton({
   loading = false,
   icon,
   haptic = true,
+  sound = 'confirm',
 }: BevelButtonProps) {
   const [width, setWidth] = useState(0);
   const scale = useSharedValue(1);
@@ -129,7 +133,10 @@ export function BevelButton({
   return (
     <Animated.View style={[{ opacity: disabled ? 0.4 : 1 }, pressStyle]}>
       <Pressable
-        onPress={onPress}
+        onPress={() => {
+          if (sound) playSfx(sound, 0.55);
+          onPress?.();
+        }}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
