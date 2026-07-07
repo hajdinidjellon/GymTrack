@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
+import { SegmentedHud, OctoIcon } from '@/components/ui/hud';
 import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
+import { hud, hudType } from '@/constants/theme';
 import type { OnboardingGoal } from '@/types';
 
 const NEXT_AFTER_FREQUENCY: Record<OnboardingGoal, string> = {
@@ -15,15 +16,7 @@ const NEXT_AFTER_FREQUENCY: Record<OnboardingGoal, string> = {
   health:      '/(auth)/onboarding/health-focus',
 };
 
-const OPTS: Array<{ n: number; color: string }> = [
-  { n: 1, color: '#94a3b8' },
-  { n: 2, color: '#34d399' },
-  { n: 3, color: '#38bdf8' },
-  { n: 4, color: '#a78bfa' },
-  { n: 5, color: '#f59e0b' },
-  { n: 6, color: '#f87171' },
-  { n: 7, color: '#ef4444' },
-];
+const FREQS = [1, 2, 3, 4, 5, 6, 7] as const;
 
 const ADVICE: Record<number, string> = {
   1: 'Un bon début — mieux vaut une séance tenue que zéro.',
@@ -35,17 +28,26 @@ const ADVICE: Record<number, string> = {
   7: 'Tous les jours — écoute bien ton corps et priorise la récupération.',
 };
 
+/** Accent du conseil selon la charge : régulier → regen, standard → cyan, haut volume → warn. */
+const TONE: Record<number, string> = {
+  1: hud.cyan.primary,
+  2: hud.accent.regen,
+  3: hud.accent.regen,
+  4: hud.cyan.primary,
+  5: hud.cyan.primary,
+  6: hud.accent.warn,
+  7: hud.accent.warn,
+};
+
 export default function OnboardingFrequencyScreen() {
   const params = useLocalSearchParams<{ name: string; goal: string; level: string }>();
   const goal   = parseGoal(params.goal);
   const total  = getTotalSteps(goal);
   const [freq, setFreq] = useState(3);
-  const opt = OPTS.find((o) => o.n === freq) ?? OPTS[2]!;
+  const tone = TONE[freq] ?? hud.cyan.primary;
 
   return (
     <OnboardingFrame
-      pose="mimi2_frequency"
-      mascotHeight={120}
       question="Combien de séances par semaine ?"
       subtext="Mieux vaut 3 séances tenues que 6 abandonnées."
       step={4}
@@ -58,100 +60,35 @@ export default function OnboardingFrequencyScreen() {
         })
       }
     >
-      {/* Grille 4 + 3 */}
-      <View style={{ gap: 8 }}>
-        {/* Ligne 1 : 1, 2, 3, 4 */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {OPTS.slice(0, 4).map((o) => (
-            <FreqTile key={o.n} opt={o} selected={freq === o.n} onPress={() => setFreq(o.n)} />
-          ))}
-        </View>
-        {/* Ligne 2 : 5, 6, 7 + spacer invisible */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {OPTS.slice(4).map((o) => (
-            <FreqTile key={o.n} opt={o} selected={freq === o.n} onPress={() => setFreq(o.n)} />
-          ))}
-          {/* Spacer pour conserver la largeur des tiles identique à la ligne 1 */}
-          <View style={{ flex: 1 }} />
-        </View>
-      </View>
+      {/* Sélecteur segmenté HUD */}
+      <SegmentedHud
+        options={FREQS.map((n) => String(n))}
+        selectedIndex={freq - 1}
+        onChange={(i) => setFreq(FREQS[i] ?? 3)}
+        height={46}
+      />
+      <Text style={{ ...hudType.labelHud, textAlign: 'center', marginTop: 2 }}>
+        Séances / semaine
+      </Text>
 
       {/* Conseil */}
       <View style={{
         flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-        backgroundColor: `${opt.color}12`,
-        borderRadius: 16, padding: 16,
-        borderWidth: 1, borderColor: `${opt.color}28`,
+        backgroundColor: hud.bg.surfaceDeep,
+        borderWidth: 1, borderColor: `${tone}28`,
+        borderRadius: 10, padding: 14, marginTop: 8,
       }}>
-        <View style={{
-          width: 36, height: 36, borderRadius: 11,
-          backgroundColor: `${opt.color}22`,
-          alignItems: 'center', justifyContent: 'center', marginTop: 1,
+        <OctoIcon size={36} level="g0" borderColor={tone}>
+          <Ionicons name="bulb-outline" size={17} color={tone} />
+        </OctoIcon>
+        <Text style={{
+          flex: 1,
+          fontFamily: 'Rajdhani-SemiBold', fontSize: 15, lineHeight: 20,
+          color: hud.text.primary, letterSpacing: 0.2,
         }}>
-          <Ionicons name="bulb-outline" size={18} color={opt.color} />
-        </View>
-        <Text style={{ flex: 1, fontSize: 14, color: '#fff', fontWeight: '600', lineHeight: 20 }}>
           {ADVICE[freq]}
         </Text>
       </View>
     </OnboardingFrame>
-  );
-}
-
-function FreqTile({ opt, selected, onPress }: {
-  opt: typeof OPTS[number]; selected: boolean; onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        borderRadius: 18,
-        overflow: 'hidden',
-        borderWidth: 1.5,
-        borderColor: selected ? opt.color : 'rgba(255,255,255,0.12)',
-        transform: [{ scale: pressed ? 0.94 : 1 }],
-        shadowColor: selected ? opt.color : 'transparent',
-        shadowOpacity: selected ? 0.60 : 0,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: selected ? 10 : 0,
-      })}
-    >
-      <View style={{ backgroundColor: 'rgba(8,10,20,0.88)', overflow: 'hidden', borderRadius: 16 }}>
-        {selected && (
-          <LinearGradient
-            colors={[`${opt.color}55`, `${opt.color}22`, `${opt.color}08`]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          />
-        )}
-        {selected && (
-          <LinearGradient
-            colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.0)']}
-            start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%' }}
-          />
-        )}
-        <View style={{ paddingVertical: 18, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 1 }}>
-            <Text style={{
-              fontSize: 26, fontWeight: '900',
-              color: selected ? opt.color : 'rgba(255,255,255,0.45)',
-              letterSpacing: -1, lineHeight: 30,
-            }}>
-              {opt.n}
-            </Text>
-            <Text style={{
-              fontSize: 15, fontWeight: '800',
-              color: selected ? opt.color : 'rgba(255,255,255,0.30)',
-              lineHeight: 22,
-            }}>
-              ×
-            </Text>
-          </View>
-        </View>
-      </View>
-    </Pressable>
   );
 }

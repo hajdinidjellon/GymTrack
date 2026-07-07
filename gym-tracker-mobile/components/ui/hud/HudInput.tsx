@@ -24,9 +24,11 @@ export type HudInputProps = Omit<TextInputProps, 'style'> & {
   height?: number;
   /** Style numérique géant pour la saisie de PRs (onboarding). */
   big?: boolean;
+  /** Slot à droite du champ (ex : œil de visibilité du mot de passe). */
+  right?: React.ReactNode;
 };
 
-export function HudInput({ label, error, height = 52, big = false, onFocus, onBlur, ...rest }: HudInputProps) {
+export function HudInput({ label, error, height = 52, big = false, right, onFocus, onBlur, ...rest }: HudInputProps) {
   const [w, setW] = useState(0);
   const [focused, setFocused] = useState(false);
   const shakeX = useSharedValue(0);
@@ -101,6 +103,7 @@ export function HudInput({ label, error, height = 52, big = false, onFocus, onBl
           }}
           style={{
             paddingHorizontal: 16,
+            paddingRight: right ? 44 : 16,
             color: hud.text.primary,
             fontFamily: big ? 'Rajdhani-Bold' : 'Rajdhani-Medium',
             fontSize: big ? 34 : 16,
@@ -110,6 +113,12 @@ export function HudInput({ label, error, height = 52, big = false, onFocus, onBl
           }}
           {...rest}
         />
+
+        {right ? (
+          <View style={{ position: 'absolute', right: 12, height: inputHeight, justifyContent: 'center' }}>
+            {right}
+          </View>
+        ) : null}
       </View>
 
       {error ? (

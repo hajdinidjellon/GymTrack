@@ -19,6 +19,7 @@ import { useProfileStore } from '@/stores/profileStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { signOut } from '@/lib/supabase';
+import { exportAllData, deleteAccount } from '@/lib/account';
 import { calculateStreakFromWorkouts, getProgressToNextRank, getNextRank } from '@/lib/gamification';
 import { calculate1RM } from '@/lib/aiPlanner';
 import {
@@ -135,6 +136,50 @@ export default function ProfileScreen() {
     Alert.alert(t('profile.logoutTitle'), t('profile.logoutMsg'), [
       { text: t('profile.logoutCancel'), style: 'cancel' },
       { text: t('profile.logoutConfirm'), style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/welcome'); } },
+    ]);
+  };
+
+  const [accountBusy, setAccountBusy] = useState(false);
+
+  const handleExport = async () => {
+    if (accountBusy) return;
+    setAccountBusy(true);
+    try {
+      await exportAllData();
+    } catch (err) {
+      console.warn('[account] export failed:', err);
+      Alert.alert(t('account.exportBtn'), t('account.exportError'));
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(t('account.deleteTitle'), t('account.deleteMsg'), [
+      { text: t('account.deleteCancel'), style: 'cancel' },
+      {
+        text: t('account.deleteConfirm'),
+        style: 'destructive',
+        onPress: async () => {
+          if (accountBusy) return;
+          setAccountBusy(true);
+          try {
+            await deleteAccount();
+            // Recharge les stores depuis la DB (désormais vide)
+            await Promise.all([
+              useWorkoutStore.getState().loadWorkouts(),
+              useProfileStore.getState().loadProfile(),
+              useProfileStore.getState().loadGoals(),
+            ]);
+            router.replace('/(auth)/welcome');
+          } catch (err) {
+            console.warn('[account] delete failed:', err);
+            Alert.alert(t('account.deleteTitle'), t('account.deleteError'));
+          } finally {
+            setAccountBusy(false);
+          }
+        },
+      },
     ]);
   };
 
@@ -647,6 +692,24 @@ export default function ProfileScreen() {
                   </SettingRow>
                 </View>
 
+                {/* Export des données (RGPD — portabilité) */}
+                <Pressable
+                  onPress={handleExport}
+                  disabled={accountBusy}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    padding: 16, borderRadius: 16,
+                    opacity: accountBusy ? 0.5 : 1,
+                    backgroundColor: pressed ? 'rgba(56,189,248,0.18)' : 'rgba(56,189,248,0.10)',
+                    borderWidth: 1, borderColor: 'rgba(56,189,248,0.28)',
+                  })}
+                >
+                  <Ionicons name="download-outline" size={18} color={BG_COLORS.accent} />
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: BG_COLORS.accent, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                    {t('account.exportBtn')}
+                  </Text>
+                </Pressable>
+
                 <Pressable
                   onPress={handleLogout}
                   style={({ pressed }) => ({
@@ -659,6 +722,24 @@ export default function ProfileScreen() {
                   <Ionicons name="log-out-outline" size={18} color="#ef4444" />
                   <Text style={{ fontSize: 14, fontWeight: '900', color: '#ef4444', letterSpacing: 0.8, textTransform: 'uppercase' }}>
                     {t('profile.logoutBtn')}
+                  </Text>
+                </Pressable>
+
+                {/* Suppression de compte (exigence Apple/Google + RGPD) */}
+                <Pressable
+                  onPress={handleDeleteAccount}
+                  disabled={accountBusy}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    padding: 16, borderRadius: 16,
+                    opacity: accountBusy ? 0.5 : 1,
+                    backgroundColor: pressed ? 'rgba(239,68,68,0.30)' : 'rgba(239,68,68,0.18)',
+                    borderWidth: 1, borderColor: 'rgba(239,68,68,0.45)',
+                  })}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                  <Text style={{ fontSize: 14, fontWeight: '900', color: '#ef4444', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                    {t('account.deleteBtn')}
                   </Text>
                 </Pressable>
               </View>

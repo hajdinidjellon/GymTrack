@@ -1,18 +1,28 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
-import { Stepper } from '@/components/onboarding/Stepper';
+import { HudCard, HudInput } from '@/components/ui/hud';
+import { hud, hudType } from '@/constants/theme';
 import { calculate1RM } from '@/lib/aiPlanner';
 
 const TOTAL = 8;
 
+function parseNum(raw: string): number {
+  return parseFloat(raw.replace(',', '.'));
+}
+
 export default function OnboardingBenchScreen() {
   const params = useLocalSearchParams<{ name: string; goal: string; level: string; frequency: string }>();
-  const [weight, setWeight] = useState(60);
-  const [reps,   setReps]   = useState(5);
+  const [weightStr, setWeightStr] = useState('60');
+  const [repsStr,   setRepsStr]   = useState('5');
 
-  const rm  = weight > 0 ? calculate1RM(weight, reps) : null;
+  const wParsed = parseNum(weightStr);
+  const rParsed = parseNum(repsStr);
+  const weight  = Number.isFinite(wParsed) ? Math.min(Math.max(wParsed, 0), 400) : 0;
+  const reps    = Number.isFinite(rParsed) ? Math.min(Math.max(Math.round(rParsed), 1), 30) : 5;
+
+  const rm = weight > 0 ? calculate1RM(weight, reps) : null;
 
   const goNext = () =>
     router.push({
@@ -22,9 +32,8 @@ export default function OnboardingBenchScreen() {
 
   return (
     <OnboardingFrame
-      mascotFrames={['mouv_bench_1', 'mouv_bench_2']}
-      mascotHeight={160}
       question="Ton record au développé couché ?"
+      exercise="bench"
       subtext="Mets 0 si tu ne le connais pas encore."
       step={5}
       total={TOTAL}
@@ -37,27 +46,50 @@ export default function OnboardingBenchScreen() {
       onContinue={goNext}
     >
       <View style={{ flexDirection: 'row', gap: 12 }}>
-        <Stepper value={weight} onChange={setWeight} min={0} max={400} step={2.5} label="Poids" unit="kg" />
-        <Stepper value={reps}   onChange={setReps}   min={1} max={30}  step={1}   label="Répétitions" unit="rep" />
+        <View style={{ flex: 1 }}>
+          <HudInput
+            big
+            label="Poids (kg)"
+            value={weightStr}
+            onChangeText={(t) => setWeightStr(t.replace(/[^0-9.,]/g, ''))}
+            keyboardType="decimal-pad"
+            maxLength={5}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <HudInput
+            big
+            label="Répétitions"
+            value={repsStr}
+            onChangeText={(t) => setRepsStr(t.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            maxLength={2}
+          />
+        </View>
       </View>
 
-      {rm !== null && weight > 0 && (
-        <View style={{
-          flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: 'rgba(167,139,250,0.10)',
-          borderRadius: 14, paddingVertical: 14, paddingHorizontal: 20,
-          borderWidth: 1, borderColor: 'rgba(167,139,250,0.22)',
-          gap: 8,
-        }}>
-          <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', fontWeight: '600' }}>
-            1RM estimé
-          </Text>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: '#c4b5fd', letterSpacing: -0.5 }}>
-            {rm.toFixed(1)} kg
-          </Text>
-        </View>
+      {rm !== null && (
+        <HudCard
+          level="g1"
+          cut={hud.cut.md}
+          borderColor={hud.accent.volt}
+          glowColor={hud.accent.voltDim}
+          padding={0}
+        >
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+            gap: 10, paddingVertical: 14, paddingHorizontal: 20,
+          }}>
+            <Text style={hudType.labelHud}>1RM estimé</Text>
+            <Text style={{
+              fontFamily: 'Rajdhani-Bold', fontSize: 24,
+              color: hud.accent.volt, fontVariant: ['tabular-nums'],
+            }}>
+              {rm.toFixed(1)} kg
+            </Text>
+          </View>
+        </HudCard>
       )}
     </OnboardingFrame>
   );
 }
-

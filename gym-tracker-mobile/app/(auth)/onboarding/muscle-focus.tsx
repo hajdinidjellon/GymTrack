@@ -1,11 +1,12 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { OnboardingFrame } from '@/components/onboarding/OnboardingFrame';
-import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
-import type { MuscleGroup } from '@/types';
 import { OptionCard } from '@/components/onboarding/OptionCard';
+import { getTotalSteps, parseGoal } from '@/lib/onboardingFlow';
+import { hud } from '@/constants/theme';
+import type { MuscleGroup } from '@/types';
 
 type Choice = {
   id: MuscleGroup;
@@ -15,14 +16,14 @@ type Choice = {
 };
 
 const CHOICES: Choice[] = [
-  { id: 'chest',     icon: 'body-outline',   label: 'Pectoraux', color: '#f87171' },
-  { id: 'back',      icon: 'arrow-up',       label: 'Dos',       color: '#38bdf8' },
-  { id: 'shoulders', icon: 'triangle',       label: 'Épaules',   color: '#a78bfa' },
-  { id: 'arms',      icon: 'fitness',        label: 'Bras',      color: '#f59e0b' },
-  { id: 'legs',      icon: 'walk',           label: 'Jambes',    color: '#34d399' },
-  { id: 'glutes',    icon: 'ellipse',        label: 'Fessiers',  color: '#e879f9' },
-  { id: 'core',      icon: 'shield',         label: 'Abdos',     color: '#fbbf24' },
-  { id: 'calves',    icon: 'caret-down',     label: 'Mollets',   color: '#60a5fa' },
+  { id: 'chest',     icon: 'body-outline', label: 'Pectoraux', color: hud.accent.pulse },
+  { id: 'back',      icon: 'arrow-up',     label: 'Dos',       color: hud.cyan.primary },
+  { id: 'shoulders', icon: 'triangle',     label: 'Épaules',   color: hud.cyan.bright },
+  { id: 'arms',      icon: 'fitness',      label: 'Bras',      color: hud.accent.ember },
+  { id: 'legs',      icon: 'walk',         label: 'Jambes',    color: hud.accent.regen },
+  { id: 'glutes',    icon: 'ellipse',      label: 'Fessiers',  color: hud.accent.pulse },
+  { id: 'core',      icon: 'shield',       label: 'Abdos',     color: hud.accent.warn },
+  { id: 'calves',    icon: 'caret-down',   label: 'Mollets',   color: hud.cyan.primary },
 ];
 
 export default function OnboardingMuscleFocusScreen() {
@@ -38,8 +39,6 @@ export default function OnboardingMuscleFocusScreen() {
 
   return (
     <OnboardingFrame
-      pose="mimi_anatomy"
-      mascotHeight={170}
       question="Quels muscles veux-tu prioriser ?"
       subtext="Sélectionne jusqu'à 3 zones — ton plan d'entraînement leur donnera plus de volume."
       step={5}
@@ -61,7 +60,6 @@ export default function OnboardingMuscleFocusScreen() {
             key={c.id}
             icon={c.icon}
             title={c.label}
-            subtitle=""
             color={c.color}
             selected={selected.includes(c.id)}
             onPress={() => toggle(c.id)}
@@ -72,4 +70,3 @@ export default function OnboardingMuscleFocusScreen() {
     </OnboardingFrame>
   );
 }
-

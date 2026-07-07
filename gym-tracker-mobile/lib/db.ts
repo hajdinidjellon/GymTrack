@@ -277,6 +277,21 @@ export async function clearSyncQueueEntry(id: number): Promise<void> {
 // UTILITAIRES
 // ============================================================
 
+/** Efface TOUTES les données locales (suppression de compte / RGPD).
+ *  Les tables restent, le schéma est conservé. */
+export async function wipeAllLocalData(): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.execAsync(`
+      DELETE FROM workouts;
+      DELETE FROM profile;
+      DELETE FROM plans;
+      DELETE FROM goals;
+      DELETE FROM sync_queue;
+    `);
+  });
+}
+
 export async function getUnsyncedWorkouts(): Promise<Workout[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<{ data: string }>(

@@ -283,6 +283,29 @@ const T = {
     'badge.all_muscles.desc': 'Travaille tous les groupes musculaires',
     'badge.gold_rank.name': 'Statut Or',
     'badge.gold_rank.desc': 'Atteindre le rang Or',
+
+    // Erreurs
+    'error.generic.title': 'Oups, quelque chose a cassé',
+    'error.generic.message': 'Une erreur inattendue est survenue. Tes données sont en sécurité.',
+    'error.generic.retry': 'Réessayer',
+    'error.boot.title': 'Impossible de démarrer',
+    'error.boot.message': "La base de données locale n'a pas pu s'initialiser. Réessaie ; si le problème persiste, réinstalle l'application.",
+    'error.auth.invalidCredentials': 'Email ou mot de passe incorrect',
+    'error.auth.emailNotConfirmed': 'Confirme ton email avant de te connecter (vérifie ta boîte mail)',
+    'error.auth.userExists': 'Un compte existe déjà avec cet email',
+    'error.auth.weakPassword': 'Mot de passe trop court (6 caractères minimum)',
+    'error.auth.network': 'Connexion impossible — vérifie ton réseau',
+    'error.auth.generic': 'Une erreur est survenue, réessaie',
+
+    // Compte — export & suppression (RGPD)
+    'account.exportBtn': 'Exporter mes données',
+    'account.exportError': "L'export a échoué, réessaie",
+    'account.deleteBtn': 'Supprimer mon compte',
+    'account.deleteTitle': 'Supprimer le compte ?',
+    'account.deleteMsg': 'Toutes tes données (séances, records, profil) seront définitivement effacées de cet appareil et du cloud. Cette action est irréversible. Pense à exporter tes données avant.',
+    'account.deleteCancel': 'Annuler',
+    'account.deleteConfirm': 'Tout supprimer',
+    'account.deleteError': 'La suppression a échoué — vérifie ta connexion et réessaie. Tes données locales sont intactes.',
   },
 
   en: {
@@ -563,11 +586,50 @@ const T = {
     'badge.all_muscles.desc': 'Train every muscle group',
     'badge.gold_rank.name': 'Gold Status',
     'badge.gold_rank.desc': 'Reach Gold rank',
+
+    // Errors
+    'error.generic.title': 'Oops, something broke',
+    'error.generic.message': 'An unexpected error occurred. Your data is safe.',
+    'error.generic.retry': 'Retry',
+    'error.boot.title': 'Unable to start',
+    'error.boot.message': 'The local database could not be initialised. Try again; if the problem persists, reinstall the app.',
+    'error.auth.invalidCredentials': 'Incorrect email or password',
+    'error.auth.emailNotConfirmed': 'Confirm your email before signing in (check your inbox)',
+    'error.auth.userExists': 'An account already exists with this email',
+    'error.auth.weakPassword': 'Password too short (6 characters minimum)',
+    'error.auth.network': 'Connection failed — check your network',
+    'error.auth.generic': 'Something went wrong, please try again',
+
+    // Account — export & deletion (GDPR)
+    'account.exportBtn': 'Export my data',
+    'account.exportError': 'Export failed, please try again',
+    'account.deleteBtn': 'Delete my account',
+    'account.deleteTitle': 'Delete account?',
+    'account.deleteMsg': 'All your data (workouts, records, profile) will be permanently erased from this device and the cloud. This cannot be undone. Consider exporting your data first.',
+    'account.deleteCancel': 'Cancel',
+    'account.deleteConfirm': 'Delete everything',
+    'account.deleteError': 'Deletion failed — check your connection and try again. Your local data is untouched.',
   },
 } as const;
 
 type TranslationKey = keyof typeof T.fr;
 type Params = Record<string, string | number>;
+
+/**
+ * Version non-réactive de t() — pour les contextes où les hooks sont
+ * indisponibles ou risqués (ErrorBoundary, écran d'erreur de boot).
+ * Crash-proof : si le settingsStore est lui-même en panne, retombe sur le fr.
+ */
+export function tStatic(key: TranslationKey): string {
+  let lang: Lang = 'fr';
+  try {
+    lang = useSettingsStore.getState().settings.language as Lang;
+  } catch {
+    // settingsStore indisponible — fallback fr
+  }
+  const dict = (T[lang] ?? T.fr) as Record<string, string>;
+  return dict[key] ?? (T.fr as Record<string, string>)[key] ?? key;
+}
 
 // ── Hook principal ────────────────────────────────────────────────
 export function useT() {

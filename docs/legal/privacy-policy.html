@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GymTrack — Politique de confidentialité</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #080810; color: #f8fafc;
+    max-width: 760px; margin: 0 auto; padding: 32px 20px 80px;
+    line-height: 1.65;
+  }
+  h1 { font-size: 1.6rem; color: #17B8FF; }
+  h2 { font-size: 1.15rem; margin-top: 2.2em; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { border: 1px solid rgba(255,255,255,0.15); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: rgba(23,184,255,0.10); }
+  .muted { color: rgba(248,250,252,0.55); font-size: 0.9rem; }
+  a { color: #17B8FF; }
+  .en { margin-top: 4em; padding-top: 2em; border-top: 2px solid rgba(255,255,255,0.15); }
+</style>
+</head>
+<body>
+
+<h1>GymTrack — Politique de confidentialité</h1>
+<p class="muted">Dernière mise à jour : 5 juillet 2026</p>
+
+<h2>1. Qui sommes-nous</h2>
+<p>GymTrack est une application mobile de suivi d'entraînement développée et éditée par un développeur indépendant.<br>
+<strong>Responsable du traitement :</strong> Djellon Hajdini — contact : <a href="mailto:hajdinidjellon@gmail.com">hajdinidjellon@gmail.com</a></p>
+
+<h2>2. Le principe : tes données restent chez toi</h2>
+<p>GymTrack fonctionne <strong>entièrement hors ligne, sans compte</strong>. Par défaut, toutes tes données sont stockées <strong>uniquement sur ton appareil</strong> et ne quittent jamais ton téléphone.</p>
+<p>La synchronisation cloud est <strong>optionnelle</strong> : elle n'existe que si tu crées un compte, dans le seul but de sauvegarder tes données et de les retrouver sur un autre appareil.</p>
+
+<h2>3. Données traitées</h2>
+<table>
+  <tr><th>Donnée</th><th>Où</th><th>Finalité</th></tr>
+  <tr><td>Prénom / pseudo</td><td>Appareil (+ cloud si compte)</td><td>Personnalisation de l'app</td></tr>
+  <tr><td>Séances d'entraînement (exercices, charges, répétitions, durée, ressenti)</td><td>Appareil (+ cloud si compte)</td><td>Historique, statistiques, progression</td></tr>
+  <tr><td>Records personnels, objectifs</td><td>Appareil (+ cloud si compte)</td><td>Suivi de progression</td></tr>
+  <tr><td><strong>Données corporelles</strong> (poids, mensurations) — données de santé au sens de l'art. 9 RGPD</td><td>Appareil (+ cloud si compte)</td><td>Suivi de ta condition physique, uniquement si tu les saisis</td></tr>
+  <tr><td>Adresse email + mot de passe</td><td>Cloud (Supabase Auth) — uniquement si compte</td><td>Authentification</td></tr>
+  <tr><td>Préférences (langue, unités, rappels)</td><td>Appareil uniquement</td><td>Fonctionnement de l'app</td></tr>
+</table>
+<p><strong>Nous ne collectons pas :</strong> localisation, contacts, photos, identifiants publicitaires, données d'autres apps. Pas de publicité, pas de revente de données, pas de profilage. Aucun outil d'analytics tiers n'est intégré à ce jour ; si un outil de rapport de plantage (crash reporting) était ajouté, il serait configuré pour exclure toute donnée personnelle et cette politique serait mise à jour.</p>
+
+<h2>4. Base légale</h2>
+<p>Exécution du contrat (fournir le service de suivi que tu as installé) pour les données d'entraînement et de compte ; <strong>consentement explicite</strong> pour les données corporelles (tu choisis de les saisir, elles sont facultatives). Tu peux retirer ce consentement à tout moment en les supprimant.</p>
+
+<h2>5. Hébergement et sous-traitants</h2>
+<p>Si tu crées un compte, les données synchronisées sont hébergées par <a href="https://supabase.com">Supabase</a> (base de données du projet hébergée dans l'Union européenne). Les échanges sont chiffrés (HTTPS/TLS). Sur l'appareil, les jetons de connexion sont chiffrés (Keychain iOS / Keystore Android). Aucun autre sous-traitant n'a accès à tes données.</p>
+
+<h2>6. Durée de conservation</h2>
+<p>Tes données sont conservées tant que tu utilises l'app. Elles sont supprimées : localement si tu désinstalles l'app ; dans le cloud immédiatement et définitivement quand tu supprimes ton compte (voir §7). Aucune copie de sauvegarde au-delà des sauvegardes techniques standard de l'hébergeur (35 jours max).</p>
+
+<h2>7. Tes droits</h2>
+<p>Conformément au RGPD, tu disposes des droits d'accès, de rectification, d'effacement, de portabilité, de limitation et d'opposition. Les deux plus importants sont <strong>directement intégrés à l'app</strong> (Profil → Réglages) :</p>
+<ul>
+  <li><strong>« Exporter mes données »</strong> : fichier JSON complet et lisible de toutes tes données (portabilité) ;</li>
+  <li><strong>« Supprimer mon compte »</strong> : effacement immédiat et irréversible de toutes tes données, sur l'appareil et dans le cloud.</li>
+</ul>
+<p>Pour toute autre demande : <a href="mailto:hajdinidjellon@gmail.com">hajdinidjellon@gmail.com</a> (réponse sous 30 jours). Tu peux aussi saisir la CNIL (<a href="https://www.cnil.fr">cnil.fr</a>).</p>
+
+<h2>8. Mineurs</h2>
+<p>GymTrack n'est pas destinée aux enfants de moins de 15 ans. Aucune vérification d'âge n'étant fiable à 100 %, si tu es parent et penses que ton enfant a créé un compte, contacte-nous pour suppression.</p>
+
+<h2>9. Modifications</h2>
+<p>Toute modification substantielle de cette politique sera signalée dans l'app avant de prendre effet, avec la date de mise à jour ci-dessus.</p>
+
+<!-- ──────────────────────────────────────────────────────── -->
+<div class="en">
+<h1>GymTrack — Privacy Policy (English summary)</h1>
+<p class="muted">Last updated: July 5, 2026</p>
+<p>GymTrack works <strong>fully offline without an account</strong>; by default all data stays on your device. Optional cloud sync (Supabase, EU-hosted, TLS-encrypted) exists only if you create an account. We process: name, workout history, personal records, goals, and — only if you enter them — body measurements (health data under GDPR art. 9, processed with your explicit consent). We do <strong>not</strong> collect location, contacts, photos or advertising identifiers; no ads, no data selling, no third-party analytics.</p>
+<p>Built-in GDPR rights (Profile → Settings): <strong>"Export my data"</strong> (full JSON export) and <strong>"Delete my account"</strong> (immediate, irreversible erasure on device and cloud). Data controller & contact: Djellon Hajdini — <a href="mailto:hajdinidjellon@gmail.com">hajdinidjellon@gmail.com</a>.</p>
+</div>
+
+</body>
+</html>

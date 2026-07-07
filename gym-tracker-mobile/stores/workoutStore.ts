@@ -48,8 +48,9 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
         const streak   = calculateStreakFromWorkouts(workouts);
         await refreshAllNotifications(profile.onboarding, streak, workout.date);
       }
-    } catch {
-      // best-effort
+    } catch (err) {
+      // Best-effort : le reschedule de notifs ne doit pas faire échouer l'ajout
+      console.warn('[workout] notification reschedule failed:', err);
     }
   },
 

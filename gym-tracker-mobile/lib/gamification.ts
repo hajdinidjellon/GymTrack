@@ -95,25 +95,32 @@ export function calculateXPFromWorkouts(workouts: Workout[]): number {
   return xp;
 }
 
+/** Clé jour en date LOCALE (YYYY-MM-DD). Ne pas remplacer par toISOString() :
+ *  l'ISO est en UTC et décale le jour pour tout fuseau ≠ UTC. */
+function localDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function calculateStreakFromWorkouts(workouts: Workout[]): number {
   if (!workouts.length) return 0;
 
-  const sorted = [...workouts].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  const trainedDays = new Set(
+    workouts.map((w) => localDateKey(new Date(w.date))),
   );
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
 
   let streak = 0;
-  const currentDate = new Date(today);
 
   for (let i = 0; i < 365; i++) {
-    const dateStr = currentDate.toISOString().split('T')[0];
-    const hasWorkout = sorted.some((w) => w.date.startsWith(dateStr ?? ''));
-
-    if (hasWorkout) {
+    if (trainedDays.has(localDateKey(currentDate))) {
       streak++;
-    } else if (streak > 0 || i > 1) {
+    } else if (i > 0) {
+      // Un jour raté (autre qu'aujourd'hui, pas encore terminé) casse le streak
       break;
     }
 

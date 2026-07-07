@@ -39,7 +39,15 @@ import { MUSCLE_LABELS } from '@/lib/gamification';
 import { useCelebrationStore } from '@/stores/celebrationStore';
 import { EXERCISE_GROUPS, filterGroups, type ExerciseDefinition, type ExerciseGroup } from '@/lib/exerciseDatabase';
 import type { ActiveExercise, MuscleGroup, Workout, WorkoutSet, WorkoutType } from '@/types';
-import { router } from 'expo-router';
+import { router, type ErrorBoundaryProps } from 'expo-router';
+import { ErrorFallback } from '@/components/ui/ErrorFallback';
+
+// Boundary dédié : l'écran le plus complexe de l'app (Skia + saisie temps réel).
+// En cas de crash de rendu, la séance en cours reste dans le sessionStore
+// (persisté) — le retry re-monte l'écran et la reprend, rien n'est perdu.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <ErrorFallback error={error} context="[boundary:session]" retry={retry} />;
+}
 
 const WORKOUT_MODES: Array<{
   type: WorkoutType;
@@ -1395,9 +1403,9 @@ export default function SessionScreen() {
   }, [addExercise, getLastWorkoutForExercise, defaultRestTime]);
 
   const handleFinish = async () => {
-    const workout = finishSession();
+    const workout = finishSession(feeling);
     if (!workout) return;
-    const finalWorkout = { ...workout, feeling, name: workoutName || 'Séance' };
+    const finalWorkout = { ...workout, name: workoutName.trim() || workout.name };
     await addWorkout(finalWorkout);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
     setShowFinishModal(false);
@@ -1735,7 +1743,7 @@ export default function SessionScreen() {
                       paddingHorizontal: 16, paddingVertical: 14,
                       fontSize: 16, fontWeight: '700', color: '#fff',
                     }}
-                    value={workoutName || 'Séance'}
+                    value={workoutName || activeSession.name}
                     onChangeText={setWorkoutName}
                     placeholderTextColor="rgba(255,255,255,0.30)"
                   />

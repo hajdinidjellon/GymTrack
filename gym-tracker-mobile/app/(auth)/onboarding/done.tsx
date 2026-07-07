@@ -1,65 +1,35 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View, Text, Pressable, Animated, Easing, Dimensions, ImageBackground,
-} from 'react-native';
+/**
+ * FINAL — CONSTRUCTION (MOBILE_PREMIUM.md storyboard).
+ * NEXUS en processing pendant ~3.5s : « Analyse du profil… / Génération du
+ * programme… / Calibration des charges… » avec la barre HUD qui se remplit,
+ * puis celebrate (flash + haptique success) et révélation du CTA.
+ * La persistance du profil (buildProfileFromParams → saveProfile) est inchangée.
+ */
+import React, { useEffect, useState } from 'react';
+import { View, Text, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mascot } from '@/components/mascot/Mascot';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { JarvisMascot } from '@/components/mascot/JarvisMascot';
+import { BevelButton } from '@/components/ui/hud/BevelButton';
+import { ProgressRail } from '@/components/ui/hud/ProgressRail';
 import { useProfileStore } from '@/stores/profileStore';
 import { calculate1RM } from '@/lib/aiPlanner';
 import { parseGoal } from '@/lib/onboardingFlow';
+import { hud, hudType } from '@/constants/theme';
+import { playSfx } from '@/lib/sfx';
 import type {
   UserProfile, PersonalRecord, MuscleGroup, DayOfWeek, TimeOfDay,
   HealthFocus, SportBackground, BodyStats,
 } from '@/types';
 
-const BG_QR = require('@/assets/images/background-qr.png') as number;
-const { width: W, height: H } = Dimensions.get('window');
+const SESSION_BG = require('@/assets/images/background-session.png') as number;
 
-// ── Confetti minimaliste ──────────────────────────────────────────
-const CONFETTI_COLORS = ['#38bdf8', '#a78bfa', '#34d399', '#f59e0b', '#f87171', '#e879f9'];
-
-function ConfettiPiece({ i }: { i: number }) {
-  const fall   = useRef(new Animated.Value(0)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-
-  const delay  = (i * 110) % 1600;
-  const left   = (i * 67 + 20) % (W - 20);
-  const size   = 5 + (i % 4) * 2;
-  const color  = CONFETTI_COLORS[i % CONFETTI_COLORS.length]!;
-  const drift  = ((i % 2 === 0) ? 1 : -1) * (15 + (i % 5) * 12);
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(fall,   { toValue: 1, duration: 2800, easing: Easing.linear,         useNativeDriver: true }),
-          Animated.timing(rotate, { toValue: 1, duration: 2000, easing: Easing.linear,         useNativeDriver: true }),
-        ]),
-      ]),
-    ).start();
-  }, []);
-
-  const tY  = fall.interpolate({ inputRange: [0, 1],     outputRange: [-20, H * 0.85] });
-  const tX  = fall.interpolate({ inputRange: [0, 1],     outputRange: [0,  drift] });
-  const rot = rotate.interpolate({ inputRange: [0, 1],   outputRange: ['0deg', '360deg'] });
-  const op  = fall.interpolate({ inputRange: [0, 0.08, 0.85, 1], outputRange: [0, 1, 1, 0] });
-
-  return (
-    <Animated.View
-      style={{
-        position: 'absolute', left, top: 0,
-        width: size, height: size, borderRadius: size * 0.3,
-        backgroundColor: color, opacity: op,
-        transform: [{ translateY: tY }, { translateX: tX }, { rotate: rot }],
-      }}
-    />
-  );
-}
+const STEP_DURATION = 1200;
 
 type DoneParams = {
   name?: string; goal?: string; level?: string; frequency?: string;
@@ -75,13 +45,19 @@ type DoneParams = {
 
 export default function OnboardingDoneScreen() {
   const params = useLocalSearchParams<DoneParams>();
-  const name   = (params.name ?? '').trim() || 'champion';
+  const name   = (params.name ?? '').trim() || 'pilote';
   const { saveProfile } = useProfileStore();
   const [saving, setSaving] = useState(true);
 
-  const fade  = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(30)).current;
-  const glow  = useRef(new Animated.Value(0)).current;
+  const buildSteps = [
+    'Analyse du profil…',
+    `Génération du programme ${name}…`,
+    'Calibration des charges initiales…',
+  ];
+
+  // ── Séquence de construction : 3 étapes puis célébration ─────────
+  const [stepIdx, setStepIdx] = useState(0);
+  const [ready, setReady] = useState(false);
 
   // Persiste le profil au montage de l'écran
   useEffect(() => {
@@ -94,114 +70,110 @@ export default function OnboardingDoneScreen() {
   }, []);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fade,  { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(slide, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glow, { toValue: 1, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(glow, { toValue: 0, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ]),
-    ).start();
+    const stepTick = () => playSfx('processing', 0.35);
+    const timers = [
+      setTimeout(() => { setStepIdx(1); stepTick(); }, STEP_DURATION),
+      setTimeout(() => { setStepIdx(2); stepTick(); }, STEP_DURATION * 2),
+      setTimeout(() => {
+        setReady(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+        playSfx('celebrate', 0.7);
+      }, STEP_DURATION * 3),
+    ];
+    return () => timers.forEach(clearTimeout);
   }, []);
 
-  const glowS = glow.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1.12] });
-  const glowO = glow.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.55] });
+  const progress = ready ? 1 : (stepIdx + 0.5) / buildSteps.length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#07090f' }}>
-      <StatusBar style="light" backgroundColor="#07090f" />
+    <View style={{ flex: 1, backgroundColor: hud.bg.app }}>
+      <StatusBar style="light" />
 
-      {/* Fond */}
       <ImageBackground
-        source={BG_QR}
+        source={SESSION_BG}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         resizeMode="cover"
-        imageStyle={{ opacity: 0.70 }}
+        imageStyle={{ opacity: 0.55 }}
       />
       <LinearGradient
-        colors={['rgba(7,9,15,0.10)', 'rgba(7,9,15,0.35)', 'rgba(7,9,15,0.85)']}
+        colors={['rgba(5,11,22,0.30)', 'rgba(5,11,22,0.55)', 'rgba(5,11,22,0.95)']}
         locations={[0, 0.5, 1]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
-      <LinearGradient
-        colors={['rgba(56,189,248,0.18)', 'transparent']}
-        start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: H * 0.55 }}
-      />
-
-      {/* Confetti */}
-      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
-        {Array.from({ length: 20 }, (_, i) => <ConfettiPiece key={i} i={i} />)}
-      </View>
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        <Animated.View style={{ flex: 1, paddingHorizontal: 28, paddingBottom: 32, opacity: fade, transform: [{ translateY: slide }] }}>
+        <View style={{ flex: 1, paddingHorizontal: 28, paddingBottom: 24 }}>
 
-          {/* ── Mascotte + halo ─────────────────────────── */}
+          {/* ── NEXUS : processing → celebrate ──────────── */}
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Animated.View style={{
-              position: 'absolute', width: 300, height: 300, borderRadius: 150,
-              backgroundColor: 'rgba(56,189,248,0.12)',
-              opacity: glowO, transform: [{ scale: glowS }],
-            }} />
-            <Animated.View style={{
-              position: 'absolute', width: 200, height: 200, borderRadius: 100,
-              backgroundColor: 'rgba(56,189,248,0.22)',
-              opacity: glowO, transform: [{ scale: glowS }],
-            }} />
-            <Mascot pose="mimi3_done" height={220} animate float />
+            <JarvisMascot size={150} mood={ready ? 'celebrate' : 'processing'} />
           </View>
 
-          {/* ── Texte ────────────────────────────────────── */}
-          <View style={{ alignItems: 'center', gap: 16, marginBottom: 36 }}>
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingHorizontal: 14, paddingVertical: 6,
-              borderRadius: 999,
-              backgroundColor: 'rgba(52,211,153,0.14)',
-              borderWidth: 1, borderColor: 'rgba(52,211,153,0.34)',
-            }}>
-              <Ionicons name="checkmark-circle" size={14} color="#34d399" />
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#6ee7b7', letterSpacing: 1.8, textTransform: 'uppercase' }}>
-                Profil créé
-              </Text>
-            </View>
+          {/* ── Console de construction ─────────────────── */}
+          <View style={{ gap: 10, marginBottom: 28, minHeight: 130 }}>
+            <ProgressRail progress={progress} height={6} />
 
-            <Text style={{ fontSize: 40, fontWeight: '900', color: '#fff', letterSpacing: -1.2, lineHeight: 46, textAlign: 'center' }}>
-              Tout est prêt,{'\n'}
-              <Text style={{ color: '#38bdf8' }}>{name} !</Text>
-            </Text>
-
-            <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', lineHeight: 22, textAlign: 'center', paddingHorizontal: 8 }}>
-              Ton coach a tout ce qu'il faut. C'est l'heure de soulever de la fonte.
-            </Text>
-          </View>
-
-          {/* ── CTA ──────────────────────────────────────── */}
-          <Pressable
-            onPress={() => router.replace('/(tabs)')}
-            disabled={saving}
-            style={({ pressed }) => ({
-              borderRadius: 20, overflow: 'hidden',
-              opacity: saving ? 0.6 : 1,
-              transform: [{ scale: pressed && !saving ? 0.97 : 1 }],
-              shadowColor: '#38bdf8',
-              shadowOpacity: 0.50, shadowRadius: 22, shadowOffset: { width: 0, height: 10 },
-              elevation: 10,
+            {buildSteps.map((label, i) => {
+              if (!ready && i > stepIdx) return null;
+              const doneStep = ready || i < stepIdx;
+              return (
+                <Animated.View
+                  key={label}
+                  entering={FadeIn.duration(200)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                >
+                  <Ionicons
+                    name={doneStep ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={14}
+                    color={doneStep ? hud.accent.regen : hud.cyan.bright}
+                  />
+                  <Text style={[hudType.labelHud, {
+                    fontSize: 12,
+                    color: doneStep ? hud.text.secondary : hud.cyan.bright,
+                  }]}>
+                    {label}
+                  </Text>
+                </Animated.View>
+              );
             })}
-          >
-            <View style={{ backgroundColor: '#38bdf8', borderRadius: 18, overflow: 'hidden', paddingVertical: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <Ionicons name={saving ? 'sync' : 'flame'} size={20} color="#07090f" />
-              <Text style={{ fontSize: 17, fontWeight: '900', color: '#07090f', letterSpacing: 1, textTransform: 'uppercase' }}>
-                {saving ? 'Préparation…' : "C'est parti !"}
-              </Text>
-            </View>
-          </Pressable>
+          </View>
 
-        </Animated.View>
+          {/* ── Révélation ──────────────────────────────── */}
+          {ready && (
+            <Animated.View entering={FadeInDown.duration(350)} style={{ gap: 16 }}>
+              <View style={{ alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  paddingHorizontal: 12, paddingVertical: 4,
+                  borderWidth: 1, borderColor: hud.accent.regen,
+                  backgroundColor: hud.accent.regenDim,
+                }}>
+                  <Ionicons name="checkmark-circle" size={13} color={hud.accent.regen} />
+                  <Text style={[hudType.labelHud, { color: hud.accent.regen }]}>
+                    Programme paré
+                  </Text>
+                </View>
+
+                <Text style={[hudType.displayTitle, { fontSize: 32, textAlign: 'center', lineHeight: 38 }]}>
+                  Tout est prêt,{'\n'}
+                  <Text style={{ color: hud.cyan.bright }}>{name}</Text>
+                </Text>
+
+                <Text style={[hudType.body, { textAlign: 'center' }]}>
+                  Ton copilote a tout ce qu'il faut. Première mission : soulever de la fonte.
+                </Text>
+              </View>
+
+              <BevelButton
+                label={saving ? 'Préparation…' : "Commencer l'entraînement"}
+                onPress={() => router.replace('/(tabs)')}
+                disabled={saving}
+                loading={saving}
+                heroChevrons
+              />
+            </Animated.View>
+          )}
+        </View>
       </SafeAreaView>
     </View>
   );
