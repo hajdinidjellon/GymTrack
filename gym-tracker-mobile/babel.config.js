@@ -8,5 +8,12 @@ module.exports = function (api) {
     plugins: [
       'react-native-reanimated/plugin',
     ],
+    env: {
+      // Jest (Node) ne sait pas exécuter les import() dynamiques :
+      // on les transforme en require() uniquement pour les tests.
+      test: {
+        plugins: ['babel-plugin-dynamic-import-node'],
+      },
+    },
   };
 };

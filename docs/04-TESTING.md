@@ -1,6 +1,6 @@
 # 04 — Stratégie de tests
 
-> État au 2026-07-05 : **Jest + jest-expo installés, 60 tests unitaires sur `lib/gamification` et `lib/aiPlanner`** (`npm test`). Toujours aucun linter, ni tests composants/E2E. Preuve de la valeur du filet : la première exécution a révélé un bug de fuseau horaire dans le calcul de streak (NR-6).
+> État au 2026-07-10 : **184 tests unitaires** (`npm test`) couvrant `lib/` (gamification, aiPlanner, onboardingFlow, exerciseDatabase, sessionTemplates, sync, i18n — dont un test de parité des clés fr/en) et les 6 stores (`stores/__tests__/`, `lib/db` et `lib/sync` mockés, pattern « SQLite d'abord » vérifié). Reste : `lib/db.ts` (migrations — nécessite une DB SQLite in-memory type better-sqlite3), tests composants, E2E. Toujours aucun linter. Note : `babel-plugin-dynamic-import-node` est activé en env `test` (babel.config.js) pour que les `import()` dynamiques passent sous Jest.
 
 ## Outillage
 
