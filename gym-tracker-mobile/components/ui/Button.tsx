@@ -202,6 +202,9 @@ export function Button({
         onPressOut={handlePressOut}
         disabled={isDisabled}
         activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
         {...rest}
       >
         {getBackground()}

@@ -306,6 +306,19 @@ const T = {
     'account.deleteCancel': 'Annuler',
     'account.deleteConfirm': 'Tout supprimer',
     'account.deleteError': 'La suppression a échoué — vérifie ta connexion et réessaie. Tes données locales sont intactes.',
+
+    // Légal
+    'legal.section': 'Légal',
+    'legal.privacy': 'Politique de confidentialité',
+    'legal.licenses': 'Licences open source',
+    'legal.licensesIntro': 'GymTrack est construit avec ces bibliothèques open source :',
+    'legal.disclaimer': "GymTrack est un outil de suivi d'entraînement. Il ne fournit pas de conseil médical et ne remplace pas l'avis d'un professionnel de santé. Consulte un médecin avant de commencer ou de modifier un programme d'entraînement, en particulier en cas de blessure ou de condition médicale.",
+    'legal.updated': 'Dernière mise à jour : {date}',
+
+    // Accessibilité (lecteurs d'écran)
+    'a11y.increase': 'Augmenter',
+    'a11y.decrease': 'Diminuer',
+    'a11y.back': 'Retour',
   },
 
   en: {
@@ -609,6 +622,19 @@ const T = {
     'account.deleteCancel': 'Cancel',
     'account.deleteConfirm': 'Delete everything',
     'account.deleteError': 'Deletion failed — check your connection and try again. Your local data is untouched.',
+
+    // Legal
+    'legal.section': 'Legal',
+    'legal.privacy': 'Privacy policy',
+    'legal.licenses': 'Open source licenses',
+    'legal.licensesIntro': 'GymTrack is built with these open source libraries:',
+    'legal.disclaimer': 'GymTrack is a workout tracking tool. It does not provide medical advice and is not a substitute for guidance from a healthcare professional. Consult a doctor before starting or changing a training program, especially if you have an injury or medical condition.',
+    'legal.updated': 'Last updated: {date}',
+
+    // Accessibility (screen readers)
+    'a11y.increase': 'Increase',
+    'a11y.decrease': 'Decrease',
+    'a11y.back': 'Back',
   },
 } as const;
 

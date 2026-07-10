@@ -11,6 +11,12 @@ import {
   Rajdhani_600SemiBold,
   Rajdhani_700Bold,
 } from '@expo-google-fonts/rajdhani';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import '@/global.css';
 
 import { supabase } from '@/lib/supabase';
@@ -53,6 +59,10 @@ function AppNavigator() {
     'Rajdhani-Medium':   Rajdhani_500Medium,
     'Rajdhani-SemiBold': Rajdhani_600SemiBold,
     'Rajdhani-Bold':     Rajdhani_700Bold,
+    'Inter-Regular':     Inter_400Regular,
+    'Inter-Medium':      Inter_500Medium,
+    'Inter-SemiBold':    Inter_600SemiBold,
+    'Inter-Bold':        Inter_700Bold,
   });
   const [isReady, setIsReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -225,6 +235,14 @@ function AppNavigator() {
         />
         <Stack.Screen
           name="exercise/[id]"
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="legal/privacy"
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="legal/licenses"
           options={{ animation: 'slide_from_right' }}
         />
       </Stack>

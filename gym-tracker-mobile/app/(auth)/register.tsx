@@ -207,12 +207,6 @@ export default function RegisterScreen() {
             heroChevrons
             icon={<Ionicons name="mail-outline" size={18} color={hud.text.primary} />}
           />
-          <BevelButton
-            label="Continuer avec Google"
-            variant="ghost"
-            height={48}
-            icon={<Ionicons name="logo-google" size={16} color={hud.cyan.bright} />}
-          />
         </View>
       </SafeAreaView>
     </View>

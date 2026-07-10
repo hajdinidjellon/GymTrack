@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, Pressable, ImageBackground,
-  KeyboardAvoidingView, Platform, ScrollView, Alert,
+  KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -212,13 +212,6 @@ export default function ConnectScreen() {
             onPress={() => setMode('email')}
             heroChevrons
             icon={<Ionicons name="mail-outline" size={18} color={hud.text.primary} />}
-          />
-          <BevelButton
-            label="Continuer avec Google"
-            variant="ghost"
-            height={48}
-            onPress={() => Alert.alert('Bientôt disponible', 'La connexion Google arrive prochainement !')}
-            icon={<Ionicons name="logo-google" size={16} color={hud.cyan.bright} />}
           />
           <Pressable
             onPress={goToDone}

@@ -140,6 +140,9 @@ export function BevelButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: disabled || loading, busy: loading }}
         style={{ height, justifyContent: 'center' }}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       >

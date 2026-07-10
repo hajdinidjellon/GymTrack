@@ -692,6 +692,42 @@ export default function ProfileScreen() {
                   </SettingRow>
                 </View>
 
+                {/* ── Légal : privacy + licences (exigence stores) ── */}
+                <View style={{
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 20, borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  paddingHorizontal: 16,
+                }}>
+                  <Pressable
+                    onPress={() => router.push('/legal/privacy')}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('legal.privacy')}
+                  >
+                    <SettingRow icon="shield-checkmark-outline" label={t('legal.privacy')}>
+                      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+                    </SettingRow>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => router.push('/legal/licenses')}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('legal.licenses')}
+                  >
+                    <SettingRow icon="code-slash-outline" label={t('legal.licenses')} last>
+                      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+                    </SettingRow>
+                  </Pressable>
+                </View>
+
+                {/* Disclaimer santé — visible en permanence dans les réglages */}
+                <Text style={{
+                  fontSize: 11, lineHeight: 17, fontWeight: '600',
+                  color: 'rgba(255,255,255,0.35)', textAlign: 'center',
+                  paddingHorizontal: 8,
+                }}>
+                  {t('legal.disclaimer')}
+                </Text>
+
                 {/* Export des données (RGPD — portabilité) */}
                 <Pressable
                   onPress={handleExport}

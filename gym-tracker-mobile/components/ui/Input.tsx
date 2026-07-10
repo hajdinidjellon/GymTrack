@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/constants/theme';
+import { useT } from '@/lib/i18n';
 
 interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
@@ -64,6 +65,7 @@ interface NumericInputProps {
 }
 
 export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, suffix, large = false }: NumericInputProps) {
+  const t                       = useT();
   const clamp                   = (v: number) => Math.min(Math.max(v, min), max);
   const [editing, setEditing]   = useState(false);
   const [editText, setEditText] = useState('');
@@ -90,6 +92,8 @@ export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, su
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Pressable
             onPress={() => handleButton(value - step)}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.decrease')}
             style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text style={{ fontSize: 20, color: colors.text.secondary, fontWeight: '700', lineHeight: 22 }}>−</Text>
@@ -116,6 +120,8 @@ export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, su
 
           <Pressable
             onPress={() => handleButton(value + step)}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.increase')}
             style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text style={{ fontSize: 20, color: colors.text.secondary, fontWeight: '700', lineHeight: 22 }}>+</Text>
@@ -134,6 +140,8 @@ export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, su
     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, overflow: 'hidden' }}>
       <Pressable
         onPress={() => handleButton(value - step)}
+        accessibilityRole="button"
+        accessibilityLabel={t('a11y.decrease')}
         style={{ paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 16, color: colors.text.secondary, fontWeight: '700' }}>−</Text>
@@ -164,6 +172,8 @@ export function NumericInput({ value, onChange, min = 0, max = 999, step = 1, su
 
       <Pressable
         onPress={() => handleButton(value + step)}
+        accessibilityRole="button"
+        accessibilityLabel={t('a11y.increase')}
         style={{ paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 16, color: colors.text.secondary, fontWeight: '700' }}>+</Text>

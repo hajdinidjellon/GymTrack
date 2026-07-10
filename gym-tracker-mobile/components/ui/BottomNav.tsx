@@ -166,6 +166,9 @@ function NavItem({
     <Pressable
       onPress={onPress}
       hitSlop={8}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: focused }}
       style={({ pressed }) => ({
         // Fixed width wider than any label → text cannot overflow, so
         // alignItems:'center' centers icon and text on the same axis.
@@ -225,6 +228,9 @@ function CoachItem({ active, onPress }: { active: boolean; onPress: () => void }
     <Pressable
       onPress={onPress}
       hitSlop={8}
+      accessibilityRole="tab"
+      accessibilityLabel="IA Coach"
+      accessibilityState={{ selected: active }}
       style={({ pressed }) => ({
         width: 68,
         flexShrink: 0, flexGrow: 0,
