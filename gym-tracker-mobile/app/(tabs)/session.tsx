@@ -20,6 +20,7 @@ import {
   useFont,
 } from '@shopify/react-native-skia';
 import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
+import { getElapsedSeconds } from '@/hooks/useSessionClock';
 import { differenceInDays } from 'date-fns';
 import * as Haptics from 'expo-haptics';
 import { useT } from '@/lib/i18n';
@@ -1326,10 +1327,13 @@ function ExercisePicker({ visible, onSelect, onClose }: {
 // ── Écran principal ─────────────────────────────────────────────────
 export default function SessionScreen() {
   const bottomPad = useBottomNavPadding();
-  const {
-    activeSession, startSession, addExercise,
-    finishSession, discardSession, startRestTimer, stopRestTimer,
-  } = useSessionStore();
+  const activeSession  = useSessionStore((s) => s.activeSession);
+  const startSession   = useSessionStore((s) => s.startSession);
+  const addExercise    = useSessionStore((s) => s.addExercise);
+  const finishSession  = useSessionStore((s) => s.finishSession);
+  const discardSession = useSessionStore((s) => s.discardSession);
+  const stopRestTimer  = useSessionStore((s) => s.stopRestTimer);
+  const addRestTime    = useSessionStore((s) => s.addRestTime);
 
   const { addWorkout, getLastWorkoutForExercise } = useWorkoutStore();
   const { profile } = useProfileStore();
@@ -1666,7 +1670,6 @@ export default function SessionScreen() {
         <ExerciseCard
           exercise={focusedExercise}
           lastWorkout={getLastWorkoutForExercise(focusedExercise.name)}
-          onStartRest={(s) => startRestTimer(s)}
           onBack={() => setFocusedExerciseId(null)}
           bottomPad={bottomPad}
         />
@@ -1683,23 +1686,18 @@ export default function SessionScreen() {
 
       <SafeAreaView style={{ position: 'absolute', top: 0, left: 0, right: 0 }} pointerEvents="box-none">
         {/* Rest timer */}
-        {activeSession.isResting && activeSession.restSecondsLeft !== null && (() => {
-          const ex = focusedExercise;
-          const lastIdx = activeSession.lastCompletedSetIndex;
-          const lastSet = ex && lastIdx !== null ? ex.sets[lastIdx] : null;
+        {activeSession.restEndsAt != null && (() => {
+          const last = activeSession.lastCompleted;
+          const ex = last ? activeSession.exercises.find((e) => e.id === last.exerciseId) : undefined;
+          const lastSet = ex && last ? ex.sets[last.setIndex] : undefined;
           return (
             <RestTimer
-              secondsLeft={activeSession.restSecondsLeft}
-              totalSeconds={defaultRestTime}
-              isVisible={activeSession.isResting}
+              restEndsAt={activeSession.restEndsAt}
+              totalSeconds={activeSession.restDuration ?? defaultRestTime}
               onSkip={stopRestTimer}
-              onAddTime={(s) =>
-                useSessionStore.getState().startRestTimer(
-                  Math.max(1, (activeSession.restSecondsLeft ?? 0) + s),
-                )
-              }
+              onAddTime={addRestTime}
               exerciseName={ex?.name}
-              setNumber={lastIdx !== null ? lastIdx + 1 : undefined}
+              setNumber={last ? last.setIndex + 1 : undefined}
               setsTotal={ex?.sets.length}
               lastWeight={lastSet?.weight}
               lastReps={lastSet?.reps}
@@ -1770,7 +1768,7 @@ export default function SessionScreen() {
 
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {[
-                    { label: t('session.duration'), value: `${Math.floor(activeSession.elapsedSeconds / 60)} ${t('unit.min')}` },
+                    { label: t('session.duration'), value: `${Math.floor(getElapsedSeconds(activeSession.startedAt) / 60)} ${t('unit.min')}` },
                     { label: t('session.exercises'), value: String(activeSession.exercises.length) },
                     { label: t('session.sets'), value: `${activeSession.exercises.reduce((t, e) => t + e.sets.filter((s) => s.completed).length, 0)}/${activeSession.exercises.reduce((t, e) => t + e.sets.length, 0)}` },
                   ].map((s) => (

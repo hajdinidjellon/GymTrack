@@ -1,13 +1,18 @@
 /**
  * SESSION STORE — état de la séance en cours
  *
- * Persiste sur MMKV pour survivre aux crashes/backgrounding.
- * Le timer de repos est géré ici avec setInterval.
+ * Aucun tick par seconde ici : on stocke des timestamps absolus
+ * (startedAt, restEndsAt) et seuls les composants qui affichent un chrono
+ * recalculent le temps (voir hooks/useSessionClock.ts). Sinon tout l'écran
+ * de séance se re-rend chaque seconde.
+ *
+ * Toutes les vibrations de la séance partent d'ici, pas des composants.
  */
 
 import { create } from 'zustand';
 import * as Haptics from 'expo-haptics';
 import { scheduleRestCompleteNotification, cancelRestCompleteNotification } from '@/lib/notifications';
+import { useSettingsStore } from '@/stores/settingsStore';
 import type {
   ActiveSession,
   ActiveExercise,
@@ -16,13 +21,13 @@ import type {
   WorkoutType,
 } from '@/types';
 
+type NudgeField = 'weight' | 'reps';
+
 interface SessionStore {
   activeSession: ActiveSession | null;
-  restInterval: ReturnType<typeof setInterval> | null;
 
   // Cycle de vie de la séance
   startSession: (workoutName: string, type: WorkoutType) => void;
-  pauseSession: () => void;
   finishSession: () => Workout | null;
   discardSession: () => void;
 
@@ -34,55 +39,67 @@ interface SessionStore {
 
   // Gestion des séries
   updateSet: (exerciseId: string, setIndex: number, set: Partial<WorkoutSet>) => void;
+  /** One swipe step on weight or reps, with a haptic tick. */
+  nudgeSet: (exerciseId: string, setIndex: number, field: NudgeField, delta: number) => void;
   addSet: (exerciseId: string, set: WorkoutSet) => void;
   removeSet: (exerciseId: string, setIndex: number) => void;
+  /** Marks the set done and starts the rest timer. */
   completeSet: (exerciseId: string, setIndex: number) => void;
+  /** "Done as planned": completes every remaining set of the exercise at once. */
+  completeRemaining: (exerciseId: string) => number[];
 
   // Timer de repos
   startRestTimer: (seconds: number) => void;
+  addRestTime: (seconds: number) => void;
   stopRestTimer: () => void;
-  tickRestTimer: () => void;
 }
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+// Hors du state : un timeout n'a rien à faire dans un état sérialisable
+let restEndTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function clearRestEndTimeout() {
+  if (restEndTimeout) {
+    clearTimeout(restEndTimeout);
+    restEndTimeout = null;
+  }
+}
+
+function mapExercise(
+  session: ActiveSession,
+  exerciseId: string,
+  fn: (e: ActiveExercise) => ActiveExercise,
+): ActiveSession {
+  return {
+    ...session,
+    exercises: session.exercises.map((e) => (e.id === exerciseId ? fn(e) : e)),
+  };
+}
+
+function patchSet(e: ActiveExercise, setIndex: number, patch: Partial<WorkoutSet>): ActiveExercise {
+  const current = e.sets[setIndex];
+  if (!current) return e;
+  const sets = [...e.sets];
+  sets[setIndex] = { ...current, ...patch };
+  return { ...e, sets };
+}
+
 export const useSessionStore = create<SessionStore>((set, get) => ({
   activeSession: null,
-  restInterval: null,
 
-  startSession: (workoutName, type) => {
+  startSession: () => {
+    clearRestEndTimeout();
     set({
       activeSession: {
         workoutId: generateId(),
         startedAt: new Date().toISOString(),
         exercises: [],
-        elapsedSeconds: 0,
-        restSecondsLeft: null,
         restEndsAt: null,
-        isResting: false,
-        lastCompletedSetIndex: null,
+        restDuration: null,
+        lastCompleted: null,
       },
     });
-
-    // Chrono global de séance
-    const interval = setInterval(() => {
-      set((s) => {
-        if (!s.activeSession) return s;
-        return {
-          activeSession: {
-            ...s.activeSession,
-            elapsedSeconds: s.activeSession.elapsedSeconds + 1,
-          },
-        };
-      });
-    }, 1000);
-
-    // Store l'intervalle en utilisant un champ séparé non-sérialisé
-    (get() as SessionStore & { _sessionInterval?: ReturnType<typeof setInterval> })._sessionInterval = interval;
-  },
-
-  pauseSession: () => {
-    // Pas de pause réelle : le timer continue en arrière-plan
   },
 
   finishSession: () => {
@@ -91,10 +108,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
     get().stopRestTimer();
 
-    const now = new Date();
-    const startedAt = new Date(activeSession.startedAt);
     const durationMinutes = Math.round(
-      (now.getTime() - startedAt.getTime()) / 60000,
+      (Date.now() - new Date(activeSession.startedAt).getTime()) / 60000,
     );
 
     const workout: Workout = {
@@ -147,7 +162,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const ordered = exerciseIds
         .map((id) => s.activeSession!.exercises.find((e) => e.id === id))
         .filter((e): e is ActiveExercise => !!e);
-      return { activeSession: { ...s.activeSession!, exercises: ordered } };
+      return { activeSession: { ...s.activeSession, exercises: ordered } };
     });
   },
 
@@ -155,12 +170,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set((s) => {
       if (!s.activeSession) return s;
       return {
-        activeSession: {
-          ...s.activeSession,
-          exercises: s.activeSession.exercises.map((e) =>
-            e.id === exerciseId ? { ...e, isExpanded: !e.isExpanded } : e,
-          ),
-        },
+        activeSession: mapExercise(s.activeSession, exerciseId, (e) => ({ ...e, isExpanded: !e.isExpanded })),
       };
     });
   },
@@ -169,30 +179,29 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set((s) => {
       if (!s.activeSession) return s;
       return {
-        activeSession: {
-          ...s.activeSession,
-          exercises: s.activeSession.exercises.map((e) => {
-            if (e.id !== exerciseId) return e;
-            const sets = [...e.sets];
-            sets[setIndex] = { ...sets[setIndex]!, ...patch };
-            return { ...e, sets };
-          }),
-        },
+        activeSession: mapExercise(s.activeSession, exerciseId, (e) => patchSet(e, setIndex, patch)),
       };
     });
+  },
+
+  nudgeSet: (exerciseId, setIndex, field, delta) => {
+    const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
+    const current = exercise?.sets[setIndex];
+    if (!current) return;
+
+    // Arrondi pour éviter les 52.49999 après plusieurs pas de 2.5
+    const next = Math.max(0, Math.round((current[field] + delta) * 100) / 100);
+    if (next === current[field]) return;
+
+    get().updateSet(exerciseId, setIndex, { [field]: next });
+    Haptics.selectionAsync().catch(() => null);
   },
 
   addSet: (exerciseId, setData) => {
     set((s) => {
       if (!s.activeSession) return s;
       return {
-        activeSession: {
-          ...s.activeSession,
-          exercises: s.activeSession.exercises.map((e) => {
-            if (e.id !== exerciseId) return e;
-            return { ...e, sets: [...e.sets, setData] };
-          }),
-        },
+        activeSession: mapExercise(s.activeSession, exerciseId, (e) => ({ ...e, sets: [...e.sets, setData] })),
       };
     });
   },
@@ -201,89 +210,102 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set((s) => {
       if (!s.activeSession) return s;
       return {
-        activeSession: {
-          ...s.activeSession,
-          exercises: s.activeSession.exercises.map((e) => {
-            if (e.id !== exerciseId) return e;
-            const sets = e.sets.filter((_, i) => i !== setIndex);
-            return { ...e, sets };
-          }),
-        },
+        activeSession: mapExercise(s.activeSession, exerciseId, (e) => ({
+          ...e,
+          sets: e.sets.filter((_, i) => i !== setIndex),
+        })),
       };
     });
   },
 
   completeSet: (exerciseId, setIndex) => {
+    const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
+    const target = exercise?.sets[setIndex];
+    if (!target || target.completed) return;
+
     set((s) => {
       if (!s.activeSession) return s;
       return {
         activeSession: {
-          ...s.activeSession,
-          exercises: s.activeSession.exercises.map((e) => {
-            if (e.id !== exerciseId) return e;
-            const sets = [...e.sets];
-            sets[setIndex] = { ...sets[setIndex]!, completed: true };
-            return { ...e, sets };
-          }),
-          lastCompletedSetIndex: setIndex,
+          ...mapExercise(s.activeSession, exerciseId, (e) => patchSet(e, setIndex, { completed: true })),
+          lastCompleted: { exerciseId, setIndex },
         },
       };
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+
+    const { restTimerEnabled, defaultRestTime } = useSettingsStore.getState().settings;
+    if (restTimerEnabled) get().startRestTimer(target.restTime ?? defaultRestTime);
+  },
+
+  completeRemaining: (exerciseId) => {
+    const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
+    if (!exercise) return [];
+
+    const indexes = exercise.sets
+      .map((s, i) => (s.completed ? -1 : i))
+      .filter((i) => i >= 0);
+    if (indexes.length === 0) return [];
+
+    const lastIndex = indexes[indexes.length - 1]!;
+    set((s) => {
+      if (!s.activeSession) return s;
+      return {
+        activeSession: {
+          ...mapExercise(s.activeSession, exerciseId, (e) => ({
+            ...e,
+            sets: e.sets.map((set) => (set.completed ? set : { ...set, completed: true })),
+          })),
+          lastCompleted: { exerciseId, setIndex: lastIndex },
+        },
+      };
+    });
+
+    // Pas de repos : l'exercice est terminé, on enchaîne
+    get().stopRestTimer();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+    return indexes;
   },
 
   startRestTimer: (seconds) => {
-    get().stopRestTimer();
+    if (!get().activeSession) return;
+    clearRestEndTimeout();
 
-    const restEndsAt = Date.now() + seconds * 1000;
+    const duration = Math.max(1, Math.round(seconds));
+    const restEndsAt = Date.now() + duration * 1000;
 
     set((s) => ({
-      activeSession: s.activeSession
-        ? { ...s.activeSession, restSecondsLeft: seconds, restEndsAt, isResting: true }
-        : null,
+      activeSession: s.activeSession ? { ...s.activeSession, restEndsAt, restDuration: duration } : null,
     }));
 
     // Notification OS — se déclenche même app en arrière-plan
-    scheduleRestCompleteNotification(seconds).catch(() => null);
+    cancelRestCompleteNotification().catch(() => null);
+    scheduleRestCompleteNotification(duration).catch(() => null);
 
-    const interval = setInterval(() => {
-      get().tickRestTimer();
-    }, 1000);
+    restEndTimeout = setTimeout(() => {
+      restEndTimeout = null;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
+      set((s) => ({
+        activeSession: s.activeSession ? { ...s.activeSession, restEndsAt: null } : null,
+      }));
+    }, duration * 1000);
+  },
 
-    set({ restInterval: interval });
+  addRestTime: (seconds) => {
+    const restEndsAt = get().activeSession?.restEndsAt;
+    if (restEndsAt == null) return;
+    const left = Math.ceil((restEndsAt - Date.now()) / 1000);
+    get().startRestTimer(left + seconds);
   },
 
   stopRestTimer: () => {
-    const { restInterval } = get();
-    if (restInterval) {
-      clearInterval(restInterval);
-      set({ restInterval: null });
-    }
+    clearRestEndTimeout();
     cancelRestCompleteNotification().catch(() => null);
     set((s) => ({
       activeSession: s.activeSession
-        ? { ...s.activeSession, restSecondsLeft: null, restEndsAt: null, isResting: false }
+        ? { ...s.activeSession, restEndsAt: null, restDuration: null }
         : null,
     }));
-  },
-
-  tickRestTimer: () => {
-    const { activeSession, restInterval } = get();
-    if (!activeSession?.isResting || activeSession.restEndsAt == null) return;
-
-    const left = Math.ceil((activeSession.restEndsAt - Date.now()) / 1000);
-
-    if (left <= 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
-      if (restInterval) clearInterval(restInterval);
-      set({
-        restInterval: null,
-        activeSession: { ...activeSession, restSecondsLeft: 0, restEndsAt: null, isResting: false },
-      });
-      return;
-    }
-
-    set({ activeSession: { ...activeSession, restSecondsLeft: left } });
   },
 }));

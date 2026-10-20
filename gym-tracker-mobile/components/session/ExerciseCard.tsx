@@ -26,7 +26,6 @@ import type { ActiveExercise, Workout, WorkoutSet } from '@/types';
 interface ExerciseCardProps {
   exercise: ActiveExercise;
   lastWorkout: Workout | undefined;
-  onStartRest: (seconds: number) => void;
   onBack: () => void;
   bottomPad: number;
 }
@@ -311,8 +310,10 @@ function AddSetButton({ onPress }: { onPress: () => void }) {
 }
 
 // ── Composant principal ──────────────────────────────────────────────
-export function ExerciseCard({ exercise, lastWorkout, onStartRest, onBack, bottomPad }: ExerciseCardProps) {
-  const { updateSet, addSet, completeSet } = useSessionStore();
+export function ExerciseCard({ exercise, lastWorkout, onBack, bottomPad }: ExerciseCardProps) {
+  const updateSet   = useSessionStore((s) => s.updateSet);
+  const addSet      = useSessionStore((s) => s.addSet);
+  const completeSet = useSessionStore((s) => s.completeSet);
   const defaultRestTime = useSettingsStore((s) => s.settings.defaultRestTime);
   const muscleLabels    = useMuscleLabels();
   const { width: sw }   = useWindowDimensions();
@@ -342,9 +343,7 @@ export function ExerciseCard({ exercise, lastWorkout, onStartRest, onBack, botto
 
   const handleValidate = () => {
     if (activeIdx < 0 || !activeSet) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
     completeSet(exercise.id, activeIdx);
-    onStartRest(activeSet.restTime ?? defaultRestTime);
   };
 
   const handleAddSet = () => {

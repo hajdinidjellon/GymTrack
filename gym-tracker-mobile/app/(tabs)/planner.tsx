@@ -595,7 +595,8 @@ export default function PlannerScreen() {
   const bottomPad = useBottomNavPadding();
   const { workouts } = useWorkoutStore();
   const { profile } = useProfileStore();
-  const { startSession, addExercise } = useSessionStore();
+  const startSession = useSessionStore((s) => s.startSession);
+  const addExercise  = useSessionStore((s) => s.addExercise);
   const defaultRestTime = useSettingsStore((s) => s.settings.defaultRestTime);
 
   const [openTool, setOpenTool] = useState<'warmup' | 'analyse' | null>(null);

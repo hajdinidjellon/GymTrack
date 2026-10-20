@@ -262,11 +262,10 @@ export interface ActiveSession {
   workoutId: string;
   startedAt: string;
   exercises: ActiveExercise[];
-  elapsedSeconds: number;
-  restSecondsLeft: number | null;
+  /** Absolute timestamps so the timers survive re-renders and app restarts. */
   restEndsAt: number | null;
-  isResting: boolean;
-  lastCompletedSetIndex: number | null;
+  restDuration: number | null;
+  lastCompleted: { exerciseId: string; setIndex: number } | null;
 }
 
 // ============================================================

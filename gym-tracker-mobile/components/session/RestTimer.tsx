@@ -10,6 +10,7 @@ import React from 'react';
 import { View, Text, Pressable, Modal, Image, StyleSheet, useWindowDimensions } from 'react-native';
 import { DA, OctagonShape } from './SessionDashboard';
 import { PremiumFrame } from '@/components/ui/PremiumFrame';
+import { useRestSecondsLeft } from '@/hooks/useSessionClock';
 import {
   Canvas,
   Path as SkPath,
@@ -20,9 +21,8 @@ import {
 } from '@shopify/react-native-skia';
 
 interface RestTimerProps {
-  secondsLeft: number;
+  restEndsAt: number;
   totalSeconds: number;
-  isVisible: boolean;
   onSkip: () => void;
   onAddTime: (seconds: number) => void;
   // Props infos exo/série conservées pour usage futur, ignorées dans
@@ -139,8 +139,9 @@ function SkipButton({ w, h, onPress }: { w: number; h: number; onPress: () => vo
 
 // ── Composant principal ──────────────────────────────────────────────
 export function RestTimer({
-  secondsLeft, totalSeconds, isVisible, onSkip, onAddTime,
+  restEndsAt, totalSeconds, onSkip, onAddTime,
 }: RestTimerProps) {
+  const secondsLeft = useRestSecondsLeft(restEndsAt) ?? 0;
   const { width: sw, height: shh } = useWindowDimensions();
 
   // Dimensions de l'anneau : on prend ~92% de la largeur écran, et on
@@ -155,7 +156,7 @@ export function RestTimer({
   const totalStr = formatTime(totalSeconds);
 
   return (
-    <Modal visible={isVisible} transparent animationType="fade" statusBarTranslucent>
+    <Modal visible transparent animationType="fade" statusBarTranslucent>
       {/* Scrim : tap dehors = skip */}
       <Pressable
         onPress={onSkip}

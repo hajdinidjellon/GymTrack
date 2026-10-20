@@ -17,6 +17,7 @@ import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-nati
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useElapsedSeconds } from '@/hooks/useSessionClock';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useCelebrationStore } from '@/stores/celebrationStore';
 import { getSuggestedSession } from '@/lib/aiPlanner';
@@ -473,6 +474,11 @@ function RecentRow({ workout, isLast }: { workout: Workout; isLast: boolean }) {
 
 // ── Main screen ──────────────────────────────────────────────────────
 
+// Isolé pour que seul ce texte se re-rende chaque seconde, pas tout le dashboard
+function ElapsedMinutes({ startedAt }: { startedAt: string }) {
+  return <>{Math.floor(useElapsedSeconds(startedAt) / 60)}</>;
+}
+
 export default function DashboardScreen() {
   const bottomPad   = useBottomNavPadding();
   const { width: sw, height: sh } = useWindowDimensions();
@@ -480,7 +486,9 @@ export default function DashboardScreen() {
 
   const { workouts, loadWorkouts, setWorkouts, getLastWorkoutForExercise } = useWorkoutStore();
   const { profile, loadProfile, saveProfile, getStreak, getCurrentRank, getTotalXP } = useProfileStore();
-  const { activeSession, startSession, addExercise } = useSessionStore();
+  const activeSession = useSessionStore((s) => s.activeSession);
+  const startSession  = useSessionStore((s) => s.startSession);
+  const addExercise   = useSessionStore((s) => s.addExercise);
   const defaultRestTime = useSettingsStore((s) => s.settings.defaultRestTime);
   const showCelebration   = useCelebrationStore((s) => s.show);
 
@@ -656,7 +664,7 @@ export default function DashboardScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.sessionTypeBig, { color: '#10b981' }]}>EN COURS</Text>
                       <Text style={styles.sessionMeta}>
-                        {activeSession.exercises.length} exercices · {Math.floor(activeSession.elapsedSeconds / 60)} min
+                        {activeSession.exercises.length} exercices · <ElapsedMinutes startedAt={activeSession.startedAt} /> min
                       </Text>
                     </View>
                   </View>

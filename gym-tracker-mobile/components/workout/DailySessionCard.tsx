@@ -98,7 +98,8 @@ export function DailySessionCard({ buttonLabel = 'DÉMARRER LA SÉANCE', style, 
   /** Appelé après le démarrage (ex : navigation vers l'onglet Séance). */
   onAfterStart?: () => void;
 }) {
-  const { startSession, addExercise } = useSessionStore();
+  const startSession = useSessionStore((s) => s.startSession);
+  const addExercise  = useSessionStore((s) => s.addExercise);
   const { getLastWorkoutForExercise } = useWorkoutStore();
   const workouts = useWorkoutStore((s) => s.workouts);
   const { profile } = useProfileStore();
