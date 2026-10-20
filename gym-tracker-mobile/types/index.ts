@@ -46,6 +46,8 @@ export interface WorkoutSet {
   notes?: string;
   completed?: boolean;
   restTime?: number;
+  /** What the progression engine asked for when this set was logged. */
+  target?: SetTarget;
 }
 
 export interface Exercise {
@@ -56,6 +58,29 @@ export interface Exercise {
   sets: WorkoutSet[];
   notes?: string;
   tempo?: string;
+  /** Rule in effect for this session; the next session reuses it. */
+  rule?: ProgressionRule;
+  /** First session with no history: the starting weight was picked by hand. */
+  calibration?: boolean;
+}
+
+// ============================================================
+// PROGRESSION (pilote automatique)
+// ============================================================
+
+/** Double progression: e.g. 3 sets of 8-12, add weight once every set hits 12. */
+export interface ProgressionRule {
+  kind: 'double';
+  sets: number;
+  repMin: number;
+  repMax: number;
+  /** Weight step in the user's unit (2.5 kg, 5 lbs, 1-2 for dumbbells...). */
+  increment: number;
+}
+
+export interface SetTarget {
+  weight: number;
+  reps: number;
 }
 
 export interface Workout {
