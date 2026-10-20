@@ -1,6 +1,9 @@
 /**
  * SESSION STORE — état de la séance en cours
  *
+ * La séance est persistée dans expo-sqlite/kv-store (synchrone, dispo dans
+ * Expo Go) : elle survit à un kill de l'app et se restaure au démarrage.
+ *
  * Aucun tick par seconde ici : on stocke des timestamps absolus
  * (startedAt, restEndsAt) et seuls les composants qui affichent un chrono
  * recalculent le temps (voir hooks/useSessionClock.ts). Sinon tout l'écran
@@ -10,6 +13,8 @@
  */
 
 import { create } from 'zustand';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
+import { Storage } from 'expo-sqlite/kv-store';
 import * as Haptics from 'expo-haptics';
 import { scheduleRestCompleteNotification, cancelRestCompleteNotification } from '@/lib/notifications';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -66,6 +71,24 @@ function clearRestEndTimeout() {
   }
 }
 
+function armRestEnd(ms: number) {
+  clearRestEndTimeout();
+  restEndTimeout = setTimeout(() => {
+    restEndTimeout = null;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
+    useSessionStore.setState((s) => ({
+      activeSession: s.activeSession ? { ...s.activeSession, restEndsAt: null } : null,
+    }));
+  }, ms);
+}
+
+// Lecture/écriture synchrones : la séance est déjà là au premier rendu
+const kvStorage: StateStorage = {
+  getItem: (key) => Storage.getItemSync(key),
+  setItem: (key, value) => Storage.setItemSync(key, value),
+  removeItem: (key) => { Storage.removeItemSync(key); },
+};
+
 function mapExercise(
   session: ActiveSession,
   exerciseId: string,
@@ -85,7 +108,7 @@ function patchSet(e: ActiveExercise, setIndex: number, patch: Partial<WorkoutSet
   return { ...e, sets };
 }
 
-export const useSessionStore = create<SessionStore>((set, get) => ({
+export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
   activeSession: null,
 
   startSession: () => {
@@ -283,13 +306,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     cancelRestCompleteNotification().catch(() => null);
     scheduleRestCompleteNotification(duration).catch(() => null);
 
-    restEndTimeout = setTimeout(() => {
-      restEndTimeout = null;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
-      set((s) => ({
-        activeSession: s.activeSession ? { ...s.activeSession, restEndsAt: null } : null,
-      }));
-    }, duration * 1000);
+    armRestEnd(duration * 1000);
   },
 
   addRestTime: (seconds) => {
@@ -308,4 +325,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         : null,
     }));
   },
+}), {
+  name: 'active-session',
+  version: 1,
+  storage: createJSONStorage(() => kvStorage),
+  partialize: (s) => ({ activeSession: s.activeSession }),
 }));
+
+// Après un kill de l'app : on réarme la fin du repos, ou on l'efface s'il est déjà fini
+const restored = useSessionStore.getState().activeSession;
+if (restored?.restEndsAt != null) {
+  const left = restored.restEndsAt - Date.now();
+  if (left > 0) {
+    armRestEnd(left);
+  } else {
+    useSessionStore.setState({ activeSession: { ...restored, restEndsAt: null, restDuration: null } });
+  }
+}
