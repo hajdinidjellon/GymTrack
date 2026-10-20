@@ -187,7 +187,7 @@ export function XpRing({ rank, totalXp, size = 124 }: Props) {
         {/* ── Flash rank-up ── */}
         <Animated.View
           pointerEvents="none"
-          style={{ ...StyleSheet.absoluteFillObject, borderRadius: size / 2, backgroundColor: CYAN, opacity: flashVal }}
+          style={{ ...StyleSheet.absoluteFill, borderRadius: size / 2, backgroundColor: CYAN, opacity: flashVal }}
         />
 
         {/* ── Centre: badge ── */}
@@ -203,7 +203,7 @@ export function XpRing({ rank, totalXp, size = 124 }: Props) {
 }
 
 const styles = StyleSheet.create({
-  center: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  center: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   xpLabel: {
     fontFamily: 'Rajdhani-SemiBold', fontSize: 9.5, color: CYAN,
     letterSpacing: 1.1, marginTop: 5, opacity: 0.80,

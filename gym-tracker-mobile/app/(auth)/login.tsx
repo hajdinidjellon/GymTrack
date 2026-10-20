@@ -90,7 +90,7 @@ export default function LoginScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07090f' }}>
-      <StatusBar style="light" backgroundColor="#07090f" />
+      <StatusBar style="light" />
 
       {/* Blobs */}
       <Blob top={-H * 0.10} left={-W * 0.24} rotate="-15deg" />

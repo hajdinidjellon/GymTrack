@@ -112,7 +112,7 @@ export default function OnboardingDoneScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#07090f' }}>
-      <StatusBar style="light" backgroundColor="#07090f" />
+      <StatusBar style="light" />
 
       {/* Fond */}
       <ImageBackground
