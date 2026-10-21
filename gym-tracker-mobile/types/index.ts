@@ -156,6 +156,8 @@ export interface AppSettings {
   plates: number[];
   /** Per-exercise weight step chosen by the user, keyed by exercise name. */
   increments: Record<string, number>;
+  /** Logged out: the app opens on the welcome screen, local data is kept. */
+  signedOut: boolean;
 }
 
 // ============================================================

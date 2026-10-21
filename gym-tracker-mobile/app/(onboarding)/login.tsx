@@ -6,6 +6,7 @@ import { isSupabaseConfigured, signInWithEmail } from '@/lib/supabase';
 import { initialSync } from '@/lib/sync';
 import { useProfileStore } from '@/stores/profileStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +25,7 @@ export default function Login() {
       router.replace('/goal');
       return;
     }
+    useSettingsStore.getState().updateSettings({ signedOut: false });
     router.dismissAll();
     router.replace('/(tabs)');
   };

@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   barWeight: DEFAULT_BAR,
   plates: DEFAULT_PLATES,
   increments: {},
+  signedOut: false,
 };
 
 export const REST_CHOICES = [60, 90, 120, 180];

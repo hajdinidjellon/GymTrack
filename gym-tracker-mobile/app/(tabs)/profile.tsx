@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, radius } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/lib/plates';
@@ -81,17 +81,34 @@ export default function Profile() {
         })}
       </View>
 
-      {signedIn ? (
-        <Button
-          label="Se déconnecter"
-          variant="outline"
-          height={56}
-          onPress={() => signOut().then(() => setSignedIn(false))}
-          style={{ marginTop: 18, borderColor: colors.line }}
-        />
-      ) : null}
+      <Button
+        label="Se déconnecter"
+        variant="outline"
+        height={56}
+        onPress={() => confirmLogout(signedIn)}
+        style={{ marginTop: 18, borderColor: colors.line }}
+      />
     </Screen>
   );
+}
+
+/** Back to the login page. Workouts stay on the phone, nothing is deleted. */
+function confirmLogout(signedIn: boolean) {
+  const message = signedIn
+    ? 'Tes séances sont sauvegardées dans ton compte.'
+    : 'Tu n\'as pas de compte : tes séances restent sur ce téléphone.';
+  Alert.alert('Se déconnecter ?', message, [
+    { text: 'Annuler', style: 'cancel' },
+    {
+      text: 'Se déconnecter',
+      style: 'destructive',
+      onPress: async () => {
+        if (signedIn) await signOut().catch(() => null);
+        useSettingsStore.getState().updateSettings({ signedOut: true });
+        router.push('/login');
+      },
+    },
+  ]);
 }
 
 interface RowProps {

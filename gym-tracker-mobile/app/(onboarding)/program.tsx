@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '@/constants/theme';
 import { SPLITS } from '@/lib/programs';
 import { useProfileStore } from '@/stores/profileStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +33,7 @@ export default function ProgramScreen() {
       prs: profile?.prs ?? [],
       bodyStats: profile?.bodyStats ?? [],
     });
+    useSettingsStore.getState().updateSettings({ signedOut: false });
     router.dismissAll();
     router.replace('/(tabs)');
   };
