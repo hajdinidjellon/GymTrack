@@ -9,7 +9,8 @@
  * recalculent le temps (voir hooks/useSessionClock.ts). Sinon tout l'écran
  * de séance se re-rend chaque seconde.
  *
- * Toutes les vibrations de la séance partent d'ici, pas des composants.
+ * Toutes les vibrations et annonces vocales de la séance partent d'ici,
+ * pas des composants.
  */
 
 import { create } from 'zustand';
@@ -17,14 +18,11 @@ import { persist, createJSONStorage, type StateStorage } from 'zustand/middlewar
 import { Storage } from 'expo-sqlite/kv-store';
 import * as Haptics from 'expo-haptics';
 import { scheduleRestCompleteNotification, cancelRestCompleteNotification } from '@/lib/notifications';
+import { findCurrent } from '@/lib/sessionCursor';
+import { nextExerciseLine, restOverLine, setLine, speak } from '@/lib/voice';
+import { formatKg } from '@/lib/plates';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type {
-  ActiveSession,
-  ActiveExercise,
-  WorkoutSet,
-  Workout,
-  WorkoutType,
-} from '@/types';
+import type { ActiveSession, ActiveExercise, WorkoutSet, Workout } from '@/types';
 
 type NudgeField = 'weight' | 'reps';
 
@@ -32,23 +30,17 @@ interface SessionStore {
   activeSession: ActiveSession | null;
 
   // Cycle de vie de la séance
-  startSession: (workoutName: string, type: WorkoutType) => void;
+  startSession: (name: string, exercises: ActiveExercise[]) => void;
   finishSession: () => Workout | null;
   discardSession: () => void;
 
-  // Gestion des exercices
-  addExercise: (exercise: ActiveExercise) => void;
-  removeExercise: (exerciseId: string) => void;
-  reorderExercises: (exerciseIds: string[]) => void;
-  toggleExerciseExpanded: (exerciseId: string) => void;
-
   // Gestion des séries
   updateSet: (exerciseId: string, setIndex: number, set: Partial<WorkoutSet>) => void;
-  /** One swipe step on weight or reps, with a haptic tick. */
+  /** One step on weight or reps, with a haptic tick. */
   nudgeSet: (exerciseId: string, setIndex: number, field: NudgeField, delta: number) => void;
-  addSet: (exerciseId: string, set: WorkoutSet) => void;
-  removeSet: (exerciseId: string, setIndex: number) => void;
-  /** Marks the set done and starts the rest timer. */
+  /** First time on an exercise: sets the weight of every remaining set. */
+  setStartWeight: (exerciseId: string, weight: number) => void;
+  /** Marks the set done and starts the rest timer, unless it was the last set. */
   completeSet: (exerciseId: string, setIndex: number) => void;
   /** "Done as planned": completes every remaining set at once, then starts the rest timer. */
   completeRemaining: (exerciseId: string) => number[];
@@ -77,9 +69,36 @@ function armRestEnd(ms: number) {
     restEndTimeout = null;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
     useSessionStore.setState((s) => ({
-      activeSession: s.activeSession ? { ...s.activeSession, restEndsAt: null } : null,
+      activeSession: s.activeSession ? { ...s.activeSession, restEndsAt: null, restDuration: null } : null,
     }));
+
+    const session = useSessionStore.getState().activeSession;
+    const next = session && findCurrent(session.exercises);
+    if (next && !next.exercise.needsWeight && useSettingsStore.getState().settings.voice) {
+      speak(restOverLine(next));
+    }
   }, ms);
+}
+
+/** After a set: announce the next exercise early so the bar can be loaded during the rest. */
+function announceNext(previousExerciseId: string) {
+  const session = useSessionStore.getState().activeSession;
+  const settings = useSettingsStore.getState().settings;
+  const next = session && findCurrent(session.exercises);
+  if (!next || !settings.voice) return;
+  if (next.exercise.id !== previousExerciseId) speak(nextExerciseLine(next, settings));
+}
+
+function restBody(session: ActiveSession | null): string {
+  const next = session && findCurrent(session.exercises);
+  if (!next) return 'Lance ta prochaine série.';
+  const load = next.set.weight > 0 ? ` · ${formatKg(next.set.weight)} kg × ${next.set.reps}` : ` · ${next.set.reps} reps`;
+  return `${next.exercise.name}${load}`;
+}
+
+/** Last set of the whole session: no rest, the summary comes next. */
+function isSessionDone(session: ActiveSession | null): boolean {
+  return !!session && findCurrent(session.exercises) === null;
 }
 
 // Lecture/écriture synchrones : la séance est déjà là au premier rendu
@@ -111,13 +130,14 @@ function patchSet(e: ActiveExercise, setIndex: number, patch: Partial<WorkoutSet
 export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
   activeSession: null,
 
-  startSession: () => {
+  startSession: (name, exercises) => {
     clearRestEndTimeout();
     set({
       activeSession: {
         workoutId: generateId(),
+        name,
         startedAt: new Date().toISOString(),
-        exercises: [],
+        exercises,
         restEndsAt: null,
         restDuration: null,
         lastCompleted: null,
@@ -138,9 +158,12 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
     const workout: Workout = {
       id: activeSession.workoutId,
       date: activeSession.startedAt,
-      name: 'Séance',
+      name: activeSession.name,
       type: 'strength',
-      exercises: activeSession.exercises.map(({ isExpanded: _, ...ex }) => ex),
+      // Un exercice sans aucune série validée n'a rien à faire dans l'historique
+      exercises: activeSession.exercises
+        .filter((e) => e.sets.some((set) => set.completed))
+        .map(({ equipment: _e, needsWeight: _n, ...ex }) => ex),
       duration: durationMinutes,
       feeling: 3,
       completed: true,
@@ -153,49 +176,6 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
   discardSession: () => {
     get().stopRestTimer();
     set({ activeSession: null });
-  },
-
-  addExercise: (exercise) => {
-    set((s) => {
-      if (!s.activeSession) return s;
-      return {
-        activeSession: {
-          ...s.activeSession,
-          exercises: [...s.activeSession.exercises, exercise],
-        },
-      };
-    });
-  },
-
-  removeExercise: (exerciseId) => {
-    set((s) => {
-      if (!s.activeSession) return s;
-      return {
-        activeSession: {
-          ...s.activeSession,
-          exercises: s.activeSession.exercises.filter((e) => e.id !== exerciseId),
-        },
-      };
-    });
-  },
-
-  reorderExercises: (exerciseIds) => {
-    set((s) => {
-      if (!s.activeSession) return s;
-      const ordered = exerciseIds
-        .map((id) => s.activeSession!.exercises.find((e) => e.id === id))
-        .filter((e): e is ActiveExercise => !!e);
-      return { activeSession: { ...s.activeSession, exercises: ordered } };
-    });
-  },
-
-  toggleExerciseExpanded: (exerciseId) => {
-    set((s) => {
-      if (!s.activeSession) return s;
-      return {
-        activeSession: mapExercise(s.activeSession, exerciseId, (e) => ({ ...e, isExpanded: !e.isExpanded })),
-      };
-    });
   },
 
   updateSet: (exerciseId, setIndex, patch) => {
@@ -220,25 +200,22 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
     Haptics.selectionAsync().catch(() => null);
   },
 
-  addSet: (exerciseId, setData) => {
-    set((s) => {
-      if (!s.activeSession) return s;
-      return {
-        activeSession: mapExercise(s.activeSession, exerciseId, (e) => ({ ...e, sets: [...e.sets, setData] })),
-      };
-    });
-  },
-
-  removeSet: (exerciseId, setIndex) => {
+  setStartWeight: (exerciseId, weight) => {
     set((s) => {
       if (!s.activeSession) return s;
       return {
         activeSession: mapExercise(s.activeSession, exerciseId, (e) => ({
           ...e,
-          sets: e.sets.filter((_, i) => i !== setIndex),
+          needsWeight: false,
+          sets: e.sets.map((set) =>
+            set.completed ? set : { ...set, weight, target: { weight, reps: set.target?.reps ?? set.reps } },
+          ),
         })),
       };
     });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
+    const next = findCurrent(get().activeSession?.exercises ?? []);
+    if (next && useSettingsStore.getState().settings.voice) speak(setLine(next));
   },
 
   completeSet: (exerciseId, setIndex) => {
@@ -257,9 +234,11 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+    if (isSessionDone(get().activeSession)) return;
 
     const { restTimerEnabled, defaultRestTime } = useSettingsStore.getState().settings;
     if (restTimerEnabled) get().startRestTimer(target.restTime ?? defaultRestTime);
+    announceNext(exerciseId);
   },
 
   completeRemaining: (exerciseId) => {
@@ -286,9 +265,11 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+    if (isSessionDone(get().activeSession)) return indexes;
 
     const { restTimerEnabled, defaultRestTime } = useSettingsStore.getState().settings;
     if (restTimerEnabled) get().startRestTimer(exercise.sets[lastIndex]?.restTime ?? defaultRestTime);
+    announceNext(exerciseId);
     return indexes;
   },
 
@@ -305,7 +286,7 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
 
     // Notification OS — se déclenche même app en arrière-plan
     cancelRestCompleteNotification().catch(() => null);
-    scheduleRestCompleteNotification(duration).catch(() => null);
+    scheduleRestCompleteNotification(duration, restBody(get().activeSession)).catch(() => null);
 
     armRestEnd(duration * 1000);
   },
@@ -328,7 +309,9 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
   },
 }), {
   name: 'active-session',
-  version: 1,
+  version: 2,
+  // Les séances de l'ancienne interface n'ont pas la même forme : on les abandonne
+  migrate: () => ({ activeSession: null }),
   storage: createJSONStorage(() => kvStorage),
   partialize: (s) => ({ activeSession: s.activeSession }),
 }));

@@ -1,30 +1,35 @@
 /**
  * SETTINGS STORE — AsyncStorage (compatible Expo Go)
- * Note: MMKV sera utilisé en production (build native) pour les perfs.
- * Pour switcher, remplacer AsyncStorage par MMKV ici uniquement.
  */
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_BAR, DEFAULT_PLATES } from '@/lib/plates';
 import type { AppSettings } from '@/types';
 
 const SETTINGS_KEY = '@gymtrack/settings';
 
 const DEFAULT_SETTINGS: AppSettings = {
   units: 'kg',
-  defaultRestTime: 5,
+  defaultRestTime: 90,
   restTimerEnabled: true,
-  theme: 'system',
   notifications: true,
-  language: 'fr',
-  trainingMode: 'hypertrophy',
+  voice: true,
+  barWeight: DEFAULT_BAR,
+  plates: DEFAULT_PLATES,
+  increments: {},
 };
+
+export const REST_CHOICES = [60, 90, 120, 180];
 
 async function loadSettings(): Promise<AppSettings> {
   try {
     const raw = await AsyncStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    const settings = { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    // L'ancienne version avait un repos de 5 s pour le debug
+    if (!REST_CHOICES.includes(settings.defaultRestTime)) settings.defaultRestTime = 90;
+    return settings;
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -43,7 +48,8 @@ interface SettingsStore {
   isLoaded: boolean;
   loadSettings: () => Promise<void>;
   updateSettings: (patch: Partial<AppSettings>) => void;
-  resetSettings: () => void;
+  setIncrement: (exerciseName: string, increment: number) => void;
+  togglePlate: (plate: number) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -63,17 +69,13 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     });
   },
 
-  resetSettings: () => {
-    persistSettings(DEFAULT_SETTINGS).catch(() => null);
-    set({ settings: DEFAULT_SETTINGS });
+  setIncrement: (exerciseName, increment) => {
+    get().updateSettings({ increments: { ...get().settings.increments, [exerciseName]: increment } });
+  },
+
+  togglePlate: (plate) => {
+    const { plates } = get().settings;
+    const next = plates.includes(plate) ? plates.filter((p) => p !== plate) : [...plates, plate];
+    get().updateSettings({ plates: next.sort((a, b) => b - a) });
   },
 }));
-
-// Helpers typés pour éviter des get() dans les composants
-export const useUnits = () => useSettingsStore((s) => s.settings.units);
-export const useRestTimerEnabled = () =>
-  useSettingsStore((s) => s.settings.restTimerEnabled);
-export const useDefaultRestTime = () =>
-  useSettingsStore((s) => s.settings.defaultRestTime);
-export const useTheme = () => useSettingsStore((s) => s.settings.theme);
-export const useLanguage = () => useSettingsStore((s) => s.settings.language);

@@ -4,86 +4,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project structure
 
-Monorepo root at `GymTrack/`. The app lives entirely in `gym-tracker-mobile/`. SVG body assets are in `public/`.
+Monorepo root at `GymTrack/`. The app lives entirely in `gym-tracker-mobile/`.
 
-All commands below must be run from inside `gym-tracker-mobile/`.
+All commands below must be run from inside `gym-tracker-mobile/`. `node_modules` is installed from Windows: from WSL, run npm through `cmd.exe /c "cd /d C:\...\gym-tracker-mobile && ..."`.
 
 ## Commands
 
 ```bash
-# Start dev server (Metro, 4 GB heap)
-npm start
-
-# Start targeting a specific platform
-npm run android
-npm run ios
-
-# TypeScript check (no emit)
-npm run type-check
+npm start            # Metro (4 GB heap), test with Expo Go SDK 57
+npm run type-check   # tsc --noEmit
+npm test             # Jest, node env, pure logic only (lib/__tests__)
 ```
 
-There is no test suite and no linter configured yet.
+## Product
+
+"Tu charges. On calcule." — an autopilot logger. The app picks today's session from the program, computes every target with the progression engine, shows the plates to load per side, and the user mostly just taps "Valider". Voice cues (expo-speech) announce the next exercise, the plates and the end of rest.
 
 ## Architecture
 
-### Routing — Expo Router v6 (file-based)
+### Routing — Expo Router (file-based, typed routes)
 
 ```
 app/
-  _layout.tsx          ← root: DB init, auth gate, redirect logic
-  (auth)/              ← login, register, onboarding (3-step: goal → level → PRs)
-  (tabs)/              ← bottom tabs: index (home), session, progress, planner, profile
-  workout/[id].tsx     ← detail view for a past workout
-  exercise/[id].tsx    ← progression chart for a single exercise
+  _layout.tsx              ← fonts, SQLite init, local data load (offline-first)
+  (onboarding)/            ← welcome, login, goal, program (goal/program also used from Profile with ?edit=1)
+  (tabs)/                  ← index (Aujourd'hui), progress, profile; _layout gates on profile and resumes a running session
+  session/preview.tsx      ← today's session, "Lancer la séance"
+  session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state
+  session/summary.tsx      ← tonnage, next targets
+  exercise/[name].tsx      ← next target, rule, increment picker, history
 ```
 
-Auth gate in `app/_layout.tsx`: initialises SQLite, loads local data (offline-first), then checks Supabase session. Redirects to `/(auth)/login`, `/(auth)/onboarding/goal`, or `/(tabs)` depending on state.
+### Domain logic (`lib/`, pure and tested)
 
-`experiments.typedRoutes = true` is enabled — always use typed `href` values with `router` and `<Link>`.
+- `progression.ts` — double progression engine (`nextTargets`).
+- `programs.ts` — exercise catalog (with equipment and old-name aliases), splits (PPL / Haut-Bas / Full body), rules per goal.
+- `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
+- `plates.ts` — plates per side for a weight, French number formatting.
+- `sessionCursor.ts` — current exercise/set of a running session.
+- `voice.ts` — spoken lines.
 
 ### State — Zustand stores (`stores/`)
 
 | Store | Responsibility |
 |---|---|
-| `workoutStore` | Past workouts (CRUD), computed selectors (by id, by exercise, this week) |
-| `sessionStore` | Active in-progress session, rest timer (setInterval), haptics on set complete |
-| `profileStore` | User profile, PRs, body stats, training goals |
-| `settingsStore` | Units (kg/lbs), rest time defaults, theme, language |
+| `sessionStore` | Running session, persisted in `expo-sqlite/kv-store` (survives app kills). Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here. |
+| `workoutStore` | Past workouts (SQLite) |
+| `profileStore` | Goal, program, PRs. Normalizes profiles from the old app version. |
+| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments |
 
-Every write in a store calls the matching `lib/db.ts` function first (SQLite), then triggers `flushSyncQueue()` in the background.
+`lib/db.ts` (SQLite, JSON blobs) and `lib/sync.ts` (Supabase queue, optional) are unchanged from the previous version.
 
-### Data layer
+### Design system — "Disques"
 
-**`lib/db.ts`** — expo-sqlite, offline-first. Data is stored as JSON blobs in columns. Schema versioned via `schema_version` table (currently v3). Tables: `workouts`, `profile`, `plans`, `goals`, `sync_queue`.
-
-**`lib/sync.ts`** — Supabase sync. Strategy: write local immediately → enqueue op in `sync_queue` → `flushSyncQueue()` drains queue to Supabase when online. On login: `initialSync()` flushes queue then pulls cloud (cloud wins on conflicts).
-
-**`lib/gamification.ts`** — Pure functions: XP calculation, streak, rank lookup (`RANKS` array), badge evaluation (`BADGES` array with `condition` predicates), muscle activity heatmap (`getMuscleActivity`), recovery detection (`getRecoveredMuscles`, >48h threshold).
-
-**`lib/aiPlanner.ts`** — Local AI planner (no external API). Generates `SuggestedSession` based on recovered muscles + PPL split, or returns next session from active `TrainingPlan`. Implements linear, 5/3/1, and DUP periodisation algorithms.
-
-### Types
-
-Single source of truth: `types/index.ts`. All domain types defined there — `Workout`, `Exercise`, `WorkoutSet`, `ActiveSession`, `Badge`, `Rank`, `TrainingPlan`, etc.
-
-### Design system
-
-Two complementary systems — use whichever fits the context:
-
-- **NativeWind v4** (Tailwind CSS): use `className` prop for layout and spacing. Custom tokens defined in `tailwind.config.js` (`bg-bg-primary`, `text-brand-primary`, `bg-rank-gold`, etc.)
-- **`constants/theme.ts`**: use `colors`, `spacing`, `radius`, `typography`, `shadows` for inline `style` props, animations, and programmatic colour access (e.g. heatmap, rank colours).
-
-The app is dark-only (`userInterfaceStyle: dark`, `bg.primary = #080810`).
-
-### Components
-
-Organised by domain under `components/`: `charts/`, `gamification/`, `muscle/`, `session/`, `ui/`. The `ui/` folder contains base primitives (`Button`, `Card`, `Input`, `Badge`, `StatCard`, `ProgressBar`).
+`constants/theme.ts`: one forest green, one cream, Bricolage Grotesque. No accent colours, no glow, no Skia. Styles are plain `style` props using the tokens. Base components in `components/ui/`, plate drawings in `components/disc/`, session views in `components/session/`. Mockups: claude.ai artifact "Maquette complète · G · Disques".
 
 ## Key conventions
 
-- Path alias `@/` maps to `gym-tracker-mobile/` (configured in `tsconfig.json` and Babel).
-- TypeScript strict: `noImplicitAny`, `strictNullChecks`, `noUncheckedIndexedAccess` are all on. Array index access returns `T | undefined`.
-- Supabase is optional at runtime — `isSupabaseConfigured()` guards all cloud calls. The app works fully offline.
-- `expo-haptics` is used for feedback on set completion and rest timer end — keep haptic calls in `sessionStore`, not in components.
-- Icons are referenced as string names (e.g. `'dumbbell'`, `'crown'`) — not Lucide imports, which are not available in React Native.
-- Bundle identifier: `com.gymtrack.mobile` (iOS and Android).
+- Path alias `@/` maps to `gym-tracker-mobile/`.
+- TypeScript strict with `noUncheckedIndexedAccess`.
+- Code in English; comments short, in plain French or English, only where they help.
+- Supabase is optional at runtime — `isSupabaseConfigured()` guards cloud calls.
+- Bundle identifier: `com.gymtrack.mobile`.

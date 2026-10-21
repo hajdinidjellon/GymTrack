@@ -1,226 +1,75 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { Stack, router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   useFonts,
-  Rajdhani_400Regular,
-  Rajdhani_500Medium,
-  Rajdhani_600SemiBold,
-  Rajdhani_700Bold,
-} from '@expo-google-fonts/rajdhani';
-import '@/global.css';
+  BricolageGrotesque_400Regular,
+  BricolageGrotesque_600SemiBold,
+  BricolageGrotesque_700Bold,
+  BricolageGrotesque_800ExtraBold,
+} from '@expo-google-fonts/bricolage-grotesque';
 
-import { supabase } from '@/lib/supabase';
 import { getDb } from '@/lib/db';
+import { requestPermissions } from '@/lib/notifications';
 import { colors } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useBadgeQueueStore } from '@/stores/badgeQueueStore';
-import { requestPermissions, refreshAllNotifications, cancelAllTrainingReminders, notifyBadgeUnlocked } from '@/lib/notifications';
-import { calculateStreakFromWorkouts, getUnlockedBadges, RANKS } from '@/lib/gamification';
-import { BadgeUnlockModal } from '@/components/gamification/BadgeUnlockModal';
-import { CelebrationToast } from '@/components/ui/CelebrationToast';
-import { PRCelebration } from '@/components/gamification/PRCelebration';
-import { RankUpOverlay } from '@/components/gamification/RankUpOverlay';
-import { useCelebrationStore } from '@/stores/celebrationStore';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      retry: 2,
-    },
-  },
-});
+SplashScreen.preventAutoHideAsync().catch(() => null);
 
 export default function RootLayout() {
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" />
-          <AppNavigator />
-        </QueryClientProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
-  );
-}
-
-function AppNavigator() {
   const [fontsLoaded] = useFonts({
-    'Rajdhani-Regular':  Rajdhani_400Regular,
-    'Rajdhani-Medium':   Rajdhani_500Medium,
-    'Rajdhani-SemiBold': Rajdhani_600SemiBold,
-    'Rajdhani-Bold':     Rajdhani_700Bold,
+    'Bricolage-Regular': BricolageGrotesque_400Regular,
+    'Bricolage-SemiBold': BricolageGrotesque_600SemiBold,
+    'Bricolage-Bold': BricolageGrotesque_700Bold,
+    'Bricolage-ExtraBold': BricolageGrotesque_800ExtraBold,
   });
-  const [isReady, setIsReady] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
-
-  const { loadWorkouts, workouts } = useWorkoutStore();
-  const { loadProfile, profile } = useProfileStore();
-  const { loadSettings } = useSettingsStore();
-  const { hydrate: hydrateBadges, checkUnlocks, queue, dismissCurrent } = useBadgeQueueStore();
-  const prevRankIdxRef = useRef<number | null>(null);
-
-  // Watcher : détecte les nouveaux badges et notifie + queue le modal
-  useEffect(() => {
-    if (!isReady) return;
-    const totalXP = useProfileStore.getState().getTotalXP();
-
-    // Watcher rank-up : si l'index de rang augmente pendant la session,
-    // déclenche l'overlay de montée de rang (DESIGN-GYMTRACK.md §B.9-4).
-    const rank = useProfileStore.getState().getCurrentRank();
-    if (rank) {
-      const idx = RANKS.findIndex((r) => r.tier === rank.tier && r.level === rank.level);
-      const prev = prevRankIdxRef.current;
-      if (prev !== null && idx > prev) {
-        const from = RANKS[prev];
-        if (from) useCelebrationStore.getState().showRankUp({ from, to: rank });
-      }
-      prevRankIdxRef.current = idx;
-    }
-    const streak  = calculateStreakFromWorkouts(workouts);
-    const data    = { workouts, profile: profile ?? null, totalXP, streak };
-    const unlocked = getUnlockedBadges(data);
-
-    // Capture les anciens badges avant l'update pour notification push
-    const beforeIds = new Set(useBadgeQueueStore.getState().seenIds);
-    checkUnlocks(unlocked);
-
-    // Si de nouveaux badges ont été ajoutés à la queue, déclenche aussi
-    // une notif push (seulement si l'app est en background ; sinon le modal suffit)
-    const newBadges = unlocked.filter((b) => !beforeIds.has(b.id));
-    if (newBadges.length > 0 && useSettingsStore.getState().settings.notifications) {
-      newBadges.forEach((b) => notifyBadgeUnlocked(b.name));
-    }
-  }, [isReady, workouts, profile]);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function init() {
-      // 1. Init base de données locale + settings + badges seen
-      await Promise.all([getDb(), loadSettings(), hydrateBadges()]);
-
-      // 2. Charge les données locales immédiatement (offline-first)
-      await loadWorkouts();
-      const profile = await loadProfile().then(() => useProfileStore.getState().profile);
-
-      // 3. Supabase session — optionnelle (sync cloud)
-      // L'app fonctionne entièrement hors-ligne sans compte
-      const {
-        data: { session },
-      } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
-
-      if (!mounted) return;
-
-      setIsAuthenticated(!!session);
-      setHasProfile(!!profile);
-      setIsReady(true);
-
-      // 4. Notifications — demande permission + reschedule
-      // Best-effort, ne bloque pas l'app si ça échoue
-      (async () => {
-        const { settings } = useSettingsStore.getState();
-        if (!settings.notifications) {
-          await cancelAllTrainingReminders();
-          return;
-        }
-        const granted = await requestPermissions();
-        if (!granted || !profile) return;
-
-        const workouts    = useWorkoutStore.getState().workouts;
-        const streak      = calculateStreakFromWorkouts(workouts);
-        const lastWorkout = workouts[0]?.date;
-        await refreshAllNotifications(profile.onboarding, streak, lastWorkout);
-      })().catch((err) => console.warn('Notification setup failed', err));
-    }
-
-    init().catch(console.error);
-
-    // Écoute les changements de session
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      setIsAuthenticated(!!session);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    // Tout est local : l'app démarre sans réseau, la sync cloud suit en arrière-plan
+    (async () => {
+      await getDb();
+      await Promise.all([
+        useSettingsStore.getState().loadSettings(),
+        useWorkoutStore.getState().loadWorkouts(),
+        useProfileStore.getState().loadProfile(),
+      ]);
+    })()
+      .catch(console.error)
+      .finally(() => setDataLoaded(true));
   }, []);
 
-  // Redirect une fois l'état connu
+  const ready = fontsLoaded && dataLoaded;
+
   useEffect(() => {
-    if (!isReady) return;
-
-    // On ne bloque plus sur l'auth Supabase.
-    // Seul le profil local compte pour le routing.
-    if (!hasProfile) {
-      router.replace('/(auth)/welcome');
-    } else {
-      router.replace('/(tabs)');
-    }
-  }, [isReady, isAuthenticated, hasProfile]);
-
-  if (!isReady || !fontsLoaded) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.bg.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <ActivityIndicator size="large" color={colors.brand.primary} />
-      </View>
-    );
-  }
+    if (!ready) return;
+    SplashScreen.hideAsync().catch(() => null);
+    if (useSettingsStore.getState().settings.notifications) requestPermissions().catch(() => null);
+  }, [ready]);
 
   return (
-    <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.bg.primary },
-          animation: 'fade',
-        }}
-      >
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="workout/[id]"
-          options={{ animation: 'slide_from_right' }}
-        />
-        <Stack.Screen
-          name="exercise/[id]"
-          options={{ animation: 'slide_from_right' }}
-        />
-      </Stack>
-
-      {/* Modal de célébration badge — affiche le premier de la queue */}
-      <BadgeUnlockModal
-        badge={queue[0] ?? null}
-        onClose={dismissCurrent}
-      />
-
-      {/* Toast de célébration objectif hebdo */}
-      <CelebrationToast />
-
-      {/* Célébration PR plein écran (volt + compteur + confettis) */}
-      <PRCelebration />
-
-      {/* Montée de rang — cadre tracé, éclat, onde de choc */}
-      <RankUpOverlay />
-    </>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        {ready ? (
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }}>
+            <Stack.Screen name="(onboarding)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="session/preview" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="session/index" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="session/summary" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="exercise/[name]" options={{ animation: 'slide_from_right' }} />
+          </Stack>
+        ) : (
+          <View style={{ flex: 1, backgroundColor: colors.bg }} />
+        )}
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

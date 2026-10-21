@@ -1,6 +1,5 @@
 // ============================================================
 // TYPES PRINCIPAUX — GymTrack Mobile
-// Portés depuis ../Gym-Tracker/src/types/index.ts (schéma fixe)
 // ============================================================
 
 export type SetType =
@@ -129,69 +128,34 @@ export interface TrainingGoal {
   progress: number;
 }
 
-export type OnboardingGoal =
-  | 'pr'
-  | 'hypertrophy'
-  | 'weight_loss'
-  | 'consistency'
-  | 'health';
+export type Goal = 'muscle' | 'force' | 'forme';
+export type SplitId = 'ppl' | 'ul' | 'fb';
 
-export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
-export type TimeOfDay = 'morning' | 'midday' | 'evening';
-export type HealthFocus = 'strength' | 'mobility' | 'cardio' | 'balanced';
-export type SportBackground =
-  | 'none'
-  | 'running'
-  | 'cycling'
-  | 'swimming'
-  | 'team_sport'
-  | 'combat'
-  | 'racket'
-  | 'other';
-
-export interface OnboardingPreferences {
-  /** Objectif principal choisi à l'onboarding */
-  primaryGoal?: OnboardingGoal;
-  /** Muscles prioritaires pour hypertrophy */
-  muscleFocus?: MuscleGroup[];
-  /** Poids cible (kg) pour weight_loss */
-  targetWeight?: number;
-  /** Séances cardio par semaine pour weight_loss */
-  cardioPerWeek?: number;
-  /** Jours préférés pour consistency */
-  preferredDays?: DayOfWeek[];
-  /** Moment de la journée pour consistency */
-  timeOfDay?: TimeOfDay;
-  /** Heure du rappel quotidien (format HH:mm) pour consistency */
-  reminderTime?: string;
-  /** Focus santé pour health */
-  healthFocus?: HealthFocus;
-  /** Historique sportif pour health */
-  sportBackground?: SportBackground[];
+export interface Program {
+  split: SplitId;
+  perWeek: number;
 }
 
 export interface UserProfile {
-  name: string;
-  birthDate?: string;
-  height: number;
-  gender: 'male' | 'female' | 'other';
-  experienceLevel: 'beginner' | 'intermediate' | 'advanced' | 'elite';
+  name?: string;
+  goal: Goal;
+  program: Program;
   prs: PersonalRecord[];
   bodyStats: BodyStats[];
-  trainingFrequency: number;
-  goals: TrainingGoal[];
-  /** Données collectées pendant l'onboarding selon le goal choisi */
-  onboarding?: OnboardingPreferences;
 }
 
 export interface AppSettings {
   units: 'kg' | 'lbs';
-  defaultRestTime: 5 | 60 | 90 | 120 | 180;
+  defaultRestTime: number;
   restTimerEnabled: boolean;
-  theme: 'dark' | 'light' | 'system';
   notifications: boolean;
-  language: 'fr' | 'en';
-  trainingMode?: WorkoutType;
+  /** Spoken cues during the session (next set, plates to load). */
+  voice: boolean;
+  barWeight: number;
+  /** Plates the user's gym has, heaviest first. */
+  plates: number[];
+  /** Per-exercise weight step chosen by the user, keyed by exercise name. */
+  increments: Record<string, number>;
 }
 
 // ============================================================
@@ -242,110 +206,25 @@ export interface TrainingPlan {
 }
 
 // ============================================================
-// SUGGESTION DE SÉANCE (mobile-only)
-// ============================================================
-
-export interface SuggestedSession {
-  title: string;
-  focus: MuscleGroup[];
-  exercises: PlannedExercise[];
-  estimatedDuration: number;
-  reason: string;
-}
-
-// ============================================================
-// ANALYTICS
-// ============================================================
-
-export interface ProgressionDataPoint {
-  date: string;
-  maxWeight: number;
-  totalVolume: number;
-  estimated1RM: number;
-}
-
-export interface ProgressionData {
-  exercise: string;
-  dataPoints: ProgressionDataPoint[];
-}
-
-export interface MuscleGroupVolume {
-  muscleGroup: MuscleGroup;
-  totalSets: number;
-  totalVolume: number;
-}
-
-// ============================================================
 // SESSION EN COURS (état local uniquement)
 // ============================================================
 
+/** How the exercise is loaded: decides plates, increments and calibration. */
+export type Equipment = 'barbell' | 'dumbbell' | 'machine' | 'bodyweight';
+
 export interface ActiveExercise extends Exercise {
-  isExpanded: boolean;
+  equipment: Equipment;
+  /** First time on this exercise: the user picks the weight before the first set. */
+  needsWeight: boolean;
 }
 
 export interface ActiveSession {
   workoutId: string;
+  name: string;
   startedAt: string;
   exercises: ActiveExercise[];
   /** Absolute timestamps so the timers survive re-renders and app restarts. */
   restEndsAt: number | null;
   restDuration: number | null;
   lastCompleted: { exerciseId: string; setIndex: number } | null;
-}
-
-// ============================================================
-// GAMIFICATION
-// ============================================================
-
-export type RankTier =
-  | 'bronze'
-  | 'silver'
-  | 'gold'
-  | 'platinum'
-  | 'diamond'
-  | 'legend';
-
-export type BadgeCategory =
-  | 'consistency'
-  | 'strength'
-  | 'volume'
-  | 'diversity'
-  | 'milestone'
-  | 'special';
-
-export type BadgeRarity = 'common' | 'rare' | 'epic' | 'legendary';
-
-export interface Rank {
-  tier: RankTier;
-  level: number;
-  name: string;
-  minXP: number;
-  maxXP: number;
-  color: string;
-  icon: string;
-  description: string;
-}
-
-export interface GamificationData {
-  workouts: Workout[];
-  profile: UserProfile | null;
-  totalXP: number;
-  streak: number;
-}
-
-export interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  category: BadgeCategory;
-  xpReward: number;
-  rarity: BadgeRarity;
-  condition: (data: GamificationData) => boolean;
-  progress?: (data: GamificationData) => number;
-}
-
-export interface UnlockedBadge extends Omit<Badge, 'condition' | 'progress'> {
-  unlockedAt: string;
-  currentProgress: number;
 }
