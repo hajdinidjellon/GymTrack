@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import {
   defaultRule,
+  deloadWeight,
   nextTargets,
   referenceWeight,
   roundDownToIncrement,
@@ -121,9 +122,16 @@ describe('failed sets', () => {
     expect(reps(r)).toEqual([8, 8, 8]);
   });
 
-  it('rounds the deload down to a loadable weight', () => {
+  it('rounds the deload to the nearest loadable weight', () => {
     const r = nextTargets([session(52.5, [7, 7, 7]), session(52.5, [7, 7, 6])], rule);
-    expect(weights(r)).toEqual([45, 45, 45]); // 47.25 -> 45
+    expect(weights(r)).toEqual([47.5, 47.5, 47.5]); // 47.25 -> 47.5
+  });
+
+  it('always deloads by at least one increment', () => {
+    expect(deloadWeight(100, 2.5)).toBe(90);
+    expect(deloadWeight(52.5, 2.5)).toBe(47.5);
+    expect(deloadWeight(20, 5)).toBe(15); // 18 rounds to 20, forced down to 15
+    expect(deloadWeight(5, 5)).toBe(0);
   });
 
   it('does not deload when the two failures were at different weights', () => {
@@ -148,6 +156,22 @@ describe('failed sets', () => {
     expect(r.decision).toBe('add_reps');
     expect(weights(r)).toEqual([90, 90, 90]);
     expect(reps(r)).toEqual([9, 9, 9]);
+  });
+});
+
+describe('bodyweight (weight 0)', () => {
+  it('never adds weight and keeps adding reps past the top of the range', () => {
+    const r = nextTargets([session(0, [12, 13, 12])], rule);
+    expect(r.decision).toBe('add_reps');
+    expect(weights(r)).toEqual([0, 0, 0]);
+    expect(reps(r)).toEqual([13, 14, 13]);
+  });
+
+  it('retries instead of deloading after two failures', () => {
+    const r = nextTargets([session(0, [8, 7, 6]), session(0, [8, 7, 7])], rule);
+    expect(r.decision).toBe('repeat');
+    expect(weights(r)).toEqual([0, 0, 0]);
+    expect(reps(r)).toEqual([8, 8, 8]);
   });
 });
 

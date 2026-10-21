@@ -50,7 +50,7 @@ interface SessionStore {
   removeSet: (exerciseId: string, setIndex: number) => void;
   /** Marks the set done and starts the rest timer. */
   completeSet: (exerciseId: string, setIndex: number) => void;
-  /** "Done as planned": completes every remaining set of the exercise at once. */
+  /** "Done as planned": completes every remaining set at once, then starts the rest timer. */
   completeRemaining: (exerciseId: string) => number[];
 
   // Timer de repos
@@ -285,9 +285,10 @@ export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
       };
     });
 
-    // Pas de repos : l'exercice est terminé, on enchaîne
-    get().stopRestTimer();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+
+    const { restTimerEnabled, defaultRestTime } = useSettingsStore.getState().settings;
+    if (restTimerEnabled) get().startRestTimer(exercise.sets[lastIndex]?.restTime ?? defaultRestTime);
     return indexes;
   },
 

@@ -9,6 +9,9 @@
  * Une série sous le minimum = séance ratée : on garde la charge.
  * Deux séances ratées d'affilée au même poids = on baisse de 10 %.
  *
+ * Poids du corps (poids à 0) : jamais de charge ajoutée automatiquement,
+ * on continue +1 rep par série sans plafond.
+ *
  * Le moteur est sans état : tout se déduit de l'historique de l'exercice.
  */
 
@@ -71,6 +74,13 @@ export function roundDownToIncrement(weight: number, increment: number): number 
   return round2(Math.floor(weight / increment + 1e-6) * increment);
 }
 
+/** -10%, rounded to the nearest loadable weight, and always at least one increment lighter. */
+export function deloadWeight(weight: number, increment: number): number {
+  if (increment <= 0) return round2(Math.max(0, weight * DELOAD_FACTOR));
+  const nearest = Math.round((weight * DELOAD_FACTOR) / increment) * increment;
+  return round2(Math.max(0, Math.min(nearest, weight - increment)));
+}
+
 export function startWeightFromOneRepMax(oneRepMax: number, increment: number): number {
   return roundDownToIncrement(oneRepMax * START_PERCENT_OF_1RM, increment);
 }
@@ -117,8 +127,6 @@ export function nextTargets(
   rule: ProgressionRule,
   options: { startWeight?: number } = {},
 ): ProgressionResult {
-  const clampReps = (r: number) => Math.min(rule.repMax, Math.max(rule.repMin, r));
-
   const sessions = history
     .map((h) => ({ date: h.date, sets: workingSets(h.sets) }))
     .filter((h) => h.sets.length > 0)
@@ -133,6 +141,9 @@ export function nextTargets(
   }
 
   const weight = referenceWeight(last.sets);
+  const bodyweight = weight === 0;
+  // Au poids du corps, pas de plafond : les reps sont la seule progression
+  const clampReps = (r: number) => Math.max(rule.repMin, bodyweight ? r : Math.min(rule.repMax, r));
 
   if (isFailedSession(last.sets, rule)) {
     let failures = 0;
@@ -141,8 +152,9 @@ export function nextTargets(
       failures++;
     }
 
-    if (failures >= FAILURES_BEFORE_DELOAD) {
-      const lighter = roundDownToIncrement(weight * DELOAD_FACTOR, rule.increment);
+    // Impossible d'alléger le poids du corps : on retente simplement
+    if (failures >= FAILURES_BEFORE_DELOAD && !bodyweight) {
+      const lighter = deloadWeight(weight, rule.increment);
       return { decision: 'deload', targets: fill(rule, lighter, () => rule.repMin) };
     }
 
@@ -157,7 +169,7 @@ export function nextTargets(
     };
   }
 
-  if (hitTopOfRange(last.sets, weight, rule)) {
+  if (!bodyweight && hitTopOfRange(last.sets, weight, rule)) {
     return { decision: 'add_weight', targets: fill(rule, weight + rule.increment, () => rule.repMin) };
   }
 
