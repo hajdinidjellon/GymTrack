@@ -31,47 +31,49 @@ export function SetView({ cursor }: { cursor: Cursor }) {
   return (
     <View style={{ flex: 1 }}>
       {exercise.lastTime || (setIndex === 0 && exercise.reason) ? (
-        <View style={{ marginTop: 10, gap: 2 }}>
+        <View style={{ marginTop: 10, gap: 6 }}>
           {exercise.lastTime ? (
-            <Text size={15} color={colors.muted} numberOfLines={1}>
-              Dernière fois :{' '}
-              <Text size={15} weight="bold" color={colors.muted}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text size={13} weight="bold" color={colors.faint}>
+                DERNIÈRE FOIS
+              </Text>
+              <Text size={14} weight="bold" color={colors.muted} numberOfLines={1} style={{ flexShrink: 1 }}>
                 {exercise.lastTime}
               </Text>
-            </Text>
+            </View>
           ) : null}
           {setIndex === 0 && exercise.reason ? (
-            <Text size={15} color={colors.muted} numberOfLines={2}>
+            <Text size={14} color={colors.brass} numberOfLines={2} style={{ lineHeight: 19 }}>
               {exercise.reason}
             </Text>
           ) : null}
         </View>
       ) : null}
 
-      {!bodyweight ? (
-        <Card style={{ marginTop: 14, paddingHorizontal: 8, paddingTop: 14 }}>
-          <Stepper
-            value={formatKg(set.weight)}
-            unit="kg"
-            onMinus={() => nudgeSet(exercise.id, setIndex, 'weight', -step)}
-            onPlus={() => nudgeSet(exercise.id, setIndex, 'weight', step)}
-            minusLabel={`Moins ${formatKg(step)} kg`}
-            plusLabel={`Plus ${formatKg(step)} kg`}
-          />
-          {exercise.equipment === 'barbell' ? (
-            <>
-              <View style={{ marginTop: 6, height: 108, justifyContent: 'center' }}>
-                <Barbell perSide={perSide} />
-              </View>
-              <Text size={16} weight="bold" align="center" style={{ marginTop: 4 }}>
-                {perSide.length ? `Par côté : ${describeSide(perSide)}` : 'Barre à vide'}
-              </Text>
-            </>
-          ) : null}
-        </Card>
-      ) : null}
-
-      <Card style={{ marginTop: 12, paddingHorizontal: 8, paddingVertical: 12 }}>
+      <Card style={{ marginTop: 12, paddingHorizontal: 6, paddingVertical: 8 }}>
+        {!bodyweight ? (
+          <>
+            <Stepper
+              value={formatKg(set.weight)}
+              unit="kg"
+              onMinus={() => nudgeSet(exercise.id, setIndex, 'weight', -step)}
+              onPlus={() => nudgeSet(exercise.id, setIndex, 'weight', step)}
+              minusLabel={`Moins ${formatKg(step)} kg`}
+              plusLabel={`Plus ${formatKg(step)} kg`}
+            />
+            {exercise.equipment === 'barbell' ? (
+              <>
+                <View style={{ height: 92, justifyContent: 'center' }}>
+                  <Barbell perSide={perSide} scale={0.85} />
+                </View>
+                <Text size={14} weight="bold" color={colors.muted} align="center" style={{ marginTop: 2 }}>
+                  {perSide.length ? `Par côté : ${describeSide(perSide)}` : 'Barre à vide'}
+                </Text>
+              </>
+            ) : null}
+            <View style={{ height: 1, backgroundColor: colors.hairline, marginVertical: 10, marginHorizontal: 12 }} />
+          </>
+        ) : null}
         <Stepper
           value={String(set.reps)}
           unit="reps"
@@ -85,31 +87,33 @@ export function SetView({ cursor }: { cursor: Cursor }) {
       <Pressable
         onPress={() => setMissed(true)}
         accessibilityRole="button"
-        style={{ marginTop: 10, alignItems: 'center' }}
+        hitSlop={8}
+        style={{ marginTop: 10, alignSelf: 'center' }}
       >
-        <Text size={15} weight="bold" color={colors.muted}>
-          Série ratée ? Appui long sur les reps
+        <Text size={14} weight="bold" color={colors.muted} style={{ textDecorationLine: 'underline' }}>
+          Série ratée ? Note les reps faites
         </Text>
       </Pressable>
 
-      <View style={{ flex: 1 }} />
+      <View style={{ flex: 1, minHeight: 12 }} />
 
       {remaining > 1 ? (
         <Button
           label={`Tout comme prévu · ${remaining} séries`}
-          variant="outline"
-          height={54}
+          variant="secondary"
+          height={48}
+          haptic="light"
           onPress={() => completeRemaining(exercise.id)}
         />
       ) : null}
       <Button
         label="Valider"
-        height={96}
-        icon={<Check />}
+        height={76}
+        icon={<Check size={30} />}
         accessibilityLabel="Valider la série"
         testID="validate-set"
         onPress={() => completeSet(exercise.id, setIndex)}
-        style={{ marginTop: 12 }}
+        style={{ marginTop: 10 }}
       />
 
       <MissedRepsSheet

@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import type { Tabs } from 'expo-router/js-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors, radius, space } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 import { BarIcon, ProfileIcon, ProgressIcon } from '@/components/ui/icons';
@@ -33,13 +34,13 @@ export function TabBar({ state, navigation }: TabBarProps) {
         accessibilityRole="tablist"
         style={{
           flexDirection: 'row',
-          height: 70,
+          height: 64,
           padding: 6,
           gap: 6,
           borderRadius: radius.pill,
           backgroundColor: colors.surface,
           borderWidth: 1,
-          borderColor: colors.line,
+          borderColor: colors.hairline,
         }}
       >
         {state.routes.map((route, i) => {
@@ -57,7 +58,9 @@ export function TabBar({ state, navigation }: TabBarProps) {
               accessibilityLabel={label}
               onPress={() => {
                 const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-                if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+                if (focused || event.defaultPrevented) return;
+                Haptics.selectionAsync().catch(() => null);
+                navigation.navigate(route.name);
               }}
               style={({ pressed }) => ({
                 flex: 1,
@@ -68,8 +71,8 @@ export function TabBar({ state, navigation }: TabBarProps) {
                 backgroundColor: focused ? colors.cream : pressed ? colors.line : 'transparent',
               })}
             >
-              <Icon color={tint} size={22} />
-              <Text size={13} weight={focused ? 'black' : 'semibold'} color={tint} numberOfLines={1}>
+              <Icon color={tint} size={20} />
+              <Text size={12} weight={focused ? 'black' : 'semibold'} color={tint} numberOfLines={1}>
                 {label}
               </Text>
             </Pressable>

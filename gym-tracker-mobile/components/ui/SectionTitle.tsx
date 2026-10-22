@@ -8,14 +8,14 @@ export function SectionTitle({ title, right, first }: { title: string; right?: R
   return (
     <View
       style={{
-        marginTop: first ? 0 : space.xl,
+        marginTop: first ? 0 : space.xl + 4,
         marginBottom: space.sm + 2,
         flexDirection: 'row',
         alignItems: 'baseline',
         justifyContent: 'space-between',
       }}
     >
-      <Text size={13} weight="black" color={colors.muted} accessibilityRole="header" style={{ letterSpacing: 1.3 }}>
+      <Text size={12} weight="black" color={colors.faint} accessibilityRole="header" style={{ letterSpacing: 1.3 }}>
         {title.toUpperCase()}
       </Text>
       {right}

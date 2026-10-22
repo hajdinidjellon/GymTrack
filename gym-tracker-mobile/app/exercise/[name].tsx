@@ -1,13 +1,13 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatShortDay } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { findExerciseDef } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
-import { exerciseHistory, lastTimeLabel, planLift, reasonLabel } from '@/domain/sessionBuilder';
+import { exerciseHistory, lastTimeLabel, planLift, reasonLabel, weightHistory } from '@/domain/sessionBuilder';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
 import { plateSize } from '@/components/disc/Barbell';
+import { Sparkline } from '@/components/stats/Sparkline';
 
 const STEPS = [1, 2, 2.5, 5];
 
@@ -42,6 +43,7 @@ export default function ExerciseScreen() {
   const target = lift.targets[0];
   const history = exerciseHistory(def, ctx.workouts).slice(0, 5);
   const bodyweight = def.equipment === 'bodyweight';
+  const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
 
   return (
     <Screen scroll>
@@ -52,14 +54,14 @@ export default function ExerciseScreen() {
         <Text size={15} weight="black" color={colors.muted} style={{ letterSpacing: 1.4 }}>
           PROCHAINE CIBLE
         </Text>
-        <Text size={44} weight="black" style={{ lineHeight: 50 }}>
+        <Text size={34} weight="black" style={{ lineHeight: 40 }}>
           {lift.decision === 'calibrate'
             ? 'À régler'
             : target && target.weight > 0
               ? `${formatKg(target.weight)} kg × ${target.reps}`
               : `${target?.reps ?? 0} reps`}
         </Text>
-        <Text size={15} color={colors.muted} style={{ marginTop: 4, lineHeight: 21 }}>
+        <Text size={14} color={colors.brass} style={{ marginTop: 4, lineHeight: 19 }}>
           {reasonLabel(lift)}
         </Text>
         {lift.last.length ? (
@@ -73,6 +75,20 @@ export default function ExerciseScreen() {
           </View>
         ) : null}
       </Card>
+
+      {weights.length > 1 ? (
+        <Card style={{ marginTop: 12, gap: space.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <Text size={13} weight="black" color={colors.faint} style={{ letterSpacing: 1.3 }}>
+              TA CHARGE
+            </Text>
+            <Text size={14} weight="bold" color={colors.muted}>
+              {formatKg(weights[0]!)} → {formatKg(weights[weights.length - 1]!)} kg
+            </Text>
+          </View>
+          <Sparkline values={weights} height={72} />
+        </Card>
+      ) : null}
 
       <Card style={{ marginTop: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>

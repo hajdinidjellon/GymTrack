@@ -11,8 +11,8 @@ interface Props {
 }
 
 /** The rest timer is a plate: its rim empties as the rest runs out. */
-export function RestDisc({ secondsLeft, total, size = 300 }: Props) {
-  const stroke = 19;
+export function RestDisc({ secondsLeft, total, size = 264 }: Props) {
+  const stroke = 16;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
   const progress = total > 0 ? Math.min(1, secondsLeft / total) : 0;
@@ -31,8 +31,9 @@ export function RestDisc({ secondsLeft, total, size = 300 }: Props) {
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.cream}
+          stroke={colors.brass}
           strokeWidth={stroke}
+          strokeLinecap="round"
           fill="none"
           strokeDasharray={`${circumference} ${circumference}`}
           strokeDashoffset={circumference * (1 - progress)}
@@ -48,10 +49,10 @@ export function RestDisc({ secondsLeft, total, size = 300 }: Props) {
           justifyContent: 'center',
         }}
       >
-        <Text size={16} weight="black" color={colors.muted} style={{ position: 'absolute', top: 30, letterSpacing: 3 }}>
+        <Text size={13} weight="black" color={colors.faint} style={{ position: 'absolute', top: 30, letterSpacing: 3 }}>
           REPOS
         </Text>
-        <Text size={92} weight="black" style={{ lineHeight: 100 }}>
+        <Text size={76} weight="black" style={{ lineHeight: 84 }}>
           {clock}
         </Text>
         <View

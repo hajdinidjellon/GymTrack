@@ -19,7 +19,7 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       <Arrow onPress={onMinus} label={minusLabel}>
-        <ChevronLeft color={colors.muted} />
+        <ChevronLeft size={24} color={colors.cream} />
       </Arrow>
       <Pressable
         onLongPress={onLongPress}
@@ -27,15 +27,15 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
         accessibilityHint={onLongPress ? 'Appui long pour saisir les reps faites' : undefined}
         style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}
       >
-        <Text size={84} weight="black" style={{ lineHeight: 92 }}>
+        <Text size={64} weight="black" style={{ lineHeight: 72 }}>
           {value}
         </Text>
-        <Text size={20} weight="semibold" color={colors.muted}>
+        <Text size={17} weight="semibold" color={colors.muted}>
           {unit}
         </Text>
       </Pressable>
       <Arrow onPress={onPlus} label={plusLabel}>
-        <ChevronRight color={colors.muted} />
+        <ChevronRight size={24} color={colors.cream} />
       </Arrow>
     </View>
   );
@@ -48,11 +48,12 @@ function Arrow({ onPress, label, children }: { onPress: () => void; label: strin
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => ({
-        width: 56,
-        height: 88,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: pressed ? 0.5 : 1,
+        backgroundColor: pressed ? colors.line : colors.surfaceHigh,
       })}
     >
       {children}
