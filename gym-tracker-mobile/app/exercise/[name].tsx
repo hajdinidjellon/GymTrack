@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
@@ -15,8 +15,8 @@ import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
-import { plateSize } from '@/components/disc/Barbell';
 import { Sparkline } from '@/components/stats/Sparkline';
+import { PressableScale } from '@/components/ui/PressableScale';
 
 const STEPS = [1, 2, 2.5, 5];
 
@@ -104,38 +104,40 @@ export default function ExerciseScreen() {
             <Text size={16} weight="semibold" color={colors.muted} style={{ marginTop: 14 }}>
               Ajouter à chaque palier
             </Text>
-            <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+            <View
+              accessibilityRole="radiogroup"
+              style={{
+                flexDirection: 'row',
+                marginTop: 10,
+                padding: 4,
+                gap: 4,
+                borderRadius: radius.pill,
+                backgroundColor: colors.bg,
+              }}
+            >
               {STEPS.map((v) => {
                 const on = lift.rule.increment === v;
                 return (
-                  <Pressable
+                  <PressableScale
                     key={v}
+                    haptic="selection"
                     onPress={() => setIncrement(def.name, v)}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
                     accessibilityLabel={`${formatKg(v)} kilos par palier`}
                     style={{
                       flex: 1,
-                      height: 92,
-                      borderRadius: radius.md - 2,
+                      height: 44,
+                      borderRadius: radius.pill,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: 8,
-                      backgroundColor: on ? colors.cream : colors.bg,
+                      backgroundColor: on ? colors.cream : 'transparent',
                     }}
                   >
-                    <View
-                      style={{
-                        width: 8,
-                        height: plateSize(v === 1 ? 1.25 : v, 0.7).height,
-                        borderRadius: 2,
-                        backgroundColor: on ? colors.bg : colors.cream,
-                      }}
-                    />
-                    <Text size={17} weight="black" color={on ? colors.bg : colors.cream}>
-                      {formatKg(v)}
+                    <Text size={15} weight="black" color={on ? colors.bg : colors.muted}>
+                      +{formatKg(v)} kg
                     </Text>
-                  </Pressable>
+                  </PressableScale>
                 );
               })}
             </View>
