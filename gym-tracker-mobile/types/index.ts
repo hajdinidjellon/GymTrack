@@ -137,6 +137,10 @@ export interface ActiveExercise extends Exercise {
   equipment: Equipment;
   /** First time on this exercise: the user picks the weight before the first set. */
   needsWeight: boolean;
+  /** "60 kg × 10 · 10 · 9": the last session, shown while logging. */
+  lastTime?: string;
+  /** Why today's target is what it is. */
+  reason?: string;
 }
 
 export interface ActiveSession {

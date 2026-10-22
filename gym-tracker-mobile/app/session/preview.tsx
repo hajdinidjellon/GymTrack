@@ -8,6 +8,7 @@ import { deltaLabel, targetLabel, toActiveExercises, type PlannedLift } from '@/
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
@@ -28,13 +29,12 @@ export default function Preview() {
   return (
     <Screen scroll footer={<Button label="Lancer la séance" onPress={start} />}>
       <BackButton label="Retour à l'accueil" />
-      <Text size={72} weight="black" numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: 10, lineHeight: 72 }}>
-        {plan.name}
-      </Text>
-      <Text size={18} color={colors.muted} style={{ marginTop: 8 }}>
-        {plan.lifts.length} exercices · {plan.minutes} min · tout est calculé
-      </Text>
-      <View style={{ gap: 10, marginTop: 22 }}>
+      <ScreenHeader
+        eyebrow={`Séance du jour · ~${plan.minutes} min`}
+        title={plan.name}
+        subtitle="Charges et reps calculées depuis tes dernières séances. Touche un exercice pour le détail."
+      />
+      <View style={{ gap: 10 }}>
         {plan.lifts.map((lift) => (
           <LiftRow key={lift.def.name} lift={lift} />
         ))}

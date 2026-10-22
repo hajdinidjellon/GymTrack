@@ -107,11 +107,12 @@ describe('rest', () => {
 
 describe('toWorkout', () => {
   it('keeps only exercises with a validated set and drops session-only fields', () => {
-    const ex = bench();
+    const ex = { ...bench(), lastTime: '60 kg × 10', reason: 'x' };
     const s = Session.completeSet(session([ex, active('ohp', [{ weight: 40, reps: 8 }])]), 'bench', 0);
     const w = Session.toWorkout(s, new Date('2026-10-20T18:52:00Z'));
     expect(w.exercises.map((e) => e.name)).toEqual(['bench']);
     expect(w.exercises[0]).not.toHaveProperty('equipment');
+    expect(w.exercises[0]).not.toHaveProperty('lastTime');
     expect(w).toMatchObject({ id: 'w1', name: 'Push', duration: 52, completed: true });
   });
 });
