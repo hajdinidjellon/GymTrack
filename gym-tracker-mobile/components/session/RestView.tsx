@@ -28,10 +28,10 @@ export function RestView({ next, restEndsAt, total }: { next: Cursor | null; res
       {next ? (
         <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
-            <Text size={15} weight="semibold" color={colors.muted} numberOfLines={1}>
-              Ensuite · {next.setIndex === 0 ? next.exercise.name : `série ${next.setIndex + 1}`}
+            <Text size={13} weight="bold" color={colors.faint} numberOfLines={1}>
+              ENSUITE · {next.setIndex === 0 ? next.exercise.name.toUpperCase() : `SÉRIE ${next.setIndex + 1}`}
             </Text>
-            <Text size={28} weight="black" style={{ marginTop: 2 }}>
+            <Text size={24} weight="black" style={{ marginTop: 2 }}>
               {next.exercise.needsWeight
                 ? 'Charge à régler'
                 : next.set.weight > 0
@@ -45,16 +45,27 @@ export function RestView({ next, restEndsAt, total }: { next: Cursor | null; res
         </Card>
       ) : null}
 
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 14 }}>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
         <Button
-          label="+30 s"
-          variant="outline"
-          height={80}
-          onPress={() => addRestTime(30)}
-          style={{ flex: 1, borderWidth: 2.5 }}
+          label="−15 s"
+          variant="secondary"
+          height={52}
+          haptic="selection"
+          accessibilityLabel="Retirer 15 secondes"
+          onPress={() => addRestTime(-15)}
+          style={{ flex: 1 }}
         />
-        <Button label="Passer" height={80} onPress={stopRestTimer} style={{ flex: 1 }} />
+        <Button
+          label="+15 s"
+          variant="secondary"
+          height={52}
+          haptic="selection"
+          accessibilityLabel="Ajouter 15 secondes"
+          onPress={() => addRestTime(15)}
+          style={{ flex: 1 }}
+        />
       </View>
+      <Button label="Passer le repos" height={64} haptic="medium" onPress={stopRestTimer} style={{ marginTop: 10 }} />
     </View>
   );
 }

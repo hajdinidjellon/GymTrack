@@ -13,13 +13,19 @@ export function SessionProgress({ exercises }: { exercises: ActiveExercise[] }) 
       accessibilityRole="progressbar"
       accessibilityLabel="Avancement de la séance"
       accessibilityValue={{ min: 0, max: total, now: done }}
-      style={{ flexDirection: 'row', gap: 4, height: 6 }}
+      style={{ flexDirection: 'row', gap: 4, height: 5 }}
     >
       {exercises.map((e) => {
         const ratio = e.sets.length ? e.sets.filter((s) => s.completed).length / e.sets.length : 0;
         return (
           <View key={e.id} style={{ flex: 1, borderRadius: 3, backgroundColor: colors.line, overflow: 'hidden' }}>
-            <View style={{ width: `${ratio * 100}%`, height: '100%', backgroundColor: colors.cream }} />
+            <View
+              style={{
+                width: `${ratio * 100}%`,
+                height: '100%',
+                backgroundColor: ratio === 1 ? colors.cream : colors.brass,
+              }}
+            />
           </View>
         );
       })}

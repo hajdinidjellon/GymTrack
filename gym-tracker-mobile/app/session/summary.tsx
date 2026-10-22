@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { colors, radius } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
@@ -14,6 +14,9 @@ import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Check } from '@/components/ui/icons';
+import { SectionTitle } from '@/components/ui/SectionTitle';
+import { Chip } from '@/components/ui/Chip';
+import { StatTile } from '@/components/stats/StatTile';
 
 export default function Summary() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -74,19 +77,22 @@ export default function Summary() {
           <Check size={16} color={colors.cream} />
         </View>
       </View>
-      <Text size={52} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 50 }}>
+      <Text size={40} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 42 }}>
         Séance validée.
       </Text>
-      <Text size={17} color={colors.muted} style={{ marginTop: 6 }}>
+      <Text size={15} color={colors.muted} style={{ marginTop: 6 }}>
         {workout.name} · enregistrée dans ton historique
       </Text>
 
       {records.map((r) => (
-        <Card key={r.name} style={{ marginTop: 14, borderWidth: 2, borderColor: colors.cream }}>
-          <Text size={13} weight="black" color={colors.muted} style={{ letterSpacing: 1.3 }}>
+        <Card
+          key={r.name}
+          style={{ marginTop: 14, borderWidth: 1.5, borderColor: colors.brass, backgroundColor: colors.brassSoft }}
+        >
+          <Text size={12} weight="black" color={colors.brass} style={{ letterSpacing: 1.3 }}>
             NOUVEAU RECORD
           </Text>
-          <Text size={22} weight="black" style={{ marginTop: 2 }}>
+          <Text size={20} weight="black" style={{ marginTop: 2 }}>
             {r.name} · {formatKg(r.weight)} kg
           </Text>
           <Text size={15} color={colors.muted}>
@@ -96,15 +102,15 @@ export default function Summary() {
       ))}
 
       <Card style={{ marginTop: 18, paddingVertical: 18 }}>
-        <Text size={16} weight="semibold" color={colors.muted}>
+        <Text size={14} weight="semibold" color={colors.muted}>
           Tu as soulevé
         </Text>
-        <Text size={56} weight="black" style={{ lineHeight: 60 }}>
+        <Text size={44} weight="black" style={{ lineHeight: 50 }}>
           {formatThousands(lifted)} kg
         </Text>
         {plates > 0 ? (
           <>
-            <Text size={17} weight="bold" style={{ marginTop: 2 }}>
+            <Text size={15} weight="bold" style={{ marginTop: 2 }}>
               soit {formatThousands(plates)} disques de 20 kg
             </Text>
             <PlatePile count={plates} />
@@ -112,55 +118,43 @@ export default function Summary() {
         ) : null}
       </Card>
 
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
-        <Stat value={`${workout.duration ?? 0} min`} label="durée" />
-        <Stat value={String(sets)} label={sets > 1 ? 'séries validées' : 'série validée'} />
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+        <StatTile value={`${workout.duration ?? 0} min`} label="durée" />
+        <StatTile value={String(sets)} label={sets > 1 ? 'séries validées' : 'série validée'} />
+        <StatTile
+          value={String(records.length)}
+          label={records.length > 1 ? 'records' : 'record'}
+          accent={records.length > 0}
+        />
       </View>
 
       {next.length ? (
         <>
-          <Text size={17} weight="bold" style={{ marginTop: 20 }}>
-            La prochaine fois
-          </Text>
-          <View style={{ gap: 8, marginTop: 10 }}>
-            {next.map((n) => (
+          <SectionTitle title="La prochaine fois" />
+          <Card style={{ paddingVertical: 4 }}>
+            {next.map((n, i) => (
               <View
                 key={n.name}
                 style={{
-                  height: 60,
-                  borderRadius: radius.md - 2,
-                  backgroundColor: colors.surface,
-                  paddingHorizontal: 20,
+                  minHeight: 52,
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  gap: 12,
+                  borderBottomWidth: i === next.length - 1 ? 0 : 1,
+                  borderBottomColor: colors.hairline,
                 }}
               >
-                <Text size={18} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
+                <Text size={16} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
                   {n.name}
                 </Text>
-                <Text size={16} weight="black">
-                  {n.label}
-                </Text>
+                <Chip tone={n.label.startsWith('+') ? 'brass' : 'neutral'} label={n.label} />
               </View>
             ))}
-          </View>
+          </Card>
         </>
       ) : null}
     </Screen>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <Card style={{ flex: 1, borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 18 }}>
-      <Text size={36} weight="black">
-        {value}
-      </Text>
-      <Text size={15} weight="semibold" color={colors.muted}>
-        {label}
-      </Text>
-    </Card>
   );
 }
 

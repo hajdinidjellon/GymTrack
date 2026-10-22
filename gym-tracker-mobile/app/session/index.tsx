@@ -94,24 +94,54 @@ export default function SessionScreen() {
 
       {resting ? (
         <>
-          <Text size={34} weight="black" accessibilityRole="header" style={{ marginTop: space.lg }}>
-            Repos
-          </Text>
-          {doneExercise ? (
-            <Text size={16} color={colors.muted}>
-              {doneExercise.name} · série {last.setIndex + 1} validée
-            </Text>
-          ) : null}
+          <View
+            style={{
+              marginTop: space.lg,
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text size={30} weight="black" accessibilityRole="header">
+                Repos
+              </Text>
+              {doneExercise ? (
+                <Text size={14} color={colors.muted} numberOfLines={1}>
+                  {doneExercise.name} · série {last.setIndex + 1} validée
+                </Text>
+              ) : null}
+            </View>
+            {doneExercise ? (
+              <Pressable
+                onPress={() => useSessionStore.getState().undoLastSet()}
+                accessibilityRole="button"
+                accessibilityLabel="Annuler la dernière série"
+                hitSlop={10}
+                style={({ pressed }) => ({
+                  height: 34,
+                  paddingHorizontal: 12,
+                  borderRadius: 17,
+                  justifyContent: 'center',
+                  backgroundColor: pressed ? colors.line : colors.surfaceHigh,
+                })}
+              >
+                <Text size={13} weight="black">
+                  Annuler la série
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
           <RestView next={cursor} restEndsAt={session.restEndsAt!} total={session.restDuration ?? 90} />
         </>
       ) : (
         <>
           <Text
-            size={32}
+            size={28}
             weight="black"
             accessibilityRole="header"
             numberOfLines={2}
-            style={{ marginTop: space.lg, lineHeight: 36 }}
+            style={{ marginTop: space.lg, lineHeight: 32 }}
           >
             {exercise.name}
           </Text>
@@ -135,7 +165,7 @@ function SetDots({ total, current }: { total: number; current: number }) {
       accessibilityLabel={`Série ${current + 1} sur ${total}`}
       style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xs }}
     >
-      <Text size={17} weight="bold">
+      <Text size={15} weight="bold" color={colors.muted}>
         Série {current + 1} sur {total}
       </Text>
       <View style={{ flexDirection: 'row', gap: 5 }}>
@@ -148,7 +178,7 @@ function SetDots({ total, current }: { total: number; current: number }) {
               borderRadius: 5,
               backgroundColor: i < current ? colors.cream : 'transparent',
               borderWidth: 2,
-              borderColor: i <= current ? colors.cream : colors.line,
+              borderColor: i === current ? colors.brass : i < current ? colors.cream : colors.line,
             }}
           />
         ))}

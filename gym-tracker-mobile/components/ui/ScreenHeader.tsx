@@ -18,24 +18,24 @@ export function ScreenHeader({ eyebrow, title, subtitle, right }: Props) {
   return (
     <View style={{ marginTop: space.sm, marginBottom: space.lg }}>
       {eyebrow ? (
-        <Text size={15} weight="semibold" color={colors.muted}>
+        <Text size={14} weight="semibold" color={colors.muted}>
           {eyebrow}
         </Text>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md }}>
         <Text
-          size={40}
+          size={34}
           weight="black"
           accessibilityRole="header"
           numberOfLines={2}
-          style={{ flex: 1, lineHeight: 44, marginTop: 2 }}
+          style={{ flex: 1, lineHeight: 38, marginTop: 2 }}
         >
           {title}
         </Text>
         {right}
       </View>
       {subtitle ? (
-        <Text size={17} color={colors.muted} style={{ marginTop: space.xs, lineHeight: 23 }}>
+        <Text size={15} color={colors.muted} style={{ marginTop: space.xs, lineHeight: 21 }}>
           {subtitle}
         </Text>
       ) : null}

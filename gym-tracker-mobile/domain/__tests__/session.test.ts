@@ -127,3 +127,17 @@ describe('nextSetSummary', () => {
     );
   });
 });
+
+describe('undoLastSet', () => {
+  it('takes back the last set and its rest', () => {
+    const done = Session.startRest(Session.completeSet(session([bench()]), 'bench', 0), 90, 0);
+    const undone = Session.undoLastSet(done);
+    expect(undone.exercises[0]!.sets[0]!.completed).toBe(false);
+    expect(undone).toMatchObject({ lastCompleted: null, restEndsAt: null });
+  });
+
+  it('does nothing when there is nothing to undo', () => {
+    const fresh = session([bench()]);
+    expect(Session.undoLastSet(fresh)).toBe(fresh);
+  });
+});
