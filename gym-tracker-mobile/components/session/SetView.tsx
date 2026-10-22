@@ -30,8 +30,26 @@ export function SetView({ cursor }: { cursor: Cursor }) {
 
   return (
     <View style={{ flex: 1 }}>
+      {exercise.lastTime || (setIndex === 0 && exercise.reason) ? (
+        <View style={{ marginTop: 10, gap: 2 }}>
+          {exercise.lastTime ? (
+            <Text size={15} color={colors.muted} numberOfLines={1}>
+              Dernière fois :{' '}
+              <Text size={15} weight="bold" color={colors.muted}>
+                {exercise.lastTime}
+              </Text>
+            </Text>
+          ) : null}
+          {setIndex === 0 && exercise.reason ? (
+            <Text size={15} color={colors.muted} numberOfLines={2}>
+              {exercise.reason}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
       {!bodyweight ? (
-        <Card style={{ marginTop: 16, paddingHorizontal: 8, paddingTop: 14 }}>
+        <Card style={{ marginTop: 14, paddingHorizontal: 8, paddingTop: 14 }}>
           <Stepper
             value={formatKg(set.weight)}
             unit="kg"

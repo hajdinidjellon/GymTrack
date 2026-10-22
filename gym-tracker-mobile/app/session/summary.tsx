@@ -7,7 +7,7 @@ import { formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { findExerciseDef } from '@/domain/programs';
 import { workingSets } from '@/domain/progression';
-import { deltaLabel, planLift, tonnage } from '@/domain/sessionBuilder';
+import { deltaLabel, newRecords, planLift, tonnage } from '@/domain/sessionBuilder';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -17,7 +17,9 @@ import { Check } from '@/components/ui/icons';
 
 export default function Summary() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const workout = useWorkoutStore((s) => s.workouts.find((w) => w.id === id));
+  const workouts = useWorkoutStore((s) => s.workouts);
+  const workout = workouts.find((w) => w.id === id);
+  const records = useMemo(() => (workout ? newRecords(workout, workouts) : []), [workout, workouts]);
   const ctx = useBuildContext();
 
   // Ce que le moteur prévoit maintenant que cette séance est dans l'historique
@@ -72,9 +74,26 @@ export default function Summary() {
           <Check size={16} color={colors.cream} />
         </View>
       </View>
-      <Text size={52} weight="black" style={{ marginTop: 14, lineHeight: 50 }}>
+      <Text size={52} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 50 }}>
         Séance validée.
       </Text>
+      <Text size={17} color={colors.muted} style={{ marginTop: 6 }}>
+        {workout.name} · enregistrée dans ton historique
+      </Text>
+
+      {records.map((r) => (
+        <Card key={r.name} style={{ marginTop: 14, borderWidth: 2, borderColor: colors.cream }}>
+          <Text size={13} weight="black" color={colors.muted} style={{ letterSpacing: 1.3 }}>
+            NOUVEAU RECORD
+          </Text>
+          <Text size={22} weight="black" style={{ marginTop: 2 }}>
+            {r.name} · {formatKg(r.weight)} kg
+          </Text>
+          <Text size={15} color={colors.muted}>
+            Avant : {formatKg(r.previous)} kg
+          </Text>
+        </Card>
+      ))}
 
       <Card style={{ marginTop: 18, paddingVertical: 18 }}>
         <Text size={16} weight="semibold" color={colors.muted}>

@@ -13,6 +13,8 @@ const bench: ActiveExercise = {
   muscleGroups: ['chest'],
   equipment: 'barbell',
   needsWeight: false,
+  lastTime: '60 kg × 10 · 10 · 9',
+  reason: 'Une rep de plus par série.',
   rule: { kind: 'double', sets: 2, repMin: 8, repMax: 12, increment: 2.5 },
   sets: [0, 1].map(() => ({
     weight: 62.5,
@@ -37,10 +39,12 @@ beforeEach(() => {
 });
 
 describe('SetView', () => {
-  it('shows the target and the plates', async () => {
+  it('shows the target, the plates and the last session', async () => {
     await renderCurrentSet();
     expect(screen.getByText('62,5')).toBeOnTheScreen();
     expect(screen.getByText('Par côté : 20 + 1,25')).toBeOnTheScreen();
+    expect(screen.getByText('60 kg × 10 · 10 · 9')).toBeOnTheScreen();
+    expect(screen.getByText('Une rep de plus par série.')).toBeOnTheScreen();
   });
 
   it('validates the set in one tap', async () => {

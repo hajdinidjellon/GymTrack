@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
 import { hasSession, signOut } from '@/services/supabase';
@@ -9,6 +9,8 @@ import { speak } from '@/services/speech';
 import { useProfileStore } from '@/stores/profileStore';
 import { REST_CHOICES, useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { ChevronRight } from '@/components/ui/icons';
@@ -39,14 +41,13 @@ export default function Profile() {
 
   return (
     <Screen tabs scroll>
-      <Text size={40} weight="black" style={{ marginTop: 12 }}>
-        Profil
-      </Text>
+      <ScreenHeader title="Profil" subtitle="Ton programme et les réglages de ta salle." />
 
-      <View style={{ marginTop: 20, borderRadius: radius.md + 2, backgroundColor: colors.surface, overflow: 'hidden' }}>
+      <SectionTitle title="Entraînement" first />
+      <Group>
         <Row
           label="Programme"
-          value={profile ? getSplit(profile.program.split).title : ''}
+          value={profile ? `${getSplit(profile.program.split).title} · ${profile.program.perWeek}×/sem.` : ''}
           onPress={() => router.push({ pathname: '/program', params: { edit: '1' } })}
           chevron
         />
@@ -55,25 +56,36 @@ export default function Profile() {
           value={GOALS.find((g) => g.id === profile?.goal)?.title ?? ''}
           onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })}
           chevron
+          last
         />
+      </Group>
+
+      <SectionTitle title="Pendant la séance" />
+      <Group>
         <Row
           label="Repos par défaut"
           value={`${settings.defaultRestTime} s`}
           onPress={nextRest}
           hint="Touche pour changer"
         />
-        <Row label="Voix pendant la séance" value={settings.voice ? 'Oui' : 'Non'} onPress={toggleVoice} last />
-      </View>
+        <Row
+          label="Voix"
+          value={settings.voice ? 'Activée' : 'Coupée'}
+          onPress={toggleVoice}
+          hint="Touche pour changer"
+          last
+        />
+      </Group>
 
-      <View style={{ marginTop: 22, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <Text size={17} weight="bold">
-          Disques de ta salle
-        </Text>
-        <Text size={14} weight="semibold" color={colors.muted}>
-          pour le calcul par côté
-        </Text>
-      </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+      <SectionTitle
+        title="Disques de ta salle"
+        right={
+          <Text size={14} color={colors.muted}>
+            pour le calcul par côté
+          </Text>
+        }
+      />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {ALL_PLATES.map((kg) => {
           const on = settings.plates.includes(kg);
           return (
@@ -112,14 +124,26 @@ export default function Profile() {
         })}
       </View>
 
+      <SectionTitle title="Compte" />
+      <Text size={16} color={colors.muted} style={{ marginBottom: space.md, lineHeight: 22 }}>
+        {signedIn
+          ? 'Connecté : tes séances sont sauvegardées dans ton compte.'
+          : 'Sans compte : tes séances restent sur ce téléphone.'}
+      </Text>
       <Button
         label="Se déconnecter"
         variant="outline"
         height={56}
         onPress={() => confirmLogout(signedIn)}
-        style={{ marginTop: 18, borderColor: colors.line }}
+        style={{ borderColor: colors.line }}
       />
     </Screen>
+  );
+}
+
+function Group({ children }: { children: React.ReactNode }) {
+  return (
+    <View style={{ borderRadius: radius.md + 2, backgroundColor: colors.surface, overflow: 'hidden' }}>{children}</View>
   );
 }
 
@@ -136,7 +160,7 @@ function confirmLogout(signedIn: boolean) {
       onPress: async () => {
         if (signedIn) await signOut().catch(() => null);
         useSettingsStore.getState().updateSettings({ signedOut: true });
-        router.push('/login');
+        router.replace('/login');
       },
     },
   ]);
@@ -160,6 +184,7 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
       accessibilityHint={hint}
       style={({ pressed }) => ({
         height: 62,
+        gap: 16,
         paddingHorizontal: 20,
         flexDirection: 'row',
         alignItems: 'center',
@@ -172,11 +197,13 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
       <Text size={18} weight="bold">
         {label}
       </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
         <Text
           size={chevron ? 16 : 18}
           weight={chevron ? 'semibold' : 'black'}
           color={chevron ? colors.muted : colors.cream}
+          numberOfLines={1}
+          style={{ flexShrink: 1 }}
         >
           {value}
         </Text>

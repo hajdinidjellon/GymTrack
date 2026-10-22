@@ -7,9 +7,10 @@ import { formatShortDay } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { findExerciseDef } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
-import { exerciseHistory, planLift } from '@/domain/sessionBuilder';
+import { exerciseHistory, lastTimeLabel, planLift, reasonLabel } from '@/domain/sessionBuilder';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { Card } from '@/components/ui/Card';
 import { BackButton } from '@/components/ui/BackButton';
@@ -17,6 +18,8 @@ import { LoadedBar } from '@/components/disc/LoadedBar';
 import { plateSize } from '@/components/disc/Barbell';
 
 const STEPS = [1, 2, 2.5, 5];
+
+const EQUIPMENT = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Machine', bodyweight: 'Poids du corps' };
 
 export default function ExerciseScreen() {
   const { name } = useLocalSearchParams<{ name: string }>();
@@ -43,11 +46,9 @@ export default function ExerciseScreen() {
   return (
     <Screen scroll>
       <BackButton />
-      <Text size={36} weight="black" style={{ marginTop: 10, lineHeight: 40 }}>
-        {def.name}
-      </Text>
+      <ScreenHeader eyebrow={EQUIPMENT[def.equipment]} title={def.name} />
 
-      <Card style={{ marginTop: 16 }}>
+      <Card>
         <Text size={15} weight="black" color={colors.muted} style={{ letterSpacing: 1.4 }}>
           PROCHAINE CIBLE
         </Text>
@@ -58,6 +59,14 @@ export default function ExerciseScreen() {
               ? `${formatKg(target.weight)} kg × ${target.reps}`
               : `${target?.reps ?? 0} reps`}
         </Text>
+        <Text size={15} color={colors.muted} style={{ marginTop: 4, lineHeight: 21 }}>
+          {reasonLabel(lift)}
+        </Text>
+        {lift.last.length ? (
+          <Text size={15} color={colors.muted} style={{ marginTop: 2 }}>
+            Dernière fois : {lastTimeLabel(lift.last)}
+          </Text>
+        ) : null}
         {def.equipment === 'barbell' && target && target.weight > 0 ? (
           <View style={{ marginTop: 8, height: 80, justifyContent: 'center' }}>
             <LoadedBar weight={target.weight} scale={0.77} barWidth={110} />
