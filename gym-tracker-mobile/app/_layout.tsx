@@ -13,8 +13,9 @@ import {
   BricolageGrotesque_800ExtraBold,
 } from '@expo-google-fonts/bricolage-grotesque';
 
-import { getDb } from '@/lib/db';
-import { requestPermissions } from '@/lib/notifications';
+import { getDb } from '@/services/db';
+import { logger } from '@/services/logger';
+import { requestPermissions } from '@/services/notifications';
 import { colors } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
@@ -41,7 +42,7 @@ export default function RootLayout() {
         useProfileStore.getState().loadProfile(),
       ]);
     })()
-      .catch(console.error)
+      .catch((error: unknown) => logger.error('startup load failed', error))
       .finally(() => setDataLoaded(true));
   }, []);
 
@@ -58,7 +59,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         {ready ? (
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }}>
+          <Stack
+            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }}
+          >
             <Stack.Screen name="(onboarding)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="session/preview" options={{ animation: 'slide_from_right' }} />

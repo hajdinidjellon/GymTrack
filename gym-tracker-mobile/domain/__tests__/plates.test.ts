@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { describeSide, formatKg, loadBar } from '@/lib/plates';
+import { describeSide, formatKg, loadBar } from '@/domain/plates';
 
 describe('loadBar', () => {
   it('loads 62.5 kg as 20 + 1.25 per side', () => {

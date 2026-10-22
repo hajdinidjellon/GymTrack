@@ -22,7 +22,14 @@ const TABS: Record<string, { label: string; Icon: typeof BarIcon }> = {
 function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ backgroundColor: colors.bg, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: Math.max(insets.bottom, space.md) }}>
+    <View
+      style={{
+        backgroundColor: colors.bg,
+        paddingHorizontal: space.lg,
+        paddingTop: space.sm,
+        paddingBottom: Math.max(insets.bottom, space.md),
+      }}
+    >
       <View
         accessibilityRole="tablist"
         style={{
@@ -65,7 +72,9 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
             >
               <Icon color={focused ? colors.bg : colors.muted} />
               {focused ? (
-                <Text size={16} weight="black" color={colors.bg} numberOfLines={1}>{label}</Text>
+                <Text size={16} weight="black" color={colors.bg} numberOfLines={1}>
+                  {label}
+                </Text>
               ) : null}
             </Pressable>
           );
@@ -86,12 +95,15 @@ export default function TabsLayout() {
     if (resumeChecked || !hasProfile || signedOut) return;
     resumeChecked = true;
     if (useSessionStore.getState().activeSession) router.push('/session');
-  }, []);
+  }, [hasProfile, signedOut]);
 
   if (!hasProfile || signedOut) return <Redirect href="/welcome" />;
 
   return (
-    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}>
+    <Tabs
+      tabBar={(props) => <TabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
+    >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="progress" />
       <Tabs.Screen name="profile" />

@@ -5,9 +5,14 @@ function useNow(active: boolean) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!active) return;
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    // Recalé tout de suite au démarrage, puis chaque seconde
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
   }, [active]);
   return now;
 }

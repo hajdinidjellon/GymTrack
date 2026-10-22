@@ -2,8 +2,8 @@ import React from 'react';
 import { View } from 'react-native';
 import { colors } from '@/constants/theme';
 import { useRestSecondsLeft } from '@/hooks/useSessionClock';
-import { formatKg } from '@/lib/plates';
-import type { Cursor } from '@/lib/sessionCursor';
+import { formatKg } from '@/domain/plates';
+import type { Cursor } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
@@ -39,12 +39,20 @@ export function RestView({ next, restEndsAt, total }: { next: Cursor | null; res
                   : `${next.set.reps} reps`}
             </Text>
           </View>
-          {next.exercise.equipment === 'barbell' && !next.exercise.needsWeight ? <MiniPlates perSide={perSide} /> : null}
+          {next.exercise.equipment === 'barbell' && !next.exercise.needsWeight ? (
+            <MiniPlates perSide={perSide} />
+          ) : null}
         </Card>
       ) : null}
 
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 14 }}>
-        <Button label="+30 s" variant="outline" height={80} onPress={() => addRestTime(30)} style={{ flex: 1, borderWidth: 2.5 }} />
+        <Button
+          label="+30 s"
+          variant="outline"
+          height={80}
+          onPress={() => addRestTime(30)}
+          style={{ flex: 1, borderWidth: 2.5 }}
+        />
         <Button label="Passer" height={80} onPress={stopRestTimer} style={{ flex: 1 }} />
       </View>
     </View>

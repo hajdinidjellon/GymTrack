@@ -3,8 +3,8 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, radius } from '@/constants/theme';
 import { useTodayPlan } from '@/hooks/useTodayPlan';
-import { describeSide, loadBar } from '@/lib/plates';
-import { deltaLabel, targetLabel, toActiveExercises, type PlannedLift } from '@/lib/sessionBuilder';
+import { describeSide, loadBar } from '@/domain/plates';
+import { deltaLabel, targetLabel, toActiveExercises, type PlannedLift } from '@/domain/sessionBuilder';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -35,7 +35,9 @@ export default function Preview() {
         {plan.lifts.length} exercices · {plan.minutes} min · tout est calculé
       </Text>
       <View style={{ gap: 10, marginTop: 22 }}>
-        {plan.lifts.map((lift) => <LiftRow key={lift.def.name} lift={lift} />)}
+        {plan.lifts.map((lift) => (
+          <LiftRow key={lift.def.name} lift={lift} />
+        ))}
       </View>
     </Screen>
   );
@@ -68,9 +70,14 @@ function LiftRow({ lift }: { lift: PlannedLift }) {
       })}
     >
       <View style={{ flex: 1, gap: 3 }}>
-        <Text size={19} weight="black" numberOfLines={1}>{lift.def.name}</Text>
+        <Text size={19} weight="black" numberOfLines={1}>
+          {lift.def.name}
+        </Text>
         <Text size={16} weight="semibold" color={colors.muted} numberOfLines={1}>
-          {calibrate ? 'Première fois' : targetLabel(lift.targets)} · <Text size={16} weight="black">{deltaLabel(lift)}</Text>
+          {calibrate ? 'Première fois' : targetLabel(lift.targets)} ·{' '}
+          <Text size={16} weight="black">
+            {deltaLabel(lift)}
+          </Text>
         </Text>
       </View>
       {showPlates ? (

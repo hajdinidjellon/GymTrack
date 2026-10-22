@@ -2,10 +2,10 @@ import React, { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, radius } from '@/constants/theme';
-import { formatShortDay } from '@/lib/format';
-import { formatKg, platesForSide } from '@/lib/plates';
-import { EXERCISES } from '@/lib/programs';
-import { weightHistory } from '@/lib/sessionBuilder';
+import { formatShortDay } from '@/domain/format';
+import { formatKg, platesForSide } from '@/domain/plates';
+import { EXERCISES } from '@/domain/programs';
+import { weightHistory } from '@/domain/sessionBuilder';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
@@ -59,7 +59,8 @@ export default function Progress() {
             {hero.name} · depuis le {formatShortDay(hero.first.date).toLowerCase()}
           </Text>
           <Text size={36} weight="black" style={{ marginTop: 4, lineHeight: 38 }}>
-            Tu as gagné {platesPhrase(platesForSide((hero.last.weight - hero.first.weight) / 2, available))} de chaque côté.
+            Tu as gagné {platesPhrase(platesForSide((hero.last.weight - hero.first.weight) / 2, available))} de chaque
+            côté.
           </Text>
           {[hero.first, hero.last].map((point, i) => {
             const before = loadOf(hero.first.weight);
@@ -69,10 +70,17 @@ export default function Progress() {
             while (i > 0 && shared < before.length && before[shared] === after[shared]) shared++;
             if (i === 0) shared = after.length;
             return (
-              <Card key={i} style={{ marginTop: 16, borderRadius: radius.lg - 2, paddingHorizontal: 18, paddingBottom: 12 }}>
+              <Card
+                key={i}
+                style={{ marginTop: 16, borderRadius: radius.lg - 2, paddingHorizontal: 18, paddingBottom: 12 }}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <Text size={16} weight="semibold" color={colors.muted}>{i === 0 ? 'Au début' : "Aujourd'hui"}</Text>
-                  <Text size={32} weight="black">{formatKg(point.weight)} kg</Text>
+                  <Text size={16} weight="semibold" color={colors.muted}>
+                    {i === 0 ? 'Au début' : "Aujourd'hui"}
+                  </Text>
+                  <Text size={32} weight="black">
+                    {formatKg(point.weight)} kg
+                  </Text>
                 </View>
                 <View style={{ marginTop: 4, height: 108, justifyContent: 'center' }}>
                   <Barbell perSide={after} barWidth={90} highlightFrom={shared} />
@@ -83,7 +91,9 @@ export default function Progress() {
         </>
       ) : (
         <>
-          <Text size={40} weight="black" style={{ marginTop: 12, lineHeight: 42 }}>Tes progrès</Text>
+          <Text size={40} weight="black" style={{ marginTop: 12, lineHeight: 42 }}>
+            Tes progrès
+          </Text>
           <Text size={18} color={colors.muted} style={{ marginTop: 10, lineHeight: 25 }}>
             Dès que tu auras ajouté un disque sur un mouvement à la barre, on te le montre ici.
           </Text>
@@ -109,9 +119,13 @@ export default function Progress() {
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Text size={18} weight="bold" numberOfLines={1} style={{ flex: 1 }}>{l.name}</Text>
+              <Text size={18} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
+                {l.name}
+              </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text size={17} weight="black">{diff > 0 ? `+${formatKg(diff)} kg` : `${formatKg(l.last.weight)} kg`}</Text>
+                <Text size={17} weight="black">
+                  {diff > 0 ? `+${formatKg(diff)} kg` : `${formatKg(l.last.weight)} kg`}
+                </Text>
                 <ChevronRight size={20} />
               </View>
             </Pressable>

@@ -1,6 +1,6 @@
 /**
  * DISQUES — ce qu'il faut mettre de chaque côté de la barre.
- * Logique pure, testée dans lib/__tests__/plates.test.ts.
+ * Logique pure, testée dans domain/__tests__/plates.test.ts.
  */
 
 export const DEFAULT_BAR = 20;

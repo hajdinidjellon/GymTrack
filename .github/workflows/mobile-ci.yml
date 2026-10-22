@@ -1,0 +1,90 @@
+name: Mobile CI
+
+on:
+  pull_request:
+    paths:
+      - 'gym-tracker-mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  push:
+    branches: [main, 'redesign/**', 'feat/**', 'fix/**']
+    paths:
+      - 'gym-tracker-mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  workflow_dispatch:
+
+# Un nouveau push annule le run précédent de la même branche
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: gym-tracker-mobile
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  quality:
+    name: Lint, types, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: gym-tracker-mobile/package-lock.json
+      - run: npm ci
+      - name: Lint (architecture rules included)
+        run: npm run lint
+      - name: Formatting
+        run: npm run format:check
+      - name: Types
+        run: npm run type-check
+      - name: Tests and coverage thresholds
+        run: npm run test:coverage -- --ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: gym-tracker-mobile/coverage/
+          retention-days: 7
+
+  bundle:
+    name: iOS bundle builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: gym-tracker-mobile/package-lock.json
+      - run: npm ci
+      # Le même bundle que celui servi au téléphone : un import cassé ou un module introuvable échoue ici
+      - run: npx expo export --platform ios --output-dir dist
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Aucune faille critique dans ce qui part dans l'app
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=critical
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

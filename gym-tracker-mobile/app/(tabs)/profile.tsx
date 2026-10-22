@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, radius } from '@/constants/theme';
-import { ALL_PLATES, formatKg } from '@/lib/plates';
-import { GOALS, getSplit } from '@/lib/programs';
-import { isSupabaseConfigured, signOut, supabase } from '@/lib/supabase';
-import { speak } from '@/lib/voice';
+import { ALL_PLATES, formatKg } from '@/domain/plates';
+import { GOALS, getSplit } from '@/domain/programs';
+import { hasSession, signOut } from '@/services/supabase';
+import { speak } from '@/services/speech';
 import { useProfileStore } from '@/stores/profileStore';
 import { REST_CHOICES, useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -21,8 +21,9 @@ export default function Profile() {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session)).catch(() => null);
+    hasSession()
+      .then(setSignedIn)
+      .catch(() => null);
   }, []);
 
   const nextRest = () => {
@@ -38,18 +39,39 @@ export default function Profile() {
 
   return (
     <Screen tabs scroll>
-      <Text size={40} weight="black" style={{ marginTop: 12 }}>Profil</Text>
+      <Text size={40} weight="black" style={{ marginTop: 12 }}>
+        Profil
+      </Text>
 
       <View style={{ marginTop: 20, borderRadius: radius.md + 2, backgroundColor: colors.surface, overflow: 'hidden' }}>
-        <Row label="Programme" value={profile ? getSplit(profile.program.split).title : ''} onPress={() => router.push({ pathname: '/program', params: { edit: '1' } })} chevron />
-        <Row label="Objectif" value={GOALS.find((g) => g.id === profile?.goal)?.title ?? ''} onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })} chevron />
-        <Row label="Repos par défaut" value={`${settings.defaultRestTime} s`} onPress={nextRest} hint="Touche pour changer" />
+        <Row
+          label="Programme"
+          value={profile ? getSplit(profile.program.split).title : ''}
+          onPress={() => router.push({ pathname: '/program', params: { edit: '1' } })}
+          chevron
+        />
+        <Row
+          label="Objectif"
+          value={GOALS.find((g) => g.id === profile?.goal)?.title ?? ''}
+          onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })}
+          chevron
+        />
+        <Row
+          label="Repos par défaut"
+          value={`${settings.defaultRestTime} s`}
+          onPress={nextRest}
+          hint="Touche pour changer"
+        />
         <Row label="Voix pendant la séance" value={settings.voice ? 'Oui' : 'Non'} onPress={toggleVoice} last />
       </View>
 
       <View style={{ marginTop: 22, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <Text size={17} weight="bold">Disques de ta salle</Text>
-        <Text size={14} weight="semibold" color={colors.muted}>pour le calcul par côté</Text>
+        <Text size={17} weight="bold">
+          Disques de ta salle
+        </Text>
+        <Text size={14} weight="semibold" color={colors.muted}>
+          pour le calcul par côté
+        </Text>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
         {ALL_PLATES.map((kg) => {
@@ -74,8 +96,17 @@ export default function Profile() {
                 borderColor: on ? colors.cream : colors.line,
               }}
             >
-              <View style={{ width: 8, height: plateSize(kg, 0.4).height, borderRadius: 2, backgroundColor: on ? colors.cream : colors.line }} />
-              <Text size={15} weight="black" color={on ? colors.cream : colors.muted}>{formatKg(kg)}</Text>
+              <View
+                style={{
+                  width: 8,
+                  height: plateSize(kg, 0.4).height,
+                  borderRadius: 2,
+                  backgroundColor: on ? colors.cream : colors.line,
+                }}
+              />
+              <Text size={15} weight="black" color={on ? colors.cream : colors.muted}>
+                {formatKg(kg)}
+              </Text>
             </Pressable>
           );
         })}
@@ -96,7 +127,7 @@ export default function Profile() {
 function confirmLogout(signedIn: boolean) {
   const message = signedIn
     ? 'Tes séances sont sauvegardées dans ton compte.'
-    : 'Tu n\'as pas de compte : tes séances restent sur ce téléphone.';
+    : "Tu n'as pas de compte : tes séances restent sur ce téléphone.";
   Alert.alert('Se déconnecter ?', message, [
     { text: 'Annuler', style: 'cancel' },
     {
@@ -138,9 +169,17 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
         backgroundColor: pressed ? colors.line : 'transparent',
       })}
     >
-      <Text size={18} weight="bold">{label}</Text>
+      <Text size={18} weight="bold">
+        {label}
+      </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Text size={chevron ? 16 : 18} weight={chevron ? 'semibold' : 'black'} color={chevron ? colors.muted : colors.cream}>{value}</Text>
+        <Text
+          size={chevron ? 16 : 18}
+          weight={chevron ? 'semibold' : 'black'}
+          color={chevron ? colors.muted : colors.cream}
+        >
+          {value}
+        </Text>
         {chevron ? <ChevronRight size={18} color={colors.muted} /> : null}
       </View>
     </Pressable>

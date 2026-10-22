@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { colors, radius } from '@/constants/theme';
-import { describeSide, formatKg } from '@/lib/plates';
+import { describeSide, formatKg } from '@/domain/plates';
 import type { ActiveExercise } from '@/types';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
@@ -29,7 +29,9 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <Text size={15} weight="black" color={colors.muted} style={{ marginTop: 8, letterSpacing: 1.4 }}>PREMIÈRE FOIS</Text>
+      <Text size={15} weight="black" color={colors.muted} style={{ marginTop: 8, letterSpacing: 1.4 }}>
+        PREMIÈRE FOIS
+      </Text>
       <Text size={17} color={colors.muted} style={{ marginTop: 6 }}>
         {barbell ? 'Charge ta barre de départ.' : 'Choisis ta charge de départ.'} Ensuite, on s'occupe de tout.
       </Text>
@@ -41,10 +43,17 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
           </View>
         ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-          <Round label="−" a11y={`Moins ${formatKg(step)} kg`} onPress={() => setWeight((w) => Math.max(min, w - step))} />
+          <Round
+            label="−"
+            a11y={`Moins ${formatKg(step)} kg`}
+            onPress={() => setWeight((w) => Math.max(min, w - step))}
+          />
           <View style={{ alignItems: 'center' }}>
             <Text size={56} weight="black" style={{ lineHeight: 60 }}>
-              {formatKg(weight)} <Text size={20} weight="black">kg</Text>
+              {formatKg(weight)}{' '}
+              <Text size={20} weight="black">
+                kg
+              </Text>
             </Text>
             {barbell ? (
               <Text size={14} weight="bold" color={colors.muted}>
@@ -74,7 +83,9 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
                 backgroundColor: on ? colors.cream : colors.surface,
               }}
             >
-              <Text size={26} weight="black" color={on ? colors.bg : colors.cream}>{v}</Text>
+              <Text size={26} weight="black" color={on ? colors.bg : colors.cream}>
+                {v}
+              </Text>
             </Pressable>
           );
         })}
@@ -102,7 +113,9 @@ function Round({ label, a11y, onPress }: { label: string; a11y: string; onPress:
         opacity: pressed ? 0.6 : 1,
       })}
     >
-      <Text size={30} weight="bold">{label}</Text>
+      <Text size={30} weight="bold">
+        {label}
+      </Text>
     </Pressable>
   );
 }

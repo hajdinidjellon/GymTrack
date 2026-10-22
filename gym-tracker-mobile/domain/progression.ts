@@ -30,12 +30,12 @@ export interface ExerciseSession {
 }
 
 export type ProgressionDecision =
-  | 'add_reps'    // same weight, +1 rep on each set
-  | 'add_weight'  // every set hit the top of the range
-  | 'repeat'      // a set fell under the minimum: same weight, same targets
-  | 'deload'      // failed twice in a row at the same weight
-  | 'start'       // no history, starting weight derived from a PR
-  | 'calibrate';  // no history and no PR: the user picks the weight
+  | 'add_reps' // same weight, +1 rep on each set
+  | 'add_weight' // every set hit the top of the range
+  | 'repeat' // a set fell under the minimum: same weight, same targets
+  | 'deload' // failed twice in a row at the same weight
+  | 'start' // no history, starting weight derived from a PR
+  | 'calibrate'; // no history and no PR: the user picks the weight
 
 export interface ProgressionResult {
   decision: ProgressionDecision;

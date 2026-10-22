@@ -4,12 +4,14 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEFAULT_BAR, DEFAULT_PLATES } from '@/lib/plates';
+import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
+import { settingsPatchSchema } from '@/domain/schemas';
+import { logger } from '@/services/logger';
 import type { AppSettings } from '@/types';
 
 const SETTINGS_KEY = '@gymtrack/settings';
 
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   units: 'kg',
   defaultRestTime: 90,
   restTimerEnabled: true,
@@ -23,15 +25,28 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 export const REST_CHOICES = [60, 90, 120, 180];
 
+/** Stored settings over the defaults. Anything unreadable falls back to the defaults. */
+export function parseSettings(raw: string | null): AppSettings {
+  if (!raw) return DEFAULT_SETTINGS;
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+  const patch = settingsPatchSchema.safeParse(json);
+  if (!patch.success) return DEFAULT_SETTINGS;
+  const settings = { ...DEFAULT_SETTINGS, ...patch.data };
+  // L'ancienne version avait un repos de 5 s pour le debug
+  if (!REST_CHOICES.includes(settings.defaultRestTime)) settings.defaultRestTime = 90;
+  return settings;
+}
+
 async function loadSettings(): Promise<AppSettings> {
   try {
-    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    const settings = { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) };
-    // L'ancienne version avait un repos de 5 s pour le debug
-    if (!REST_CHOICES.includes(settings.defaultRestTime)) settings.defaultRestTime = 90;
-    return settings;
-  } catch {
+    return parseSettings(await AsyncStorage.getItem(SETTINGS_KEY));
+  } catch (error) {
+    logger.warn('settings unreadable, using defaults', error);
     return DEFAULT_SETTINGS;
   }
 }
@@ -39,8 +54,8 @@ async function loadSettings(): Promise<AppSettings> {
 async function persistSettings(settings: AppSettings): Promise<void> {
   try {
     await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // Silencieux — les settings ne sont pas critiques
+  } catch (error) {
+    logger.warn('settings not saved', error);
   }
 }
 
@@ -65,7 +80,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   updateSettings: (patch) => {
     set((s) => {
       const updated = { ...s.settings, ...patch };
-      persistSettings(updated).catch(() => null);
+      void persistSettings(updated);
       return { settings: updated };
     });
   },

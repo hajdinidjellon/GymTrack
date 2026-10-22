@@ -10,10 +10,18 @@ import {
   workingSets,
   type ExerciseSession,
   type ProgressionDecision,
-} from '@/lib/progression';
-import { formatKg } from '@/lib/plates';
-import { defaultIncrementFor, getSplit, restFor, ruleFor, type ExerciseDef, type ProgramDay } from '@/lib/programs';
-import type { ActiveExercise, AppSettings, PersonalRecord, ProgressionRule, SetTarget, UserProfile, Workout } from '@/types';
+} from '@/domain/progression';
+import { formatKg } from '@/domain/plates';
+import { defaultIncrementFor, getSplit, restFor, ruleFor, type ExerciseDef, type ProgramDay } from '@/domain/programs';
+import type {
+  ActiveExercise,
+  AppSettings,
+  PersonalRecord,
+  ProgressionRule,
+  SetTarget,
+  UserProfile,
+  Workout,
+} from '@/types';
 
 export interface BuildContext {
   profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
@@ -41,7 +49,10 @@ function matches(def: ExerciseDef, name: string): boolean {
 }
 
 /** Every past session of this exercise, newest first, with the rule it used. */
-export function exerciseHistory(def: ExerciseDef, workouts: Workout[]): (ExerciseSession & { rule?: ProgressionRule })[] {
+export function exerciseHistory(
+  def: ExerciseDef,
+  workouts: Workout[],
+): (ExerciseSession & { rule?: ProgressionRule })[] {
   const out: (ExerciseSession & { rule?: ProgressionRule })[] = [];
   for (const w of workouts) {
     for (const e of w.exercises) {
@@ -117,12 +128,18 @@ export function toActiveExercises(day: PlannedDay): ActiveExercise[] {
 /** What changed since last time, in a few words. */
 export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string {
   switch (lift.decision) {
-    case 'add_reps': return '+1 rep';
-    case 'add_weight': return `+${formatKg(lift.rule.increment)} kg`;
-    case 'repeat': return 'même cible';
-    case 'deload': return 'allégé';
-    case 'start': return 'départ';
-    case 'calibrate': return 'à régler';
+    case 'add_reps':
+      return '+1 rep';
+    case 'add_weight':
+      return `+${formatKg(lift.rule.increment)} kg`;
+    case 'repeat':
+      return 'même cible';
+    case 'deload':
+      return 'allégé';
+    case 'start':
+      return 'départ';
+    case 'calibrate':
+      return 'à régler';
   }
 }
 

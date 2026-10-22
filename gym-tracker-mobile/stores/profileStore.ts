@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { saveProfileLocal, loadProfileLocal } from '@/lib/db';
-import { flushSyncQueue } from '@/lib/sync';
-import type { Goal, PersonalRecord, Program, UserProfile } from '@/types';
+import { normalizeProfile } from '@/domain/profile';
+import { loadProfileLocal, saveProfileLocal } from '@/services/db';
+import { flushSyncQueue } from '@/services/sync';
+import type { PersonalRecord, UserProfile } from '@/types';
 
 interface ProfileStore {
   profile: UserProfile | null;
@@ -12,40 +13,11 @@ interface ProfileStore {
   addPR: (pr: PersonalRecord) => Promise<void>;
 }
 
-const OLD_GOALS: Record<string, Goal> = {
-  hypertrophy: 'muscle',
-  pr: 'force',
-  weight_loss: 'forme',
-  health: 'forme',
-  consistency: 'muscle',
-};
-
-/** Profiles from the previous app version have no goal/program: map what they had. */
-function normalizeProfile(raw: Record<string, unknown>): UserProfile {
-  const old = raw as {
-    onboarding?: { primaryGoal?: string };
-    trainingFrequency?: number;
-  } & Partial<UserProfile>;
-  const goal = old.goal ?? OLD_GOALS[old.onboarding?.primaryGoal ?? ''] ?? 'muscle';
-  const program: Program = old.program ?? {
-    split: 'ppl',
-    perWeek: Math.min(5, Math.max(2, old.trainingFrequency ?? 3)),
-  };
-  return {
-    name: old.name,
-    goal,
-    program,
-    prs: old.prs ?? [],
-    bodyStats: old.bodyStats ?? [],
-  };
-}
-
 export const useProfileStore = create<ProfileStore>((set, get) => ({
   profile: null,
 
   loadProfile: async () => {
-    const raw = await loadProfileLocal();
-    set({ profile: raw ? normalizeProfile(raw as unknown as Record<string, unknown>) : null });
+    set({ profile: normalizeProfile(await loadProfileLocal()) });
   },
 
   saveProfile: async (profile) => {

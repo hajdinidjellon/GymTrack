@@ -2,34 +2,12 @@
 // TYPES PRINCIPAUX — GymTrack Mobile
 // ============================================================
 
-export type SetType =
-  | 'warmup'
-  | 'normal'
-  | 'top'
-  | 'backoff'
-  | 'amrap'
-  | 'drop'
-  | 'failure';
+export type SetType = 'warmup' | 'normal' | 'top' | 'backoff' | 'amrap' | 'drop' | 'failure';
 
-export type MuscleGroup =
-  | 'chest'
-  | 'back'
-  | 'shoulders'
-  | 'arms'
-  | 'legs'
-  | 'core'
-  | 'glutes'
-  | 'calves';
+export type MuscleGroup = 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'glutes' | 'calves';
 
 export type WorkoutType =
-  | 'strength'
-  | 'hypertrophy'
-  | 'power'
-  | 'endurance'
-  | 'cardio'
-  | 'mobility'
-  | 'ppl'
-  | 'fullbody';
+  'strength' | 'hypertrophy' | 'power' | 'endurance' | 'cardio' | 'mobility' | 'ppl' | 'fullbody';
 
 export type ExerciseCategory = 'compound' | 'isolation' | 'accessory';
 
@@ -116,18 +94,6 @@ export interface BodyStats {
   };
 }
 
-export interface TrainingGoal {
-  id: string;
-  type: 'pr' | 'bodyweight' | 'volume' | 'consistency';
-  exercise?: string;
-  currentValue: number;
-  targetValue: number;
-  deadline?: string;
-  status: 'active' | 'completed' | 'paused';
-  createdAt: string;
-  progress: number;
-}
-
 export type Goal = 'muscle' | 'force' | 'forme';
 export type SplitId = 'ppl' | 'ul' | 'fb';
 
@@ -158,53 +124,6 @@ export interface AppSettings {
   increments: Record<string, number>;
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
-}
-
-// ============================================================
-// PLANIFICATION
-// ============================================================
-
-export interface PlannedExercise {
-  name: string;
-  category: ExerciseCategory;
-  targetSets: number;
-  targetReps: number | [number, number];
-  targetWeight?: number;
-  targetIntensity?: number;
-  targetRPE?: number;
-  restTime: number;
-  notes?: string;
-}
-
-export interface SessionPlan {
-  dayNumber: number;
-  focus: MuscleGroup[];
-  exercises: PlannedExercise[];
-  estimatedDuration: number;
-}
-
-export interface WeekPlan {
-  weekNumber: number;
-  intensity: number;
-  volume: number;
-  sessions: SessionPlan[];
-  deloadWeek?: boolean;
-}
-
-export interface TrainingPlan {
-  id: string;
-  name: string;
-  goal: TrainingGoal;
-  duration: number;
-  frequency: number;
-  weeks: WeekPlan[];
-  createdAt: string;
-  algorithm:
-    | 'linear'
-    | '5_3_1'
-    | 'conjugate'
-    | 'undulating'
-    | 'block_periodization';
 }
 
 // ============================================================

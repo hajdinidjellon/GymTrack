@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { EXERCISES } from '@/lib/programs';
+import { EXERCISES } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -7,9 +7,11 @@ import {
   planLift,
   targetLabel,
   tonnage,
+  weightHistory,
   toActiveExercises,
   type BuildContext,
-} from '@/lib/sessionBuilder';
+} from '@/domain/sessionBuilder';
+import type { ProgressionDecision } from '@/domain/progression';
 import type { Exercise, Workout } from '@/types';
 
 function workout(date: string, name: string, exercises: Exercise[]): Workout {
@@ -41,10 +43,7 @@ describe('nextDay', () => {
 
   it('follows the last day done and wraps around', () => {
     expect(nextDay(ctx([workout('2026-10-01', 'Push', [])])).name).toBe('Pull');
-    expect(nextDay(ctx([
-      workout('2026-10-01', 'Pull', []),
-      workout('2026-10-03', 'Legs', []),
-    ])).name).toBe('Push');
+    expect(nextDay(ctx([workout('2026-10-01', 'Pull', []), workout('2026-10-03', 'Legs', [])])).name).toBe('Push');
   });
 
   it('ignores workouts from another program', () => {
@@ -66,17 +65,21 @@ describe('planLift', () => {
   });
 
   it('starts from a PR when there is one', () => {
-    const p = planLift(EXERCISES.bench, ctx([], {
-      prs: [{ exercise: 'Développé couché', weight: 100, reps: 1, oneRepMax: 100, date: '2026-01-01' }],
-    }));
+    const p = planLift(
+      EXERCISES.bench,
+      ctx([], {
+        prs: [{ exercise: 'Développé couché', weight: 100, reps: 1, oneRepMax: 100, date: '2026-01-01' }],
+      }),
+    );
     expect(p.decision).toBe('start');
     expect(p.targets[0]?.weight).toBe(70);
   });
 
   it('reads history under an old exercise name', () => {
-    const p = planLift(EXERCISES.bench, ctx([
-      workout('2026-10-01', 'Push', [lift('Développé couché barre', 62.5, [9, 9, 9])]),
-    ]));
+    const p = planLift(
+      EXERCISES.bench,
+      ctx([workout('2026-10-01', 'Push', [lift('Développé couché barre', 62.5, [9, 9, 9])])]),
+    );
     expect(p.decision).toBe('add_reps');
     expect(targetLabel(p.targets)).toBe('3 × 10 · 62,5 kg');
   });
@@ -105,7 +108,12 @@ describe('planDay', () => {
     expect(active[0]).toMatchObject({ name: 'Développé couché', needsWeight: true, calibration: true });
     expect(active[1]).toMatchObject({ name: 'Dips', needsWeight: false, equipment: 'bodyweight' });
     expect(active[1]?.sets).toHaveLength(3);
-    expect(active[1]?.sets[0]).toMatchObject({ reps: 8, completed: false, restTime: 90, target: { weight: 0, reps: 8 } });
+    expect(active[1]?.sets[0]).toMatchObject({
+      reps: 8,
+      completed: false,
+      restTime: 90,
+      target: { weight: 0, reps: 8 },
+    });
   });
 });
 
@@ -115,5 +123,34 @@ describe('tonnage', () => {
     ex.sets.push({ weight: 100, reps: 5, setType: 'normal', completed: false });
     ex.sets.push({ weight: 40, reps: 10, setType: 'warmup', completed: true });
     expect(tonnage(workout('2026-10-01', 'Legs', [ex]))).toBe(1000);
+  });
+});
+
+describe('labels', () => {
+  const rule = { kind: 'double' as const, sets: 3, repMin: 8, repMax: 12, increment: 2.5 };
+
+  it.each<[ProgressionDecision, string]>([
+    ['add_reps', '+1 rep'],
+    ['add_weight', '+2,5 kg'],
+    ['repeat', 'même cible'],
+    ['deload', 'allégé'],
+    ['start', 'départ'],
+    ['calibrate', 'à régler'],
+  ])('sums up %s', (decision, expected) => {
+    expect(deltaLabel({ decision, rule })).toBe(expected);
+  });
+});
+
+describe('weightHistory', () => {
+  it('lists the reference weight per session, oldest first, skipping bodyweight', () => {
+    const history = [
+      workout('2026-10-08', 'Legs', [lift('Squat', 105, [5])]),
+      workout('2026-10-01', 'Legs', [lift('Squat', 100, [5])]),
+      workout('2026-09-24', 'Legs', [lift('Squat', 0, [5])]),
+    ];
+    expect(weightHistory(EXERCISES.squat, history)).toEqual([
+      { date: '2026-10-01', weight: 100 },
+      { date: '2026-10-08', weight: 105 },
+    ]);
   });
 });

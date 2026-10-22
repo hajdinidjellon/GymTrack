@@ -3,11 +3,11 @@ import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, radius } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
-import { formatThousands } from '@/lib/format';
-import { formatKg } from '@/lib/plates';
-import { findExerciseDef } from '@/lib/programs';
-import { workingSets } from '@/lib/progression';
-import { deltaLabel, planLift, tonnage } from '@/lib/sessionBuilder';
+import { formatThousands } from '@/domain/format';
+import { formatKg } from '@/domain/plates';
+import { findExerciseDef } from '@/domain/programs';
+import { workingSets } from '@/domain/progression';
+import { deltaLabel, planLift, tonnage } from '@/domain/sessionBuilder';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -35,7 +35,12 @@ export default function Summary() {
     });
   }, [workout, ctx]);
 
-  if (!workout) return <Screen><View /></Screen>;
+  if (!workout)
+    return (
+      <Screen>
+        <View />
+      </Screen>
+    );
 
   const lifted = tonnage(workout);
   const plates = Math.round(lifted / 20);
@@ -43,19 +48,46 @@ export default function Summary() {
 
   return (
     <Screen scroll footer={<Button label="Retour à l'accueil" onPress={() => router.dismissTo('/(tabs)')} />}>
-      <View style={{ marginTop: 4, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.cream, alignItems: 'center', justifyContent: 'center' }}>
-        <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          marginTop: 4,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: colors.cream,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <View
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 13,
+            backgroundColor: colors.bg,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <Check size={16} color={colors.cream} />
         </View>
       </View>
-      <Text size={52} weight="black" style={{ marginTop: 14, lineHeight: 50 }}>Séance validée.</Text>
+      <Text size={52} weight="black" style={{ marginTop: 14, lineHeight: 50 }}>
+        Séance validée.
+      </Text>
 
       <Card style={{ marginTop: 18, paddingVertical: 18 }}>
-        <Text size={16} weight="semibold" color={colors.muted}>Tu as soulevé</Text>
-        <Text size={56} weight="black" style={{ lineHeight: 60 }}>{formatThousands(lifted)} kg</Text>
+        <Text size={16} weight="semibold" color={colors.muted}>
+          Tu as soulevé
+        </Text>
+        <Text size={56} weight="black" style={{ lineHeight: 60 }}>
+          {formatThousands(lifted)} kg
+        </Text>
         {plates > 0 ? (
           <>
-            <Text size={17} weight="bold" style={{ marginTop: 2 }}>soit {formatThousands(plates)} disques de 20 kg</Text>
+            <Text size={17} weight="bold" style={{ marginTop: 2 }}>
+              soit {formatThousands(plates)} disques de 20 kg
+            </Text>
             <PlatePile count={plates} />
           </>
         ) : null}
@@ -68,15 +100,29 @@ export default function Summary() {
 
       {next.length ? (
         <>
-          <Text size={17} weight="bold" style={{ marginTop: 20 }}>La prochaine fois</Text>
+          <Text size={17} weight="bold" style={{ marginTop: 20 }}>
+            La prochaine fois
+          </Text>
           <View style={{ gap: 8, marginTop: 10 }}>
             {next.map((n) => (
               <View
                 key={n.name}
-                style={{ height: 60, borderRadius: radius.md - 2, backgroundColor: colors.surface, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                style={{
+                  height: 60,
+                  borderRadius: radius.md - 2,
+                  backgroundColor: colors.surface,
+                  paddingHorizontal: 20,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
               >
-                <Text size={18} weight="bold" numberOfLines={1} style={{ flex: 1 }}>{n.name}</Text>
-                <Text size={16} weight="black">{n.label}</Text>
+                <Text size={18} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
+                  {n.name}
+                </Text>
+                <Text size={16} weight="black">
+                  {n.label}
+                </Text>
               </View>
             ))}
           </View>
@@ -89,8 +135,12 @@ export default function Summary() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <Card style={{ flex: 1, borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 18 }}>
-      <Text size={36} weight="black">{value}</Text>
-      <Text size={15} weight="semibold" color={colors.muted}>{label}</Text>
+      <Text size={36} weight="black">
+        {value}
+      </Text>
+      <Text size={15} weight="semibold" color={colors.muted}>
+        {label}
+      </Text>
     </Card>
   );
 }
@@ -99,11 +149,20 @@ function Stat({ value, label }: { value: string; label: string }) {
 function PlatePile({ count }: { count: number }) {
   const bars = Math.min(24, Math.max(1, Math.ceil(count / 10)));
   return (
-    <View accessible={false} style={{ marginTop: 14, height: 56, flexDirection: 'row', alignItems: 'flex-end', gap: 3 }}>
+    <View
+      accessible={false}
+      style={{ marginTop: 14, height: 56, flexDirection: 'row', alignItems: 'flex-end', gap: 3 }}
+    >
       {Array.from({ length: bars }, (_, i) => (
         <View
           key={i}
-          style={{ width: 8, height: 40 + (i % 3) * 8, borderRadius: 2, backgroundColor: colors.cream, opacity: 0.55 + (i / 24) * 0.45 }}
+          style={{
+            width: 8,
+            height: 40 + (i % 3) * 8,
+            borderRadius: 2,
+            backgroundColor: colors.cream,
+            opacity: 0.55 + (i / 24) * 0.45,
+          }}
         />
       ))}
     </View>
