@@ -37,3 +37,10 @@ jest.mock('@/services/notifications', () => ({
 jest.mock('@/services/logger', () => ({ logger: { warn: jest.fn(), error: jest.fn() } }));
 
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+
+// Reanimated 4 et Worklets ont besoin du runtime natif : leurs mocks officiels jouent les animations à plat
+jest.mock('react-native-worklets', () => require('react-native-worklets/lib/module/mock'));
+jest.mock('react-native-reanimated', () => ({
+  ...require('react-native-reanimated/mock'),
+  useReducedMotion: () => false,
+}));
