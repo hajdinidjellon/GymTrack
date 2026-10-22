@@ -20,8 +20,8 @@ import { Card } from '@/components/ui/Card';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { StatTile } from '@/components/stats/StatTile';
-import { ChevronRight } from '@/components/ui/icons';
-import { plateSize } from '@/components/disc/Barbell';
+import { Check, ChevronRight } from '@/components/ui/icons';
+import { PlateFace } from '@/components/disc/PlateFace';
 
 export default function Profile() {
   const profile = useProfileStore((s) => s.profile);
@@ -130,11 +130,14 @@ export default function Profile() {
         <SectionTitle
           title="Disques de ta salle"
           right={
-            <Text size={13} color={colors.faint}>
-              pour le calcul par côté
+            <Text size={13} weight="bold" color={colors.accent}>
+              Sélectionne-les !
             </Text>
           }
         />
+        <Text size={14} color={colors.muted} style={{ marginBottom: space.md, lineHeight: 19 }}>
+          On s'en sert pour te dire quoi mettre de chaque côté de la barre.
+        </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {ALL_PLATES.map((kg) => {
             const on = settings.plates.includes(kg);
@@ -147,29 +150,42 @@ export default function Profile() {
                 accessibilityState={{ checked: on }}
                 accessibilityLabel={`Disque de ${formatKg(kg)} kg`}
                 style={{
-                  width: 72,
-                  height: 68,
-                  borderRadius: radius.sm,
+                  width: 78,
+                  paddingTop: 10,
+                  paddingBottom: 8,
+                  borderRadius: radius.md,
                   borderCurve: 'continuous',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
+                  gap: 4,
                   backgroundColor: on ? colors.surface : 'transparent',
-                  borderWidth: 1.5,
-                  borderStyle: on ? 'solid' : 'dashed',
-                  borderColor: on ? colors.cream : colors.line,
+                  borderWidth: 1,
+                  borderColor: on ? colors.hairline : 'transparent',
                 }}
               >
-                <View
-                  style={{
-                    width: 7,
-                    height: plateSize(kg, 0.34).height,
-                    borderRadius: 2,
-                    backgroundColor: on ? plateColor(kg) : colors.line,
-                  }}
-                />
-                <Text size={14} weight="black" color={on ? colors.cream : colors.faint}>
-                  {formatKg(kg)}
+                <View>
+                  <PlateFace kg={kg} size={56} off={!on} />
+                  {on ? (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        right: -2,
+                        top: -2,
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                        backgroundColor: colors.go,
+                        borderWidth: 2,
+                        borderColor: colors.surface,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Check size={11} color={colors.onGo} />
+                    </View>
+                  ) : null}
+                </View>
+                <Text size={13} weight="black" color={on ? colors.cream : colors.faint}>
+                  {formatKg(kg)} kg
                 </Text>
               </PressableScale>
             );
