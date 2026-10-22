@@ -4,6 +4,8 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "node --max-old-space-size=4096 ./node_modules/expo/bin/cli start",
+    "dev": "node --max-old-space-size=4096 ./node_modules/expo/bin/cli start --clear",
+    "tunnel": "node --max-old-space-size=4096 ./node_modules/expo/bin/cli start --tunnel",
     "android": "node --max-old-space-size=4096 ./node_modules/expo/bin/cli start --android",
     "ios": "node --max-old-space-size=4096 ./node_modules/expo/bin/cli start --ios",
     "web": "expo start --web",
@@ -53,6 +55,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
+    "@expo/ngrok": "^4.1.0",
     "@react-native/jest-preset": "^0.86.3",
     "@testing-library/react-native": "^14.1.0",
     "@types/aes-js": "^3.1.4",

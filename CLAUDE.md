@@ -11,7 +11,8 @@ All commands below must be run from inside `gym-tracker-mobile/`. `node_modules`
 ## Commands
 
 ```bash
-npm start            # Metro (4 GB heap), test with Expo Go SDK 57
+npm run dev          # Metro on the LAN, cache cleared (same Wi-Fi as the phone, Expo Go SDK 57)
+npm run tunnel       # Metro through an Expo tunnel, when the phone is not on the same network
 npm run check        # everything CI runs: lint, format:check, type-check, test:coverage
 npm run lint         # ESLint, including the layer rules below
 npm run format       # Prettier
