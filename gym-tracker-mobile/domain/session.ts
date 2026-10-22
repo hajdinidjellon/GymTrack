@@ -71,6 +71,19 @@ export function completeSet(session: ActiveSession, exerciseId: string, setIndex
   };
 }
 
+/**
+ * Takes back the last validated set (a mis-tap). The rest it started is
+ * cancelled too. Nothing to undo: the session is returned as is.
+ */
+export function undoLastSet(session: ActiveSession): ActiveSession {
+  const last = session.lastCompleted;
+  if (!last || !findSet(session, last.exerciseId, last.setIndex)?.completed) return session;
+  return {
+    ...endRest(updateSet(session, last.exerciseId, last.setIndex, { completed: false })),
+    lastCompleted: null,
+  };
+}
+
 /** Indexes of the sets still to do on this exercise. */
 export function remainingSets(exercise: ActiveExercise): number[] {
   return exercise.sets.flatMap((s, i) => (s.completed ? [] : [i]));

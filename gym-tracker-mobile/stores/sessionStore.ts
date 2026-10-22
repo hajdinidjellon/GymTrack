@@ -43,6 +43,8 @@ interface SessionStore {
   completeSet: (exerciseId: string, setIndex: number) => void;
   /** "Done as planned": completes every remaining set of the exercise at once. */
   completeRemaining: (exerciseId: string) => void;
+  /** Takes back the last validated set and cancels its rest. */
+  undoLastSet: () => void;
 
   startRestTimer: (seconds: number) => void;
   addRestTime: (seconds: number) => void;
@@ -156,6 +158,13 @@ export const useSessionStore = create<SessionStore>()(
           if (!exercise || last === undefined) return;
           apply((s) => Session.completeRemaining(s, exerciseId));
           afterSet(exerciseId, exercise.sets[last]?.restTime ?? settings().defaultRestTime);
+        },
+
+        undoLastSet: () => {
+          clearRestEndTimeout();
+          void cancelRestCompleteNotification();
+          apply(Session.undoLastSet);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
         },
 
         startRestTimer: (seconds) => {

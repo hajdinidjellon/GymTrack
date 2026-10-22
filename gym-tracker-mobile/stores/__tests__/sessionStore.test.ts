@@ -116,6 +116,17 @@ describe('rest timer', () => {
   });
 });
 
+describe('undo', () => {
+  it('takes back a set validated by mistake and cancels its rest', () => {
+    store().completeSet('bench', 0);
+    store().undoLastSet();
+    expect(session().exercises[0]!.sets[0]!.completed).toBe(false);
+    expect(session().restEndsAt).toBeNull();
+    jest.advanceTimersByTime(200_000);
+    expect(Speech.speak).not.toHaveBeenCalledWith(expect.stringContaining("C'est reparti"), expect.anything());
+  });
+});
+
 describe('end of session', () => {
   it('returns the workout with only what was done', () => {
     store().completeSet('bench', 0);
