@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -17,6 +17,7 @@ import { getDb } from '@/services/db';
 import { logger } from '@/services/logger';
 import { requestPermissions } from '@/services/notifications';
 import { colors } from '@/constants/theme';
+import { LaunchAnimation } from '@/components/brand/LaunchAnimation';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -24,7 +25,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 SplashScreen.preventAutoHideAsync().catch(() => null);
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     'Bricolage-Regular': BricolageGrotesque_400Regular,
     'Bricolage-SemiBold': BricolageGrotesque_600SemiBold,
     'Bricolage-Bold': BricolageGrotesque_700Bold,
@@ -46,11 +47,18 @@ export default function RootLayout() {
       .finally(() => setDataLoaded(true));
   }, []);
 
-  const ready = fontsLoaded && dataLoaded;
+  const fontsDone = fontsLoaded || !!fontError;
+  const ready = fontsDone && dataLoaded;
+  const [intro, setIntro] = useState(true);
+  const endIntro = useCallback(() => setIntro(false), []);
+
+  // L'écran natif (même vert) laisse la place à l'animation dès que la police est là
+  useEffect(() => {
+    if (fontsDone) SplashScreen.hideAsync().catch(() => null);
+  }, [fontsDone]);
 
   useEffect(() => {
     if (!ready) return;
-    SplashScreen.hideAsync().catch(() => null);
     if (useSettingsStore.getState().settings.notifications) requestPermissions().catch(() => null);
   }, [ready]);
 
@@ -72,6 +80,7 @@ export default function RootLayout() {
         ) : (
           <View style={{ flex: 1, backgroundColor: colors.bg }} />
         )}
+        {intro && fontsDone ? <LaunchAnimation ready={ready} onDone={endIntro} /> : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
