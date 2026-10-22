@@ -6,7 +6,7 @@ import { colors } from '@/constants/theme';
 interface Props {
   values: number[];
   height?: number;
-  /** The last point gets a brass dot. */
+  /** The last point gets an accent dot. */
   accent?: boolean;
 }
 
@@ -50,7 +50,7 @@ export function Sparkline({ values, height = 64, accent = true }: Props) {
             cx={last.x}
             cy={last.y}
             r={5}
-            fill={accent ? colors.brass : colors.cream}
+            fill={accent ? colors.accent : colors.cream}
             stroke={colors.surface}
             strokeWidth={2}
           />

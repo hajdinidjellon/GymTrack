@@ -96,7 +96,7 @@ export default function Progress() {
           title="Volume par semaine"
           right={
             trend != null ? (
-              <Chip tone={trend >= 0 ? 'brass' : 'neutral'} label={`${trend >= 0 ? '+' : ''}${trend} %`} />
+              <Chip tone={trend >= 0 ? 'accent' : 'neutral'} label={`${trend >= 0 ? '+' : ''}${trend} %`} />
             ) : undefined
           }
         />
@@ -136,7 +136,7 @@ export default function Progress() {
                     <Text size={13} color={colors.muted}>
                       {i === 0 ? 'Au début' : 'Maintenant'}
                     </Text>
-                    <Text size={20} weight="black" color={i === 0 ? colors.cream : colors.brass}>
+                    <Text size={20} weight="black" color={i === 0 ? colors.cream : colors.accent}>
                       {formatKg(point.weight)} kg
                     </Text>
                   </View>
@@ -175,7 +175,7 @@ export default function Progress() {
                     {formatShortDay(r.date)} · {r.reps} reps
                   </Text>
                 </View>
-                <Text size={18} weight="black" color={colors.brass}>
+                <Text size={18} weight="black" color={colors.accent}>
                   {formatKg(r.weight)} kg
                 </Text>
               </View>

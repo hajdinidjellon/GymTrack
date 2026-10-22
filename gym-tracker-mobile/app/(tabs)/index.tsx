@@ -65,7 +65,7 @@ export default function Today() {
         <ScreenHeader
           eyebrow={formatDay(new Date())}
           title="Aujourd'hui"
-          right={streak > 1 ? <Chip tone="brass" label={`${streak} sem. d'affilée`} /> : undefined}
+          right={streak > 1 ? <Chip tone="accent" label={`${streak} sem. d'affilée`} /> : undefined}
         />
       </FadeIn>
       <FadeIn index={1}>
@@ -99,7 +99,7 @@ function WeekCard() {
               ? 'Objectif de la semaine atteint'
               : `Encore ${left} séance${left > 1 ? 's' : ''} cette semaine`}
           </Text>
-          <Text size={15} weight="black" color={left === 0 ? colors.brass : colors.muted}>
+          <Text size={15} weight="black" color={left === 0 ? colors.accent : colors.muted}>
             {done}/{perWeek}
           </Text>
         </View>
@@ -143,7 +143,7 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
               <Text size={13} weight="bold" color={colors.faint}>
                 SUR LA BARRE EN PREMIER
               </Text>
-              <Chip tone="brass" label={deltaLabel(featured)} />
+              <Chip tone="go" label={deltaLabel(featured)} />
             </View>
             <View style={{ height: 96, justifyContent: 'center', marginTop: 4 }}>
               <Barbell perSide={perSide} scale={0.85} barWidth={90} />
@@ -211,7 +211,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
           {calibrate ? 'Charge à choisir' : targetLabel(lift.targets)}
         </Text>
       </View>
-      {progress ? <Chip tone="brass" label={deltaLabel(lift)} /> : null}
+      {progress ? <Chip tone="go" label={deltaLabel(lift)} /> : null}
       <ChevronRight size={16} color={colors.faint} />
     </PressableScale>
   );

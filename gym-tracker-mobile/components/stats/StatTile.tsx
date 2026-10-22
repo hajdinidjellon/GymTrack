@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { colors, radius } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 
-/** A number and what it counts. `accent` puts the number in brass. */
+/** A number and what it counts. `accent` puts the number in the accent colour. */
 export function StatTile({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
     <View
@@ -23,7 +23,7 @@ export function StatTile({ value, label, accent }: { value: string; label: strin
       <Text
         size={24}
         weight="black"
-        color={accent ? colors.brass : colors.cream}
+        color={accent ? colors.accent : colors.cream}
         numberOfLines={1}
         adjustsFontSizeToFit
       >

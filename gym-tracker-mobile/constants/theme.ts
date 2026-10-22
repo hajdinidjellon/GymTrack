@@ -1,33 +1,57 @@
 /**
- * DESIGN SYSTEM — « Disques »
- * Vert sapin et crème, comme la fonte et les disques. Une seule couleur
- * d'accent, le laiton des manchons de barre : elle ne sert qu'à ce qui
- * doit attirer l'œil (progrès, records, minuteur, série de semaines).
+ * DESIGN SYSTEM — « Disques », version noire
+ * Fond noir, texte blanc cassé. La couleur vient des vrais disques de
+ * compétition : un 20 kg est bleu partout dans l'app, un 25 rouge, etc.
+ * En dehors des disques, trois couleurs seulement : le jaune pour ce qui
+ * doit attirer l'œil (progrès, records, minuteur), le vert pour valider,
+ * le rouge clair pour ce qui détruit.
  */
 
 export const colors = {
-  bg: '#0E3B2E',
+  bg: '#0B0B0C',
   /** Behind bottom sheets. */
-  scrim: '#072219',
+  scrim: '#050506',
   /** Cards. Lighter means closer: depth comes from the surface, not from shadows. */
-  surface: '#15493A',
+  surface: '#161618',
   /** Raised or pressed elements inside a card. */
-  surfaceHigh: '#1D5746',
-  line: '#2E6B58',
+  surfaceHigh: '#232327',
+  line: '#34343A',
   /** Card edges, barely there. */
-  hairline: 'rgba(241, 234, 216, 0.08)',
-  cream: '#F1EAD8',
-  muted: '#B9C7B8',
-  /** Third level of text: labels, units. Only on 13 px and up. */
-  faint: '#8DA597',
+  hairline: 'rgba(255, 255, 255, 0.07)',
+  /** Main text and the primary button. */
+  cream: '#F7F5F0',
+  muted: '#B1B1B7',
+  /** Third level of text: labels, units. Only on 12 px and up. */
+  faint: '#8A8A92',
   /** The steel of the bar. */
-  steel: '#8FA89C',
-  /** The accent: brass sleeves. Progress, records, the rest timer. */
-  brass: '#E6B85C',
-  brassSoft: 'rgba(230, 184, 92, 0.16)',
+  steel: '#A2A7AB',
+  /** Progress, records, the rest timer, today. */
+  accent: '#F2C230',
+  accentSoft: 'rgba(242, 194, 48, 0.15)',
+  /** "Valider" and what went well. */
+  go: '#23C16B',
+  goSoft: 'rgba(35, 193, 107, 0.15)',
+  onGo: '#04130A',
+  /** Days trained. */
+  done: '#2E6BE6',
   /** Destructive actions only. */
-  danger: '#F2937F',
+  danger: '#FF8A7A',
 } as const;
+
+/** IWF competition colours. Small change plates are steel. */
+export const plateColors: Record<string, string> = {
+  '25': '#D93B3B',
+  '20': '#2E6BE6',
+  '15': '#F2C230',
+  '10': '#23A65A',
+  '5': '#F2F2F0',
+  '2.5': '#D93B3B',
+  '1.25': '#B9C0C4',
+};
+
+export function plateColor(kg: number): string {
+  return plateColors[String(kg)] ?? colors.steel;
+}
 
 export const fonts = {
   regular: 'Bricolage-Regular',
