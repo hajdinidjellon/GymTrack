@@ -114,7 +114,7 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
     type: 'strength',
     exercises: session.exercises
       .filter((e) => e.sets.some((s) => s.completed))
-      .map(({ equipment: _equipment, needsWeight: _needsWeight, ...exercise }) => exercise),
+      .map(({ equipment: _e, needsWeight: _n, lastTime: _l, reason: _r, ...exercise }) => exercise),
     duration: Math.round((now.getTime() - new Date(session.startedAt).getTime()) / 60000),
     feeling: 3,
     completed: true,

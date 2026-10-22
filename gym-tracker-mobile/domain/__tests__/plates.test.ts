@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { describeSide, formatKg, loadBar } from '@/domain/plates';
+import { describeSide, formatKg, loadBar, platesPhrase } from '@/domain/plates';
 
 describe('loadBar', () => {
   it('loads 62.5 kg as 20 + 1.25 per side', () => {
@@ -38,5 +38,19 @@ describe('formatting', () => {
   it('describes one side', () => {
     expect(describeSide([20, 1.25])).toBe('20 + 1,25');
     expect(describeSide([])).toBe('Barre à vide');
+  });
+});
+
+describe('platesPhrase', () => {
+  const gym = [20, 15, 10, 5, 2.5, 1.25];
+
+  it('names the plates gained on one side', () => {
+    expect(platesPhrase(5, gym)).toBe('un disque de 5');
+    expect(platesPhrase(12.5, gym)).toBe('un 10 et un 2,5');
+    expect(platesPhrase(18.75, gym)).toBe('un 15, un 2,5 et un 1,25');
+  });
+
+  it('falls back to kilos when no plate fits', () => {
+    expect(platesPhrase(1.25, [20, 10])).toBe('1,25 kg');
   });
 });

@@ -46,3 +46,13 @@ export function formatKg(n: number): string {
 export function describeSide(perSide: number[]): string {
   return perSide.length ? perSide.map(formatKg).join(' + ') : 'Barre à vide';
 }
+
+/** "un disque de 5", "un 10 et un 2,5", or "3 kg" when no plate combination fits. */
+export function platesPhrase(sideWeight: number, available: number[]): string {
+  const plates = platesForSide(sideWeight, available);
+  if (plates.length === 0) return `${formatKg(sideWeight)} kg`;
+  if (plates.length === 1) return `un disque de ${formatKg(plates[0]!)}`;
+  const list = plates.map((p) => `un ${formatKg(p)}`);
+  const last = list.pop();
+  return `${list.join(', ')} et ${last}`;
+}

@@ -12,7 +12,15 @@ import {
   type ProgressionDecision,
 } from '@/domain/progression';
 import { formatKg } from '@/domain/plates';
-import { defaultIncrementFor, getSplit, restFor, ruleFor, type ExerciseDef, type ProgramDay } from '@/domain/programs';
+import {
+  defaultIncrementFor,
+  findExerciseDef,
+  getSplit,
+  restFor,
+  ruleFor,
+  type ExerciseDef,
+  type ProgramDay,
+} from '@/domain/programs';
 import type {
   ActiveExercise,
   AppSettings,
@@ -21,6 +29,7 @@ import type {
   SetTarget,
   UserProfile,
   Workout,
+  WorkoutSet,
 } from '@/types';
 
 export interface BuildContext {
@@ -35,6 +44,8 @@ export interface PlannedLift {
   decision: ProgressionDecision;
   targets: SetTarget[];
   restTime: number;
+  /** Working sets of the last session, if any. */
+  last: SetTarget[];
 }
 
 export interface PlannedDay {
@@ -91,7 +102,9 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   }
 
   const { decision, targets } = nextTargets(history, rule, { startWeight });
-  return { def, rule, decision, targets, restTime: restFor(rule, ctx.settings.defaultRestTime) };
+  const lastSession = history.find((h) => workingSets(h.sets).length > 0);
+  const last = lastSession ? workingSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
+  return { def, rule, decision, targets, restTime: restFor(rule, ctx.settings.defaultRestTime), last };
 }
 
 export function planDay(day: ProgramDay, ctx: BuildContext): PlannedDay {
@@ -113,6 +126,8 @@ export function toActiveExercises(day: PlannedDay): ActiveExercise[] {
       rule: lift.rule,
       calibration: needsWeight || undefined,
       needsWeight,
+      lastTime: lift.last.length ? lastTimeLabel(lift.last) : undefined,
+      reason: reasonLabel(lift),
       sets: lift.targets.map((t) => ({
         weight: t.weight,
         reps: t.reps,
@@ -143,6 +158,37 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
   }
 }
 
+/** "60 kg × 10 · 10 · 9", or "12 · 11 · 10 reps" at bodyweight. */
+export function lastTimeLabel(sets: SetTarget[]): string {
+  const reps = sets.map((s) => s.reps).join(' · ');
+  const weight = referenceWeight(sets.map((s) => ({ ...s, setType: 'normal' as const })));
+  return weight > 0 ? `${formatKg(weight)} kg × ${reps}` : `${reps} reps`;
+}
+
+/** Why today's target is what it is, in one sentence. */
+export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targets'>): string {
+  const { rule } = lift;
+  const bodyweight = (lift.targets[0]?.weight ?? 0) === 0;
+  switch (lift.decision) {
+    case 'add_weight':
+      return `Toutes tes séries ont atteint ${rule.repMax} reps : on ajoute ${formatKg(rule.increment)} kg.`;
+    case 'add_reps':
+      return bodyweight
+        ? 'Une rep de plus par série que la dernière fois.'
+        : `Une rep de plus par série. À ${rule.repMax} reps partout, on ajoute du poids.`;
+    case 'repeat':
+      return `Une série est passée sous ${rule.repMin} reps : on garde la même cible.`;
+    case 'deload':
+      return 'Deux séances difficiles de suite : on allège de 10 % pour mieux repartir.';
+    case 'start':
+      return bodyweight
+        ? 'Première séance : vise le bas de la fourchette.'
+        : 'Charge de départ calculée à 70 % de ton record.';
+    case 'calibrate':
+      return 'Première fois : choisis ta charge, ensuite on calcule tout.';
+  }
+}
+
 /** "3 × 10 · 62,5 kg", or "3 × 13" at bodyweight. Uneven reps show the lowest. */
 export function targetLabel(targets: SetTarget[]): string {
   const first = targets[0];
@@ -158,6 +204,30 @@ export function tonnage(workout: Workout): number {
     (sum, e) => sum + workingSets(e.sets).reduce((s, set) => s + set.weight * set.reps, 0),
     0,
   );
+}
+
+export interface NewRecord {
+  name: string;
+  weight: number;
+  previous: number;
+}
+
+/**
+ * Exercises of `workout` lifted heavier than ever before (best validated
+ * working set). A first session is not a record: there is nothing to beat.
+ */
+export function newRecords(workout: Workout, history: Workout[]): NewRecord[] {
+  const best = (sets: WorkoutSet[]) => Math.max(0, ...workingSets(sets).map((s) => s.weight));
+  return workout.exercises.flatMap((exercise) => {
+    const def = findExerciseDef(exercise.name);
+    const now = best(exercise.sets);
+    if (!def || now === 0) return [];
+    const before = history
+      .filter((w) => w.id !== workout.id && new Date(w.date) < new Date(workout.date))
+      .flatMap((w) => w.exercises.filter((e) => matches(def, e.name)).map((e) => best(e.sets)));
+    const previous = Math.max(0, ...before);
+    return before.length && now > previous ? [{ name: def.name, weight: now, previous }] : [];
+  });
 }
 
 /** Reference weight of each past session, oldest first. Ignores bodyweight sessions. */
