@@ -13,7 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0E3B2E"
+        "backgroundColor": "#0B0B0C"
       },
       "package": "com.gymtrack.mobile",
       "permissions": ["android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]
@@ -28,13 +28,13 @@
       [
         "expo-notifications",
         {
-          "color": "#F1EAD8"
+          "color": "#F7F5F0"
         }
       ],
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0E3B2E"
+          "backgroundColor": "#0B0B0C"
         }
       ],
       "expo-secure-store"

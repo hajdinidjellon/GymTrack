@@ -4,7 +4,7 @@ import { colors, radius } from '@/constants/theme';
 import { PressableScale, type HapticKind } from './PressableScale';
 import { Text } from './Text';
 
-type Variant = 'primary' | 'secondary' | 'outline' | 'ghost';
+type Variant = 'primary' | 'go' | 'secondary' | 'outline' | 'ghost';
 
 interface Props {
   label: string;
@@ -23,6 +23,7 @@ interface Props {
 
 const look: Record<Variant, { bg: string; fg: string; border?: string }> = {
   primary: { bg: colors.cream, fg: colors.bg },
+  go: { bg: colors.go, fg: colors.onGo },
   secondary: { bg: colors.surfaceHigh, fg: colors.cream },
   outline: { bg: 'transparent', fg: colors.cream, border: colors.line },
   ghost: { bg: 'transparent', fg: colors.muted },

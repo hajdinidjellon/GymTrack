@@ -23,7 +23,7 @@ export function SessionProgress({ exercises }: { exercises: ActiveExercise[] }) 
               style={{
                 width: `${ratio * 100}%`,
                 height: '100%',
-                backgroundColor: ratio === 1 ? colors.cream : colors.brass,
+                backgroundColor: ratio === 1 ? colors.cream : colors.accent,
               }}
             />
           </View>

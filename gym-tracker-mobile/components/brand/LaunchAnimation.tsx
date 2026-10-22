@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { colors } from '@/constants/theme';
+import { colors, plateColor } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -20,8 +20,12 @@ const SPRING_SOFT = { damping: 15, stiffness: 150 };
 const MIN_VISIBLE_MS = 1000;
 const EXIT_MS = 260;
 
-// Hauteur des disques, du plus lourd (contre la butée) au plus léger
-const PLATES = [100, 84, 62];
+// Un 20, un 15 et un 10 de chaque côté, du plus lourd (contre la butée) au plus léger
+const PLATES = [
+  { kg: 20, height: 100 },
+  { kg: 15, height: 84 },
+  { kg: 10, height: 62 },
+];
 const PLATE_WIDTH = 14;
 const PLATE_GAP = 3;
 const BAR_WIDTH = 250;
@@ -104,18 +108,20 @@ export function LaunchAnimation({ ready, onDone }: Props) {
               barStyle,
             ]}
           />
-          {PLATES.map((height, i) => (
-            <React.Fragment key={height}>
+          {PLATES.map(({ kg, height }, i) => (
+            <React.Fragment key={kg}>
               <Plate
                 progress={plates[i]!}
                 side={-1}
                 height={height}
+                color={plateColor(kg)}
                 x={LEFT_COLLAR - (i + 1) * (PLATE_WIDTH + PLATE_GAP)}
               />
               <Plate
                 progress={plates[i]!}
                 side={1}
                 height={height}
+                color={plateColor(kg)}
                 x={RIGHT_COLLAR + PLATE_GAP + i * (PLATE_WIDTH + PLATE_GAP)}
               />
             </React.Fragment>
@@ -136,11 +142,13 @@ function Plate({
   side,
   height,
   x,
+  color,
 }: {
   progress: SharedValue<number>;
   side: 1 | -1;
   height: number;
   x: number;
+  color: string;
 }) {
   const style = useAnimatedStyle(() => ({
     opacity: Math.min(1, progress.value * 1.5),
@@ -156,7 +164,7 @@ function Plate({
           width: PLATE_WIDTH,
           height,
           borderRadius: 4,
-          backgroundColor: colors.cream,
+          backgroundColor: color,
         },
         style,
       ]}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { colors } from '@/constants/theme';
+import { colors, plateColor } from '@/constants/theme';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
@@ -64,7 +64,7 @@ function BigPlate() {
         height: 400,
         borderRadius: 200,
         borderWidth: 26,
-        borderColor: colors.cream,
+        borderColor: plateColor(20),
         alignItems: 'center',
         justifyContent: 'center',
       }}

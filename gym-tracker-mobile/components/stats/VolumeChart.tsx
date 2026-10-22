@@ -9,7 +9,7 @@ import { Text } from '@/components/ui/Text';
 
 const HEIGHT = 120;
 
-/** One bar per week. The current week is in brass, the best week gets its number. */
+/** One bar per week. The current week is in the accent colour, the best week gets its number. */
 export function VolumeChart({ weeks }: { weeks: WeekVolume[] }) {
   const [width, setWidth] = useState(0);
   const max = Math.max(1, ...weeks.map((w) => w.tonnage));
@@ -37,7 +37,7 @@ export function VolumeChart({ weeks }: { weeks: WeekVolume[] }) {
                   width={bar}
                   height={h}
                   rx={Math.min(6, bar / 2)}
-                  fill={current ? colors.brass : w.tonnage ? colors.cream : colors.line}
+                  fill={current ? colors.accent : w.tonnage ? colors.cream : colors.line}
                   opacity={current || i === bestIndex ? 1 : 0.55}
                 />
               );
@@ -65,7 +65,7 @@ export function VolumeChart({ weeks }: { weeks: WeekVolume[] }) {
         <Text size={12} color={colors.faint}>
           il y a {weeks.length - 1} sem.
         </Text>
-        <Text size={12} weight="bold" color={colors.brass}>
+        <Text size={12} weight="bold" color={colors.accent}>
           cette semaine
         </Text>
       </View>

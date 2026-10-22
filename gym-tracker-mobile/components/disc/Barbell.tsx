@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { colors } from '@/constants/theme';
+import { colors, plateColor } from '@/constants/theme';
 
 /** Height and thickness of each plate at scale 1, close to real proportions. */
 const PLATE: Record<string, [number, number]> = {
@@ -47,8 +47,8 @@ export function Barbell({ perSide, scale = 1, barWidth = 96, highlightFrom }: Pr
           width: p.width,
           height: p.height,
           borderRadius: Math.max(2, 4 * scale),
-          backgroundColor: colors.cream,
-          opacity: p.faded ? 0.4 : 1,
+          backgroundColor: plateColor(p.kg),
+          opacity: p.faded ? 0.35 : 1,
           marginHorizontal: 1,
         }}
       />
@@ -79,7 +79,10 @@ export function MiniPlates({ perSide }: { perSide: number[] }) {
       {perSide.map((kg, i) => {
         const { height, width } = plateSize(kg, 0.44);
         return (
-          <View key={i} style={{ width: Math.max(4, width), height, borderRadius: 2, backgroundColor: colors.cream }} />
+          <View
+            key={i}
+            style={{ width: Math.max(4, width), height, borderRadius: 2, backgroundColor: plateColor(kg) }}
+          />
         );
       })}
       <View style={{ width: 14, height: 4, backgroundColor: colors.steel }} />

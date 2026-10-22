@@ -61,7 +61,7 @@ export default function ExerciseScreen() {
               ? `${formatKg(target.weight)} kg × ${target.reps}`
               : `${target?.reps ?? 0} reps`}
         </Text>
-        <Text size={14} color={colors.brass} style={{ marginTop: 4, lineHeight: 19 }}>
+        <Text size={14} color={colors.accent} style={{ marginTop: 4, lineHeight: 19 }}>
           {reasonLabel(lift)}
         </Text>
         {lift.last.length ? (

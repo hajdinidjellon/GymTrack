@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { colors, radius, space } from '@/constants/theme';
+import { colors, plateColor, radius, space } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
 import { totals } from '@/domain/stats';
@@ -66,12 +66,12 @@ export default function Profile() {
                 height: 56,
                 borderRadius: 28,
                 borderWidth: 6,
-                borderColor: colors.cream,
+                borderColor: plateColor(20),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.brass }} />
+              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accent }} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text size={20} weight="black" numberOfLines={1}>
@@ -165,7 +165,7 @@ export default function Profile() {
                     width: 7,
                     height: plateSize(kg, 0.34).height,
                     borderRadius: 2,
-                    backgroundColor: on ? colors.cream : colors.line,
+                    backgroundColor: on ? plateColor(kg) : colors.line,
                   }}
                 />
                 <Text size={14} weight="black" color={on ? colors.cream : colors.faint}>

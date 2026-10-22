@@ -87,7 +87,7 @@ function LiftRow({ lift, index }: { lift: PlannedLift; index: number }) {
             <Text size={13} weight="semibold" color={colors.muted} numberOfLines={1} style={{ flexShrink: 1 }}>
               {calibrate ? 'Charge à choisir' : targetLabel(lift.targets)}
             </Text>
-            {progress ? <Chip tone="brass" label={deltaLabel(lift)} /> : null}
+            {progress ? <Chip tone="go" label={deltaLabel(lift)} /> : null}
           </View>
         </View>
         {showPlates ? (

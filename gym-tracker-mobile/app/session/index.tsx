@@ -178,7 +178,7 @@ function SetDots({ total, current }: { total: number; current: number }) {
               borderRadius: 5,
               backgroundColor: i < current ? colors.cream : 'transparent',
               borderWidth: 2,
-              borderColor: i === current ? colors.brass : i < current ? colors.cream : colors.line,
+              borderColor: i === current ? colors.accent : i < current ? colors.cream : colors.line,
             }}
           />
         ))}

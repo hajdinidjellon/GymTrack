@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { colors } from '@/constants/theme';
+import { colors, plateColor } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
@@ -59,7 +59,7 @@ export default function Summary() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: colors.cream,
+          backgroundColor: colors.go,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -74,7 +74,7 @@ export default function Summary() {
             justifyContent: 'center',
           }}
         >
-          <Check size={16} color={colors.cream} />
+          <Check size={16} color={colors.go} />
         </View>
       </View>
       <Text size={40} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 42 }}>
@@ -87,9 +87,9 @@ export default function Summary() {
       {records.map((r) => (
         <Card
           key={r.name}
-          style={{ marginTop: 14, borderWidth: 1.5, borderColor: colors.brass, backgroundColor: colors.brassSoft }}
+          style={{ marginTop: 14, borderWidth: 1.5, borderColor: colors.accent, backgroundColor: colors.accentSoft }}
         >
-          <Text size={12} weight="black" color={colors.brass} style={{ letterSpacing: 1.3 }}>
+          <Text size={12} weight="black" color={colors.accent} style={{ letterSpacing: 1.3 }}>
             NOUVEAU RECORD
           </Text>
           <Text size={20} weight="black" style={{ marginTop: 2 }}>
@@ -148,7 +148,7 @@ export default function Summary() {
                 <Text size={16} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
                   {n.name}
                 </Text>
-                <Chip tone={n.label.startsWith('+') ? 'brass' : 'neutral'} label={n.label} />
+                <Chip tone={n.label.startsWith('+') ? 'go' : 'neutral'} label={n.label} />
               </View>
             ))}
           </Card>
@@ -173,7 +173,7 @@ function PlatePile({ count }: { count: number }) {
             width: 8,
             height: 40 + (i % 3) * 8,
             borderRadius: 2,
-            backgroundColor: colors.cream,
+            backgroundColor: plateColor(20),
             opacity: 0.55 + (i / 24) * 0.45,
           }}
         />

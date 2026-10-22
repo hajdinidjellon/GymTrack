@@ -6,7 +6,7 @@ import { Text } from '@/components/ui/Text';
 
 const DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
-/** Monday to Sunday. A trained day is a full plate, today is outlined in brass. */
+/** Monday to Sunday. A trained day is a blue 20 kg plate, today is outlined in the accent colour. */
 export function WeekStrip({ days }: { days: WeekDay[] }) {
   const done = days.filter((d) => d.done).map((d) => DAY_NAMES[days.indexOf(d)]);
   return (
@@ -17,7 +17,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
     >
       {days.map((d, i) => (
         <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-          <Text size={12} weight="bold" color={d.today ? colors.brass : colors.faint}>
+          <Text size={12} weight="bold" color={d.today ? colors.accent : colors.faint}>
             {d.letter}
           </Text>
           <View
@@ -27,9 +27,9 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
               borderRadius: 18,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: d.done ? colors.cream : d.future ? 'transparent' : colors.surfaceHigh,
+              backgroundColor: d.done ? colors.done : d.future ? 'transparent' : colors.surfaceHigh,
               borderWidth: d.today ? 2 : d.future ? 1.5 : 0,
-              borderColor: d.today ? colors.brass : colors.line,
+              borderColor: d.today ? colors.accent : colors.line,
               borderStyle: d.future && !d.today ? 'dashed' : 'solid',
             }}
           >

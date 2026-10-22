@@ -15,7 +15,7 @@ export function SectionTitle({ title, right, first }: { title: string; right?: R
         justifyContent: 'space-between',
       }}
     >
-      <Text size={12} weight="black" color={colors.faint} accessibilityRole="header" style={{ letterSpacing: 1.3 }}>
+      <Text size={12} weight="black" color={colors.muted} accessibilityRole="header" style={{ letterSpacing: 1.3 }}>
         {title.toUpperCase()}
       </Text>
       {right}

@@ -86,9 +86,9 @@ A layer never imports a layer above it. Always import with `@/`.
 - `services/__tests__`, `stores/__tests__` — mocked native modules (`jest.setup.ts`).
 - `components/__tests__` — React Native Testing Library v14 (`render` and `fireEvent` are async).
 
-### Design system — "Disques"
+### Design system — "Disques", black version
 
-`constants/theme.ts`: one forest green, one cream, Bricolage Grotesque. No accent colours, no glow, no Skia. Styles are plain `style` props using the tokens. Base components in `components/ui/`, plate drawings in `components/disc/`, session views in `components/session/`. Mockups: claude.ai artifact "Maquette complète · G · Disques".
+`constants/theme.ts`: black background, off-white text, Bricolage Grotesque. Colour comes from IWF competition plates (`plateColor(kg)`: 25 red, 20 blue, 15 yellow, 10 green, 5 white); outside plates only three colours: `accent` (yellow: progress, records, rest timer, today), `go` (green: "Valider", gains), `danger`. Depth comes from surfaces (`surface` < `surfaceHigh`), not shadows. No glow, no Skia. Base components in `components/ui/` (`PressableScale` for every tappable element, `FadeIn` for screen entrance), plates in `components/disc/`, charts in `components/stats/`, session views in `components/session/`. Colour mockups: claude.ai artifact "GymTrack · trois directions couleur" (direction 2).
 
 ## Key conventions
 

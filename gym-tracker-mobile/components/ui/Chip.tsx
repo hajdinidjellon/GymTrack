@@ -3,11 +3,12 @@ import { View } from 'react-native';
 import { colors, radius } from '@/constants/theme';
 import { Text } from './Text';
 
-type Tone = 'neutral' | 'brass' | 'solid';
+type Tone = 'neutral' | 'accent' | 'go' | 'solid';
 
 const tones: Record<Tone, { bg: string; fg: string }> = {
   neutral: { bg: colors.surfaceHigh, fg: colors.cream },
-  brass: { bg: colors.brassSoft, fg: colors.brass },
+  accent: { bg: colors.accentSoft, fg: colors.accent },
+  go: { bg: colors.goSoft, fg: colors.go },
   solid: { bg: colors.cream, fg: colors.bg },
 };
 

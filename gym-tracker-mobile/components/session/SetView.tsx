@@ -43,7 +43,7 @@ export function SetView({ cursor }: { cursor: Cursor }) {
             </View>
           ) : null}
           {setIndex === 0 && exercise.reason ? (
-            <Text size={14} color={colors.brass} numberOfLines={2} style={{ lineHeight: 19 }}>
+            <Text size={14} color={colors.accent} numberOfLines={2} style={{ lineHeight: 19 }}>
               {exercise.reason}
             </Text>
           ) : null}
@@ -108,8 +108,9 @@ export function SetView({ cursor }: { cursor: Cursor }) {
       ) : null}
       <Button
         label="Valider"
+        variant="go"
         height={76}
-        icon={<Check size={30} />}
+        icon={<Check size={30} color={colors.onGo} />}
         accessibilityLabel="Valider la série"
         testID="validate-set"
         onPress={() => completeSet(exercise.id, setIndex)}
