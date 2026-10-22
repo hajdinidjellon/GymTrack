@@ -1,66 +1,63 @@
 /**
- * SESSION STORE — état de la séance en cours
+ * SESSION STORE — la séance en cours.
+ *
+ * Les transitions d'état sont pures et testées (domain/session.ts). Ce store
+ * les applique puis déclenche les effets : vibrations, voix, notification de
+ * fin de repos. Aucun composant ne fait vibrer ou parler l'app lui-même.
  *
  * La séance est persistée dans expo-sqlite/kv-store (synchrone, dispo dans
- * Expo Go) : elle survit à un kill de l'app et se restaure au démarrage.
- *
- * Aucun tick par seconde ici : on stocke des timestamps absolus
- * (startedAt, restEndsAt) et seuls les composants qui affichent un chrono
- * recalculent le temps (voir hooks/useSessionClock.ts). Sinon tout l'écran
- * de séance se re-rend chaque seconde.
- *
- * Toutes les vibrations et annonces vocales de la séance partent d'ici,
- * pas des composants.
+ * Expo Go) : elle survit à un kill de l'app. Les minuteurs sont des
+ * timestamps absolus, seuls les composants qui affichent un chrono se
+ * re-rendent chaque seconde (hooks/useSessionClock.ts).
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
+import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { Storage } from 'expo-sqlite/kv-store';
 import * as Haptics from 'expo-haptics';
-import { scheduleRestCompleteNotification, cancelRestCompleteNotification } from '@/lib/notifications';
-import { findCurrent } from '@/lib/sessionCursor';
-import { nextExerciseLine, restOverLine, setLine, speak } from '@/lib/voice';
-import { formatKg } from '@/lib/plates';
+import * as Session from '@/domain/session';
+import { formatKg } from '@/domain/plates';
+import { findCurrent } from '@/domain/sessionCursor';
+import { nextExerciseLine, restOverLine, setLine } from '@/domain/voiceLines';
+import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from '@/services/notifications';
+import { speak } from '@/services/speech';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { ActiveSession, ActiveExercise, WorkoutSet, Workout } from '@/types';
+import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
 type NudgeField = 'weight' | 'reps';
 
 interface SessionStore {
   activeSession: ActiveSession | null;
 
-  // Cycle de vie de la séance
   startSession: (name: string, exercises: ActiveExercise[]) => void;
+  /** Ends the session and returns what goes into the history. */
   finishSession: () => Workout | null;
   discardSession: () => void;
 
-  // Gestion des séries
-  updateSet: (exerciseId: string, setIndex: number, set: Partial<WorkoutSet>) => void;
+  updateSet: (exerciseId: string, setIndex: number, patch: Partial<WorkoutSet>) => void;
   /** One step on weight or reps, with a haptic tick. */
   nudgeSet: (exerciseId: string, setIndex: number, field: NudgeField, delta: number) => void;
   /** First time on an exercise: sets the weight of every remaining set. */
   setStartWeight: (exerciseId: string, weight: number) => void;
   /** Marks the set done and starts the rest timer, unless it was the last set. */
   completeSet: (exerciseId: string, setIndex: number) => void;
-  /** "Done as planned": completes every remaining set at once, then starts the rest timer. */
-  completeRemaining: (exerciseId: string) => number[];
+  /** "Done as planned": completes every remaining set of the exercise at once. */
+  completeRemaining: (exerciseId: string) => void;
 
-  // Timer de repos
   startRestTimer: (seconds: number) => void;
   addRestTime: (seconds: number) => void;
   stopRestTimer: () => void;
 }
 
-const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const settings = () => useSettingsStore.getState().settings;
 
 // Hors du state : un timeout n'a rien à faire dans un état sérialisable
 let restEndTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function clearRestEndTimeout() {
-  if (restEndTimeout) {
-    clearTimeout(restEndTimeout);
-    restEndTimeout = null;
-  }
+  if (restEndTimeout) clearTimeout(restEndTimeout);
+  restEndTimeout = null;
 }
 
 function armRestEnd(ms: number) {
@@ -68,261 +65,136 @@ function armRestEnd(ms: number) {
   restEndTimeout = setTimeout(() => {
     restEndTimeout = null;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
-    useSessionStore.setState((s) => ({
-      activeSession: s.activeSession ? { ...s.activeSession, restEndsAt: null, restDuration: null } : null,
-    }));
+    useSessionStore.setState((s) => ({ activeSession: s.activeSession && Session.endRest(s.activeSession) }));
 
     const session = useSessionStore.getState().activeSession;
     const next = session && findCurrent(session.exercises);
-    if (next && !next.exercise.needsWeight && useSettingsStore.getState().settings.voice) {
-      speak(restOverLine(next));
-    }
+    if (next && !next.exercise.needsWeight && settings().voice) speak(restOverLine(next));
   }, ms);
 }
 
-/** After a set: announce the next exercise early so the bar can be loaded during the rest. */
-function announceNext(previousExerciseId: string) {
+/** After a set: announce a new exercise early, so the bar can be loaded during the rest. */
+function afterSet(previousExerciseId: string, restSeconds: number) {
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
   const session = useSessionStore.getState().activeSession;
-  const settings = useSettingsStore.getState().settings;
-  const next = session && findCurrent(session.exercises);
-  if (!next || !settings.voice) return;
-  if (next.exercise.id !== previousExerciseId) speak(nextExerciseLine(next, settings));
-}
+  if (!session || Session.isDone(session)) return;
 
-function restBody(session: ActiveSession | null): string {
-  const next = session && findCurrent(session.exercises);
-  if (!next) return 'Lance ta prochaine série.';
-  const load = next.set.weight > 0 ? ` · ${formatKg(next.set.weight)} kg × ${next.set.reps}` : ` · ${next.set.reps} reps`;
-  return `${next.exercise.name}${load}`;
-}
+  const { restTimerEnabled, voice } = settings();
+  if (restTimerEnabled) useSessionStore.getState().startRestTimer(restSeconds);
 
-/** Last set of the whole session: no rest, the summary comes next. */
-function isSessionDone(session: ActiveSession | null): boolean {
-  return !!session && findCurrent(session.exercises) === null;
+  const next = findCurrent(session.exercises);
+  if (next && voice && next.exercise.id !== previousExerciseId) speak(nextExerciseLine(next, settings()));
 }
 
 // Lecture/écriture synchrones : la séance est déjà là au premier rendu
 const kvStorage: StateStorage = {
   getItem: (key) => Storage.getItemSync(key),
   setItem: (key, value) => Storage.setItemSync(key, value),
-  removeItem: (key) => { Storage.removeItemSync(key); },
+  removeItem: (key) => {
+    Storage.removeItemSync(key);
+  },
 };
 
-function mapExercise(
-  session: ActiveSession,
-  exerciseId: string,
-  fn: (e: ActiveExercise) => ActiveExercise,
-): ActiveSession {
-  return {
-    ...session,
-    exercises: session.exercises.map((e) => (e.id === exerciseId ? fn(e) : e)),
-  };
-}
+export const useSessionStore = create<SessionStore>()(
+  persist(
+    (set, get) => {
+      /** Applies a pure transition to the running session, if any. */
+      const apply = (fn: (s: ActiveSession) => ActiveSession) =>
+        set((state) => (state.activeSession ? { activeSession: fn(state.activeSession) } : state));
 
-function patchSet(e: ActiveExercise, setIndex: number, patch: Partial<WorkoutSet>): ActiveExercise {
-  const current = e.sets[setIndex];
-  if (!current) return e;
-  const sets = [...e.sets];
-  sets[setIndex] = { ...current, ...patch };
-  return { ...e, sets };
-}
-
-export const useSessionStore = create<SessionStore>()(persist((set, get) => ({
-  activeSession: null,
-
-  startSession: (name, exercises) => {
-    clearRestEndTimeout();
-    set({
-      activeSession: {
-        workoutId: generateId(),
-        name,
-        startedAt: new Date().toISOString(),
-        exercises,
-        restEndsAt: null,
-        restDuration: null,
-        lastCompleted: null,
-      },
-    });
-  },
-
-  finishSession: () => {
-    const { activeSession } = get();
-    if (!activeSession) return null;
-
-    get().stopRestTimer();
-
-    const durationMinutes = Math.round(
-      (Date.now() - new Date(activeSession.startedAt).getTime()) / 60000,
-    );
-
-    const workout: Workout = {
-      id: activeSession.workoutId,
-      date: activeSession.startedAt,
-      name: activeSession.name,
-      type: 'strength',
-      // Un exercice sans aucune série validée n'a rien à faire dans l'historique
-      exercises: activeSession.exercises
-        .filter((e) => e.sets.some((set) => set.completed))
-        .map(({ equipment: _e, needsWeight: _n, ...ex }) => ex),
-      duration: durationMinutes,
-      feeling: 3,
-      completed: true,
-    };
-
-    set({ activeSession: null });
-    return workout;
-  },
-
-  discardSession: () => {
-    get().stopRestTimer();
-    set({ activeSession: null });
-  },
-
-  updateSet: (exerciseId, setIndex, patch) => {
-    set((s) => {
-      if (!s.activeSession) return s;
       return {
-        activeSession: mapExercise(s.activeSession, exerciseId, (e) => patchSet(e, setIndex, patch)),
-      };
-    });
-  },
+        activeSession: null,
 
-  nudgeSet: (exerciseId, setIndex, field, delta) => {
-    const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
-    const current = exercise?.sets[setIndex];
-    if (!current) return;
+        startSession: (name, exercises) => {
+          clearRestEndTimeout();
+          set({ activeSession: Session.createSession(newId(), name, exercises, new Date()) });
+        },
 
-    // Arrondi pour éviter les 52.49999 après plusieurs pas de 2.5
-    const next = Math.max(0, Math.round((current[field] + delta) * 100) / 100);
-    if (next === current[field]) return;
+        finishSession: () => {
+          const session = get().activeSession;
+          if (!session) return null;
+          get().stopRestTimer();
+          set({ activeSession: null });
+          return Session.toWorkout(session, new Date());
+        },
 
-    get().updateSet(exerciseId, setIndex, { [field]: next });
-    Haptics.selectionAsync().catch(() => null);
-  },
+        discardSession: () => {
+          get().stopRestTimer();
+          set({ activeSession: null });
+        },
 
-  setStartWeight: (exerciseId, weight) => {
-    set((s) => {
-      if (!s.activeSession) return s;
-      return {
-        activeSession: mapExercise(s.activeSession, exerciseId, (e) => ({
-          ...e,
-          needsWeight: false,
-          sets: e.sets.map((set) =>
-            set.completed ? set : { ...set, weight, target: { weight, reps: set.target?.reps ?? set.reps } },
-          ),
-        })),
-      };
-    });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
-    const next = findCurrent(get().activeSession?.exercises ?? []);
-    if (next && useSettingsStore.getState().settings.voice) speak(setLine(next));
-  },
+        updateSet: (exerciseId, setIndex, patch) => apply((s) => Session.updateSet(s, exerciseId, setIndex, patch)),
 
-  completeSet: (exerciseId, setIndex) => {
-    const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
-    const target = exercise?.sets[setIndex];
-    if (!target || target.completed) return;
+        nudgeSet: (exerciseId, setIndex, field, delta) => {
+          const session = get().activeSession;
+          const current = session && Session.findSet(session, exerciseId, setIndex);
+          if (!current) return;
+          const next = Session.nudge(current[field], delta);
+          if (next === current[field]) return;
+          get().updateSet(exerciseId, setIndex, { [field]: next });
+          Haptics.selectionAsync().catch(() => null);
+        },
 
-    set((s) => {
-      if (!s.activeSession) return s;
-      return {
-        activeSession: {
-          ...mapExercise(s.activeSession, exerciseId, (e) => patchSet(e, setIndex, { completed: true })),
-          lastCompleted: { exerciseId, setIndex },
+        setStartWeight: (exerciseId, weight) => {
+          apply((s) => Session.setStartWeight(s, exerciseId, weight));
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
+          const next = findCurrent(get().activeSession?.exercises ?? []);
+          if (next && settings().voice) speak(setLine(next));
+        },
+
+        completeSet: (exerciseId, setIndex) => {
+          const session = get().activeSession;
+          const target = session && Session.findSet(session, exerciseId, setIndex);
+          if (!target || target.completed) return;
+          apply((s) => Session.completeSet(s, exerciseId, setIndex));
+          afterSet(exerciseId, target.restTime ?? settings().defaultRestTime);
+        },
+
+        completeRemaining: (exerciseId) => {
+          const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
+          const last = exercise ? Session.remainingSets(exercise).pop() : undefined;
+          if (!exercise || last === undefined) return;
+          apply((s) => Session.completeRemaining(s, exerciseId));
+          afterSet(exerciseId, exercise.sets[last]?.restTime ?? settings().defaultRestTime);
+        },
+
+        startRestTimer: (seconds) => {
+          if (!get().activeSession) return;
+          apply((s) => Session.startRest(s, seconds, Date.now()));
+          const session = get().activeSession!;
+          // Notification gérée par l'OS : elle sonne même app en arrière-plan
+          void scheduleRestCompleteNotification(session.restDuration!, Session.nextSetSummary(session, formatKg));
+          armRestEnd(session.restDuration! * 1000);
+        },
+
+        addRestTime: (seconds) => {
+          const session = get().activeSession;
+          if (session?.restEndsAt == null) return;
+          get().startRestTimer(Session.restLeft(session, Date.now()) + seconds);
+        },
+
+        stopRestTimer: () => {
+          clearRestEndTimeout();
+          void cancelRestCompleteNotification();
+          apply(Session.endRest);
         },
       };
-    });
+    },
+    {
+      name: 'active-session',
+      version: 2,
+      // Les séances de l'ancienne interface n'ont pas la même forme : on les abandonne
+      migrate: () => ({ activeSession: null }),
+      storage: createJSONStorage(() => kvStorage),
+      partialize: (s) => ({ activeSession: s.activeSession }),
+    },
+  ),
+);
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
-    if (isSessionDone(get().activeSession)) return;
-
-    const { restTimerEnabled, defaultRestTime } = useSettingsStore.getState().settings;
-    if (restTimerEnabled) get().startRestTimer(target.restTime ?? defaultRestTime);
-    announceNext(exerciseId);
-  },
-
-  completeRemaining: (exerciseId) => {
-    const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
-    if (!exercise) return [];
-
-    const indexes = exercise.sets
-      .map((s, i) => (s.completed ? -1 : i))
-      .filter((i) => i >= 0);
-    if (indexes.length === 0) return [];
-
-    const lastIndex = indexes[indexes.length - 1]!;
-    set((s) => {
-      if (!s.activeSession) return s;
-      return {
-        activeSession: {
-          ...mapExercise(s.activeSession, exerciseId, (e) => ({
-            ...e,
-            sets: e.sets.map((set) => (set.completed ? set : { ...set, completed: true })),
-          })),
-          lastCompleted: { exerciseId, setIndex: lastIndex },
-        },
-      };
-    });
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
-    if (isSessionDone(get().activeSession)) return indexes;
-
-    const { restTimerEnabled, defaultRestTime } = useSettingsStore.getState().settings;
-    if (restTimerEnabled) get().startRestTimer(exercise.sets[lastIndex]?.restTime ?? defaultRestTime);
-    announceNext(exerciseId);
-    return indexes;
-  },
-
-  startRestTimer: (seconds) => {
-    if (!get().activeSession) return;
-    clearRestEndTimeout();
-
-    const duration = Math.max(1, Math.round(seconds));
-    const restEndsAt = Date.now() + duration * 1000;
-
-    set((s) => ({
-      activeSession: s.activeSession ? { ...s.activeSession, restEndsAt, restDuration: duration } : null,
-    }));
-
-    // Notification OS — se déclenche même app en arrière-plan
-    cancelRestCompleteNotification().catch(() => null);
-    scheduleRestCompleteNotification(duration, restBody(get().activeSession)).catch(() => null);
-
-    armRestEnd(duration * 1000);
-  },
-
-  addRestTime: (seconds) => {
-    const restEndsAt = get().activeSession?.restEndsAt;
-    if (restEndsAt == null) return;
-    const left = Math.ceil((restEndsAt - Date.now()) / 1000);
-    get().startRestTimer(left + seconds);
-  },
-
-  stopRestTimer: () => {
-    clearRestEndTimeout();
-    cancelRestCompleteNotification().catch(() => null);
-    set((s) => ({
-      activeSession: s.activeSession
-        ? { ...s.activeSession, restEndsAt: null, restDuration: null }
-        : null,
-    }));
-  },
-}), {
-  name: 'active-session',
-  version: 2,
-  // Les séances de l'ancienne interface n'ont pas la même forme : on les abandonne
-  migrate: () => ({ activeSession: null }),
-  storage: createJSONStorage(() => kvStorage),
-  partialize: (s) => ({ activeSession: s.activeSession }),
-}));
-
-// Après un kill de l'app : on réarme la fin du repos, ou on l'efface s'il est déjà fini
+// Après un kill de l'app : on réarme la fin du repos, ou on l'efface si elle est passée
 const restored = useSessionStore.getState().activeSession;
 if (restored?.restEndsAt != null) {
   const left = restored.restEndsAt - Date.now();
-  if (left > 0) {
-    armRestEnd(left);
-  } else {
-    useSessionStore.setState({ activeSession: { ...restored, restEndsAt: null, restDuration: null } });
-  }
+  if (left > 0) armRestEnd(left);
+  else useSessionStore.setState({ activeSession: Session.endRest(restored) });
 }

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { colors } from '@/constants/theme';
-import { describeSide, formatKg } from '@/lib/plates';
-import type { Cursor } from '@/lib/sessionCursor';
+import { describeSide, formatKg } from '@/domain/plates';
+import type { Cursor } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
@@ -64,8 +64,14 @@ export function SetView({ cursor }: { cursor: Cursor }) {
           onLongPress={() => setMissed(true)}
         />
       </Card>
-      <Pressable onPress={() => setMissed(true)} accessibilityRole="button" style={{ marginTop: 10, alignItems: 'center' }}>
-        <Text size={15} weight="bold" color={colors.muted}>Série ratée ? Appui long sur les reps</Text>
+      <Pressable
+        onPress={() => setMissed(true)}
+        accessibilityRole="button"
+        style={{ marginTop: 10, alignItems: 'center' }}
+      >
+        <Text size={15} weight="bold" color={colors.muted}>
+          Série ratée ? Appui long sur les reps
+        </Text>
       </Pressable>
 
       <View style={{ flex: 1 }} />
@@ -83,6 +89,7 @@ export function SetView({ cursor }: { cursor: Cursor }) {
         height={96}
         icon={<Check />}
         accessibilityLabel="Valider la série"
+        testID="validate-set"
         onPress={() => completeSet(exercise.id, setIndex)}
         style={{ marginTop: 12 }}
       />

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '@/constants/theme';
-import { SPLITS } from '@/lib/programs';
+import { SPLITS } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -41,8 +41,12 @@ export default function ProgramScreen() {
   return (
     <Screen footer={<Button label={edit ? 'Enregistrer' : "C'est parti"} onPress={save} />}>
       <StepHeader step={edit ? undefined : 2} total={edit ? undefined : 2} />
-      <Text size={52} weight="black" style={{ marginTop: 26, lineHeight: 52 }}>Ton programme</Text>
-      <Text size={18} color={colors.muted} style={{ marginTop: 10 }}>Tu pourras le changer quand tu veux.</Text>
+      <Text size={52} weight="black" style={{ marginTop: 26, lineHeight: 52 }}>
+        Ton programme
+      </Text>
+      <Text size={18} color={colors.muted} style={{ marginTop: 10 }}>
+        Tu pourras le changer quand tu veux.
+      </Text>
 
       <View accessibilityRole="radiogroup" style={{ gap: 10, marginTop: 24 }}>
         {SPLITS.map((s) => (
@@ -51,16 +55,31 @@ export default function ProgramScreen() {
             selected={split === s.id}
             onPress={() => setSplit(s.id)}
             accessibilityLabel={`${s.title}, ${s.meta}`}
-            style={{ height: 74, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            style={{
+              height: 74,
+              paddingHorizontal: 22,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
           >
-            <Text size={21} weight="black">{s.title}</Text>
-            <Text size={16} weight="bold" color={colors.muted}>{s.meta}</Text>
+            <Text size={21} weight="black">
+              {s.title}
+            </Text>
+            <Text size={16} weight="bold" color={colors.muted}>
+              {s.meta}
+            </Text>
           </Choice>
         ))}
       </View>
 
-      <Text size={17} weight="bold" style={{ marginTop: 28 }}>Séances par semaine</Text>
-      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
+      <Text size={17} weight="bold" style={{ marginTop: 28 }}>
+        Séances par semaine
+      </Text>
+      <View
+        accessibilityRole="radiogroup"
+        style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}
+      >
         {PER_WEEK.map((n) => {
           const on = perWeek === n;
           return (
@@ -81,8 +100,19 @@ export default function ProgramScreen() {
                 borderColor: colors.line,
               }}
             >
-              <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? colors.bg : colors.surface }}>
-                <Text size={20} weight="black">{n}</Text>
+              <View
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 17,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: on ? colors.bg : colors.surface,
+                }}
+              >
+                <Text size={20} weight="black">
+                  {n}
+                </Text>
               </View>
             </Pressable>
           );

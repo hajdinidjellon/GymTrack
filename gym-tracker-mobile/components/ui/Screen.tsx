@@ -27,7 +27,9 @@ export function Screen({ children, footer, scroll, tabs, style }: Props) {
       ) : (
         <View style={[{ flex: 1 }, content]}>{children}</View>
       )}
-      {footer ? <View style={{ paddingHorizontal: space.gutter, paddingBottom: bottom, gap: space.sm }}>{footer}</View> : null}
+      {footer ? (
+        <View style={{ paddingHorizontal: space.gutter, paddingBottom: bottom, gap: space.sm }}>{footer}</View>
+      ) : null}
     </View>
   );
 }

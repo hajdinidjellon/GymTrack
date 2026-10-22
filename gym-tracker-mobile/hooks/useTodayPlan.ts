@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { nextDay, planDay, type BuildContext, type PlannedDay } from '@/lib/sessionBuilder';
+import { nextDay, planDay, type BuildContext, type PlannedDay } from '@/domain/sessionBuilder';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';

@@ -3,12 +3,13 @@ import { View } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '@/constants/theme';
 import { useTodayPlan } from '@/hooks/useTodayPlan';
-import { formatDay } from '@/lib/format';
-import { describeSide, formatKg } from '@/lib/plates';
-import { deltaLabel } from '@/lib/sessionBuilder';
+import { formatDay } from '@/domain/format';
+import { describeSide, formatKg } from '@/domain/plates';
+import { deltaLabel } from '@/domain/sessionBuilder';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
-import { useWorkoutStore, workoutsThisWeek } from '@/stores/workoutStore';
+import { workoutsThisWeek } from '@/domain/week';
+import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
@@ -41,7 +42,9 @@ export default function Today() {
         )
       }
     >
-      <Text size={15} weight="semibold" color={colors.muted} style={{ marginTop: 12 }}>{formatDay(new Date())}</Text>
+      <Text size={15} weight="semibold" color={colors.muted} style={{ marginTop: 12 }}>
+        {formatDay(new Date())}
+      </Text>
       <Text size={96} weight="black" numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 92, marginTop: 4 }}>
         {plan?.name ?? ''}
       </Text>
@@ -52,21 +55,34 @@ export default function Today() {
       {featured && target ? (
         <Card style={{ marginTop: 24, paddingTop: 20, paddingBottom: 18 }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <Text size={16} weight="semibold" color={colors.muted}>Sur la barre aujourd'hui</Text>
-            <Text size={15} weight="black">{deltaLabel(featured)}</Text>
+            <Text size={16} weight="semibold" color={colors.muted}>
+              Sur la barre aujourd'hui
+            </Text>
+            <Text size={15} weight="black">
+              {deltaLabel(featured)}
+            </Text>
           </View>
-          <Text size={22} weight="black" style={{ marginTop: 2 }}>{featured.def.name}</Text>
+          <Text size={22} weight="black" style={{ marginTop: 2 }}>
+            {featured.def.name}
+          </Text>
           {target.weight > 0 ? (
             <>
               <View style={{ marginTop: 14, height: 130, justifyContent: 'center' }}>
                 <Barbell perSide={perSide} scale={1.15} barWidth={116} />
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 6 }}>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 6 }}
+              >
                 <Text size={48} weight="black">
-                  {formatKg(target.weight)} <Text size={20} weight="black">kg × {target.reps}</Text>
+                  {formatKg(target.weight)}{' '}
+                  <Text size={20} weight="black">
+                    kg × {target.reps}
+                  </Text>
                 </Text>
                 {featured.def.equipment === 'barbell' ? (
-                  <Text size={15} weight="semibold" color={colors.muted}>{describeSide(perSide)} / côté</Text>
+                  <Text size={15} weight="semibold" color={colors.muted}>
+                    {describeSide(perSide)} / côté
+                  </Text>
                 ) : null}
               </View>
             </>
@@ -79,7 +95,9 @@ export default function Today() {
       ) : null}
 
       <View style={{ marginTop: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text size={17} weight="semibold">Cette semaine</Text>
+        <Text size={17} weight="semibold">
+          Cette semaine
+        </Text>
         <WeekDiscs done={doneThisWeek} planned={perWeek} />
       </View>
     </Screen>

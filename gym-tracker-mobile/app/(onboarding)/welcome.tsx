@@ -20,15 +20,29 @@ export default function Welcome() {
         }
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 6, borderColor: colors.cream, alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              borderWidth: 6,
+              borderColor: colors.cream,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.cream }} />
           </View>
-          <Text size={22} weight="black">GymTrack</Text>
+          <Text size={22} weight="black">
+            GymTrack
+          </Text>
         </View>
 
         <View style={{ flex: 1 }} />
 
-        <Text size={66} weight="black" style={{ lineHeight: 64 }}>Tu charges.{'\n'}On calcule.</Text>
+        <Text size={66} weight="black" style={{ lineHeight: 64 }}>
+          Tu charges.{'\n'}On calcule.
+        </Text>
         <Text size={19} color={colors.muted} style={{ marginTop: 16, marginBottom: 30, lineHeight: 27 }}>
           Ton programme en pilote automatique : la charge, les reps et les disques à mettre, prêts à chaque série.
         </Text>
@@ -55,10 +69,40 @@ function BigPlate() {
         justifyContent: 'center',
       }}
     >
-      <View style={{ width: 300, height: 300, borderRadius: 150, borderWidth: 3, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' }}>
-        <Text size={30} weight="black" style={{ position: 'absolute', top: 34, letterSpacing: 2 }}>20 KG</Text>
-        <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bg, borderWidth: 3, borderColor: colors.line }} />
+      <View
+        style={{
+          width: 300,
+          height: 300,
+          borderRadius: 150,
+          borderWidth: 3,
+          borderColor: colors.line,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text size={30} weight="black" style={{ position: 'absolute', top: 34, letterSpacing: 2 }}>
+          20 KG
+        </Text>
+        <View
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: 48,
+            backgroundColor: colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: colors.bg,
+              borderWidth: 3,
+              borderColor: colors.line,
+            }}
+          />
         </View>
       </View>
     </View>

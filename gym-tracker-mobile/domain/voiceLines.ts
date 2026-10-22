@@ -1,17 +1,11 @@
 /**
- * VOIX — annonces parlées pendant la séance (expo-speech, dispo dans Expo Go).
- * Le téléphone peut rester dans la poche : il dit quoi charger et quand repartir.
+ * VOIX — ce que l'app dit pendant la séance. Texte seulement :
+ * la lecture à voix haute est dans services/speech.ts.
  */
 
-import * as Speech from 'expo-speech';
-import { formatKg, loadBar } from '@/lib/plates';
-import type { Cursor } from '@/lib/sessionCursor';
+import { formatKg, loadBar } from '@/domain/plates';
+import type { Cursor } from '@/domain/sessionCursor';
 import type { AppSettings } from '@/types';
-
-export function speak(text: string) {
-  Speech.stop();
-  Speech.speak(text, { language: 'fr-FR', rate: 1.05 });
-}
 
 const kilos = (n: number) => `${formatKg(n)} kilos`;
 

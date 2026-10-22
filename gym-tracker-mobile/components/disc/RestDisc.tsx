@@ -51,7 +51,9 @@ export function RestDisc({ secondsLeft, total, size = 300 }: Props) {
         <Text size={16} weight="black" color={colors.muted} style={{ position: 'absolute', top: 30, letterSpacing: 3 }}>
           REPOS
         </Text>
-        <Text size={92} weight="black" style={{ lineHeight: 100 }}>{clock}</Text>
+        <Text size={92} weight="black" style={{ lineHeight: 100 }}>
+          {clock}
+        </Text>
         <View
           style={{
             position: 'absolute',

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '@/constants/theme';
-import { GOALS } from '@/lib/programs';
+import { GOALS } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -29,8 +29,12 @@ export default function GoalScreen() {
   return (
     <Screen footer={<Button label={edit ? 'Enregistrer' : 'Continuer'} onPress={next} />}>
       <StepHeader step={edit ? undefined : 1} total={edit ? undefined : 2} />
-      <Text size={52} weight="black" style={{ marginTop: 26, lineHeight: 52 }}>Ton objectif ?</Text>
-      <Text size={18} color={colors.muted} style={{ marginTop: 10 }}>On règle tes séries et tes reps en fonction.</Text>
+      <Text size={52} weight="black" style={{ marginTop: 26, lineHeight: 52 }}>
+        Ton objectif ?
+      </Text>
+      <Text size={18} color={colors.muted} style={{ marginTop: 10 }}>
+        On règle tes séries et tes reps en fonction.
+      </Text>
 
       <View accessibilityRole="radiogroup" style={{ gap: 12, marginTop: 28 }}>
         {GOALS.map((g) => (
@@ -39,14 +43,35 @@ export default function GoalScreen() {
             selected={goal === g.id}
             onPress={() => setGoal(g.id)}
             accessibilityLabel={`${g.title}, ${g.sub}`}
-            style={{ minHeight: 96, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 16 }}
+            style={{
+              minHeight: 96,
+              paddingVertical: 14,
+              paddingHorizontal: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 16,
+            }}
           >
-            <View style={{ width: 96, height: 64, borderRadius: 18, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <View
+              style={{
+                width: 96,
+                height: 64,
+                borderRadius: 18,
+                backgroundColor: colors.bg,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
               <Barbell perSide={g.plates} scale={0.44} barWidth={26} />
             </View>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text size={21} weight="black">{g.title}</Text>
-              <Text size={16} weight="semibold" color={colors.muted}>{g.sub}</Text>
+              <Text size={21} weight="black">
+                {g.title}
+              </Text>
+              <Text size={16} weight="semibold" color={colors.muted}>
+                {g.sub}
+              </Text>
             </View>
           </Choice>
         ))}

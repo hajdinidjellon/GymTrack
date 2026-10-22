@@ -8,7 +8,7 @@ import {
   ruleFromPlan,
   startWeightFromOneRepMax,
   type ExerciseSession,
-} from '@/lib/progression';
+} from '@/domain/progression';
 import type { ProgressionRule, WorkoutSet } from '@/types';
 
 const rule: ProgressionRule = defaultRule('kg'); // 3x8-12, +2.5
@@ -141,18 +141,12 @@ describe('failed sets', () => {
   });
 
   it('does not deload when a good session sits between two failures', () => {
-    const r = nextTargets(
-      [session(100, [8, 8, 7]), session(100, [9, 8, 8]), session(100, [9, 8, 7])],
-      rule,
-    );
+    const r = nextTargets([session(100, [8, 8, 7]), session(100, [9, 8, 8]), session(100, [9, 8, 7])], rule);
     expect(r.decision).toBe('repeat');
   });
 
   it('progresses normally after a deload', () => {
-    const r = nextTargets(
-      [session(100, [8, 7, 6]), session(100, [7, 7, 6]), session(90, [8, 8, 8])],
-      rule,
-    );
+    const r = nextTargets([session(100, [8, 7, 6]), session(100, [7, 7, 6]), session(90, [8, 8, 8])], rule);
     expect(r.decision).toBe('add_reps');
     expect(weights(r)).toEqual([90, 90, 90]);
     expect(reps(r)).toEqual([9, 9, 9]);

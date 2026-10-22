@@ -1,5 +1,5 @@
 import React from 'react';
-import { loadBar } from '@/lib/plates';
+import { loadBar } from '@/domain/plates';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Barbell } from './Barbell';
 

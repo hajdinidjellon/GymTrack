@@ -16,6 +16,7 @@ interface Props {
   onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
+  testID?: string;
 }
 
 const textColor: Record<Variant, string> = {
@@ -34,6 +35,7 @@ export function Button({
   disabled,
   style,
   accessibilityLabel,
+  testID,
 }: Props) {
   const fontSize = height >= 90 ? 25 : height >= 70 ? 21 : 17;
   return (
@@ -41,8 +43,10 @@ export function Button({
       onPress={onPress}
       onLongPress={onLongPress}
       disabled={disabled}
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         {
           height,

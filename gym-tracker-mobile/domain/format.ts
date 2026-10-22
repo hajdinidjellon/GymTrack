@@ -14,5 +14,7 @@ export function formatShortDay(date: Date | string): string {
 
 /** "4 800" with a thin space, the French way. */
 export function formatThousands(n: number): string {
-  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return Math.round(n)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }

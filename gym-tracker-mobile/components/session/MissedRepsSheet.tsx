@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius } from '@/constants/theme';
-import { formatKg } from '@/lib/plates';
+import { formatKg } from '@/domain/plates';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 
@@ -18,15 +18,18 @@ interface Props {
 export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [picked, setPicked] = useState(Math.max(0, target - 2));
-  useEffect(() => {
-    if (visible) setPicked(Math.max(0, target - 2));
-  }, [visible, target]);
 
   const first = Math.max(0, target - 6);
   const options = Array.from({ length: 9 }, (_, i) => first + i);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      onShow={() => setPicked(Math.max(0, target - 2))}
+    >
       <View style={{ flex: 1, backgroundColor: 'rgba(8, 42, 32, 0.85)', justifyContent: 'flex-end' }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Fermer" />
         <View
@@ -40,9 +43,12 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
           }}
         >
           <View style={{ alignSelf: 'center', width: 48, height: 6, borderRadius: 3, backgroundColor: colors.line }} />
-          <Text size={36} weight="black" style={{ marginTop: 22 }}>Combien de reps ?</Text>
+          <Text size={36} weight="black" style={{ marginTop: 22 }}>
+            Combien de reps ?
+          </Text>
           <Text size={17} color={colors.muted} style={{ marginTop: 6, lineHeight: 23 }}>
-            Objectif {target}{weight > 0 ? ` à ${formatKg(weight)} kg` : ''}. Pas grave : on garde la même charge la prochaine fois.
+            Objectif {target}
+            {weight > 0 ? ` à ${formatKg(weight)} kg` : ''}. Pas grave : on garde la même charge la prochaine fois.
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
             {options.map((n) => {
@@ -67,7 +73,9 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
                     borderColor: on ? colors.cream : isTarget ? colors.steel : colors.bg,
                   }}
                 >
-                  <Text size={34} weight="black" color={on ? colors.bg : colors.cream}>{n}</Text>
+                  <Text size={34} weight="black" color={on ? colors.bg : colors.cream}>
+                    {n}
+                  </Text>
                 </Pressable>
               );
             })}

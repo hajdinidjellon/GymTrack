@@ -78,7 +78,9 @@ export function MiniPlates({ perSide }: { perSide: number[] }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, height: 48 }}>
       {perSide.map((kg, i) => {
         const { height, width } = plateSize(kg, 0.44);
-        return <View key={i} style={{ width: Math.max(4, width), height, borderRadius: 2, backgroundColor: colors.cream }} />;
+        return (
+          <View key={i} style={{ width: Math.max(4, width), height, borderRadius: 2, backgroundColor: colors.cream }} />
+        );
       })}
       <View style={{ width: 14, height: 4, backgroundColor: colors.steel }} />
     </View>

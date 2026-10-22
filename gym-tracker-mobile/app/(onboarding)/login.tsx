@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, fonts, radius } from '@/constants/theme';
-import { isSupabaseConfigured, signInWithEmail } from '@/lib/supabase';
-import { initialSync } from '@/lib/sync';
+import { isSupabaseConfigured, signInWithEmail } from '@/services/supabase';
+import { initialSync } from '@/services/sync';
 import { useProfileStore } from '@/stores/profileStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -37,8 +37,8 @@ export default function Login() {
     }
     setBusy(true);
     setError(null);
-    const { error: err } = await signInWithEmail(email.trim(), password);
-    if (err) {
+    const { ok } = await signInWithEmail(email.trim(), password);
+    if (!ok) {
       setBusy(false);
       setError('Email ou mot de passe incorrect.');
       return;
@@ -54,13 +54,19 @@ export default function Login() {
       <Screen
         footer={
           <>
-            <Button label={busy ? 'Connexion…' : 'Se connecter'} onPress={signIn} disabled={busy || !email || !password} />
+            <Button
+              label={busy ? 'Connexion…' : 'Se connecter'}
+              onPress={signIn}
+              disabled={busy || !email || !password}
+            />
             <Button label="Continuer sans compte" variant="ghost" height={52} onPress={goOn} />
           </>
         }
       >
         <BackButton />
-        <Text size={56} weight="black" style={{ marginTop: 20, lineHeight: 56 }}>Re-bonjour.</Text>
+        <Text size={56} weight="black" style={{ marginTop: 20, lineHeight: 56 }}>
+          Re-bonjour.
+        </Text>
         <Text size={19} color={colors.muted} style={{ marginTop: 12 }}>
           Ta barre est restée chargée là où tu l'as laissée.
         </Text>
@@ -68,7 +74,11 @@ export default function Login() {
         <View style={{ gap: 18, marginTop: 34 }}>
           <Field label="Email" value={email} onChangeText={setEmail} placeholder="toi@exemple.com" email />
           <Field label="Mot de passe" value={password} onChangeText={setPassword} placeholder="••••••••" secure />
-          {error ? <Text size={16} weight="bold" accessibilityLiveRegion="polite">{error}</Text> : null}
+          {error ? (
+            <Text size={16} weight="bold" accessibilityLiveRegion="polite">
+              {error}
+            </Text>
+          ) : null}
         </View>
       </Screen>
     </KeyboardAvoidingView>
@@ -87,7 +97,9 @@ interface FieldProps {
 function Field({ label, value, onChangeText, placeholder, email, secure }: FieldProps) {
   return (
     <View style={{ gap: 8 }}>
-      <Text size={15} weight="bold" color={colors.muted}>{label}</Text>
+      <Text size={15} weight="bold" color={colors.muted}>
+        {label}
+      </Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}

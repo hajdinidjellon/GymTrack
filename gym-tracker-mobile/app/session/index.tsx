@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '@/constants/theme';
-import { findCurrent } from '@/lib/sessionCursor';
+import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
@@ -60,7 +60,12 @@ export default function SessionScreen() {
     if (!session && !leaving) router.dismissTo('/(tabs)');
   }, [session]);
 
-  if (!session || !cursor) return <Screen><View /></Screen>;
+  if (!session || !cursor)
+    return (
+      <Screen>
+        <View />
+      </Screen>
+    );
 
   const resting = session.restEndsAt != null;
   const { exercise, exerciseIndex, setIndex } = cursor;
@@ -74,10 +79,16 @@ export default function SessionScreen() {
 
   return (
     <Screen style={{ paddingBottom: 24 }}>
-      <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <Text size={16} weight="semibold" color={colors.muted} numberOfLines={1} style={{ flex: 1 }}>{header}</Text>
+      <View
+        style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+      >
+        <Text size={16} weight="semibold" color={colors.muted} numberOfLines={1} style={{ flex: 1 }}>
+          {header}
+        </Text>
         <Pressable onPress={confirmFinish} accessibilityRole="button" hitSlop={10}>
-          <Text size={17} weight="black" style={{ textDecorationLine: 'underline' }}>Terminer</Text>
+          <Text size={17} weight="black" style={{ textDecorationLine: 'underline' }}>
+            Terminer
+          </Text>
         </Pressable>
       </View>
 
@@ -85,7 +96,9 @@ export default function SessionScreen() {
         <RestView next={cursor} restEndsAt={session.restEndsAt!} total={session.restDuration ?? 90} />
       ) : (
         <>
-          <Text size={34} weight="black" numberOfLines={2} style={{ marginTop: 10 }}>{exercise.name}</Text>
+          <Text size={34} weight="black" numberOfLines={2} style={{ marginTop: 10 }}>
+            {exercise.name}
+          </Text>
           {exercise.needsWeight ? (
             <CalibrationView key={exercise.id} exercise={exercise} />
           ) : (
