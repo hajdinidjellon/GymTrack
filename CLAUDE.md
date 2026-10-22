@@ -12,9 +12,14 @@ All commands below must be run from inside `gym-tracker-mobile/`. `node_modules`
 
 ```bash
 npm start            # Metro (4 GB heap), test with Expo Go SDK 57
-npm run type-check   # tsc --noEmit
-npm test             # Jest, node env, pure logic only (lib/__tests__)
+npm run check        # everything CI runs: lint, format:check, type-check, test:coverage
+npm run lint         # ESLint, including the layer rules below
+npm run format       # Prettier
+npm test             # Jest: "domain" project (Node) + "app" project (jest-expo)
 ```
+
+CI: `.github/workflows/mobile-ci.yml` (quality, iOS bundle export, npm audit + gitleaks).
+Branches, commits and PRs: see `CONTRIBUTING.md`.
 
 ## Product
 
@@ -35,25 +40,50 @@ app/
   exercise/[name].tsx      ← next target, rule, increment picker, history
 ```
 
-### Domain logic (`lib/`, pure and tested)
+### Layers — enforced by ESLint (`import/no-restricted-paths`)
+
+```
+types/      shared types, no imports
+domain/     pure TypeScript, no React / RN / Expo / I/O. Runs under Node in tests.
+services/   side effects: SQLite, Supabase, notifications, speech, encrypted storage, logger
+stores/     Zustand state; applies domain transitions, then triggers services
+hooks/      React hooks over stores and domain
+components/ UI, never imports app/
+app/        routes only
+```
+
+A layer never imports a layer above it. Always import with `@/`.
+
+### Domain (`domain/`)
 
 - `progression.ts` — double progression engine (`nextTargets`).
-- `programs.ts` — exercise catalog (with equipment and old-name aliases), splits (PPL / Haut-Bas / Full body), rules per goal.
+- `programs.ts` — exercise catalog (equipment, old-name aliases), splits, rules per goal.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
-- `plates.ts` — plates per side for a weight, French number formatting.
-- `sessionCursor.ts` — current exercise/set of a running session.
-- `voice.ts` — spoken lines.
+- `session.ts` — pure transitions of the running session (complete set, rest, to workout).
+- `schemas.ts` — zod schemas; everything read from disk or the cloud is validated here.
+- `profile.ts`, `week.ts`, `plates.ts`, `sessionCursor.ts`, `voiceLines.ts`, `format.ts`.
+
+### Services (`services/`)
+
+- `db.ts` — SQLite, JSON blobs, parameterised queries, transactions, validated reads.
+- `sync.ts` — Supabase queue; an entry is dropped only once Supabase confirmed it.
+- `supabase.ts` + `secureStorage.ts` — auth session encrypted (AES key in the Keychain).
+- `logger.ts` — dev-only logs. `console.*` is banned elsewhere.
 
 ### State — Zustand stores (`stores/`)
 
 | Store | Responsibility |
 |---|---|
-| `sessionStore` | Running session, persisted in `expo-sqlite/kv-store` (survives app kills). Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here. |
+| `sessionStore` | Running session, persisted in `expo-sqlite/kv-store`. Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here. |
 | `workoutStore` | Past workouts (SQLite) |
 | `profileStore` | Goal, program, PRs. Normalizes profiles from the old app version. |
-| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments |
+| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments. Validated on load. |
 
-`lib/db.ts` (SQLite, JSON blobs) and `lib/sync.ts` (Supabase queue, optional) are unchanged from the previous version.
+### Tests
+
+- `domain/__tests__` — table tests of the pure logic. Coverage gate ≥ 95 %.
+- `services/__tests__`, `stores/__tests__` — mocked native modules (`jest.setup.ts`).
+- `components/__tests__` — React Native Testing Library v14 (`render` and `fireEvent` are async).
 
 ### Design system — "Disques"
 
@@ -64,5 +94,6 @@ app/
 - Path alias `@/` maps to `gym-tracker-mobile/`.
 - TypeScript strict with `noUncheckedIndexedAccess`.
 - Code in English; comments short, in plain French or English, only where they help.
-- Supabase is optional at runtime — `isSupabaseConfigured()` guards cloud calls.
+- Supabase is optional at runtime — `isSupabaseConfigured()` guards cloud calls. Data isolation relies on RLS.
+- `jest-expo` needs `expo-modules-core` hoisted: it is a devDependency on purpose.
 - Bundle identifier: `com.gymtrack.mobile`.

@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # Une seule PR groupée par semaine : chaque mise à jour passe par la CI
+  - package-ecosystem: npm
+    directory: /gym-tracker-mobile
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      dependencies:
+        patterns: ['*']
+        update-types: [minor, patch]
+    ignore:
+      # Les versions Expo / React Native suivent le SDK : on les monte avec `npx expo install --fix`
+      - dependency-name: 'expo*'
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: 'react-native*'
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
