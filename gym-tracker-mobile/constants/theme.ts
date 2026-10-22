@@ -1,6 +1,6 @@
 /**
- * DESIGN SYSTEM — « Disques », version noire
- * Fond noir, texte blanc cassé. La couleur vient des vrais disques de
+ * DESIGN SYSTEM — « Disques », vert sapin très sombre
+ * Fond vert presque noir, texte blanc cassé. La couleur vient des vrais disques de
  * compétition : un 20 kg est bleu partout dans l'app, un 25 rouge, etc.
  * En dehors des disques, trois couleurs seulement : le jaune pour ce qui
  * doit attirer l'œil (progrès, records, minuteur), le vert pour valider,
@@ -8,23 +8,23 @@
  */
 
 export const colors = {
-  bg: '#0B0B0C',
+  bg: '#08231B',
   /** Behind bottom sheets. */
-  scrim: '#050506',
+  scrim: '#03140F',
   /** Cards. Lighter means closer: depth comes from the surface, not from shadows. */
-  surface: '#161618',
+  surface: '#0F3326',
   /** Raised or pressed elements inside a card. */
-  surfaceHigh: '#232327',
-  line: '#34343A',
+  surfaceHigh: '#174233',
+  line: '#2A5A4A',
   /** Card edges, barely there. */
   hairline: 'rgba(255, 255, 255, 0.07)',
   /** Main text and the primary button. */
   cream: '#F7F5F0',
-  muted: '#B1B1B7',
+  muted: '#B9C7B8',
   /** Third level of text: labels, units. Only on 12 px and up. */
-  faint: '#8A8A92',
+  faint: '#8DA597',
   /** The steel of the bar. */
-  steel: '#A2A7AB',
+  steel: '#9FB3A8',
   /** Progress, records, the rest timer, today. */
   accent: '#F2C230',
   accentSoft: 'rgba(242, 194, 48, 0.15)',

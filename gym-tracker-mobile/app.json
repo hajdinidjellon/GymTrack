@@ -13,7 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0B0B0C"
+        "backgroundColor": "#08231B"
       },
       "package": "com.gymtrack.mobile",
       "permissions": ["android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]
@@ -34,7 +34,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B0B0C"
+          "backgroundColor": "#08231B"
         }
       ],
       "expo-secure-store"
