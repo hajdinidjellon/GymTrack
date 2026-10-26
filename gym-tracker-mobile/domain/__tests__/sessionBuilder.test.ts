@@ -49,6 +49,14 @@ describe('nextDay', () => {
     expect(nextDay(ctx([workout('2026-10-01', 'Pull', []), workout('2026-10-03', 'Legs', [])])).name).toBe('Push');
   });
 
+  it('uses the exercises the user chose for that day', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [])]);
+    c.settings.customDays = { 'ppl/Pull': ['Rowing haltère', 'Curl marteau', 'Exercice supprimé'] };
+    const day = nextDay(c);
+    expect(day.name).toBe('Pull');
+    expect(day.exercises.map((e) => e.name)).toEqual(['Rowing haltère', 'Curl marteau']);
+  });
+
   it('ignores workouts from another program', () => {
     expect(nextDay(ctx([workout('2026-10-01', 'Séance', [])])).name).toBe('Push');
   });

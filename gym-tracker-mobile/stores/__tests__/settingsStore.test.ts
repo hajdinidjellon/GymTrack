@@ -46,6 +46,14 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.increments).toMatchObject({ 'Curl haltères': 1 });
   });
 
+  it('saves the exercises of a day, and goes back to the program', () => {
+    const { setDayExercises } = useSettingsStore.getState();
+    setDayExercises('ppl/Legs', ['Squat', 'Hip thrust']);
+    expect(useSettingsStore.getState().settings.customDays).toEqual({ 'ppl/Legs': ['Squat', 'Hip thrust'] });
+    setDayExercises('ppl/Legs', null);
+    expect(useSettingsStore.getState().settings.customDays).toEqual({});
+  });
+
   it('loads what was saved', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();

@@ -2,11 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 import { formatDay, formatShortDay, formatThousands, parseAmount } from '@/domain/format';
 import {
   catalogByMuscle,
+  dayKey,
   defaultIncrementFor,
   EXERCISES,
   findDay,
   findExerciseDef,
   getSplit,
+  programDays,
   restFor,
   ruleFor,
   SPLITS,
@@ -49,6 +51,12 @@ describe('choosing a session', () => {
   it('finds a day of the program by name', () => {
     expect(findDay(getSplit('ppl'), 'Pull')?.exercises[0]).toBe(EXERCISES.pullup);
     expect(findDay(getSplit('ppl'), 'Haut')).toBeUndefined();
+  });
+
+  it('keeps the program days the user did not touch', () => {
+    const days = programDays('ppl', { [dayKey('ppl', 'Legs')]: ['Squat', 'Hip thrust'] });
+    expect(days[0]).toBe(getSplit('ppl').days[0]);
+    expect(days[2]?.exercises).toEqual([EXERCISES.squat, EXERCISES.hipthrust]);
   });
 
   it('groups the whole catalog by main muscle, without empty groups', () => {

@@ -96,6 +96,24 @@ export function getSplit(id: SplitId): Split {
   return SPLITS.find((s) => s.id === id) ?? SPLITS[0]!;
 }
 
+/** Where a day's own exercise list is saved: "ppl/Legs". */
+export function dayKey(split: SplitId, day: string): string {
+  return `${split}/${day}`;
+}
+
+/**
+ * The days of the program with the user's own exercises when they chose
+ * some. Names no longer in the catalog are skipped.
+ */
+export function programDays(split: SplitId, customDays: Record<string, string[]> = {}): ProgramDay[] {
+  return getSplit(split).days.map((day) => {
+    const names = customDays[dayKey(split, day.name)];
+    if (!names) return day;
+    const exercises = names.map(findExerciseDef).filter((e): e is ExerciseDef => !!e);
+    return { name: day.name, exercises };
+  });
+}
+
 /** A day of the program by name, if it exists. */
 export function findDay(split: Split, name: string): ProgramDay | undefined {
   return split.days.find((d) => d.name === name);

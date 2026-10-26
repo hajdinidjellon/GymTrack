@@ -15,7 +15,7 @@ import { formatKg } from '@/domain/plates';
 import {
   defaultIncrementFor,
   findExerciseDef,
-  getSplit,
+  programDays,
   restFor,
   ruleFor,
   type ExerciseDef,
@@ -34,7 +34,7 @@ import type {
 
 export interface BuildContext {
   profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
-  settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'>;
+  settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> & Partial<Pick<AppSettings, 'customDays'>>;
   workouts: Workout[];
 }
 
@@ -75,7 +75,7 @@ export function exerciseHistory(
 
 /** The day after the last one done, in program order. */
 export function nextDay(ctx: BuildContext): ProgramDay {
-  const { days } = getSplit(ctx.profile.program.split);
+  const days = programDays(ctx.profile.program.split, ctx.settings.customDays);
   const last = [...ctx.workouts]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .find((w) => days.some((d) => d.name === w.name));
