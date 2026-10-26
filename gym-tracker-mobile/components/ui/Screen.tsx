@@ -8,12 +8,14 @@ interface Props {
   /** Pinned at the bottom: the main action of the screen. */
   footer?: React.ReactNode;
   scroll?: boolean;
+  /** Turned off while something is dragged inside the screen. */
+  scrollEnabled?: boolean;
   /** Room for the tab bar. */
   tabs?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
-export function Screen({ children, footer, scroll, tabs, style }: Props) {
+export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, style }: Props) {
   const insets = useSafeAreaInsets();
   const bottom = tabs ? space.lg : Math.max(insets.bottom, space.lg) + space.sm;
   const content = [{ paddingTop: insets.top + space.md, paddingHorizontal: space.gutter }, style];
@@ -21,7 +23,11 @@ export function Screen({ children, footer, scroll, tabs, style }: Props) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
       {scroll ? (
-        <ScrollView contentContainerStyle={[content, { paddingBottom: space.xl }]} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          scrollEnabled={scrollEnabled}
+          contentContainerStyle={[content, { paddingBottom: space.xl }]}
+          showsVerticalScrollIndicator={false}
+        >
           {children}
         </ScrollView>
       ) : (
