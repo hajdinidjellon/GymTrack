@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import { colors, fonts, radius } from '@/constants/theme';
+import { border, colors, fonts, hardShadow, radius } from '@/constants/theme';
 import { isSupabaseConfigured, signInWithEmail } from '@/services/supabase';
 import { initialSync } from '@/services/sync';
 import { useProfileStore } from '@/stores/profileStore';
@@ -9,7 +9,7 @@ import { useWorkoutStore } from '@/stores/workoutStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
+import { StickerButton } from '@/components/ui/StickerButton';
 import { BackButton } from '@/components/ui/BackButton';
 
 export default function Login() {
@@ -54,20 +54,20 @@ export default function Login() {
       <Screen
         footer={
           <>
-            <Button
+            <StickerButton
               label={busy ? 'Connexion…' : 'Se connecter'}
               onPress={signIn}
               disabled={busy || !email || !password}
             />
-            <Button label="Continuer sans compte" variant="ghost" height={52} onPress={goOn} />
+            <StickerButton label="Continuer sans compte" variant="ghost" size="small" onPress={goOn} />
           </>
         }
       >
         <BackButton />
-        <Text size={56} weight="black" style={{ marginTop: 20, lineHeight: 56 }}>
+        <Text size={52} weight="black" style={{ marginTop: 20, lineHeight: 58 }}>
           Re-bonjour.
         </Text>
-        <Text size={19} color={colors.muted} style={{ marginTop: 12 }}>
+        <Text size={19} color={colors.inkMuted} style={{ marginTop: 12 }}>
           Ta barre est restée chargée là où tu l'as laissée.
         </Text>
 
@@ -75,7 +75,7 @@ export default function Login() {
           <Field label="Email" value={email} onChangeText={setEmail} placeholder="toi@exemple.com" email />
           <Field label="Mot de passe" value={password} onChangeText={setPassword} placeholder="••••••••" secure />
           {error ? (
-            <Text size={16} weight="bold" accessibilityLiveRegion="polite">
+            <Text size={16} weight="bold" color={colors.danger} accessibilityLiveRegion="polite">
               {error}
             </Text>
           ) : null}
@@ -97,32 +97,35 @@ interface FieldProps {
 function Field({ label, value, onChangeText, placeholder, email, secure }: FieldProps) {
   return (
     <View style={{ gap: 8 }}>
-      <Text size={15} weight="bold" color={colors.muted}>
+      <Text size={15} weight="bold">
         {label}
       </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={label}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType={email ? 'email-address' : 'default'}
-        textContentType={email ? 'emailAddress' : 'password'}
-        secureTextEntry={secure}
-        style={{
-          height: 64,
-          borderRadius: radius.sm + 2,
-          borderWidth: 2,
-          borderColor: colors.line,
-          backgroundColor: colors.surface,
-          color: colors.cream,
-          fontFamily: fonts.regular,
-          fontSize: 19,
-          paddingHorizontal: 20,
-        }}
-      />
+      {/* L'ombre dure est portée par le cadre : TextInput ne la prend pas */}
+      <View style={{ borderRadius: radius.input, ...hardShadow(2) }}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.inkFaint}
+          accessibilityLabel={label}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType={email ? 'email-address' : 'default'}
+          textContentType={email ? 'emailAddress' : 'password'}
+          secureTextEntry={secure}
+          style={{
+            height: 60,
+            borderRadius: radius.input,
+            borderWidth: border.base,
+            borderColor: colors.ink,
+            backgroundColor: colors.card,
+            color: colors.ink,
+            fontFamily: fonts.regular,
+            fontSize: 19,
+            paddingHorizontal: 20,
+          }}
+        />
+      </View>
     </View>
   );
 }

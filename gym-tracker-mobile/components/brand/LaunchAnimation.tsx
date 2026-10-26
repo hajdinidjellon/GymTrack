@@ -26,8 +26,8 @@ const PLATES = [
   { kg: 15, height: 84 },
   { kg: 10, height: 62 },
 ];
-const PLATE_WIDTH = 14;
-const PLATE_GAP = 3;
+const PLATE_WIDTH = 16;
+const PLATE_GAP = -2;
 const BAR_WIDTH = 250;
 const LEFT_COLLAR = 80;
 const RIGHT_COLLAR = BAR_WIDTH - LEFT_COLLAR;
@@ -88,7 +88,7 @@ export function LaunchAnimation({ ready, onDone }: Props) {
       accessibilityLabel="GymTrack, chargement"
       style={[
         StyleSheet.absoluteFill,
-        { backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+        { backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center' },
         overlay,
       ]}
     >
@@ -98,11 +98,13 @@ export function LaunchAnimation({ ready, onDone }: Props) {
             style={[
               {
                 position: 'absolute',
-                top: 51,
+                top: 49,
                 left: 0,
                 width: BAR_WIDTH,
-                height: 8,
-                borderRadius: 4,
+                height: 12,
+                borderRadius: 6,
+                borderWidth: 2.5,
+                borderColor: colors.ink,
                 backgroundColor: colors.steel,
               },
               barStyle,
@@ -128,7 +130,7 @@ export function LaunchAnimation({ ready, onDone }: Props) {
           ))}
         </View>
         <Animated.View style={[{ marginTop: 22 }, wordStyle]}>
-          <Text size={34} weight="black">
+          <Text size={38} weight="black">
             GymTrack
           </Text>
         </Animated.View>
@@ -163,7 +165,9 @@ function Plate({
           top: 55 - height / 2,
           width: PLATE_WIDTH,
           height,
-          borderRadius: 4,
+          borderRadius: 6,
+          borderWidth: 2.5,
+          borderColor: colors.ink,
           backgroundColor: color,
         },
         style,

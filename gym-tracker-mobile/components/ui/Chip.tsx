@@ -1,18 +1,17 @@
 import React from 'react';
 import { View } from 'react-native';
-import { colors, radius } from '@/constants/theme';
+import { border, colors, radius } from '@/constants/theme';
 import { Text } from './Text';
 
-type Tone = 'neutral' | 'accent' | 'go' | 'solid';
+type Tone = 'neutral' | 'sun' | 'success';
 
 const tones: Record<Tone, { bg: string; fg: string }> = {
-  neutral: { bg: colors.surfaceHigh, fg: colors.cream },
-  accent: { bg: colors.accentSoft, fg: colors.accent },
-  go: { bg: colors.goSoft, fg: colors.go },
-  solid: { bg: colors.cream, fg: colors.bg },
+  neutral: { bg: colors.card, fg: colors.ink },
+  sun: { bg: colors.sun, fg: colors.ink },
+  success: { bg: colors.successSoft, fg: colors.successText },
 };
 
-/** Small label: "+2,5 kg", "5 exercices", "3 sem." */
+/** Small badge: "+2,5 kg", "5 exercices", "3 sem." */
 export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: Tone; icon?: React.ReactNode }) {
   const { bg, fg } = tones[tone];
   return (
@@ -21,6 +20,8 @@ export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: 
         height: 28,
         paddingHorizontal: 10,
         borderRadius: radius.pill,
+        borderWidth: 2,
+        borderColor: colors.ink,
         backgroundColor: bg,
         flexDirection: 'row',
         alignItems: 'center',
@@ -29,8 +30,30 @@ export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: 
       }}
     >
       {icon}
-      <Text size={13} weight="black" color={fg}>
+      <Text size={13} weight="bold" color={fg}>
         {label}
+      </Text>
+    </View>
+  );
+}
+
+/** Round mark for a list position: the number of an exercise in the session. */
+export function IndexBadge({ value }: { value: number }) {
+  return (
+    <View
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        borderWidth: border.base - 0.5,
+        borderColor: colors.ink,
+        backgroundColor: colors.sunSoft,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text size={14} weight="black">
+        {value}
       </Text>
     </View>
   );

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { colors, plateColor } from '@/constants/theme';
+import { border, colors, plateColor } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
@@ -11,11 +11,12 @@ import { deltaLabel, newRecords, planLift, tonnage } from '@/domain/sessionBuild
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { StickerButton } from '@/components/ui/StickerButton';
+import { StickerCard } from '@/components/ui/StickerCard';
 import { Check } from '@/components/ui/icons';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Chip } from '@/components/ui/Chip';
+import { Sparkle } from '@/components/ui/Sparkle';
 import { StatTile } from '@/components/stats/StatTile';
 
 export default function Summary() {
@@ -52,57 +53,50 @@ export default function Summary() {
   const sets = workout.exercises.reduce((n, e) => n + workingSets(e.sets).length, 0);
 
   return (
-    <Screen scroll footer={<Button label="Retour à l'accueil" onPress={() => router.dismissTo('/(tabs)')} />}>
-      <View
-        style={{
-          marginTop: 4,
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: colors.go,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+    <Screen scroll footer={<StickerButton label="Retour à l'accueil" onPress={() => router.dismissTo('/(tabs)')} />}>
+      <StickerCard tone="hero" style={{ marginTop: 8, paddingVertical: 20 }}>
+        <View style={{ position: 'absolute', top: -16, right: 22 }}>
+          <Sparkle size={38} />
+        </View>
+        <View style={{ position: 'absolute', top: 30, right: 64 }}>
+          <Sparkle size={20} fill={colors.card} />
+        </View>
         <View
           style={{
-            width: 26,
-            height: 26,
-            borderRadius: 13,
-            backgroundColor: colors.bg,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            borderWidth: border.strong,
+            borderColor: colors.ink,
+            backgroundColor: colors.success,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Check size={16} color={colors.go} />
+          <Check size={30} />
         </View>
-      </View>
-      <Text size={40} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 42 }}>
-        Séance validée.
-      </Text>
-      <Text size={15} color={colors.muted} style={{ marginTop: 6 }}>
-        {workout.name} · enregistrée dans ton historique
-      </Text>
+        <Text size={40} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 46 }}>
+          Séance validée.
+        </Text>
+        <Text size={15} style={{ marginTop: 2 }}>
+          {workout.name} · enregistrée dans ton historique
+        </Text>
+      </StickerCard>
 
       {records.map((r) => (
-        <Card
-          key={r.name}
-          style={{ marginTop: 14, borderWidth: 1.5, borderColor: colors.accent, backgroundColor: colors.accentSoft }}
-        >
-          <Text size={12} weight="black" color={colors.accent} style={{ letterSpacing: 1.3 }}>
-            NOUVEAU RECORD
+        <StickerCard key={r.name} tone="sun" small style={{ marginTop: 14 }}>
+          <Text size={14} weight="bold">
+            Nouveau record
           </Text>
           <Text size={20} weight="black" style={{ marginTop: 2 }}>
             {r.name} · {formatKg(r.weight)} kg
           </Text>
-          <Text size={15} color={colors.muted}>
-            Avant : {formatKg(r.previous)} kg
-          </Text>
-        </Card>
+          <Text size={15}>Avant : {formatKg(r.previous)} kg</Text>
+        </StickerCard>
       ))}
 
-      <Card style={{ marginTop: 18, paddingVertical: 18 }}>
-        <Text size={14} weight="semibold" color={colors.muted}>
+      <StickerCard style={{ marginTop: 18, paddingVertical: 18 }}>
+        <Text size={15} weight="semibold" color={colors.inkMuted}>
           Tu as soulevé
         </Text>
         <Text size={44} weight="black" style={{ lineHeight: 50 }}>
@@ -116,7 +110,7 @@ export default function Summary() {
             <PlatePile count={plates} />
           </>
         ) : null}
-      </Card>
+      </StickerCard>
 
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
         <StatTile value={`${workout.duration ?? 0} min`} label="durée" />
@@ -124,14 +118,14 @@ export default function Summary() {
         <StatTile
           value={String(records.length)}
           label={records.length > 1 ? 'records' : 'record'}
-          accent={records.length > 0}
+          highlight={records.length > 0}
         />
       </View>
 
       {next.length ? (
         <>
           <SectionTitle title="La prochaine fois" />
-          <Card style={{ paddingVertical: 4 }}>
+          <StickerCard style={{ paddingVertical: 4 }}>
             {next.map((n, i) => (
               <View
                 key={n.name}
@@ -141,17 +135,17 @@ export default function Summary() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 12,
-                  borderBottomWidth: i === next.length - 1 ? 0 : 1,
-                  borderBottomColor: colors.hairline,
+                  borderBottomWidth: i === next.length - 1 ? 0 : 2,
+                  borderBottomColor: colors.line,
                 }}
               >
                 <Text size={16} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
                   {n.name}
                 </Text>
-                <Chip tone={n.label.startsWith('+') ? 'go' : 'neutral'} label={n.label} />
+                <Chip tone={n.label.startsWith('+') ? 'success' : 'neutral'} label={n.label} />
               </View>
             ))}
-          </Card>
+          </StickerCard>
         </>
       ) : null}
     </Screen>
@@ -162,19 +156,18 @@ export default function Summary() {
 function PlatePile({ count }: { count: number }) {
   const bars = Math.min(24, Math.max(1, Math.ceil(count / 10)));
   return (
-    <View
-      accessible={false}
-      style={{ marginTop: 14, height: 56, flexDirection: 'row', alignItems: 'flex-end', gap: 3 }}
-    >
+    <View accessible={false} style={{ marginTop: 14, height: 60, flexDirection: 'row', alignItems: 'flex-end' }}>
       {Array.from({ length: bars }, (_, i) => (
         <View
           key={i}
           style={{
-            width: 8,
+            width: 11,
             height: 40 + (i % 3) * 8,
-            borderRadius: 2,
+            marginLeft: i === 0 ? 0 : -2,
+            borderRadius: 4,
+            borderWidth: 2,
+            borderColor: colors.ink,
             backgroundColor: plateColor(20),
-            opacity: 0.55 + (i / 24) * 0.45,
           }}
         />
       ))}

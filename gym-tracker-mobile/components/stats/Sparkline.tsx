@@ -6,7 +6,7 @@ import { colors } from '@/constants/theme';
 interface Props {
   values: number[];
   height?: number;
-  /** The last point gets an accent dot. */
+  /** The last point gets a coral dot. */
   accent?: boolean;
 }
 
@@ -33,14 +33,14 @@ export function Sparkline({ values, height = 64, accent = true }: Props) {
         <Svg width={width} height={height}>
           <Defs>
             <LinearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={colors.cream} stopOpacity={0.22} />
-              <Stop offset="1" stopColor={colors.cream} stopOpacity={0} />
+              <Stop offset="0" stopColor={colors.coral} stopOpacity={0.3} />
+              <Stop offset="1" stopColor={colors.coral} stopOpacity={0} />
             </LinearGradient>
           </Defs>
           <Path d={area} fill="url(#fill)" />
           <Path
             d={line}
-            stroke={colors.cream}
+            stroke={colors.ink}
             strokeWidth={2.5}
             fill="none"
             strokeLinejoin="round"
@@ -50,9 +50,9 @@ export function Sparkline({ values, height = 64, accent = true }: Props) {
             cx={last.x}
             cy={last.y}
             r={5}
-            fill={accent ? colors.accent : colors.cream}
-            stroke={colors.surface}
-            strokeWidth={2}
+            fill={accent ? colors.coral : colors.card}
+            stroke={colors.ink}
+            strokeWidth={2.5}
           />
         </Svg>
       ) : null}

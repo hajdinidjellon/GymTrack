@@ -78,111 +78,52 @@ export default function SessionScreen() {
   const doneExercise = last && session.exercises.find((e) => e.id === last.exerciseId);
   const left = session.exercises.reduce((n, e) => n + e.sets.filter((set) => !set.completed).length, 0);
 
+  // Le repos s'affiche en bas du même écran : on ne change jamais de vue pendant la séance
+  const rest = resting ? (
+    <RestView
+      next={cursor}
+      restEndsAt={session.restEndsAt!}
+      total={session.restDuration ?? 90}
+      doneLabel={doneExercise ? `Série ${last.setIndex + 1} validée` : undefined}
+    />
+  ) : null;
+
   return (
-    <Screen style={{ paddingBottom: space.xl }}>
+    <Screen style={{ paddingBottom: space.lg }}>
       <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text size={15} weight="bold" color={colors.muted}>
+        <Text size={15} weight="bold" color={colors.inkMuted} numberOfLines={1} style={{ flex: 1 }}>
           {session.name} · exercice {exerciseIndex + 1} / {session.exercises.length}
         </Text>
         <Pressable onPress={() => confirmFinish(left)} accessibilityRole="button" hitSlop={12}>
-          <Text size={17} weight="black" style={{ textDecorationLine: 'underline' }}>
+          <Text size={16} weight="black" style={{ textDecorationLine: 'underline' }}>
             Terminer
           </Text>
         </Pressable>
       </View>
-      <SessionProgress exercises={session.exercises} />
+      <SessionProgress exercises={session.exercises} current={exerciseIndex} />
 
-      {resting ? (
-        <>
-          <View
-            style={{
-              marginTop: space.lg,
-              flexDirection: 'row',
-              alignItems: 'flex-end',
-              justifyContent: 'space-between',
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text size={30} weight="black" accessibilityRole="header">
-                Repos
-              </Text>
-              {doneExercise ? (
-                <Text size={14} color={colors.muted} numberOfLines={1}>
-                  {doneExercise.name} · série {last.setIndex + 1} validée
-                </Text>
-              ) : null}
-            </View>
-            {doneExercise ? (
-              <Pressable
-                onPress={() => useSessionStore.getState().undoLastSet()}
-                accessibilityRole="button"
-                accessibilityLabel="Annuler la dernière série"
-                hitSlop={10}
-                style={({ pressed }) => ({
-                  height: 34,
-                  paddingHorizontal: 12,
-                  borderRadius: 17,
-                  justifyContent: 'center',
-                  backgroundColor: pressed ? colors.line : colors.surfaceHigh,
-                })}
-              >
-                <Text size={13} weight="black">
-                  Annuler la série
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-          <RestView next={cursor} restEndsAt={session.restEndsAt!} total={session.restDuration ?? 90} />
-        </>
+      <Text
+        size={28}
+        weight="black"
+        accessibilityRole="header"
+        numberOfLines={2}
+        style={{ marginTop: space.lg, lineHeight: 32 }}
+      >
+        {exercise.name}
+      </Text>
+      <Text size={15} weight="bold" color={colors.inkMuted}>
+        {resting ? 'Prochaine série' : 'Série'} {setIndex + 1} sur {exercise.sets.length}
+      </Text>
+
+      {exercise.needsWeight ? (
+        rest ? (
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>{rest}</View>
+        ) : (
+          <CalibrationView key={exercise.id} exercise={exercise} />
+        )
       ) : (
-        <>
-          <Text
-            size={28}
-            weight="black"
-            accessibilityRole="header"
-            numberOfLines={2}
-            style={{ marginTop: space.lg, lineHeight: 32 }}
-          >
-            {exercise.name}
-          </Text>
-          <SetDots total={exercise.sets.length} current={setIndex} />
-          {exercise.needsWeight ? (
-            <CalibrationView key={exercise.id} exercise={exercise} />
-          ) : (
-            <SetView cursor={cursor} />
-          )}
-        </>
+        <SetView cursor={cursor} footer={rest ?? undefined} />
       )}
     </Screen>
-  );
-}
-
-/** "Série 2 sur 3" with one dot per set. */
-function SetDots({ total, current }: { total: number; current: number }) {
-  return (
-    <View
-      accessible
-      accessibilityLabel={`Série ${current + 1} sur ${total}`}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xs }}
-    >
-      <Text size={15} weight="bold" color={colors.muted}>
-        Série {current + 1} sur {total}
-      </Text>
-      <View style={{ flexDirection: 'row', gap: 5 }}>
-        {Array.from({ length: total }, (_, i) => (
-          <View
-            key={i}
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: 5,
-              backgroundColor: i < current ? colors.cream : 'transparent',
-              borderWidth: 2,
-              borderColor: i === current ? colors.accent : i < current ? colors.cream : colors.line,
-            }}
-          />
-        ))}
-      </View>
-    </View>
   );
 }

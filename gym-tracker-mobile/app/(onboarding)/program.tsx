@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { colors } from '@/constants/theme';
+import { border, colors, hardShadow } from '@/constants/theme';
 import { SPLITS } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
+import { StickerButton } from '@/components/ui/StickerButton';
 import { Choice } from '@/components/ui/Choice';
 import { StepHeader } from '@/components/ui/StepHeader';
 import type { Goal, SplitId } from '@/types';
@@ -39,12 +39,12 @@ export default function ProgramScreen() {
   };
 
   return (
-    <Screen footer={<Button label={edit ? 'Enregistrer' : "C'est parti"} onPress={save} />}>
+    <Screen footer={<StickerButton label={edit ? 'Enregistrer' : "C'est parti"} onPress={save} />}>
       <StepHeader step={edit ? undefined : 2} total={edit ? undefined : 2} />
-      <Text size={52} weight="black" style={{ marginTop: 26, lineHeight: 52 }}>
+      <Text size={48} weight="black" style={{ marginTop: 26, lineHeight: 54 }}>
         Ton programme
       </Text>
-      <Text size={18} color={colors.muted} style={{ marginTop: 10 }}>
+      <Text size={18} color={colors.inkMuted} style={{ marginTop: 10 }}>
         Tu pourras le changer quand tu veux.
       </Text>
 
@@ -66,14 +66,14 @@ export default function ProgramScreen() {
             <Text size={21} weight="black">
               {s.title}
             </Text>
-            <Text size={16} weight="bold" color={colors.muted}>
+            <Text size={16} weight="bold" color={colors.inkMuted}>
               {s.meta}
             </Text>
           </Choice>
         ))}
       </View>
 
-      <Text size={17} weight="bold" style={{ marginTop: 28 }}>
+      <Text size={19} weight="black" style={{ marginTop: 28 }}>
         Séances par semaine
       </Text>
       <View
@@ -90,24 +90,27 @@ export default function ProgramScreen() {
               accessibilityState={{ selected: on }}
               accessibilityLabel={`${n} séances par semaine`}
               style={{
-                width: 74,
-                height: 74,
-                borderRadius: 37,
+                width: 72,
+                height: 72,
+                borderRadius: 36,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: on ? colors.cream : 'transparent',
-                borderWidth: on ? 0 : 8,
-                borderColor: colors.line,
+                backgroundColor: on ? colors.coralSoft : colors.card,
+                borderWidth: on ? border.strong : border.base,
+                borderColor: colors.ink,
+                ...(on ? hardShadow(4) : hardShadow(2)),
               }}
             >
               <View
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 17,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: on ? colors.bg : colors.surface,
+                  borderWidth: 2,
+                  borderColor: colors.ink,
+                  backgroundColor: colors.paper,
                 }}
               >
                 <Text size={20} weight="black">

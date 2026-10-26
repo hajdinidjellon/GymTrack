@@ -1,6 +1,6 @@
 import React from 'react';
 import Svg, { Circle, G, Text as SvgText } from 'react-native-svg';
-import { colors, fonts, plateColor } from '@/constants/theme';
+import { colors, fonts, plateColor, plateInk } from '@/constants/theme';
 import { formatKg } from '@/domain/plates';
 
 /** Diameter at size 1, close to the real ratio between plates (25 kg = 45 cm, 1,25 kg ≈ 16 cm). */
@@ -14,9 +14,6 @@ const DIAMETER: Record<string, number> = {
   '1.25': 0.44,
 };
 
-// Disques clairs : le texte passe en noir pour rester lisible
-const LIGHT = new Set(['5', '15', '1.25']);
-
 interface Props {
   kg: number;
   /** Diameter of a 25 kg plate, in points. */
@@ -25,19 +22,19 @@ interface Props {
   off?: boolean;
 }
 
-/** A plate seen from the front: coloured face, raised rim, steel hub, centre hole, weight printed on it. */
+/** A plate seen from the front, inked like a sticker: coloured face, rim, steel hub, centre hole, weight on it. */
 export function PlateFace({ kg, size, off }: Props) {
   const d = size * (DIAMETER[String(kg)] ?? 0.5);
-  const r = d / 2;
+  const r = d / 2 - 1.5;
   const c = size / 2;
   const color = plateColor(kg);
-  const ink = LIGHT.has(String(kg)) ? colors.bg : colors.cream;
+  const ink = plateInk(kg);
 
   if (off) {
     return (
       <Svg width={size} height={size}>
-        <Circle cx={c} cy={c} r={r - 1} fill="none" stroke={colors.line} strokeWidth={1.5} strokeDasharray="4 4" />
-        <Circle cx={c} cy={c} r={r * 0.2} fill={colors.surfaceHigh} />
+        <Circle cx={c} cy={c} r={r} fill="none" stroke={colors.line} strokeWidth={2} strokeDasharray="5 4" />
+        <Circle cx={c} cy={c} r={r * 0.2} fill="none" stroke={colors.line} strokeWidth={2} />
       </Svg>
     );
   }
@@ -45,11 +42,11 @@ export function PlateFace({ kg, size, off }: Props) {
   return (
     <Svg width={size} height={size}>
       <G>
-        <Circle cx={c} cy={c} r={r} fill={color} />
-        {/* Rebord : un anneau un peu plus sombre au bord du disque */}
-        <Circle cx={c} cy={c} r={r * 0.9} fill="none" stroke="#000" strokeOpacity={0.18} strokeWidth={r * 0.08} />
-        <Circle cx={c} cy={c} r={r * 0.34} fill={colors.steel} />
-        <Circle cx={c} cy={c} r={r * 0.16} fill={colors.bg} />
+        <Circle cx={c} cy={c} r={r} fill={color} stroke={colors.ink} strokeWidth={2.5} />
+        {/* Rebord : un fin anneau à l'encre */}
+        <Circle cx={c} cy={c} r={r * 0.82} fill="none" stroke={colors.ink} strokeOpacity={0.25} strokeWidth={1.5} />
+        <Circle cx={c} cy={c} r={r * 0.34} fill={colors.steel} stroke={colors.ink} strokeWidth={2} />
+        <Circle cx={c} cy={c} r={r * 0.14} fill={colors.paper} stroke={colors.ink} strokeWidth={1.5} />
         {r >= 18 ? (
           <SvgText
             x={c}

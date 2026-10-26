@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { colors } from '@/constants/theme';
+import { border, colors } from '@/constants/theme';
 import { GOALS } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
+import { StickerButton } from '@/components/ui/StickerButton';
 import { Choice } from '@/components/ui/Choice';
 import { StepHeader } from '@/components/ui/StepHeader';
 import { Barbell } from '@/components/disc/Barbell';
@@ -27,12 +27,12 @@ export default function GoalScreen() {
   };
 
   return (
-    <Screen footer={<Button label={edit ? 'Enregistrer' : 'Continuer'} onPress={next} />}>
+    <Screen footer={<StickerButton label={edit ? 'Enregistrer' : 'Continuer'} onPress={next} />}>
       <StepHeader step={edit ? undefined : 1} total={edit ? undefined : 2} />
-      <Text size={52} weight="black" style={{ marginTop: 26, lineHeight: 52 }}>
+      <Text size={48} weight="black" style={{ marginTop: 26, lineHeight: 54 }}>
         Ton objectif ?
       </Text>
-      <Text size={18} color={colors.muted} style={{ marginTop: 10 }}>
+      <Text size={18} color={colors.inkMuted} style={{ marginTop: 10 }}>
         On règle tes séries et tes reps en fonction.
       </Text>
 
@@ -56,8 +56,10 @@ export default function GoalScreen() {
               style={{
                 width: 96,
                 height: 64,
-                borderRadius: 18,
-                backgroundColor: colors.bg,
+                borderRadius: 16,
+                borderWidth: border.base - 0.5,
+                borderColor: colors.ink,
+                backgroundColor: colors.paper,
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden',
@@ -69,7 +71,7 @@ export default function GoalScreen() {
               <Text size={21} weight="black">
                 {g.title}
               </Text>
-              <Text size={16} weight="semibold" color={colors.muted}>
+              <Text size={16} weight="semibold" color={colors.inkMuted}>
                 {g.sub}
               </Text>
             </View>

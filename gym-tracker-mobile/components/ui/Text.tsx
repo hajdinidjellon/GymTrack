@@ -11,14 +11,12 @@ interface Props extends TextProps {
   align?: TextStyle['textAlign'];
 }
 
-/** Big numbers and titles are tightened, like the mockups. */
+/** Only the very big numbers are tightened a little. */
 function tracking(size: number) {
-  if (size >= 40) return -size * 0.045;
-  if (size >= 28) return -size * 0.03;
-  return 0;
+  return size >= 40 ? -size * 0.02 : 0;
 }
 
-export function Text({ size = 17, weight = 'regular', color = colors.cream, align, style, ...rest }: Props) {
+export function Text({ size = 17, weight = 'regular', color = colors.ink, align, style, ...rest }: Props) {
   return (
     <RNText
       {...rest}

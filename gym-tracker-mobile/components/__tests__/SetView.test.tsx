@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
+import { Text } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -41,7 +42,7 @@ beforeEach(() => {
 describe('SetView', () => {
   it('shows the target, the plates and the last session', async () => {
     await renderCurrentSet();
-    expect(screen.getByText('62,5')).toBeOnTheScreen();
+    expect(screen.getByText('Pourquoi 62,5 kg ?')).toBeOnTheScreen();
     expect(screen.getByText('Par côté : 20 + 1,25')).toBeOnTheScreen();
     expect(screen.getByText('60 kg × 10 · 10 · 9')).toBeOnTheScreen();
     expect(screen.getByText('Une rep de plus par série.')).toBeOnTheScreen();
@@ -51,6 +52,21 @@ describe('SetView', () => {
     await renderCurrentSet();
     await fireEvent.press(screen.getByRole('button', { name: 'Valider la série' }));
     expect(sets()[0]!.completed).toBe(true);
+  });
+
+  it('lists every set and circles the current one', async () => {
+    useSessionStore.getState().completeSet('bench', 0);
+    useSessionStore.getState().stopRestTimer();
+    await renderCurrentSet();
+    expect(screen.getByLabelText('Série 1, 62,5 kilos, 10 reps, faite')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, en cours')).toBeOnTheScreen();
+  });
+
+  it('shows the rest at the bottom of the same screen, instead of the validate button', async () => {
+    const cursor = findCurrent(useSessionStore.getState().activeSession!.exercises)!;
+    await render(<SetView cursor={cursor} footer={<Text>Repos</Text>} />);
+    expect(screen.getByText('Repos')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Valider la série' })).toBeNull();
   });
 
   it('adjusts the weight by the exercise increment', async () => {

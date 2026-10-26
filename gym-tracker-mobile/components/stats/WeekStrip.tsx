@@ -1,12 +1,13 @@
 import React from 'react';
 import { View } from 'react-native';
-import { colors } from '@/constants/theme';
+import { border, colors, plateColor } from '@/constants/theme';
 import type { WeekDay } from '@/domain/stats';
 import { Text } from '@/components/ui/Text';
+import { Check } from '@/components/ui/icons';
 
 const DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
-/** Monday to Sunday. A trained day is a blue 20 kg plate, today is outlined in the accent colour. */
+/** Monday to Sunday. A trained day is a blue 20 kg plate, today is circled in coral, days ahead are dashed. */
 export function WeekStrip({ days }: { days: WeekDay[] }) {
   const done = days.filter((d) => d.done).map((d) => DAY_NAMES[days.indexOf(d)]);
   return (
@@ -17,7 +18,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
     >
       {days.map((d, i) => (
         <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-          <Text size={12} weight="bold" color={d.today ? colors.accent : colors.faint}>
+          <Text size={13} weight="bold" color={d.today ? colors.ink : colors.inkFaint}>
             {d.letter}
           </Text>
           <View
@@ -27,16 +28,16 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
               borderRadius: 18,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: d.done ? colors.done : d.future ? 'transparent' : colors.surfaceHigh,
-              borderWidth: d.today ? 2 : d.future ? 1.5 : 0,
-              borderColor: d.today ? colors.accent : colors.line,
-              borderStyle: d.future && !d.today ? 'dashed' : 'solid',
+              backgroundColor: d.done ? plateColor(20) : d.today ? colors.coralSoft : 'transparent',
+              borderWidth: d.today ? border.strong : d.done ? border.base : 2,
+              borderColor: d.done || d.today ? colors.ink : colors.line,
+              borderStyle: d.done || d.today ? 'solid' : 'dashed',
             }}
           >
             {d.done ? (
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.bg }} />
+              <Check size={18} color={colors.card} />
             ) : (
-              <Text size={13} weight="bold" color={d.today ? colors.cream : colors.faint}>
+              <Text size={13} weight="bold" color={d.today ? colors.ink : colors.inkFaint}>
                 {d.date.getDate()}
               </Text>
             )}

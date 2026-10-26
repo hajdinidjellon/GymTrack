@@ -7,7 +7,7 @@ interface IconProps {
   color?: string;
 }
 
-export function ChevronLeft({ size = 28, color = colors.cream }: IconProps) {
+export function ChevronLeft({ size = 28, color = colors.ink }: IconProps) {
   return (
     <Svg
       width={size}
@@ -24,7 +24,7 @@ export function ChevronLeft({ size = 28, color = colors.cream }: IconProps) {
   );
 }
 
-export function ChevronRight({ size = 28, color = colors.cream }: IconProps) {
+export function ChevronRight({ size = 28, color = colors.ink }: IconProps) {
   return (
     <Svg
       width={size}
@@ -41,7 +41,7 @@ export function ChevronRight({ size = 28, color = colors.cream }: IconProps) {
   );
 }
 
-export function Check({ size = 36, color = colors.bg }: IconProps) {
+export function Check({ size = 36, color = colors.ink }: IconProps) {
   return (
     <Svg
       width={size}
@@ -59,7 +59,7 @@ export function Check({ size = 36, color = colors.bg }: IconProps) {
 }
 
 /** A loaded bar: today's session. */
-export function BarIcon({ size = 22, color = colors.cream }: IconProps) {
+export function BarIcon({ size = 22, color = colors.ink }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Rect x={1} y={11} width={22} height={2} rx={1} />
@@ -72,7 +72,7 @@ export function BarIcon({ size = 22, color = colors.cream }: IconProps) {
 }
 
 /** Plates getting bigger: progress. */
-export function ProgressIcon({ size = 22, color = colors.cream }: IconProps) {
+export function ProgressIcon({ size = 22, color = colors.ink }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Rect x={3} y={13} width={4} height={8} rx={1.5} />
@@ -82,7 +82,7 @@ export function ProgressIcon({ size = 22, color = colors.cream }: IconProps) {
   );
 }
 
-export function ProfileIcon({ size = 22, color = colors.cream }: IconProps) {
+export function ProfileIcon({ size = 22, color = colors.ink }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Circle cx={12} cy={7.5} r={4.5} />

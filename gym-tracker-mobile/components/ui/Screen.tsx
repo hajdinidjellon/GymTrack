@@ -19,7 +19,7 @@ export function Screen({ children, footer, scroll, tabs, style }: Props) {
   const content = [{ paddingTop: insets.top + space.md, paddingHorizontal: space.gutter }, style];
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.paper }}>
       {scroll ? (
         <ScrollView contentContainerStyle={[content, { paddingBottom: space.xl }]} showsVerticalScrollIndicator={false}>
           {children}

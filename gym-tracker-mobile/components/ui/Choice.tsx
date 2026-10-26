@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, type StyleProp, type ViewStyle } from 'react-native';
-import { colors, radius } from '@/constants/theme';
+import { border, colors, hardShadow, radius } from '@/constants/theme';
 
 interface Props {
   selected: boolean;
@@ -10,7 +10,7 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-/** A card you pick from a list. The selected one gets a cream outline. */
+/** A card you pick from a list. The selected one turns coral and stands out on its shadow. */
 export function Choice({ selected, onPress, accessibilityLabel, children, style }: Props) {
   return (
     <Pressable
@@ -21,10 +21,12 @@ export function Choice({ selected, onPress, accessibilityLabel, children, style 
       style={({ pressed }) => [
         {
           borderRadius: radius.md,
-          backgroundColor: colors.surface,
-          borderWidth: 2.5,
-          borderColor: selected ? colors.cream : colors.surface,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
+          borderCurve: 'continuous',
+          backgroundColor: selected ? colors.coralSoft : colors.card,
+          borderWidth: selected ? border.strong : border.base,
+          borderColor: colors.ink,
+          ...(pressed ? {} : hardShadow(selected ? 4 : 2)),
+          transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : [],
         },
         style,
       ]}

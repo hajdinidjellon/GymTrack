@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius } from '@/constants/theme';
+import { border, colors, radius } from '@/constants/theme';
 import { formatKg } from '@/domain/plates';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
+import { StickerButton } from '@/components/ui/StickerButton';
 
 interface Props {
   visible: boolean;
@@ -30,23 +30,26 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
       onRequestClose={onClose}
       onShow={() => setPicked(Math.max(0, target - 2))}
     >
-      <View style={{ flex: 1, backgroundColor: 'rgba(8, 42, 32, 0.85)', justifyContent: 'flex-end' }}>
+      <View style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Fermer" />
         <View
           style={{
             borderTopLeftRadius: 36,
             borderTopRightRadius: 36,
-            backgroundColor: colors.surface,
+            backgroundColor: colors.paper,
+            borderWidth: border.strong,
+            borderBottomWidth: 0,
+            borderColor: colors.ink,
             paddingTop: 14,
             paddingHorizontal: 24,
             paddingBottom: Math.max(insets.bottom, 16) + 8,
           }}
         >
           <View style={{ alignSelf: 'center', width: 48, height: 6, borderRadius: 3, backgroundColor: colors.line }} />
-          <Text size={36} weight="black" style={{ marginTop: 22 }}>
+          <Text size={32} weight="black" style={{ marginTop: 22 }}>
             Combien de reps ?
           </Text>
-          <Text size={17} color={colors.muted} style={{ marginTop: 6, lineHeight: 23 }}>
+          <Text size={17} color={colors.inkMuted} style={{ marginTop: 6, lineHeight: 23 }}>
             Objectif {target}
             {weight > 0 ? ` à ${formatKg(weight)} kg` : ''}. Pas grave : on garde la même charge la prochaine fois.
           </Text>
@@ -63,25 +66,29 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
                   accessibilityLabel={`${n} reps${isTarget ? ' (objectif)' : ''}`}
                   style={{
                     width: '31.5%',
-                    height: 76,
+                    height: 72,
                     borderRadius: radius.md,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: on ? colors.cream : colors.bg,
-                    borderWidth: 2.5,
+                    backgroundColor: on ? colors.coralSoft : colors.card,
+                    borderWidth: on ? border.strong : border.base,
                     borderStyle: isTarget && !on ? 'dashed' : 'solid',
-                    borderColor: on ? colors.cream : isTarget ? colors.steel : colors.bg,
+                    borderColor: colors.ink,
                   }}
                 >
-                  <Text size={34} weight="black" color={on ? colors.bg : colors.cream}>
+                  <Text size={32} weight="black">
                     {n}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
-          <Button label={`Enregistrer ${picked} reps`} onPress={() => onSave(picked)} style={{ marginTop: 24 }} />
-          <Button label="Annuler" variant="ghost" height={52} onPress={onClose} style={{ marginTop: 6 }} />
+          <StickerButton
+            label={`Enregistrer ${picked} reps`}
+            onPress={() => onSave(picked)}
+            style={{ marginTop: 24 }}
+          />
+          <StickerButton label="Annuler" variant="ghost" size="small" onPress={onClose} style={{ marginTop: 6 }} />
         </View>
       </View>
     </Modal>

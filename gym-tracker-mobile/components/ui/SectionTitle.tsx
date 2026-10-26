@@ -1,9 +1,9 @@
 import React from 'react';
 import { View } from 'react-native';
-import { colors, space } from '@/constants/theme';
+import { space } from '@/constants/theme';
 import { Text } from './Text';
 
-/** Small caps label that opens a block of content. */
+/** The title that opens a block of content. Sentence case, never capitals. */
 export function SectionTitle({ title, right, first }: { title: string; right?: React.ReactNode; first?: boolean }) {
   return (
     <View
@@ -11,12 +11,12 @@ export function SectionTitle({ title, right, first }: { title: string; right?: R
         marginTop: first ? 0 : space.xl + 4,
         marginBottom: space.sm + 2,
         flexDirection: 'row',
-        alignItems: 'baseline',
+        alignItems: 'center',
         justifyContent: 'space-between',
       }}
     >
-      <Text size={12} weight="black" color={colors.muted} accessibilityRole="header" style={{ letterSpacing: 1.3 }}>
-        {title.toUpperCase()}
+      <Text size={19} weight="black" accessibilityRole="header">
+        {title}
       </Text>
       {right}
     </View>

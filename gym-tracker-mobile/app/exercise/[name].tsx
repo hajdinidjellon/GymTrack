@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { colors, radius, space } from '@/constants/theme';
+import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatShortDay } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
@@ -12,7 +12,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
-import { Card } from '@/components/ui/Card';
+import { StickerCard } from '@/components/ui/StickerCard';
 import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
 import { Sparkline } from '@/components/stats/Sparkline';
@@ -50,22 +50,35 @@ export default function ExerciseScreen() {
       <BackButton />
       <ScreenHeader eyebrow={EQUIPMENT[def.equipment]} title={def.name} />
 
-      <Card>
-        <Text size={15} weight="black" color={colors.muted} style={{ letterSpacing: 1.4 }}>
-          PROCHAINE CIBLE
+      <StickerCard tone="hero">
+        <Text size={15} weight="bold">
+          Prochaine cible
         </Text>
-        <Text size={34} weight="black" style={{ lineHeight: 40 }}>
+        <Text size={34} weight="black" style={{ lineHeight: 42 }}>
           {lift.decision === 'calibrate'
             ? 'À régler'
             : target && target.weight > 0
               ? `${formatKg(target.weight)} kg × ${target.reps}`
               : `${target?.reps ?? 0} reps`}
         </Text>
-        <Text size={14} color={colors.accent} style={{ marginTop: 4, lineHeight: 19 }}>
-          {reasonLabel(lift)}
-        </Text>
+        <View
+          style={{
+            marginTop: 8,
+            alignSelf: 'flex-start',
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: radius.input,
+            borderWidth: 2,
+            borderColor: colors.ink,
+            backgroundColor: colors.sun,
+          }}
+        >
+          <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
+            {reasonLabel(lift)}
+          </Text>
+        </View>
         {lift.last.length ? (
-          <Text size={15} color={colors.muted} style={{ marginTop: 2 }}>
+          <Text size={15} style={{ marginTop: 8 }}>
             Dernière fois : {lastTimeLabel(lift.last)}
           </Text>
         ) : null}
@@ -74,25 +87,25 @@ export default function ExerciseScreen() {
             <LoadedBar weight={target.weight} scale={0.77} barWidth={110} />
           </View>
         ) : null}
-      </Card>
+      </StickerCard>
 
       {weights.length > 1 ? (
-        <Card style={{ marginTop: 12, gap: space.sm }}>
+        <StickerCard style={{ marginTop: 16, gap: space.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <Text size={13} weight="black" color={colors.faint} style={{ letterSpacing: 1.3 }}>
-              TA CHARGE
+            <Text size={17} weight="black">
+              Ta charge
             </Text>
-            <Text size={14} weight="bold" color={colors.muted}>
+            <Text size={14} weight="bold" color={colors.inkMuted}>
               {formatKg(weights[0]!)} → {formatKg(weights[weights.length - 1]!)} kg
             </Text>
           </View>
           <Sparkline values={weights} height={72} />
-        </Card>
+        </StickerCard>
       ) : null}
 
-      <Card style={{ marginTop: 12 }}>
+      <StickerCard style={{ marginTop: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <Text size={16} weight="semibold" color={colors.muted}>
+          <Text size={16} weight="semibold" color={colors.inkMuted}>
             Règle
           </Text>
           <Text size={22} weight="black">
@@ -101,7 +114,7 @@ export default function ExerciseScreen() {
         </View>
         {!bodyweight ? (
           <>
-            <Text size={16} weight="semibold" color={colors.muted} style={{ marginTop: 14 }}>
+            <Text size={16} weight="semibold" color={colors.inkMuted} style={{ marginTop: 14 }}>
               Ajouter à chaque palier
             </Text>
             <View
@@ -112,7 +125,9 @@ export default function ExerciseScreen() {
                 padding: 4,
                 gap: 4,
                 borderRadius: radius.pill,
-                backgroundColor: colors.bg,
+                borderWidth: border.base,
+                borderColor: colors.ink,
+                backgroundColor: colors.paper,
               }}
             >
               {STEPS.map((v) => {
@@ -131,10 +146,12 @@ export default function ExerciseScreen() {
                       borderRadius: radius.pill,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: on ? colors.cream : 'transparent',
+                      borderWidth: on ? border.base : 0,
+                      borderColor: colors.ink,
+                      backgroundColor: on ? colors.coralSoft : 'transparent',
                     }}
                   >
-                    <Text size={15} weight="black" color={on ? colors.bg : colors.muted}>
+                    <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
                       +{formatKg(v)} kg
                     </Text>
                   </PressableScale>
@@ -143,11 +160,11 @@ export default function ExerciseScreen() {
             </View>
           </>
         ) : null}
-      </Card>
+      </StickerCard>
 
       {history.length ? (
         <>
-          <Text size={17} weight="bold" style={{ marginTop: 20 }}>
+          <Text size={19} weight="black" style={{ marginTop: 24 }}>
             Dernières séances
           </Text>
           <View style={{ marginTop: 4 }}>
@@ -162,11 +179,11 @@ export default function ExerciseScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    borderBottomWidth: i < history.length - 1 ? 1 : 0,
+                    borderBottomWidth: i < history.length - 1 ? 2 : 0,
                     borderBottomColor: colors.line,
                   }}
                 >
-                  <Text size={16} color={colors.muted}>
+                  <Text size={16} color={colors.inkMuted}>
                     {formatShortDay(h.date)}
                   </Text>
                   <Text size={18} weight="black">

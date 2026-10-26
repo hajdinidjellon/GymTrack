@@ -14,7 +14,7 @@ interface Props extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
 }
 
-function buzz(kind: HapticKind) {
+export function buzz(kind: HapticKind) {
   const run =
     kind === 'selection'
       ? Haptics.selectionAsync()

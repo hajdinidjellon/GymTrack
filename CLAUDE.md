@@ -86,9 +86,17 @@ A layer never imports a layer above it. Always import with `@/`.
 - `services/__tests__`, `stores/__tests__` — mocked native modules (`jest.setup.ts`).
 - `components/__tests__` — React Native Testing Library v14 (`render` and `fireEvent` are async).
 
-### Design system — "Disques", black version
+### Design system — "Autocollant" (clarté + style illustré)
 
-`constants/theme.ts`: black background, off-white text, Bricolage Grotesque. Colour comes from IWF competition plates (`plateColor(kg)`: 25 red, 20 blue, 15 yellow, 10 green, 5 white); outside plates only three colours: `accent` (yellow: progress, records, rest timer, today), `go` (green: "Valider", gains), `danger`. Depth comes from surfaces (`surface` < `surfaceHigh`), not shadows. No glow, no Skia. Base components in `components/ui/` (`PressableScale` for every tappable element, `FadeIn` for screen entrance), plates in `components/disc/`, charts in `components/stats/`, session views in `components/session/`. Colour mockups: claude.ai artifact "GymTrack · trois directions couleur" (direction 2).
+`constants/theme.ts`: `paper` background, white `card`s, everything outlined and shadowed in `ink`. Fredoka for titles, numbers and buttons (`weight="black"` / `"titleMedium"`), Nunito for the rest. No capitals except the sets table column headers.
+
+- `coral` = main action and "current" state: one coral button per screen. `coralSoft` = the hero card (one per screen) and the current set/selection.
+- `sun` = explanations ("Pourquoi 80 kg ?"), the rest panel, badges. `success` / `successSoft` = sets done.
+- Plate colours (`plateColor(kg)`, IWF: 25 red, 20 blue, 15 yellow, 10 green, 5 white) are for plates only.
+- Sticker style: `border.strong` (3) on cards and big buttons, `border.base` (2.5) elsewhere; `hardShadow(5 | 4 | 2)` = offset ink shadow, no blur. A pressed button sinks onto its shadow. Empty or upcoming things are dashed `line`. `Sparkle`: 2 max per screen, hero card or celebration only.
+- Clarity: the main action sits at the bottom, under the thumb. The logger never changes screen: the rest panel replaces the validate button at the bottom. Exercise pills at the top, current set circled in the sets table. Everything the app computed is pre-filled.
+
+Base components in `components/ui/` (`StickerButton`, `StickerCard`, `Chip`, `Choice`, `Sparkle`, `PressableScale` for tappable cards, `FadeIn` for screen entrance), plates in `components/disc/`, charts in `components/stats/`, session views in `components/session/` (`SetView` + `SetRow`/`SetsTable`, `RestView`).
 
 ## Key conventions
 

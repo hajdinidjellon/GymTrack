@@ -5,13 +5,9 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-  useFonts,
-  BricolageGrotesque_400Regular,
-  BricolageGrotesque_600SemiBold,
-  BricolageGrotesque_700Bold,
-  BricolageGrotesque_800ExtraBold,
-} from '@expo-google-fonts/bricolage-grotesque';
+import { useFonts } from 'expo-font';
+import { Fredoka_600SemiBold, Fredoka_700Bold } from '@expo-google-fonts/fredoka';
+import { Nunito_400Regular, Nunito_600SemiBold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 
 import { getDb } from '@/services/db';
 import { logger } from '@/services/logger';
@@ -26,10 +22,11 @@ SplashScreen.preventAutoHideAsync().catch(() => null);
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    'Bricolage-Regular': BricolageGrotesque_400Regular,
-    'Bricolage-SemiBold': BricolageGrotesque_600SemiBold,
-    'Bricolage-Bold': BricolageGrotesque_700Bold,
-    'Bricolage-ExtraBold': BricolageGrotesque_800ExtraBold,
+    'Nunito-Regular': Nunito_400Regular,
+    'Nunito-SemiBold': Nunito_600SemiBold,
+    'Nunito-ExtraBold': Nunito_800ExtraBold,
+    'Fredoka-SemiBold': Fredoka_600SemiBold,
+    'Fredoka-Bold': Fredoka_700Bold,
   });
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -52,7 +49,7 @@ export default function RootLayout() {
   const [intro, setIntro] = useState(true);
   const endIntro = useCallback(() => setIntro(false), []);
 
-  // L'écran natif (même vert) laisse la place à l'animation dès que la police est là
+  // L'écran natif (même papier) laisse la place à l'animation dès que la police est là
   useEffect(() => {
     if (fontsDone) SplashScreen.hideAsync().catch(() => null);
   }, [fontsDone]);
@@ -63,12 +60,12 @@ export default function RootLayout() {
   }, [ready]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.paper }}>
       <SafeAreaProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         {ready ? (
           <Stack
-            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }}
+            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper }, animation: 'fade' }}
           >
             <Stack.Screen name="(onboarding)" />
             <Stack.Screen name="(tabs)" />
@@ -78,7 +75,7 @@ export default function RootLayout() {
             <Stack.Screen name="exercise/[name]" options={{ animation: 'slide_from_right' }} />
           </Stack>
         ) : (
-          <View style={{ flex: 1, backgroundColor: colors.bg }} />
+          <View style={{ flex: 1, backgroundColor: colors.paper }} />
         )}
         {intro && fontsDone ? <LaunchAnimation ready={ready} onDone={endIntro} /> : null}
       </SafeAreaProvider>

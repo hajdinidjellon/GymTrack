@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { colors } from '@/constants/theme';
+import { border, colors, hardShadow } from '@/constants/theme';
 import { ChevronLeft, ChevronRight } from './icons';
 import { Text } from './Text';
 
@@ -19,7 +19,7 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
       <Arrow onPress={onMinus} label={minusLabel}>
-        <ChevronLeft size={24} color={colors.cream} />
+        <ChevronLeft size={24} />
       </Arrow>
       <Pressable
         onLongPress={onLongPress}
@@ -27,15 +27,15 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
         accessibilityHint={onLongPress ? 'Appui long pour saisir les reps faites' : undefined}
         style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}
       >
-        <Text size={64} weight="black" style={{ lineHeight: 72 }}>
+        <Text size={60} weight="black" style={{ lineHeight: 70 }}>
           {value}
         </Text>
-        <Text size={17} weight="semibold" color={colors.muted}>
+        <Text size={18} weight="titleMedium" color={colors.inkMuted}>
           {unit}
         </Text>
       </Pressable>
       <Arrow onPress={onPlus} label={plusLabel}>
-        <ChevronRight size={24} color={colors.cream} />
+        <ChevronRight size={24} />
       </Arrow>
     </View>
   );
@@ -47,13 +47,18 @@ function Arrow({ onPress, label, children }: { onPress: () => void; label: strin
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
+      hitSlop={6}
       style={({ pressed }) => ({
-        width: 52,
-        height: 52,
-        borderRadius: 26,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: pressed ? colors.line : colors.surfaceHigh,
+        borderWidth: border.base,
+        borderColor: colors.ink,
+        backgroundColor: colors.card,
+        ...(pressed ? {} : hardShadow(2)),
+        transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : [],
       })}
     >
       {children}

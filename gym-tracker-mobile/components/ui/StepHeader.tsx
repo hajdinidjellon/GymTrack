@@ -17,7 +17,15 @@ export function StepHeader({ step, total }: { step?: number; total?: number }) {
           {Array.from({ length: total }, (_, i) => (
             <View
               key={i}
-              style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: i < step ? colors.cream : colors.line }}
+              style={{
+                flex: 1,
+                height: 12,
+                borderRadius: 6,
+                borderWidth: 2,
+                borderColor: i < step ? colors.ink : colors.line,
+                borderStyle: i < step ? 'solid' : 'dashed',
+                backgroundColor: i < step ? colors.coral : 'transparent',
+              }}
             />
           ))}
         </View>

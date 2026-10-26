@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { colors, plateColor, radius, space } from '@/constants/theme';
+import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
 import { totals } from '@/domain/stats';
@@ -15,11 +15,12 @@ import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { StickerButton } from '@/components/ui/StickerButton';
+import { StickerCard } from '@/components/ui/StickerCard';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { StatTile } from '@/components/stats/StatTile';
+import { Chip } from '@/components/ui/Chip';
 import { Check, ChevronRight } from '@/components/ui/icons';
 import { PlateFace } from '@/components/disc/PlateFace';
 
@@ -58,26 +59,14 @@ export default function Profile() {
       </FadeIn>
 
       <FadeIn index={1}>
-        <Card style={{ gap: space.lg }}>
+        <StickerCard style={{ gap: space.lg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                borderWidth: 6,
-                borderColor: plateColor(20),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accent }} />
-            </View>
+            <PlateFace kg={20} size={60} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text size={20} weight="black" numberOfLines={1}>
                 {goal?.title ?? 'Ton entraînement'}
               </Text>
-              <Text size={14} color={colors.muted} numberOfLines={1}>
+              <Text size={14} color={colors.inkMuted} numberOfLines={1}>
                 {split ? `${split.title} · ${profile?.program.perWeek}×/semaine` : ''}
               </Text>
             </View>
@@ -87,7 +76,7 @@ export default function Profile() {
             <StatTile value={`${formatKg(Math.round(stats.tonnage / 100) / 10)} t`} label="soulevées" />
             <StatTile value={stats.since ? formatMonth(stats.since) : '—'} label="depuis" />
           </View>
-        </Card>
+        </StickerCard>
       </FadeIn>
 
       <FadeIn index={2}>
@@ -127,15 +116,8 @@ export default function Profile() {
       </FadeIn>
 
       <FadeIn index={3}>
-        <SectionTitle
-          title="Disques de ta salle"
-          right={
-            <Text size={13} weight="bold" color={colors.accent}>
-              Sélectionne-les !
-            </Text>
-          }
-        />
-        <Text size={14} color={colors.muted} style={{ marginBottom: space.md, lineHeight: 19 }}>
+        <SectionTitle title="Disques de ta salle" right={<Chip tone="sun" label="Touche pour choisir" />} />
+        <Text size={14} color={colors.inkMuted} style={{ marginBottom: space.md, lineHeight: 19 }}>
           On s'en sert pour te dire quoi mettre de chaque côté de la barre.
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -157,9 +139,11 @@ export default function Profile() {
                   borderCurve: 'continuous',
                   alignItems: 'center',
                   gap: 4,
-                  backgroundColor: on ? colors.surface : 'transparent',
-                  borderWidth: 1,
-                  borderColor: on ? colors.hairline : 'transparent',
+                  backgroundColor: on ? colors.card : 'transparent',
+                  borderWidth: border.base,
+                  borderColor: on ? colors.ink : colors.line,
+                  borderStyle: on ? 'solid' : 'dashed',
+                  ...(on ? hardShadow(2) : {}),
                 }}
               >
                 <View>
@@ -170,21 +154,21 @@ export default function Profile() {
                         position: 'absolute',
                         right: -2,
                         top: -2,
-                        width: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        backgroundColor: colors.go,
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        backgroundColor: colors.success,
                         borderWidth: 2,
-                        borderColor: colors.surface,
+                        borderColor: colors.ink,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Check size={11} color={colors.onGo} />
+                      <Check size={13} />
                     </View>
                   ) : null}
                 </View>
-                <Text size={13} weight="black" color={on ? colors.cream : colors.faint}>
+                <Text size={13} weight="black" color={on ? colors.ink : colors.inkFaint}>
                   {formatKg(kg)} kg
                 </Text>
               </PressableScale>
@@ -193,14 +177,19 @@ export default function Profile() {
         </View>
 
         <SectionTitle title="Compte" />
-        <Card style={{ gap: space.md }}>
-          <Text size={15} color={colors.muted} style={{ lineHeight: 21 }}>
+        <StickerCard style={{ gap: space.md }}>
+          <Text size={15} color={colors.inkMuted} style={{ lineHeight: 21 }}>
             {signedIn
               ? 'Connecté : tes séances sont sauvegardées dans ton compte.'
               : 'Sans compte : tes séances restent sur ce téléphone.'}
           </Text>
-          <Button label="Se déconnecter" variant="outline" height={52} onPress={() => confirmLogout(signedIn)} />
-        </Card>
+          <StickerButton
+            label="Se déconnecter"
+            variant="secondary"
+            size="small"
+            onPress={() => confirmLogout(signedIn)}
+          />
+        </StickerCard>
       </FadeIn>
     </Screen>
   );
@@ -214,7 +203,20 @@ function formatMonth(iso: string): string {
 
 function Group({ children }: { children: React.ReactNode }) {
   return (
-    <View style={{ borderRadius: radius.md + 2, backgroundColor: colors.surface, overflow: 'hidden' }}>{children}</View>
+    <View style={{ borderRadius: radius.card, ...hardShadow(5) }}>
+      <View
+        style={{
+          borderRadius: radius.card,
+          borderCurve: 'continuous',
+          borderWidth: border.strong,
+          borderColor: colors.ink,
+          backgroundColor: colors.card,
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </View>
+    </View>
   );
 }
 
@@ -263,9 +265,9 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: colors.hairline,
-        backgroundColor: pressed ? colors.surfaceHigh : 'transparent',
+        borderBottomWidth: last ? 0 : 2,
+        borderBottomColor: colors.line,
+        backgroundColor: pressed ? colors.coralSoft : 'transparent',
       })}
     >
       <Text size={16} weight="bold">
@@ -275,13 +277,13 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
         <Text
           size={chevron ? 14 : 16}
           weight={chevron ? 'semibold' : 'black'}
-          color={chevron ? colors.muted : colors.cream}
+          color={chevron ? colors.inkMuted : colors.ink}
           numberOfLines={1}
           style={{ flexShrink: 1 }}
         >
           {value}
         </Text>
-        {chevron ? <ChevronRight size={16} color={colors.faint} /> : null}
+        {chevron ? <ChevronRight size={18} /> : null}
       </View>
     </Pressable>
   );

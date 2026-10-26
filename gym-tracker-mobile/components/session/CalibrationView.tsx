@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { colors, radius } from '@/constants/theme';
+import { border, colors, hardShadow, radius } from '@/constants/theme';
 import { describeSide, formatKg } from '@/domain/plates';
 import type { ActiveExercise } from '@/types';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { StickerButton } from '@/components/ui/StickerButton';
+import { StickerCard } from '@/components/ui/StickerCard';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 
@@ -29,14 +29,26 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <Text size={15} weight="black" color={colors.muted} style={{ marginTop: 8, letterSpacing: 1.4 }}>
-        PREMIÈRE FOIS
-      </Text>
-      <Text size={17} color={colors.muted} style={{ marginTop: 6 }}>
-        {barbell ? 'Charge ta barre de départ.' : 'Choisis ta charge de départ.'} Ensuite, on s'occupe de tout.
-      </Text>
+      <View
+        style={{
+          marginTop: 12,
+          paddingVertical: 10,
+          paddingHorizontal: 14,
+          borderRadius: radius.row,
+          borderWidth: border.base,
+          borderColor: colors.ink,
+          backgroundColor: colors.sun,
+        }}
+      >
+        <Text size={15} weight="black">
+          Première fois
+        </Text>
+        <Text size={15} weight="semibold">
+          {barbell ? 'Charge ta barre de départ.' : 'Choisis ta charge de départ.'} Ensuite, on s'occupe de tout.
+        </Text>
+      </View>
 
-      <Card style={{ marginTop: 16, paddingHorizontal: 12, paddingBottom: 14 }}>
+      <StickerCard tone="hero" style={{ marginTop: 16, paddingHorizontal: 12, paddingBottom: 14 }}>
         {barbell ? (
           <View style={{ height: 120, justifyContent: 'center' }}>
             <Barbell perSide={perSide} scale={1.08} />
@@ -49,23 +61,23 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
             onPress={() => setWeight((w) => Math.max(min, w - step))}
           />
           <View style={{ alignItems: 'center' }}>
-            <Text size={56} weight="black" style={{ lineHeight: 60 }}>
+            <Text size={56} weight="black" style={{ lineHeight: 62 }}>
               {formatKg(weight)}{' '}
               <Text size={20} weight="black">
                 kg
               </Text>
             </Text>
             {barbell ? (
-              <Text size={14} weight="bold" color={colors.muted}>
+              <Text size={14} weight="bold" color={colors.inkMuted}>
                 {perSide.length ? `Par côté : ${describeSide(perSide)}` : 'Barre à vide'}
               </Text>
             ) : null}
           </View>
           <Round label="+" a11y={`Plus ${formatKg(step)} kg`} onPress={() => setWeight((w) => w + step)} />
         </View>
-      </Card>
+      </StickerCard>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
         {presets.map((v) => {
           const on = v === weight;
           return (
@@ -76,14 +88,17 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
               accessibilityLabel={`${v} kilos`}
               style={{
                 width: '31.5%',
-                height: 64,
-                borderRadius: radius.sm + 4,
+                height: 60,
+                borderRadius: radius.row,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: on ? colors.cream : colors.surface,
+                borderWidth: on ? border.strong : border.base,
+                borderColor: colors.ink,
+                backgroundColor: on ? colors.coralSoft : colors.card,
+                ...(on ? hardShadow(2) : {}),
               }}
             >
-              <Text size={26} weight="black" color={on ? colors.bg : colors.cream}>
+              <Text size={26} weight="black">
                 {v}
               </Text>
             </Pressable>
@@ -92,7 +107,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
       </View>
 
       <View style={{ flex: 1 }} />
-      <Button label={`Commencer à ${formatKg(weight)} kg`} onPress={() => setStartWeight(exercise.id, weight)} />
+      <StickerButton label={`Commencer à ${formatKg(weight)} kg`} onPress={() => setStartWeight(exercise.id, weight)} />
     </View>
   );
 }
@@ -104,16 +119,19 @@ function Round({ label, a11y, onPress }: { label: string; a11y: string; onPress:
       accessibilityRole="button"
       accessibilityLabel={a11y}
       style={({ pressed }) => ({
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: colors.bg,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        borderWidth: border.base,
+        borderColor: colors.ink,
+        backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: pressed ? 0.6 : 1,
+        ...(pressed ? {} : hardShadow(2)),
+        transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : [],
       })}
     >
-      <Text size={30} weight="bold">
+      <Text size={30} weight="black">
         {label}
       </Text>
     </Pressable>

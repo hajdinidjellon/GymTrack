@@ -12,9 +12,9 @@ import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SectionTitle } from '@/components/ui/SectionTitle';
-import { Button } from '@/components/ui/Button';
+import { StickerButton } from '@/components/ui/StickerButton';
 import { Text } from '@/components/ui/Text';
-import { Card } from '@/components/ui/Card';
+import { StickerCard } from '@/components/ui/StickerCard';
 import { Chip } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
@@ -53,17 +53,17 @@ export default function Progress() {
 
   if (workouts.length === 0) {
     return (
-      <Screen tabs footer={<Button label="Voir la séance du jour" onPress={() => router.navigate('/')} />}>
+      <Screen tabs footer={<StickerButton label="Voir la séance du jour" onPress={() => router.navigate('/')} />}>
         <ScreenHeader title="Progrès" subtitle="Ce que tu as gagné depuis le début, en disques." />
-        <Card style={{ marginTop: space.sm, alignItems: 'center', paddingVertical: space.xxl, gap: space.md }}>
+        <StickerCard style={{ marginTop: space.sm, alignItems: 'center', paddingVertical: space.xxl, gap: space.md }}>
           <Barbell perSide={[]} scale={0.8} barWidth={80} />
           <Text size={20} weight="black" align="center">
             Ta barre est encore vide
           </Text>
-          <Text size={15} color={colors.muted} align="center" style={{ lineHeight: 21, maxWidth: 280 }}>
+          <Text size={15} color={colors.inkMuted} align="center" style={{ lineHeight: 21, maxWidth: 280 }}>
             Fais ta première séance : tes courbes, ton volume et tes records s'afficheront ici.
           </Text>
-        </Card>
+        </StickerCard>
       </Screen>
     );
   }
@@ -87,7 +87,7 @@ export default function Progress() {
 
       <FadeIn index={1} style={{ flexDirection: 'row', gap: space.sm }}>
         <StatTile value={String(workouts.length)} label={workouts.length > 1 ? 'séances' : 'séance'} />
-        <StatTile value={`+${formatKg(gained)} kg`} label="gagnés au total" accent={gained > 0} />
+        <StatTile value={`+${formatKg(gained)} kg`} label="gagnés au total" highlight={gained > 0} />
         <StatTile value={String(records.length)} label={records.length > 1 ? 'records' : 'record'} />
       </FadeIn>
 
@@ -96,28 +96,28 @@ export default function Progress() {
           title="Volume par semaine"
           right={
             trend != null ? (
-              <Chip tone={trend >= 0 ? 'accent' : 'neutral'} label={`${trend >= 0 ? '+' : ''}${trend} %`} />
+              <Chip tone={trend >= 0 ? 'sun' : 'neutral'} label={`${trend >= 0 ? '+' : ''}${trend} %`} />
             ) : undefined
           }
         />
-        <Card>
+        <StickerCard>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: space.md }}>
             <Text size={28} weight="black">
               {formatThousands(thisWeek.tonnage)}
             </Text>
-            <Text size={14} weight="bold" color={colors.muted}>
+            <Text size={14} weight="bold" color={colors.inkMuted}>
               kg cette semaine
             </Text>
           </View>
           <VolumeChart weeks={weeks} />
-        </Card>
+        </StickerCard>
       </FadeIn>
 
       {hero ? (
         <FadeIn index={3}>
           <SectionTitle title="Ta plus belle progression" />
-          <Card style={{ gap: space.md }}>
-            <Text size={14} weight="semibold" color={colors.muted}>
+          <StickerCard tone="hero" style={{ gap: space.md }}>
+            <Text size={14} weight="semibold">
               {hero.name} · depuis le {formatShortDay(hero.first.date).toLowerCase()}
             </Text>
             <Text size={22} weight="black" style={{ lineHeight: 27 }}>
@@ -133,10 +133,10 @@ export default function Progress() {
               return (
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <View style={{ width: 92 }}>
-                    <Text size={13} color={colors.muted}>
+                    <Text size={13} weight="semibold">
                       {i === 0 ? 'Au début' : 'Maintenant'}
                     </Text>
-                    <Text size={20} weight="black" color={i === 0 ? colors.cream : colors.accent}>
+                    <Text size={20} weight="black">
                       {formatKg(point.weight)} kg
                     </Text>
                   </View>
@@ -146,14 +146,14 @@ export default function Progress() {
                 </View>
               );
             })}
-          </Card>
+          </StickerCard>
         </FadeIn>
       ) : null}
 
       {records.length ? (
         <FadeIn index={4}>
           <SectionTitle title="Tes records" />
-          <Card style={{ paddingVertical: 4 }}>
+          <StickerCard style={{ paddingVertical: 4 }}>
             {records.map((r, i) => (
               <View
                 key={r.name}
@@ -163,30 +163,28 @@ export default function Progress() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: space.md,
-                  borderBottomWidth: i === records.length - 1 ? 0 : 1,
-                  borderBottomColor: colors.hairline,
+                  borderBottomWidth: i === records.length - 1 ? 0 : 2,
+                  borderBottomColor: colors.line,
                 }}
               >
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text size={16} weight="bold" numberOfLines={1}>
                     {r.name}
                   </Text>
-                  <Text size={13} color={colors.muted}>
+                  <Text size={13} color={colors.inkMuted}>
                     {formatShortDay(r.date)} · {r.reps} reps
                   </Text>
                 </View>
-                <Text size={18} weight="black" color={colors.accent}>
-                  {formatKg(r.weight)} kg
-                </Text>
+                <Chip tone="sun" label={`${formatKg(r.weight)} kg`} />
               </View>
             ))}
-          </Card>
+          </StickerCard>
         </FadeIn>
       ) : null}
 
       <FadeIn index={5}>
         <SectionTitle title="Tous tes exercices" />
-        <View style={{ gap: space.sm }}>
+        <View style={{ gap: space.md }}>
           {lifts.map((l) => {
             const diff = l.last.weight - l.first.weight;
             return (
@@ -197,20 +195,20 @@ export default function Progress() {
                 accessibilityRole="button"
                 accessibilityLabel={`${l.name}, ${formatKg(l.last.weight)} kilos${diff > 0 ? `, plus ${formatKg(diff)} depuis le début` : ''}`}
               >
-                <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 12 }}>
+                <StickerCard small style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text size={16} weight="bold" numberOfLines={1}>
                       {l.name}
                     </Text>
-                    <Text size={13} color={colors.muted}>
+                    <Text size={13} color={colors.inkMuted}>
                       {formatKg(l.last.weight)} kg · {diff > 0 ? `+${formatKg(diff)} kg` : 'stable'}
                     </Text>
                   </View>
                   <View style={{ width: 72 }}>
                     <Sparkline values={l.points.map((p) => p.weight)} height={34} />
                   </View>
-                  <ChevronRight size={16} color={colors.faint} />
-                </Card>
+                  <ChevronRight size={18} />
+                </StickerCard>
               </PressableScale>
             );
           })}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
-import { colors, radius, space } from '@/constants/theme';
+import { border, colors, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
@@ -22,9 +22,10 @@ import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Text } from '@/components/ui/Text';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { StickerButton } from '@/components/ui/StickerButton';
+import { StickerCard } from '@/components/ui/StickerCard';
 import { Chip } from '@/components/ui/Chip';
+import { Sparkle } from '@/components/ui/Sparkle';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { ChevronRight } from '@/components/ui/icons';
@@ -50,14 +51,14 @@ export default function Today() {
       scroll
       footer={
         running ? (
-          <Button
+          <StickerButton
             label="Reprendre la séance"
             testID="resume-session"
             haptic="medium"
             onPress={() => router.push('/session')}
           />
         ) : plan ? (
-          <Button label="Lancer la séance" testID="start-session" haptic="medium" onPress={() => start(plan)} />
+          <StickerButton label="Lancer la séance" testID="start-session" haptic="medium" onPress={() => start(plan)} />
         ) : null
       }
     >
@@ -65,7 +66,7 @@ export default function Today() {
         <ScreenHeader
           eyebrow={formatDay(new Date())}
           title="Aujourd'hui"
-          right={streak > 1 ? <Chip tone="accent" label={`${streak} sem. d'affilée`} /> : undefined}
+          right={streak > 1 ? <Chip tone="sun" label={`${streak} sem. d'affilée`} /> : undefined}
         />
       </FadeIn>
       <FadeIn index={1}>
@@ -92,19 +93,17 @@ function WeekCard() {
   return (
     <>
       <SectionTitle title="Cette semaine" first />
-      <Card style={{ gap: space.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <Text size={15} weight="bold">
+      <StickerCard style={{ gap: space.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm }}>
+          <Text size={15} weight="bold" style={{ flex: 1 }}>
             {left === 0
               ? 'Objectif de la semaine atteint'
               : `Encore ${left} séance${left > 1 ? 's' : ''} cette semaine`}
           </Text>
-          <Text size={15} weight="black" color={left === 0 ? colors.accent : colors.muted}>
-            {done}/{perWeek}
-          </Text>
+          <Chip tone={left === 0 ? 'success' : 'neutral'} label={`${done}/${perWeek}`} />
         </View>
         <WeekStrip days={weekDays(workouts)} />
-      </Card>
+      </StickerCard>
     </>
   );
 }
@@ -119,8 +118,17 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
   return (
     <>
       <SectionTitle title={running ? 'Séance en cours' : 'Séance du jour'} />
-      <Card style={{ paddingTop: 18, paddingBottom: 8 }}>
-        <Text size={38} weight="black" numberOfLines={1} adjustsFontSizeToFit style={{ lineHeight: 42 }}>
+      <StickerCard tone="hero" style={{ paddingTop: 18, paddingBottom: 8 }}>
+        <View style={{ position: 'absolute', top: -14, right: 18 }}>
+          <Sparkle size={34} />
+        </View>
+        <Text
+          size={38}
+          weight="black"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={{ lineHeight: 44, marginRight: 36 }}
+        >
           {plan.name}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
@@ -136,14 +144,16 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
               padding: space.md,
               borderRadius: radius.md,
               borderCurve: 'continuous',
-              backgroundColor: colors.bg,
+              borderWidth: border.base,
+              borderColor: colors.ink,
+              backgroundColor: colors.card,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text size={13} weight="bold" color={colors.faint}>
-                SUR LA BARRE EN PREMIER
+              <Text size={14} weight="bold" color={colors.inkMuted}>
+                Sur la barre en premier
               </Text>
-              <Chip tone="go" label={deltaLabel(featured)} />
+              <Chip tone="success" label={deltaLabel(featured)} />
             </View>
             <View style={{ height: 96, justifyContent: 'center', marginTop: 4 }}>
               <Barbell perSide={perSide} scale={0.85} barWidth={90} />
@@ -156,18 +166,18 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
               </Text>
               <Text size={22} weight="black">
                 {formatKg(target.weight)}
-                <Text size={14} weight="bold" color={colors.muted}>
+                <Text size={14} weight="bold" color={colors.inkMuted}>
                   {' '}
                   kg × {target.reps}
                 </Text>
               </Text>
             </View>
-            <Text size={13} color={colors.muted} style={{ marginTop: 2 }}>
+            <Text size={14} color={colors.inkMuted} style={{ marginTop: 2 }}>
               {describeSide(perSide)} de chaque côté
             </Text>
           </View>
         ) : (
-          <Text size={15} color={colors.muted} style={{ marginTop: space.md, lineHeight: 21 }}>
+          <Text size={15} color={colors.ink} style={{ marginTop: space.md, lineHeight: 21 }}>
             Première séance : tu choisiras ta charge de départ sur chaque exercice, ensuite on calcule tout.
           </Text>
         )}
@@ -177,7 +187,7 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
             <LiftLine key={lift.def.name} lift={lift} index={i} last={i === plan.lifts.length - 1} />
           ))}
         </View>
-      </Card>
+      </StickerCard>
     </>
   );
 }
@@ -196,23 +206,23 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.md,
-        borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: colors.hairline,
+        borderBottomWidth: last ? 0 : 2,
+        borderBottomColor: colors.line,
       }}
     >
-      <Text size={13} weight="black" color={colors.faint} style={{ width: 18 }}>
+      <Text size={15} weight="black" style={{ width: 18 }}>
         {index + 1}
       </Text>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text size={16} weight="bold" numberOfLines={1}>
           {lift.def.name}
         </Text>
-        <Text size={13} color={colors.muted} numberOfLines={1}>
+        <Text size={14} color={colors.inkMuted} numberOfLines={1}>
           {calibrate ? 'Charge à choisir' : targetLabel(lift.targets)}
         </Text>
       </View>
-      {progress ? <Chip tone="go" label={deltaLabel(lift)} /> : null}
-      <ChevronRight size={16} color={colors.faint} />
+      {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
+      <ChevronRight size={18} />
     </PressableScale>
   );
 }
@@ -224,12 +234,12 @@ function LastWorkout() {
   return (
     <>
       <SectionTitle title="Dernière séance" />
-      <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <StickerCard style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View>
           <Text size={17} weight="black">
             {last.name}
           </Text>
-          <Text size={13} color={colors.muted}>
+          <Text size={13} color={colors.inkMuted}>
             {formatShortDay(last.date)} · {sets} séries · {last.duration ?? 0} min
           </Text>
         </View>
@@ -237,11 +247,11 @@ function LastWorkout() {
           <Text size={17} weight="black">
             {formatThousands(tonnage(last))} kg
           </Text>
-          <Text size={13} color={colors.muted}>
+          <Text size={13} color={colors.inkMuted}>
             soulevés
           </Text>
         </View>
-      </Card>
+      </StickerCard>
     </>
   );
 }
