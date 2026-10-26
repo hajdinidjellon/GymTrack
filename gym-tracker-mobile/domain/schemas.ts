@@ -78,6 +78,7 @@ export const profileSchema: z.ZodType<UserProfile> = z.object({
     split: z.enum(['ppl', 'ul', 'fb']),
     perWeek: z.number().int().min(1).max(7),
   }),
+  experience: z.enum(['new', 'months', 'years']).optional(),
   prs: z.array(prSchema).max(500),
   bodyStats: z
     .array(

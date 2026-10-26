@@ -6,6 +6,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { Sparkle } from '@/components/ui/Sparkle';
+import { Chip } from '@/components/ui/Chip';
 
 export default function Welcome() {
   return (
@@ -15,7 +16,7 @@ export default function Welcome() {
         style={{ backgroundColor: 'transparent' }}
         footer={
           <>
-            <StickerButton label="Commencer" onPress={() => router.push('/goal')} />
+            <StickerButton label="C'est parti" onPress={() => router.push('/setup')} />
             <StickerButton
               label="J'ai déjà un compte"
               variant="ghost"
@@ -59,9 +60,12 @@ export default function Welcome() {
         <Text size={60} weight="black" style={{ lineHeight: 64 }}>
           Tu charges.{'\n'}On calcule.
         </Text>
-        <Text size={19} color={colors.inkMuted} style={{ marginTop: 16, marginBottom: 30, lineHeight: 27 }}>
-          Ton programme en pilote automatique : la charge, les reps et les disques à mettre, prêts à chaque série.
+        <Text size={19} color={colors.inkMuted} style={{ marginTop: 16, lineHeight: 27 }}>
+          Dis-nous comment tu t'entraînes : on prépare tes séances, les charges et les disques à mettre.
         </Text>
+        <View style={{ marginTop: 18, marginBottom: 30 }}>
+          <Chip label="4 questions · 30 secondes" tone="sun" />
+        </View>
       </Screen>
     </View>
   );
