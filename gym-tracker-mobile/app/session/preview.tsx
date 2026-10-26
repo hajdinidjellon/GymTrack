@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { describeSide, loadBar } from '@/domain/plates';
-import { findDay, getSplit, type ExerciseDef } from '@/domain/programs';
+import { dayKey, programDays, type ExerciseDef } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -31,23 +31,27 @@ const EQUIPMENT_LABEL = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Mac
 
 export default function Preview() {
   const ctx = useBuildContext();
-  const split = ctx ? getSplit(ctx.profile.program.split) : null;
-  const today = ctx ? nextDay(ctx) : null;
+  const customDays = useSettingsStore((s) => s.settings.customDays);
+  const setDayExercises = useSettingsStore((s) => s.setDayExercises);
   const [dayName, setDayName] = useState<string | null>(null);
-  // null : les exercices du programme pour ce jour
-  const [picked, setPicked] = useState<ExerciseDef[] | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const day = (split && dayName ? findDay(split, dayName) : undefined) ?? today;
-  const exercises = picked ?? day?.exercises ?? [];
-  const plan = ctx && day ? planDay({ name: day.name, exercises }, ctx) : null;
-  if (!plan || !split || !today) return null;
+  const splitId = ctx?.profile.program.split;
+  const days = splitId ? programDays(splitId, customDays) : [];
+  const today = ctx ? nextDay(ctx) : null;
+  const day = days.find((d) => d.name === dayName) ?? today;
+  const plan = ctx && day ? planDay(day, ctx) : null;
+  if (!plan || !splitId || !today || !day) return null;
 
-  const chooseDay = (name: string) => {
-    setDayName(name);
-    setPicked(null);
-  };
-  const remove = (name: string) => setPicked(exercises.filter((e) => e.name !== name));
+  // Tes choix sont gardés pour ce jour du programme : la prochaine séance Legs aura les mêmes exercices
+  const key = dayKey(splitId, day.name);
+  const custom = key in customDays;
+  const save = (list: ExerciseDef[]) =>
+    setDayExercises(
+      key,
+      list.map((e) => e.name),
+    );
+  const remove = (name: string) => save(day.exercises.filter((e) => e.name !== name));
 
   const start = () => {
     useSessionStore.getState().startSession(plan.name, toActiveExercises(plan));
@@ -77,12 +81,12 @@ export default function Preview() {
         style={{ marginHorizontal: -space.gutter, marginTop: 8, marginBottom: space.lg, flexGrow: 0 }}
         contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 8 }}
       >
-        {split.days.map((d) => {
+        {days.map((d) => {
           const on = d.name === plan.name;
           return (
             <Pressable
               key={d.name}
-              onPress={() => chooseDay(d.name)}
+              onPress={() => setDayName(d.name)}
               accessibilityRole="radio"
               accessibilityState={{ selected: on }}
               accessibilityLabel={`Séance ${d.name}${d.name === today.name ? ', prévue aujourd’hui' : ''}`}
@@ -128,13 +132,30 @@ export default function Preview() {
             + Ajouter un exercice
           </Text>
         </Pressable>
+        <Text size={13} color={colors.inkFaint} align="center">
+          {custom
+            ? `Tes exercices pour ${day.name} sont enregistrés pour les prochaines fois.`
+            : `Ajoute ou retire des exercices : ils seront gardés pour tes prochaines séances ${day.name}.`}
+        </Text>
+        {custom ? (
+          <Pressable
+            onPress={() => setDayExercises(key, null)}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ alignSelf: 'center' }}
+          >
+            <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
+              Revenir aux exercices du programme
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <ExercisePicker
         visible={adding}
-        taken={exercises.map((e) => e.name)}
+        taken={day.exercises.map((e) => e.name)}
         onPick={(def) => {
-          setPicked([...exercises, def]);
+          save([...day.exercises, def]);
           setAdding(false);
         }}
         onClose={() => setAdding(false)}

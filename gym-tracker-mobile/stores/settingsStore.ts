@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   barWeight: DEFAULT_BAR,
   plates: DEFAULT_PLATES,
   increments: {},
+  customDays: {},
   signedOut: false,
 };
 
@@ -66,6 +67,8 @@ interface SettingsStore {
   updateSettings: (patch: Partial<AppSettings>) => void;
   setIncrement: (exerciseName: string, increment: number) => void;
   togglePlate: (plate: number) => void;
+  /** Saves the exercises of a program day. `null` goes back to the program's list. */
+  setDayExercises: (key: string, names: string[] | null) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -87,6 +90,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setIncrement: (exerciseName, increment) => {
     get().updateSettings({ increments: { ...get().settings.increments, [exerciseName]: increment } });
+  },
+
+  setDayExercises: (key, names) => {
+    const { [key]: _old, ...others } = get().settings.customDays;
+    get().updateSettings({ customDays: names ? { ...others, [key]: names } : others });
   },
 
   togglePlate: (plate) => {
