@@ -88,6 +88,7 @@ export default function Profile() {
             onPress={() => router.push({ pathname: '/program', params: { edit: '1' } })}
             chevron
           />
+          <Row label="Mes séances" value="Exercices et ordre" onPress={() => router.push('/days')} chevron />
           <Row
             label="Objectif"
             value={goal?.title ?? ''}
