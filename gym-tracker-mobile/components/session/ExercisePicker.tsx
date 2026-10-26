@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { border, colors, radius, space } from '@/constants/theme';
-import { catalogByMuscle, MUSCLE_LABELS, type ExerciseDef } from '@/domain/programs';
+import { border, colors, fonts, radius, space } from '@/constants/theme';
+import { catalogByMuscle, MUSCLE_LABELS, searchExercises, searchKey, type ExerciseDef } from '@/domain/programs';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
@@ -40,15 +40,22 @@ export function ExercisePicker({
   const insets = useSafeAreaInsets();
   const own = useSettingsStore((s) => s.settings.customExercises);
   const [creating, setCreating] = useState(false);
+  const [query, setQuery] = useState('');
   const groups = catalogByMuscle(own);
+  const found = searchExercises(query, own);
+  const exact = found.some((e) => searchKey(e.name) === searchKey(query));
 
   // Rouverte, la fenêtre repart toujours sur la liste
-  const close = () => {
+  const reset = () => {
     setCreating(false);
+    setQuery('');
+  };
+  const close = () => {
+    reset();
     onClose();
   };
   const pick = (def: ExerciseDef) => {
-    setCreating(false);
+    reset();
     onPick(def);
   };
 
@@ -121,16 +128,43 @@ export function ExercisePicker({
             keyboardShouldPersistTaps="handled"
           >
             {creating ? (
-              <CreateExerciseForm muscle={muscle} onCreated={pick} onCancel={() => setCreating(false)} />
+              <CreateExerciseForm
+                muscle={muscle}
+                initialName={query.trim()}
+                onCreated={pick}
+                onCancel={() => setCreating(false)}
+              />
             ) : (
               <>
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Chercher : hack squat, smith, convergent…"
+                  placeholderTextColor={colors.inkFaint}
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  accessibilityLabel="Chercher un exercice"
+                  style={{
+                    marginTop: space.md,
+                    height: 52,
+                    paddingHorizontal: 16,
+                    borderRadius: radius.row,
+                    borderWidth: border.base,
+                    borderColor: colors.ink,
+                    backgroundColor: colors.card,
+                    fontFamily: fonts.bold,
+                    fontSize: 16,
+                    color: colors.ink,
+                  }}
+                />
                 <Pressable
                   onPress={() => setCreating(true)}
                   accessibilityRole="button"
-                  accessibilityLabel="Créer un exercice"
+                  accessibilityLabel={query.trim() && !exact ? `Créer ${query.trim()}` : 'Créer un exercice'}
                   style={({ pressed }) => ({
-                    marginTop: space.md,
-                    height: 52,
+                    marginTop: space.sm,
+                    minHeight: 52,
+                    paddingHorizontal: 16,
                     borderRadius: radius.row,
                     borderWidth: border.base,
                     borderStyle: 'dashed',
@@ -139,26 +173,39 @@ export function ExercisePicker({
                     justifyContent: 'center',
                   })}
                 >
-                  <Text size={16} weight="bold" color={colors.inkMuted}>
-                    + Créer mon exercice
+                  <Text size={16} weight="bold" color={colors.inkMuted} numberOfLines={1}>
+                    {query.trim() && !exact ? `+ Créer « ${query.trim()} »` : '+ Créer mon exercice'}
                   </Text>
                 </Pressable>
-                {suggested?.length ? (
+                {query.trim() ? (
                   <View style={{ marginTop: space.lg, gap: 8 }}>
                     <Text size={14} weight="bold" color={colors.inkMuted}>
-                      {suggestedTitle}
+                      {found.length
+                        ? `${found.length} exercice${found.length > 1 ? 's' : ''}`
+                        : 'Pas dans la liste : crée-le, il sera rangé avec son muscle.'}
                     </Text>
-                    {suggested.map(row)}
+                    {found.map(row)}
                   </View>
-                ) : null}
-                {groups.map(({ muscle: m, exercises }) => (
-                  <View key={m} style={{ marginTop: space.lg, gap: 8 }}>
-                    <Text size={14} weight="bold" color={colors.inkMuted}>
-                      {MUSCLE_LABELS[m]}
-                    </Text>
-                    {exercises.map(row)}
-                  </View>
-                ))}
+                ) : (
+                  <>
+                    {suggested?.length ? (
+                      <View style={{ marginTop: space.lg, gap: 8 }}>
+                        <Text size={14} weight="bold" color={colors.inkMuted}>
+                          {suggestedTitle}
+                        </Text>
+                        {suggested.map(row)}
+                      </View>
+                    ) : null}
+                    {groups.map(({ muscle: m, exercises }) => (
+                      <View key={m} style={{ marginTop: space.lg, gap: 8 }}>
+                        <Text size={14} weight="bold" color={colors.inkMuted}>
+                          {MUSCLE_LABELS[m]}
+                        </Text>
+                        {exercises.map(row)}
+                      </View>
+                    ))}
+                  </>
+                )}
               </>
             )}
           </ScrollView>

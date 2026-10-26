@@ -72,7 +72,7 @@ describe('settings store', () => {
 
   it('adds an own exercise', () => {
     const own = {
-      name: 'Pec deck',
+      name: 'Écarté Panatta',
       equipment: 'machine' as const,
       category: 'isolation' as const,
       muscleGroups: ['chest' as const],

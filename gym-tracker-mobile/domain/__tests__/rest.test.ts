@@ -18,17 +18,20 @@ const muscle = (def: (typeof EXERCISES)[keyof typeof EXERCISES]) => ruleFor('mus
 
 describe('restFor', () => {
   it.each([
-    ['heavy sets', ruleFor('force', EXERCISES.squat, 2.5), EXERCISES.squat, 180],
-    ['a big barbell lift', muscle(EXERCISES.squat), EXERCISES.squat, 120],
-    ['a single-muscle exercise', muscle(EXERCISES.curl), EXERCISES.curl, 75],
-    ['a dumbbell compound', muscle(EXERCISES.incline), EXERCISES.incline, 90],
+    ['very heavy sets', ruleFor('force', EXERCISES.squat, 2.5), EXERCISES.squat, 240],
+    ['a big barbell lift', muscle(EXERCISES.squat), EXERCISES.squat, 180],
+    ['a big machine movement', muscle(EXERCISES.hacksquat), EXERCISES.hacksquat, 180],
+    ['biceps', muscle(EXERCISES.curl), EXERCISES.curl, 120],
+    ['triceps', muscle(EXERCISES.pushdown), EXERCISES.pushdown, 120],
+    ['shoulders', muscle(EXERCISES.lateral), EXERCISES.lateral, 120],
+    ['abs', muscle(EXERCISES.crunch), EXERCISES.crunch, 90],
   ])('%s', (_, rule, def, seconds) => {
     expect(restFor(rule, 90, def)).toBe(seconds);
   });
 
-  it('keeps the default without an exercise, and never goes under 45 s', () => {
+  it('keeps the default without an exercise, and never cuts a longer default', () => {
     expect(restFor(muscle(EXERCISES.curl), 90)).toBe(90);
-    expect(restFor(muscle(EXERCISES.curl), 50, EXERCISES.curl)).toBe(45);
+    expect(restFor(muscle(EXERCISES.curl), 180, EXERCISES.curl)).toBe(180);
   });
 });
 
@@ -74,7 +77,7 @@ describe('usualRest', () => {
 
   it('stays within limits', () => {
     expect(clampRest(5)).toBe(30);
-    expect(clampRest(900)).toBe(300);
+    expect(clampRest(900)).toBe(360);
     expect(clampRest(97)).toBe(90);
   });
 });
@@ -84,30 +87,34 @@ describe('planRest', () => {
 
   it('starts from the kind of exercise, with a reason', () => {
     expect(planRest(EXERCISES.squat, squat, 90, [])).toEqual({
-      seconds: 120,
+      seconds: 180,
       source: 'kind',
-      note: 'Gros mouvement à la barre : un peu plus de repos.',
+      note: 'Gros mouvement : 3 min pour récupérer.',
     });
-    expect(planRest(EXERCISES.curl, muscle(EXERCISES.curl), 90, []).note).toMatch(/plus court/);
-    expect(planRest(EXERCISES.squat, ruleFor('force', EXERCISES.squat, 2.5), 90, []).note).toMatch(/3 min/);
-    expect(planRest(EXERCISES.incline, muscle(EXERCISES.incline), 90, []).note).toBe('');
+    expect(planRest(EXERCISES.curl, muscle(EXERCISES.curl), 90, []).note).toBe(
+      'Un seul muscle travaillé : 2 min de repos.',
+    );
+    expect(planRest(EXERCISES.squat, ruleFor('force', EXERCISES.squat, 2.5), 90, []).note).toBe(
+      'Séries très lourdes : 4 min pour bien récupérer.',
+    );
+    expect(planRest(EXERCISES.crunch, muscle(EXERCISES.crunch), 90, []).note).toBe('');
   });
 
-  it('follows the habit once it is clear', () => {
-    const slow = [rested(170, 180), rested(180, 190)];
-    expect(planRest(EXERCISES.squat, squat, 90, slow)).toMatchObject({ seconds: 180, source: 'learned' });
-    expect(planRest(EXERCISES.squat, squat, 90, slow).note).toMatch(/tu prends ton temps : 3 min/);
+  it('follows the habit when it is longer, never shorter', () => {
+    const slow = [rested(230, 240), rested(240, 250)];
+    expect(planRest(EXERCISES.squat, squat, 90, slow)).toMatchObject({ seconds: 240, source: 'learned' });
+    expect(planRest(EXERCISES.squat, squat, 90, slow).note).toMatch(/tu prends ton temps : 4 min/);
     const quick = [rested(60, 60), rested(60, 60)];
-    expect(planRest(EXERCISES.squat, squat, 90, quick).note).toMatch(/tu repars vite/);
+    expect(planRest(EXERCISES.squat, squat, 90, quick)).toMatchObject({ seconds: 180, source: 'kind' });
   });
 
   it('does not move for a few seconds', () => {
-    const close = [rested(125, 125), rested(125, 125)];
-    expect(planRest(EXERCISES.squat, squat, 90, close)).toMatchObject({ seconds: 120, source: 'kind' });
+    const close = [rested(185, 185), rested(185, 185)];
+    expect(planRest(EXERCISES.squat, squat, 90, close)).toMatchObject({ seconds: 180, source: 'kind' });
   });
 
   it('always keeps the rest the user chose', () => {
-    const slow = [rested(180, 180), rested(180, 180)];
+    const slow = [rested(240, 240), rested(240, 240)];
     expect(planRest(EXERCISES.squat, squat, 90, slow, 95)).toMatchObject({ seconds: 90, source: 'own' });
   });
 });

@@ -118,7 +118,7 @@ describe('planLift', () => {
   it('goes heavy and rests longer for strength on barbell lifts only', () => {
     const c = ctx([], { goal: 'force' });
     expect(planLift(EXERCISES.squat, c).rule).toMatchObject({ sets: 5, repMin: 3, repMax: 5 });
-    expect(planLift(EXERCISES.squat, c).restTime).toBe(180);
+    expect(planLift(EXERCISES.squat, c).restTime).toBe(240);
     expect(planLift(EXERCISES.curl, c).rule).toMatchObject({ sets: 3, repMin: 8 });
   });
 });
@@ -138,8 +138,8 @@ describe('personal touches', () => {
 
   it('rests by kind of exercise, or as the user chose', () => {
     const c = ctx();
-    expect(planLift(EXERCISES.squat, c)).toMatchObject({ restTime: 120, restSource: 'kind' });
-    expect(planLift(EXERCISES.curl, c).restTime).toBe(75);
+    expect(planLift(EXERCISES.squat, c)).toMatchObject({ restTime: 180, restSource: 'kind' });
+    expect(planLift(EXERCISES.curl, c).restTime).toBe(120);
     c.settings.restOverrides = { Squat: 150 };
     expect(planLift(EXERCISES.squat, c)).toMatchObject({ restTime: 150, restSource: 'own' });
   });
@@ -162,15 +162,15 @@ describe('personal touches', () => {
 
   it('plans the user own exercises in their days', () => {
     const own = {
-      name: 'Pec deck',
+      name: 'Écarté Panatta',
       equipment: 'machine' as const,
       category: 'isolation' as const,
       muscleGroups: ['chest' as const],
     };
     const c = ctx();
     c.settings.customExercises = [own];
-    c.settings.customDays = { 'ppl/Push': ['Pec deck', 'Développé couché'] };
-    expect(nextDay(c).exercises.map((e) => e.name)).toEqual(['Pec deck', 'Développé couché']);
+    c.settings.customDays = { 'ppl/Push': ['Écarté Panatta', 'Développé couché'] };
+    expect(nextDay(c).exercises.map((e) => e.name)).toEqual(['Écarté Panatta', 'Développé couché']);
   });
 
   it('says how long the break was', () => {
@@ -191,7 +191,7 @@ describe('planDay', () => {
     expect(active[1]?.sets[0]).toMatchObject({
       reps: 8,
       completed: false,
-      restTime: 90,
+      restTime: 180,
       target: { weight: 0, reps: 8 },
     });
   });

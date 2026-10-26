@@ -43,7 +43,18 @@ const setSchema: z.ZodType<WorkoutSet> = z.object({
   target: setTarget.optional(),
 });
 
-const muscleGroup = z.enum(['chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'glutes', 'calves']);
+const muscleGroup = z.enum([
+  'chest',
+  'back',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'arms',
+  'legs',
+  'core',
+  'glutes',
+  'calves',
+]);
 const category = z.enum(['compound', 'isolation', 'accessory']);
 
 const customExerciseSchema: z.ZodType<CustomExercise> = z.object({

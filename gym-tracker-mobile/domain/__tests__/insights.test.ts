@@ -35,7 +35,7 @@ describe('insights', () => {
       days: 'Tu viens le plus souvent le lundi, mercredi et vendredi.',
       duration: 'Tes séances durent environ 50 min.',
       rhythm: '6 séances en 2 semaines : tu tiens ton rythme de 3 par semaine.',
-      rest: "Squat 2 min 30. Le minuteur s'y adapte tout seul.",
+      rest: 'Squat 2 min 30, en moyenne entre deux séries.',
       strong: 'Squat : +20 kg depuis le début.',
     });
   });

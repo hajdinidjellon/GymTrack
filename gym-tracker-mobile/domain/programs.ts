@@ -29,29 +29,125 @@ const ex = (
 ): ExerciseDef => ({ name, equipment, category, muscleGroups, aliases });
 
 export const EXERCISES = {
-  bench: ex('Développé couché', 'barbell', 'compound', ['chest', 'shoulders', 'arms'], ['Développé couché barre']),
-  ohp: ex('Développé militaire', 'barbell', 'compound', ['shoulders', 'arms'], ['Développé militaire barre']),
+  // Pectoraux
+  bench: ex('Développé couché', 'barbell', 'compound', ['chest', 'shoulders', 'triceps'], ['Développé couché barre']),
+  dbbench: ex('Développé couché haltères', 'dumbbell', 'compound', ['chest', 'shoulders', 'triceps']),
+  smithbench: ex('Développé couché Smith', 'machine', 'compound', ['chest', 'shoulders', 'triceps'], ['Smith bench']),
+  inclinebar: ex('Développé incliné barre', 'barbell', 'compound', ['chest', 'shoulders', 'triceps']),
   incline: ex('Développé incliné haltères', 'dumbbell', 'compound', ['chest', 'shoulders']),
-  lateral: ex('Élévations latérales', 'dumbbell', 'isolation', ['shoulders'], ['Élévations latérales haltères']),
-  dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'arms'], ['Dips triceps', 'Dips poitrine']),
-  pullup: ex('Tractions', 'bodyweight', 'compound', ['back', 'arms'], ['Tractions pronation']),
-  row: ex('Rowing barre', 'barbell', 'compound', ['back', 'arms']),
-  pulldown: ex('Tirage vertical', 'machine', 'compound', ['back', 'arms'], ['Tirage vertical poulie']),
-  facepull: ex('Face pull', 'machine', 'isolation', ['shoulders', 'back'], ['Face pulls']),
-  curl: ex('Curl haltères', 'dumbbell', 'isolation', ['arms'], ['Curl haltères alternés']),
-  squat: ex('Squat', 'barbell', 'compound', ['legs', 'glutes'], ['Squat barre']),
-  rdl: ex('Soulevé de terre roumain', 'barbell', 'compound', ['legs', 'glutes', 'back']),
+  inclinesmith: ex('Développé incliné Smith', 'machine', 'compound', ['chest', 'shoulders']),
+  decline: ex('Développé décliné', 'barbell', 'compound', ['chest', 'triceps']),
+  convergent: ex(
+    'Développé convergent machine',
+    'machine',
+    'compound',
+    ['chest', 'shoulders', 'triceps'],
+    ['Bench press convergent', 'Chest press convergente'],
+  ),
+  chestpress: ex('Chest press', 'machine', 'compound', ['chest', 'triceps'], ['Développé assis machine']),
+  inclinemachine: ex('Développé incliné machine', 'machine', 'compound', ['chest', 'shoulders']),
+  dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'triceps'], ['Dips triceps', 'Dips poitrine']),
+  pushup: ex('Pompes', 'bodyweight', 'compound', ['chest', 'triceps']),
+  fly: ex('Écarté poulie', 'machine', 'isolation', ['chest'], ['Crossover poulie']),
+  lowfly: ex('Écarté poulie basse', 'machine', 'isolation', ['chest']),
+  pecdeck: ex('Pec deck', 'machine', 'isolation', ['chest'], ['Butterfly']),
+  dbfly: ex('Écarté haltères', 'dumbbell', 'isolation', ['chest']),
+
+  // Dos
+  pullup: ex('Tractions', 'bodyweight', 'compound', ['back', 'biceps'], ['Tractions pronation']),
+  chinup: ex('Tractions supination', 'bodyweight', 'compound', ['back', 'biceps'], ['Chin-up']),
+  assisted: ex('Tractions assistées', 'machine', 'compound', ['back', 'biceps']),
+  pulldown: ex(
+    'Tirage vertical',
+    'machine',
+    'compound',
+    ['back', 'biceps'],
+    ['Tirage vertical poulie', 'Lat pulldown'],
+  ),
+  closepulldown: ex('Tirage vertical prise serrée', 'machine', 'compound', ['back', 'biceps']),
+  row: ex('Rowing barre', 'barbell', 'compound', ['back', 'biceps']),
+  pendlay: ex('Rowing Pendlay', 'barbell', 'compound', ['back', 'biceps']),
+  dbrow: ex('Rowing haltère', 'dumbbell', 'compound', ['back', 'biceps']),
+  seatedrow: ex('Rowing assis poulie', 'machine', 'compound', ['back', 'biceps'], ['Tirage horizontal']),
+  machinerow: ex('Rowing machine', 'machine', 'compound', ['back', 'biceps'], ['Low row', 'Rowing convergent']),
+  tbar: ex('Rowing T-bar', 'machine', 'compound', ['back', 'biceps']),
   deadlift: ex('Soulevé de terre', 'barbell', 'compound', ['back', 'legs', 'glutes']),
+  pullover: ex('Pull-over poulie', 'machine', 'isolation', ['back']),
+  shrug: ex('Shrugs haltères', 'dumbbell', 'isolation', ['back'], ['Shrugs']),
+  backext: ex('Extensions lombaires', 'bodyweight', 'isolation', ['back', 'glutes']),
+
+  // Épaules
+  ohp: ex('Développé militaire', 'barbell', 'compound', ['shoulders', 'triceps'], ['Développé militaire barre']),
+  dbpress: ex(
+    'Développé épaules haltères',
+    'dumbbell',
+    'compound',
+    ['shoulders', 'triceps'],
+    ['Développé haltères assis'],
+  ),
+  shoulderpress: ex('Shoulder press machine', 'machine', 'compound', ['shoulders', 'triceps']),
+  arnold: ex('Développé Arnold', 'dumbbell', 'compound', ['shoulders', 'triceps']),
+  lateral: ex('Élévations latérales', 'dumbbell', 'isolation', ['shoulders'], ['Élévations latérales haltères']),
+  cablelateral: ex('Élévations latérales poulie', 'machine', 'isolation', ['shoulders']),
+  machinelateral: ex('Élévations latérales machine', 'machine', 'isolation', ['shoulders']),
+  frontraise: ex('Élévations frontales', 'dumbbell', 'isolation', ['shoulders']),
+  reardelt: ex('Oiseau haltères', 'dumbbell', 'isolation', ['shoulders'], ['Élévations postérieures']),
+  reversepec: ex('Reverse pec deck', 'machine', 'isolation', ['shoulders', 'back']),
+  facepull: ex('Face pull', 'machine', 'isolation', ['shoulders', 'back'], ['Face pulls']),
+  uprightrow: ex('Rowing menton', 'barbell', 'compound', ['shoulders', 'back']),
+
+  // Biceps
+  curl: ex('Curl haltères', 'dumbbell', 'isolation', ['biceps'], ['Curl haltères alternés']),
+  barcurl: ex('Curl barre', 'barbell', 'isolation', ['biceps']),
+  ezcurl: ex('Curl barre EZ', 'barbell', 'isolation', ['biceps']),
+  hammer: ex('Curl marteau', 'dumbbell', 'isolation', ['biceps']),
+  inclinecurl: ex('Curl incliné haltères', 'dumbbell', 'isolation', ['biceps']),
+  preacher: ex('Curl pupitre', 'machine', 'isolation', ['biceps'], ['Larry Scott']),
+  cablecurl: ex('Curl poulie', 'machine', 'isolation', ['biceps']),
+
+  // Triceps
+  pushdown: ex('Extension triceps poulie', 'machine', 'isolation', ['triceps'], ['Pushdown']),
+  overhead: ex('Extension triceps nuque poulie', 'machine', 'isolation', ['triceps']),
+  dbext: ex('Extension triceps haltère', 'dumbbell', 'isolation', ['triceps']),
+  skull: ex('Barre au front', 'barbell', 'isolation', ['triceps'], ['Skull crusher']),
+  closegrip: ex('Développé couché prise serrée', 'barbell', 'compound', ['triceps', 'chest']),
+  dipsmachine: ex('Dips machine', 'machine', 'compound', ['triceps', 'chest']),
+  kickback: ex('Kickback triceps', 'dumbbell', 'isolation', ['triceps']),
+
+  // Jambes
+  squat: ex('Squat', 'barbell', 'compound', ['legs', 'glutes'], ['Squat barre']),
+  frontsquat: ex('Squat avant', 'barbell', 'compound', ['legs', 'glutes'], ['Front squat']),
+  smithsquat: ex('Squat Smith', 'machine', 'compound', ['legs', 'glutes']),
+  hacksquat: ex('Hack squat', 'machine', 'compound', ['legs', 'glutes']),
+  pendulum: ex('Pendulum squat', 'machine', 'compound', ['legs', 'glutes']),
+  goblet: ex('Goblet squat', 'dumbbell', 'compound', ['legs', 'glutes']),
   legpress: ex('Presse à cuisses', 'machine', 'compound', ['legs', 'glutes'], ['Leg press']),
-  legcurl: ex('Leg curl', 'machine', 'isolation', ['legs'], ['Leg curl couché']),
-  lunge: ex('Fentes haltères', 'dumbbell', 'compound', ['legs', 'glutes'], ['Fentes bulgares']),
-  calves: ex('Mollets debout', 'machine', 'isolation', ['calves'], ['Mollets debout machine']),
-  fly: ex('Écarté poulie', 'machine', 'isolation', ['chest']),
-  dbrow: ex('Rowing haltère', 'dumbbell', 'compound', ['back', 'arms']),
-  pushdown: ex('Extension triceps poulie', 'machine', 'isolation', ['arms']),
-  hammer: ex('Curl marteau', 'dumbbell', 'isolation', ['arms']),
+  lunge: ex('Fentes haltères', 'dumbbell', 'compound', ['legs', 'glutes']),
+  bulgarian: ex('Fentes bulgares', 'dumbbell', 'compound', ['legs', 'glutes']),
+  rdl: ex('Soulevé de terre roumain', 'barbell', 'compound', ['legs', 'glutes', 'back']),
+  dbrdl: ex('Soulevé de terre roumain haltères', 'dumbbell', 'compound', ['legs', 'glutes', 'back']),
+  sumo: ex('Soulevé de terre sumo', 'barbell', 'compound', ['legs', 'glutes', 'back']),
   legext: ex('Leg extension', 'machine', 'isolation', ['legs']),
+  legcurl: ex('Leg curl', 'machine', 'isolation', ['legs'], ['Leg curl couché']),
+  seatedlegcurl: ex('Leg curl assis', 'machine', 'isolation', ['legs']),
+  adductor: ex('Adducteurs machine', 'machine', 'isolation', ['legs']),
+
+  // Fessiers
   hipthrust: ex('Hip thrust', 'barbell', 'compound', ['glutes', 'legs']),
+  hipthrustmachine: ex('Hip thrust machine', 'machine', 'compound', ['glutes', 'legs']),
+  abductor: ex('Abducteurs machine', 'machine', 'isolation', ['glutes']),
+  glutekick: ex('Kickback fessier poulie', 'machine', 'isolation', ['glutes']),
+
+  // Mollets
+  calves: ex('Mollets debout', 'machine', 'isolation', ['calves'], ['Mollets debout machine']),
+  seatedcalves: ex('Mollets assis', 'machine', 'isolation', ['calves']),
+  presscalves: ex('Mollets à la presse', 'machine', 'isolation', ['calves']),
+
+  // Abdos
+  cablecrunch: ex('Crunch poulie', 'machine', 'isolation', ['core']),
+  crunch: ex('Crunch', 'bodyweight', 'isolation', ['core']),
+  legraise: ex('Relevés de jambes', 'bodyweight', 'isolation', ['core']),
+  abwheel: ex('Roue abdominale', 'bodyweight', 'isolation', ['core']),
 } satisfies Record<string, ExerciseDef>;
 
 export interface ProgramDay {
@@ -134,12 +230,17 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   chest: 'Pectoraux',
   back: 'Dos',
   shoulders: 'Épaules',
+  biceps: 'Biceps',
+  triceps: 'Triceps',
   arms: 'Bras',
   legs: 'Jambes',
   glutes: 'Fessiers',
   calves: 'Mollets',
   core: 'Abdos',
 };
+
+/** Where an exercise can be filed. "Bras" stays for old data, biceps and triceps replace it. */
+export const MUSCLE_CHOICES = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter((m) => m !== 'arms');
 
 /** The catalog, then the user's own exercises. */
 export function allExercises(own: CustomExercise[] = []): ExerciseDef[] {
@@ -159,6 +260,25 @@ export function findExerciseDef(name: string, own: CustomExercise[] = []): Exerc
   return allExercises(own).find(
     (e) => e.name.toLowerCase() === lower || e.aliases?.some((a) => a.toLowerCase() === lower),
   );
+}
+
+/** Lower case, without accents: "écarté" matches "ecarte". */
+export function searchKey(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/** Exercises whose name (or old name) contains every typed word. */
+export function searchExercises(query: string, own: CustomExercise[] = []): ExerciseDef[] {
+  const words = searchKey(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  return allExercises(own).filter((e) => {
+    const names = [e.name, ...(e.aliases ?? [])].map(searchKey).join(' ');
+    return words.every((w) => names.includes(w));
+  });
 }
 
 /** Other exercises for the same main muscle, to swap when the machine is taken. */
@@ -230,14 +350,20 @@ export function withOverride(rule: ProgressionRule, override: RuleOverride | und
   return override ? { ...rule, ...clampRule(override) } : rule;
 }
 
+/** Minimum rest per kind of set, in seconds. */
+export const REST_BY_KIND = { heavy: 240, compound: 180, isolation: 120 } as const;
+
 /**
- * Rest between sets from the kind of exercise: heavy sets and big barbell
- * lifts need longer, a small single-muscle exercise less.
+ * Rest between sets from the kind of exercise: 4 min for very heavy sets
+ * (5 reps or less), 3 min for big movements, 2 min for a single muscle
+ * (biceps, triceps, shoulders…). Abs and calves keep the default rest,
+ * and the default is never cut.
  */
 export function restFor(rule: ProgressionRule, defaultRest: number, def?: ExerciseDef): number {
-  if (rule.repMax <= 5) return Math.max(defaultRest, 180);
+  if (rule.repMax <= 5) return Math.max(defaultRest, REST_BY_KIND.heavy);
   if (!def) return defaultRest;
-  if (def.category === 'compound' && def.equipment === 'barbell') return defaultRest + 30;
-  if (def.category === 'isolation') return Math.max(45, defaultRest - 15);
-  return defaultRest;
+  if (def.category === 'compound') return Math.max(defaultRest, REST_BY_KIND.compound);
+  const main = def.muscleGroups[0];
+  if (main === 'core' || main === 'calves') return defaultRest;
+  return Math.max(defaultRest, REST_BY_KIND.isolation);
 }

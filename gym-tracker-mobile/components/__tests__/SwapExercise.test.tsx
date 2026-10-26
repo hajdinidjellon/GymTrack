@@ -59,13 +59,13 @@ describe('SwapExercise', () => {
     await fireEvent.press(screen.getByRole('button', { name: "Créer l'exercice" }));
     expect(screen.getByText('Donne un nom à ton exercice.')).toBeOnTheScreen();
 
-    await fireEvent.changeText(screen.getByLabelText("Nom de l'exercice"), 'Pec deck');
+    await fireEvent.changeText(screen.getByLabelText("Nom de l'exercice"), 'Écarté Panatta');
     await fireEvent.press(screen.getByRole('radio', { name: 'Machine' }));
     await fireEvent.press(screen.getByRole('button', { name: "Créer l'exercice" }));
     expect(useSettingsStore.getState().settings.customExercises).toEqual([
-      { name: 'Pec deck', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] },
+      { name: 'Écarté Panatta', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] },
     ]);
-    expect(names()[0]).toBe('Pec deck');
+    expect(names()[0]).toBe('Écarté Panatta');
     expect(useSessionStore.getState().activeSession!.exercises[0]!.needsWeight).toBe(true);
   });
 });

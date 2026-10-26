@@ -98,7 +98,7 @@ function rests(workouts: Workout[], own: CustomExercise[]): Insight | null {
   return {
     id: 'rest',
     title: 'Tes repos',
-    text: `${longest.map((r) => `${r.name} ${formatRest(r.usual)}`).join(' · ')}. Le minuteur s'y adapte tout seul.`,
+    text: `${longest.map((r) => `${r.name} ${formatRest(r.usual)}`).join(' · ')}, en moyenne entre deux séries.`,
   };
 }
 

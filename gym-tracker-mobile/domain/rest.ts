@@ -2,7 +2,9 @@
  * REPOS — combien de temps entre deux séries, pour chaque exercice.
  *
  * Dans l'ordre : le choix de l'utilisateur, puis ce qu'il prend vraiment
- * d'habitude (mesuré entre deux validations), puis le type d'exercice.
+ * d'habitude (mesuré entre deux validations) quand c'est plus long, puis le
+ * type d'exercice : 4 min en très lourd, 3 min sur les gros mouvements,
+ * 2 min sur un seul muscle.
  * Logique pure.
  */
 
@@ -17,7 +19,7 @@ export function setSeconds(reps: number): number {
 
 const GAP_MIN = 15; // en dessous : validées d'un coup (« Tout comme prévu »)
 const GAP_MAX = 10 * 60; // au-dessus : téléphone posé, pause, discussion
-export const REST_LIMITS = [30, 300] as const;
+export const REST_LIMITS = [30, 360] as const;
 export const REST_STEP = 15;
 /** Samples needed before the habit counts, and how many sessions are looked at. */
 export const LEARN_SAMPLES = 4;
@@ -76,17 +78,20 @@ export function planRest(
     return { seconds: clampRest(own), source: 'own', note: 'Le repos que tu as choisi pour cet exercice.' };
 
   const usual = usualRest(history);
-  // Écart trop petit : on garde le repos prévu, inutile de bouger pour 10 s
-  if (usual != null && Math.abs(usual - base) >= REST_STEP) {
-    const how = usual > base ? 'tu prends ton temps' : 'tu repars vite';
-    return { seconds: usual, source: 'learned', note: `Sur cet exercice, ${how} : ${formatRest(usual)} d'habitude.` };
+  // Seulement plus long : le repos du type d'exercice est un minimum
+  if (usual != null && usual - base >= REST_STEP) {
+    return {
+      seconds: usual,
+      source: 'learned',
+      note: `Sur cet exercice, tu prends ton temps : ${formatRest(usual)} d'habitude.`,
+    };
   }
-  return { seconds: base, source: 'kind', note: kindNote(rule, base, defaultRest) };
+  return { seconds: base, source: 'kind', note: kindNote(def, rule, base, defaultRest) };
 }
 
-function kindNote(rule: ProgressionRule, base: number, defaultRest: number): string {
-  if (rule.repMax <= 5) return 'Séries lourdes : il faut au moins 3 min pour récupérer.';
-  if (base > defaultRest) return 'Gros mouvement à la barre : un peu plus de repos.';
-  if (base < defaultRest) return 'Petit muscle, petit exercice : un repos plus court suffit.';
-  return '';
+function kindNote(def: ExerciseDef, rule: ProgressionRule, base: number, defaultRest: number): string {
+  if (base <= defaultRest && rule.repMax > 5) return '';
+  if (rule.repMax <= 5) return `Séries très lourdes : ${formatRest(base)} pour bien récupérer.`;
+  if (def.category === 'compound') return `Gros mouvement : ${formatRest(base)} pour récupérer.`;
+  return `Un seul muscle travaillé : ${formatRest(base)} de repos.`;
 }

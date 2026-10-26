@@ -4,7 +4,8 @@
 
 export type SetType = 'warmup' | 'normal' | 'top' | 'backoff' | 'amrap' | 'drop' | 'failure';
 
-export type MuscleGroup = 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'glutes' | 'calves';
+export type MuscleGroup =
+  'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'arms' | 'legs' | 'core' | 'glutes' | 'calves';
 
 export type WorkoutType =
   'strength' | 'hypertrophy' | 'power' | 'endurance' | 'cardio' | 'mobility' | 'ppl' | 'fullbody';

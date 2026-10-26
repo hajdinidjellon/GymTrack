@@ -12,6 +12,8 @@ import {
   findExerciseDef,
   getSplit,
   makeCustomExercise,
+  searchExercises,
+  searchKey,
   programDays,
   restFor,
   ruleFor,
@@ -47,7 +49,7 @@ describe('programs', () => {
   });
 
   it('rests at least 3 minutes on heavy sets', () => {
-    expect(restFor(ruleFor('force', EXERCISES.squat, 2.5), 90)).toBe(180);
+    expect(restFor(ruleFor('force', EXERCISES.squat, 2.5), 90)).toBe(240);
     expect(restFor(ruleFor('muscle', EXERCISES.squat, 2.5), 90)).toBe(90);
   });
 });
@@ -99,7 +101,8 @@ describe('choosing a session', () => {
     const groups = catalogByMuscle();
     expect(groups[0]?.muscle).toBe('chest');
     expect(groups.flatMap((g) => g.exercises)).toHaveLength(Object.keys(EXERCISES).length);
-    expect(groups.some((g) => g.muscle === 'core')).toBe(false);
+    expect(groups.some((g) => g.muscle === 'arms')).toBe(false);
+    expect(groups.map((g) => g.muscle)).toContain('biceps');
   });
 });
 
@@ -132,10 +135,31 @@ describe('sessionCursor', () => {
   });
 });
 
+describe('catalog', () => {
+  it('never gives two exercises the same name', () => {
+    const keys = Object.values(EXERCISES).flatMap((e) => [e.name, ...(e.aliases ?? [])].map(searchKey));
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('has the usual gym machines and variants', () => {
+    for (const name of ['Hack squat', 'Développé couché Smith', 'Développé convergent machine', 'Pendulum squat']) {
+      expect(findExerciseDef(name)).toBeDefined();
+    }
+    expect(findExerciseDef('Bench press convergent')?.name).toBe('Développé convergent machine');
+  });
+
+  it('finds an exercise from a few letters, accents or not', () => {
+    expect(searchExercises('hack').map((e) => e.name)).toEqual(['Hack squat']);
+    expect(searchExercises('ecarte poulie').map((e) => e.name)).toEqual(['Écarté poulie', 'Écarté poulie basse']);
+    expect(searchExercises('smith').length).toBe(3);
+    expect(searchExercises('  ')).toEqual([]);
+  });
+});
+
 describe('own exercises', () => {
   const own = [
     {
-      name: 'Pec deck',
+      name: 'Écarté Panatta',
       equipment: 'machine' as const,
       category: 'isolation' as const,
       muscleGroups: ['chest' as const],
@@ -143,34 +167,38 @@ describe('own exercises', () => {
   ];
 
   it('sit next to the catalog', () => {
-    expect(allExercises(own).at(-1)).toMatchObject({ name: 'Pec deck', custom: true });
-    expect(findExerciseDef(' pec DECK ', own)).toMatchObject({ name: 'Pec deck' });
-    expect(findExerciseDef('Pec deck')).toBeUndefined();
+    expect(allExercises(own).at(-1)).toMatchObject({ name: 'Écarté Panatta', custom: true });
+    expect(findExerciseDef(' écarté PANATTA ', own)).toMatchObject({ name: 'Écarté Panatta' });
+    expect(findExerciseDef('Écarté Panatta')).toBeUndefined();
     expect(
       catalogByMuscle(own)
         .find((g) => g.muscle === 'chest')
         ?.exercises.map((e) => e.name),
-    ).toContain('Pec deck');
-    expect(programDays('ppl', { 'ppl/Push': ['Pec deck'] }, own)[0]?.exercises[0]?.name).toBe('Pec deck');
+    ).toContain('Écarté Panatta');
+    expect(programDays('ppl', { 'ppl/Push': ['Écarté Panatta'] }, own)[0]?.exercises[0]?.name).toBe('Écarté Panatta');
   });
 
   it('are created from the form, with a clean and unique name', () => {
-    const input = { equipment: 'machine' as const, category: 'isolation' as const, muscle: 'arms' as const };
-    expect(makeCustomExercise({ ...input, name: '  Curl   pupitre ' })).toEqual({
-      name: 'Curl pupitre',
+    const input = { equipment: 'machine' as const, category: 'isolation' as const, muscle: 'biceps' as const };
+    expect(makeCustomExercise({ ...input, name: '  Curl   spider ' })).toEqual({
+      name: 'Curl spider',
       equipment: 'machine',
       category: 'isolation',
-      muscleGroups: ['arms'],
+      muscleGroups: ['biceps'],
     });
     expect(makeCustomExercise({ ...input, name: '   ' })).toEqual({ error: 'Donne un nom à ton exercice.' });
     expect(makeCustomExercise({ ...input, name: 'squat' })).toEqual({ error: 'Cet exercice existe déjà.' });
     expect(makeCustomExercise({ ...input, name: 'Leg press' })).toEqual({ error: 'Cet exercice existe déjà.' });
-    expect(makeCustomExercise({ ...input, name: 'Pec deck' }, own)).toEqual({ error: 'Cet exercice existe déjà.' });
+    expect(makeCustomExercise({ ...input, name: 'Écarté Panatta' }, own)).toEqual({
+      error: 'Cet exercice existe déjà.',
+    });
   });
 
   it('suggests other exercises for the same muscle to swap', () => {
     const names = alternativesFor(EXERCISES.bench, own).map((e) => e.name);
-    expect(names).toEqual(expect.arrayContaining(['Écarté poulie', 'Pec deck']));
+    expect(names).toEqual(
+      expect.arrayContaining(['Écarté poulie', 'Pec deck', 'Développé convergent machine', 'Écarté Panatta']),
+    );
     expect(names).not.toContain('Développé couché');
     expect(names).not.toContain('Squat');
   });

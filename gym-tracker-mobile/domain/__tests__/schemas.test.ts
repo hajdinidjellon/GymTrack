@@ -52,7 +52,7 @@ describe('settingsPatchSchema', () => {
   });
 
   it('checks own rests and own exercises', () => {
-    const own = { name: 'Pec deck', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] };
+    const own = { name: 'Écarté Panatta', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] };
     expect(settingsPatchSchema.parse({ restOverrides: { Squat: 150 }, customExercises: [own] })).toEqual({
       restOverrides: { Squat: 150 },
       customExercises: [own],

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { border, colors, fonts, radius, space } from '@/constants/theme';
-import { makeCustomExercise, MUSCLE_LABELS, NAME_MAX, type ExerciseDef } from '@/domain/programs';
+import { makeCustomExercise, MUSCLE_CHOICES, MUSCLE_LABELS, NAME_MAX, type ExerciseDef } from '@/domain/programs';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { Equipment, ExerciseCategory, MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
@@ -24,16 +24,20 @@ const KINDS: { id: ExerciseCategory; label: string }[] = [
 interface Props {
   /** Pre-selected muscle, e.g. the one of the exercise being swapped. */
   muscle?: MuscleGroup;
+  /** What was typed in the search. */
+  initialName?: string;
   onCreated: (def: ExerciseDef) => void;
   onCancel: () => void;
 }
 
 /** Name, muscle, equipment, kind: a new exercise the app then treats like the others. */
-export function CreateExerciseForm({ muscle: initialMuscle = 'chest', onCreated, onCancel }: Props) {
+export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', onCreated, onCancel }: Props) {
   const own = useSettingsStore((s) => s.settings.customExercises);
   const addCustomExercise = useSettingsStore((s) => s.addCustomExercise);
-  const [name, setName] = useState('');
-  const [muscle, setMuscle] = useState<MuscleGroup>(initialMuscle);
+  const [name, setName] = useState(initialName);
+  const [muscle, setMuscle] = useState<MuscleGroup>(
+    initialMuscle && initialMuscle !== 'arms' ? initialMuscle : 'chest',
+  );
   const [equipment, setEquipment] = useState<Equipment>('machine');
   const [category, setCategory] = useState<ExerciseCategory>('isolation');
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +68,7 @@ export function CreateExerciseForm({ muscle: initialMuscle = 'chest', onCreated,
           placeholder="Ex. Pec deck, Curl pupitre…"
           placeholderTextColor={colors.inkFaint}
           maxLength={NAME_MAX}
-          autoFocus
+          autoFocus={!initialName}
           returnKeyType="done"
           accessibilityLabel="Nom de l'exercice"
           style={{
@@ -87,8 +91,8 @@ export function CreateExerciseForm({ muscle: initialMuscle = 'chest', onCreated,
       </View>
 
       <Options
-        label="Muscle travaillé"
-        options={(Object.keys(MUSCLE_LABELS) as MuscleGroup[]).map((id) => ({ id, label: MUSCLE_LABELS[id] }))}
+        label="Où le ranger ? (muscle travaillé)"
+        options={MUSCLE_CHOICES.map((id) => ({ id, label: MUSCLE_LABELS[id] }))}
         value={muscle}
         onChange={setMuscle}
       />
