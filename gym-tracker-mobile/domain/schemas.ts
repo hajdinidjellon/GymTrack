@@ -106,6 +106,14 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     plates: z.array(z.number().positive().max(50)).max(20),
     increments: z.record(z.string().max(100), z.number().positive().max(50)),
     customDays: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),
+    ruleOverrides: z.record(
+      z.string().max(100),
+      z.object({
+        sets: z.number().int().min(1).max(10),
+        repMin: z.number().int().min(1).max(50),
+        repMax: z.number().int().min(1).max(50),
+      }),
+    ),
     signedOut: z.boolean(),
   })
   .partial();

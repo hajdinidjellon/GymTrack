@@ -110,6 +110,12 @@ export interface UserProfile {
   bodyStats: BodyStats[];
 }
 
+export interface RuleOverride {
+  sets: number;
+  repMin: number;
+  repMax: number;
+}
+
 export interface AppSettings {
   units: 'kg' | 'lbs';
   defaultRestTime: number;
@@ -124,6 +130,8 @@ export interface AppSettings {
   increments: Record<string, number>;
   /** The user's own exercise list per program day, keyed "ppl/Legs". Missing: the program's. */
   customDays: Record<string, string[]>;
+  /** Sets and rep range chosen by the user, per exercise name. Missing: the goal's rule. */
+  ruleOverrides: Record<string, RuleOverride>;
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { formatDay, formatShortDay, formatThousands, parseAmount } from '@/domain/format';
 import {
   catalogByMuscle,
+  clampRule,
   dayKey,
   defaultIncrementFor,
   EXERCISES,
@@ -12,6 +13,7 @@ import {
   restFor,
   ruleFor,
   SPLITS,
+  withOverride,
 } from '@/domain/programs';
 import { findCurrent } from '@/domain/sessionCursor';
 import { active } from './fixtures';
@@ -44,6 +46,37 @@ describe('programs', () => {
   it('rests at least 3 minutes on heavy sets', () => {
     expect(restFor(ruleFor('force', EXERCISES.squat, 2.5), 90)).toBe(180);
     expect(restFor(ruleFor('muscle', EXERCISES.squat, 2.5), 90)).toBe(90);
+  });
+});
+
+describe('own sets and reps', () => {
+  it.each([
+    [
+      { sets: 0, repMin: 8, repMax: 12 },
+      { sets: 1, repMin: 8, repMax: 12 },
+    ],
+    [
+      { sets: 12, repMin: 0, repMax: 60 },
+      { sets: 10, repMin: 1, repMax: 50 },
+    ],
+    [
+      { sets: 3, repMin: 10, repMax: 6 },
+      { sets: 3, repMin: 10, repMax: 10 },
+    ],
+  ])('keeps %o valid', (rule, expected) => {
+    expect(clampRule(rule)).toEqual(expected);
+  });
+
+  it('puts them over the goal rule, keeping the increment', () => {
+    const base = ruleFor('muscle', EXERCISES.curl, 2);
+    expect(withOverride(base, undefined)).toBe(base);
+    expect(withOverride(base, { sets: 4, repMin: 6, repMax: 10 })).toEqual({
+      kind: 'double',
+      sets: 4,
+      repMin: 6,
+      repMax: 10,
+      increment: 2,
+    });
   });
 });
 

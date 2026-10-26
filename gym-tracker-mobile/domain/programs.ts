@@ -2,7 +2,7 @@
  * PROGRAMMES — les séances prêtes à l'emploi et les règles par objectif.
  */
 
-import type { Equipment, ExerciseCategory, Goal, MuscleGroup, ProgressionRule, SplitId } from '@/types';
+import type { Equipment, ExerciseCategory, Goal, MuscleGroup, ProgressionRule, RuleOverride, SplitId } from '@/types';
 
 export interface ExerciseDef {
   name: string;
@@ -174,6 +174,22 @@ export function ruleFor(goal: Goal, def: ExerciseDef, increment: number): Progre
   }
   if (goal === 'forme') return { kind: 'double', sets: 3, repMin: 10, repMax: 15, increment };
   return { kind: 'double', sets: 3, repMin: 8, repMax: 12, increment };
+}
+
+export const RULE_LIMITS = { sets: [1, 10], reps: [1, 50] } as const;
+
+/** Keeps a rule the user is editing valid: at least one set, min reps never above max. */
+export function clampRule(rule: RuleOverride): RuleOverride {
+  const clamp = (n: number, [lo, hi]: readonly [number, number]) => Math.max(lo, Math.min(hi, Math.round(n)));
+  const sets = clamp(rule.sets, RULE_LIMITS.sets);
+  const repMin = clamp(rule.repMin, RULE_LIMITS.reps);
+  const repMax = Math.max(repMin, clamp(rule.repMax, RULE_LIMITS.reps));
+  return { sets, repMin, repMax };
+}
+
+/** The goal's rule, with the user's own sets and reps on top. */
+export function withOverride(rule: ProgressionRule, override: RuleOverride | undefined): ProgressionRule {
+  return override ? { ...rule, ...clampRule(override) } : rule;
 }
 
 /** Rest between sets: heavy sets need longer. */

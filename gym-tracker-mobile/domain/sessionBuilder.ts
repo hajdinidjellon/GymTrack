@@ -18,6 +18,7 @@ import {
   programDays,
   restFor,
   ruleFor,
+  withOverride,
   type ExerciseDef,
   type ProgramDay,
 } from '@/domain/programs';
@@ -34,7 +35,8 @@ import type {
 
 export interface BuildContext {
   profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
-  settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> & Partial<Pick<AppSettings, 'customDays'>>;
+  settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> &
+    Partial<Pick<AppSettings, 'customDays' | 'ruleOverrides'>>;
   workouts: Workout[];
 }
 
@@ -92,7 +94,7 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   const lastRule = history.find((h) => h.rule)?.rule;
   const increment =
     ctx.settings.increments[def.name] ?? lastRule?.increment ?? defaultIncrementFor(def.equipment, ctx.settings.units);
-  const rule = ruleFor(ctx.profile.goal, def, increment);
+  const rule = withOverride(ruleFor(ctx.profile.goal, def, increment), ctx.settings.ruleOverrides?.[def.name]);
 
   let startWeight: number | undefined;
   if (def.equipment === 'bodyweight') startWeight = 0;
