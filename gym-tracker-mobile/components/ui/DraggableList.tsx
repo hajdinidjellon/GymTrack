@@ -2,14 +2,13 @@ import React from 'react';
 import { View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { springs } from '@/constants/theme';
 import { dropIndex, shiftFor } from '@/domain/reorder';
 import { buzz } from './PressableScale';
 
@@ -79,12 +78,29 @@ function Row({ index, count, active, dragY, rowHeight, gap, onReorder, onDragCha
     }
   };
 
+  // Les animations partent une seule fois par changement, jamais à chaque mouvement du doigt
+  const lift = useSharedValue(0);
+  const shift = useSharedValue(0);
+
+  useAnimatedReaction(
+    () =>
+      active.get() < 0
+        ? null
+        : shiftFor(index, active.get(), dropIndex(active.get(), dragY.get(), rowHeight.get(), count), rowHeight.get()),
+    (next, previous) => {
+      // Au lâcher, pas de retour animé : la liste est déjà réordonnée
+      if (next === null) shift.set(0);
+      else if (next !== previous) shift.set(withTiming(next, { duration: 150 }));
+    },
+  );
+
   // Appui long pour attraper l'exercice : un simple toucher ouvre toujours son détail
   const pan = usePanGesture({
     activateAfterLongPress: 250,
     onActivate: () => {
       active.set(index);
       dragY.set(0);
+      lift.set(withTiming(1, { duration: 120 }));
       scheduleOnRN(dragStarted);
     },
     onUpdate: (e) => {
@@ -97,25 +113,15 @@ function Row({ index, count, active, dragY, rowHeight, gap, onReorder, onDragCha
     onFinalize: () => {
       active.set(-1);
       dragY.set(0);
+      lift.set(0);
     },
   });
 
   const style = useAnimatedStyle(() => {
-    if (active.get() === index) {
-      return {
-        zIndex: 10,
-        transform: [{ translateY: dragY.get() }, { scale: withSpring(1.03, springs.snappy) }],
-      };
-    }
-    // Pas de retour animé au lâcher : la liste est déjà réordonnée
-    if (active.get() < 0) return { zIndex: 0, transform: [{ translateY: 0 }, { scale: 1 }] };
-    const to = dropIndex(active.get(), dragY.get(), rowHeight.get(), count);
+    const dragged = active.get() === index;
     return {
-      zIndex: 0,
-      transform: [
-        { translateY: withTiming(shiftFor(index, active.get(), to, rowHeight.get()), { duration: 150 }) },
-        { scale: 1 },
-      ],
+      zIndex: dragged ? 10 : 0,
+      transform: [{ translateY: dragged ? dragY.get() : shift.get() }, { scale: 1 + lift.get() * 0.02 }],
     };
   });
 
