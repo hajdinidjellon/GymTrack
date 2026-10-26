@@ -4,8 +4,7 @@ import { router } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { describeSide, loadBar } from '@/domain/plates';
-import { dayKey, programDays, type ExerciseDef } from '@/domain/programs';
-import { moveItem } from '@/domain/reorder';
+import { programDays } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -26,17 +25,14 @@ import { Chip, IndexBadge } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { MiniPlates } from '@/components/disc/Barbell';
-import { ExercisePicker } from '@/components/session/ExercisePicker';
-import { DraggableList } from '@/components/ui/DraggableList';
+import { DayExercisesEditor } from '@/components/program/DayExercisesEditor';
 
 const EQUIPMENT_LABEL = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Machine', bodyweight: 'PDC' };
 
 export default function Preview() {
   const ctx = useBuildContext();
   const customDays = useSettingsStore((s) => s.settings.customDays);
-  const setDayExercises = useSettingsStore((s) => s.setDayExercises);
   const [dayName, setDayName] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
   const [dragging, setDragging] = useState(false);
 
   const splitId = ctx?.profile.program.split;
@@ -45,16 +41,6 @@ export default function Preview() {
   const day = days.find((d) => d.name === dayName) ?? today;
   const plan = ctx && day ? planDay(day, ctx) : null;
   if (!plan || !splitId || !today || !day) return null;
-
-  // Tes choix sont gardés pour ce jour du programme : la prochaine séance Legs aura les mêmes exercices
-  const key = dayKey(splitId, day.name);
-  const custom = key in customDays;
-  const save = (list: ExerciseDef[]) =>
-    setDayExercises(
-      key,
-      list.map((e) => e.name),
-    );
-  const remove = (name: string) => save(day.exercises.filter((e) => e.name !== name));
 
   const start = () => {
     useSessionStore.getState().startSession(plan.name, toActiveExercises(plan));
@@ -112,64 +98,17 @@ export default function Preview() {
         })}
       </ScrollView>
 
-      <View style={{ gap: 12 }}>
-        <DraggableList
-          items={plan.lifts}
-          keyOf={(lift) => lift.def.name}
-          onReorder={(from, to) => save(moveItem(day.exercises, from, to))}
-          onDragChange={setDragging}
-          renderItem={(lift, i) => (
-            <FadeIn index={i + 1}>
-              <LiftRow lift={lift} index={i} onRemove={() => remove(lift.def.name)} />
-            </FadeIn>
-          )}
-        />
-        <Pressable
-          onPress={() => setAdding(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Ajouter un exercice"
-          style={({ pressed }) => ({
-            height: 56,
-            borderRadius: radius.row,
-            borderWidth: border.base,
-            borderStyle: 'dashed',
-            borderColor: pressed ? colors.ink : colors.line,
-            alignItems: 'center',
-            justifyContent: 'center',
-          })}
-        >
-          <Text size={16} weight="bold" color={colors.inkMuted}>
-            + Ajouter un exercice
-          </Text>
-        </Pressable>
-        <Text size={13} color={colors.inkFaint} align="center">
-          {plan.lifts.length > 1 ? 'Maintiens un exercice puis glisse-le pour changer l’ordre. ' : ''}
-          {custom
-            ? `Tes exercices pour ${day.name} sont enregistrés pour les prochaines fois.`
-            : `Ajoute, retire ou déplace des exercices : ils seront gardés pour tes prochaines séances ${day.name}.`}
-        </Text>
-        {custom ? (
-          <Pressable
-            onPress={() => setDayExercises(key, null)}
-            accessibilityRole="button"
-            hitSlop={8}
-            style={{ alignSelf: 'center' }}
-          >
-            <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
-              Revenir aux exercices du programme
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-
-      <ExercisePicker
-        visible={adding}
-        taken={day.exercises.map((e) => e.name)}
-        onPick={(def) => {
-          save([...day.exercises, def]);
-          setAdding(false);
-        }}
-        onClose={() => setAdding(false)}
+      <DayExercisesEditor
+        split={splitId}
+        day={day}
+        items={plan.lifts}
+        keyOf={(lift) => lift.def.name}
+        onDragChange={setDragging}
+        renderRow={(lift, i, remove) => (
+          <FadeIn index={i + 1}>
+            <LiftRow lift={lift} index={i} onRemove={remove} />
+          </FadeIn>
+        )}
       />
     </Screen>
   );
