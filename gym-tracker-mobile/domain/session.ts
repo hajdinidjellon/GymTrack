@@ -64,9 +64,24 @@ export function setStartWeight(session: ActiveSession, exerciseId: string, weigh
   }));
 }
 
+/**
+ * Marks the set done. The sets after it start from what was really done:
+ * 100 kg instead of the planned 70 on set 1 means 100 kg on set 2 too.
+ */
 export function completeSet(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
   return {
-    ...updateSet(session, exerciseId, setIndex, { completed: true }),
+    ...mapExercise(session, exerciseId, (e) => {
+      const done = e.sets[setIndex];
+      if (!done) return e;
+      return {
+        ...e,
+        sets: e.sets.map((set, i) => {
+          if (i === setIndex) return { ...set, completed: true };
+          if (i > setIndex && !set.completed) return { ...set, weight: done.weight, reps: done.reps };
+          return set;
+        }),
+      };
+    }),
     lastCompleted: { exerciseId, setIndex },
   };
 }
@@ -81,6 +96,35 @@ export function undoLastSet(session: ActiveSession): ActiveSession {
   return {
     ...endRest(updateSet(session, last.exerciseId, last.setIndex, { completed: false })),
     lastCompleted: null,
+  };
+}
+
+/** One more set at the end, a copy of the last one, still to do. */
+export function addSet(session: ActiveSession, exerciseId: string): ActiveSession {
+  return mapExercise(session, exerciseId, (e) => {
+    const last = e.sets[e.sets.length - 1];
+    if (!last) return e;
+    const target = last.target ?? { weight: last.weight, reps: last.reps };
+    return { ...e, sets: [...e.sets, { ...last, completed: false, target }] };
+  });
+}
+
+/**
+ * Removes a set still to do. A validated set stays (undo it first), and an
+ * exercise always keeps one set.
+ */
+export function removeSet(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
+  const exercise = session.exercises.find((e) => e.id === exerciseId);
+  const set = exercise?.sets[setIndex];
+  if (!exercise || !set || set.completed || exercise.sets.length <= 1) return session;
+  const last = session.lastCompleted;
+  const shifted =
+    last && last.exerciseId === exerciseId && last.setIndex > setIndex
+      ? { ...last, setIndex: last.setIndex - 1 }
+      : last;
+  return {
+    ...mapExercise(session, exerciseId, (e) => ({ ...e, sets: e.sets.filter((_, i) => i !== setIndex) })),
+    lastCompleted: shifted,
   };
 }
 

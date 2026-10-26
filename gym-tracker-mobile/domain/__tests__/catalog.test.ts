@@ -1,6 +1,16 @@
 import { describe, expect, it } from '@jest/globals';
-import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
-import { defaultIncrementFor, EXERCISES, findExerciseDef, getSplit, restFor, ruleFor, SPLITS } from '@/domain/programs';
+import { formatDay, formatShortDay, formatThousands, parseAmount } from '@/domain/format';
+import {
+  catalogByMuscle,
+  defaultIncrementFor,
+  EXERCISES,
+  findDay,
+  findExerciseDef,
+  getSplit,
+  restFor,
+  ruleFor,
+  SPLITS,
+} from '@/domain/programs';
 import { findCurrent } from '@/domain/sessionCursor';
 import { active } from './fixtures';
 
@@ -32,6 +42,37 @@ describe('programs', () => {
   it('rests at least 3 minutes on heavy sets', () => {
     expect(restFor(ruleFor('force', EXERCISES.squat, 2.5), 90)).toBe(180);
     expect(restFor(ruleFor('muscle', EXERCISES.squat, 2.5), 90)).toBe(90);
+  });
+});
+
+describe('choosing a session', () => {
+  it('finds a day of the program by name', () => {
+    expect(findDay(getSplit('ppl'), 'Pull')?.exercises[0]).toBe(EXERCISES.pullup);
+    expect(findDay(getSplit('ppl'), 'Haut')).toBeUndefined();
+  });
+
+  it('groups the whole catalog by main muscle, without empty groups', () => {
+    const groups = catalogByMuscle();
+    expect(groups[0]?.muscle).toBe('chest');
+    expect(groups.flatMap((g) => g.exercises)).toHaveLength(Object.keys(EXERCISES).length);
+    expect(groups.some((g) => g.muscle === 'core')).toBe(false);
+  });
+});
+
+describe('parseAmount', () => {
+  it.each<[string, boolean, number | null]>([
+    ['62,5', false, 62.5],
+    ['62.5', false, 62.5],
+    [' 80 ', false, 80],
+    ['62,', false, 62],
+    [',5', false, 0.5],
+    ['10.6', true, 11],
+    ['', false, null],
+    ['abc', false, null],
+    ['-5', false, null],
+    ['1,2,3', false, null],
+  ])('reads %p', (text, integer, expected) => {
+    expect(parseAmount(text, integer)).toBe(expected);
   });
 });
 

@@ -3,7 +3,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
-import { RestView } from '@/components/session/RestView';
+import { RestMini, RestView } from '@/components/session/RestView';
 import type { ActiveExercise } from '@/types';
 
 const squat: ActiveExercise = {
@@ -25,6 +25,7 @@ const squat: ActiveExercise = {
 };
 
 const session = () => useSessionStore.getState().activeSession!;
+const onMinimize = jest.fn();
 
 async function renderRest() {
   const s = session();
@@ -34,6 +35,7 @@ async function renderRest() {
       restEndsAt={s.restEndsAt!}
       total={s.restDuration ?? 120}
       doneLabel="Série 1 validée"
+      onMinimize={onMinimize}
     />,
   );
 }
@@ -68,5 +70,20 @@ describe('RestView', () => {
     await renderRest();
     await fireEvent.press(screen.getByRole('button', { name: 'Annuler la dernière série' }));
     expect(session().exercises[0]!.sets[0]!.completed).toBe(false);
+  });
+
+  it('closes the rest or shrinks it', async () => {
+    await renderRest();
+    await fireEvent.press(screen.getByRole('button', { name: 'Réduire le minuteur' }));
+    expect(onMinimize).toHaveBeenCalled();
+    await fireEvent.press(screen.getByRole('button', { name: 'Fermer le repos' }));
+    expect(session().restEndsAt).toBeNull();
+  });
+
+  it('brings the popup back from the small bar', async () => {
+    const onExpand = jest.fn();
+    await render(<RestMini restEndsAt={session().restEndsAt!} onExpand={onExpand} />);
+    await fireEvent.press(screen.getByRole('button', { name: /Agrandir le minuteur/ }));
+    expect(onExpand).toHaveBeenCalled();
   });
 });

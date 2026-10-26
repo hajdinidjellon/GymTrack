@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 import { border, colors, radius, space } from '@/constants/theme';
 import { describeSide, formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
@@ -27,6 +27,8 @@ export function SetView({ cursor, footer }: Props) {
   const completeSet = useSessionStore((s) => s.completeSet);
   const completeRemaining = useSessionStore((s) => s.completeRemaining);
   const updateSet = useSessionStore((s) => s.updateSet);
+  const addSet = useSessionStore((s) => s.addSet);
+  const removeSet = useSessionStore((s) => s.removeSet);
   const [missed, setMissed] = useState(false);
 
   const step = exercise.rule?.increment ?? 2.5;
@@ -42,6 +44,7 @@ export function SetView({ cursor, footer }: Props) {
         style={{ flex: 1, marginHorizontal: -space.gutter }}
         contentContainerStyle={{ paddingHorizontal: space.gutter, paddingTop: space.md, paddingBottom: space.lg }}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
       >
         {exercise.lastTime ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -86,6 +89,8 @@ export function SetView({ cursor, footer }: Props) {
                 onPlus={() => nudgeSet(exercise.id, setIndex, 'weight', step)}
                 minusLabel={`Moins ${formatKg(step)} kg`}
                 plusLabel={`Plus ${formatKg(step)} kg`}
+                onChange={(weight) => updateSet(exercise.id, setIndex, { weight })}
+                inputLabel="Charge en kilos"
               />
               {exercise.equipment === 'barbell' ? (
                 <>
@@ -115,7 +120,9 @@ export function SetView({ cursor, footer }: Props) {
             onPlus={() => nudgeSet(exercise.id, setIndex, 'reps', 1)}
             minusLabel="Moins une rep"
             plusLabel="Plus une rep"
-            onLongPress={() => setMissed(true)}
+            onChange={(reps) => updateSet(exercise.id, setIndex, { reps })}
+            integer
+            inputLabel="Nombre de reps"
           />
         </StickerCard>
         <Pressable
@@ -130,7 +137,31 @@ export function SetView({ cursor, footer }: Props) {
         </Pressable>
 
         <View style={{ marginTop: space.lg }}>
-          <SetsTable exercise={exercise} current={setIndex} />
+          <SetsTable exercise={exercise} current={setIndex} onRemove={(i) => removeSet(exercise.id, i)} />
+          <Pressable
+            onPress={() => addSet(exercise.id)}
+            accessibilityRole="button"
+            accessibilityLabel="Ajouter une série"
+            style={({ pressed }) => ({
+              marginTop: 8,
+              height: 48,
+              borderRadius: radius.row,
+              borderWidth: border.base,
+              borderStyle: 'dashed',
+              borderColor: pressed ? colors.ink : colors.line,
+              alignItems: 'center',
+              justifyContent: 'center',
+            })}
+          >
+            <Text size={15} weight="bold" color={colors.inkMuted}>
+              + Ajouter une série
+            </Text>
+          </Pressable>
+          {exercise.sets.length > 1 ? (
+            <Text size={13} color={colors.inkFaint} align="center" style={{ marginTop: 6 }}>
+              Glisse une série vers la gauche pour la supprimer
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -142,7 +173,10 @@ export function SetView({ cursor, footer }: Props) {
                 label={`Tout comme prévu · ${remaining} séries`}
                 variant="secondary"
                 size="small"
-                onPress={() => completeRemaining(exercise.id)}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  completeRemaining(exercise.id);
+                }}
               />
             ) : null}
             <StickerButton
@@ -151,7 +185,10 @@ export function SetView({ cursor, footer }: Props) {
               icon={<Check size={28} />}
               accessibilityLabel="Valider la série"
               testID="validate-set"
-              onPress={() => completeSet(exercise.id, setIndex)}
+              onPress={() => {
+                Keyboard.dismiss();
+                completeSet(exercise.id, setIndex);
+              }}
             />
           </>
         )}

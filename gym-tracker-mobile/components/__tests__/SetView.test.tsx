@@ -88,4 +88,27 @@ describe('SetView', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Enregistrer 7 reps' }));
     expect(sets()[0]).toMatchObject({ reps: 7, completed: true });
   });
+
+  it('takes the weight and the reps typed on the keyboard', async () => {
+    await renderCurrentSet();
+    await fireEvent.changeText(screen.getByLabelText('Charge en kilos'), '70,5');
+    await fireEvent.changeText(screen.getByLabelText('Nombre de reps'), '8');
+    expect(sets()[0]).toMatchObject({ weight: 70.5, reps: 8 });
+  });
+
+  it('ignores text that is not a number yet', async () => {
+    await renderCurrentSet();
+    await fireEvent.changeText(screen.getByLabelText('Charge en kilos'), '');
+    expect(sets()[0]!.weight).toBe(62.5);
+  });
+
+  it('adds a set and removes one with a swipe', async () => {
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Ajouter une série' }));
+    expect(sets()).toHaveLength(3);
+    // Dans l'app, l'écran parent relit la séance : ici on refait le rendu
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Supprimer la série 3' }));
+    expect(sets()).toHaveLength(2);
+  });
 });
