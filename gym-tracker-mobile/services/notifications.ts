@@ -28,6 +28,8 @@ export async function requestPermissions(): Promise<boolean> {
     if (Platform.OS === 'android' && status === 'granted') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'GymTrack',
+        // eslint-plugin-import misreads the compiled enum of expo-notifications 58
+        // eslint-disable-next-line import/namespace
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
       });

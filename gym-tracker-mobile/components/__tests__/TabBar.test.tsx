@@ -4,12 +4,12 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { TabBar } from '@/components/navigation/TabBar';
 
 async function setup(index: number) {
-  const navigation = { emit: jest.fn(() => ({ defaultPrevented: false })), navigate: jest.fn() };
+  const navigation = { emitter: { emit: jest.fn(() => ({ defaultPrevented: false })) }, navigateToTab: jest.fn() };
   const state = {
     index,
     routes: ['index', 'progress', 'profile'].map((name) => ({ key: `${name}-key`, name })),
   };
-  const props = { state, navigation } as unknown as React.ComponentProps<typeof TabBar>;
+  const props = { state, ...navigation } as unknown as React.ComponentProps<typeof TabBar>;
   await render(<TabBar {...props} />);
   return navigation;
 }
@@ -26,12 +26,12 @@ describe('TabBar', () => {
   it('navigates to another tab', async () => {
     const navigation = await setup(0);
     await fireEvent.press(screen.getByRole('tab', { name: 'Profil' }));
-    expect(navigation.navigate).toHaveBeenCalledWith('profile');
+    expect(navigation.navigateToTab).toHaveBeenCalledWith('profile-key');
   });
 
   it('does nothing when the active tab is pressed again', async () => {
     const navigation = await setup(0);
     await fireEvent.press(screen.getByRole('tab', { name: "Aujourd'hui" }));
-    expect(navigation.navigate).not.toHaveBeenCalled();
+    expect(navigation.navigateToTab).not.toHaveBeenCalled();
   });
 });
