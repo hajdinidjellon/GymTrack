@@ -5,6 +5,7 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { describeSide, loadBar } from '@/domain/plates';
 import { dayKey, programDays, type ExerciseDef } from '@/domain/programs';
+import { moveItem } from '@/domain/reorder';
 import {
   deltaLabel,
   nextDay,
@@ -26,6 +27,7 @@ import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { MiniPlates } from '@/components/disc/Barbell';
 import { ExercisePicker } from '@/components/session/ExercisePicker';
+import { DraggableList } from '@/components/ui/DraggableList';
 
 const EQUIPMENT_LABEL = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Machine', bodyweight: 'PDC' };
 
@@ -35,6 +37,7 @@ export default function Preview() {
   const setDayExercises = useSettingsStore((s) => s.setDayExercises);
   const [dayName, setDayName] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const splitId = ctx?.profile.program.split;
   const days = splitId ? programDays(splitId, customDays) : [];
@@ -61,6 +64,7 @@ export default function Preview() {
   return (
     <Screen
       scroll
+      scrollEnabled={!dragging}
       footer={
         <StickerButton label="Lancer la séance" haptic="medium" disabled={plan.lifts.length === 0} onPress={start} />
       }
@@ -109,11 +113,17 @@ export default function Preview() {
       </ScrollView>
 
       <View style={{ gap: 12 }}>
-        {plan.lifts.map((lift, i) => (
-          <FadeIn key={lift.def.name} index={i + 1}>
-            <LiftRow lift={lift} index={i} onRemove={() => remove(lift.def.name)} />
-          </FadeIn>
-        ))}
+        <DraggableList
+          items={plan.lifts}
+          keyOf={(lift) => lift.def.name}
+          onReorder={(from, to) => save(moveItem(day.exercises, from, to))}
+          onDragChange={setDragging}
+          renderItem={(lift, i) => (
+            <FadeIn index={i + 1}>
+              <LiftRow lift={lift} index={i} onRemove={() => remove(lift.def.name)} />
+            </FadeIn>
+          )}
+        />
         <Pressable
           onPress={() => setAdding(true)}
           accessibilityRole="button"
@@ -133,9 +143,10 @@ export default function Preview() {
           </Text>
         </Pressable>
         <Text size={13} color={colors.inkFaint} align="center">
+          {plan.lifts.length > 1 ? 'Maintiens un exercice puis glisse-le pour changer l’ordre. ' : ''}
           {custom
             ? `Tes exercices pour ${day.name} sont enregistrés pour les prochaines fois.`
-            : `Ajoute ou retire des exercices : ils seront gardés pour tes prochaines séances ${day.name}.`}
+            : `Ajoute, retire ou déplace des exercices : ils seront gardés pour tes prochaines séances ${day.name}.`}
         </Text>
         {custom ? (
           <Pressable
