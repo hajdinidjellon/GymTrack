@@ -40,6 +40,11 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 // Reanimated 4 et Worklets ont besoin du runtime natif : leurs mocks officiels jouent les animations à plat
 jest.mock('react-native-worklets', () => require('react-native-worklets/lib/module/mock'));
+// Reanimated 4.7 : sous jest-expo (plateforme native), le mock initialise le module CSS, absent de JSReanimated
+jest.mock('react-native-reanimated/src/css/native/proxy', () => ({
+  ...jest.requireActual<object>('react-native-reanimated/src/css/native/proxy'),
+  setCSSEventHandler: () => undefined,
+}));
 jest.mock('react-native-reanimated', () => ({
   ...require('react-native-reanimated/mock'),
   useReducedMotion: () => false,

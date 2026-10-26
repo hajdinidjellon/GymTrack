@@ -19,7 +19,7 @@ export const TABS: Record<string, { label: string; Icon: typeof BarIcon }> = {
  * Sticker rail. Every tab keeps its label; the active one sits on an outlined
  * coral pill with bold text (two cues, never colour alone).
  */
-export function TabBar({ state, navigation }: TabBarProps) {
+export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View
@@ -58,10 +58,10 @@ export function TabBar({ state, navigation }: TabBarProps) {
               accessibilityState={{ selected: focused }}
               accessibilityLabel={label}
               onPress={() => {
-                const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                 if (focused || event.defaultPrevented) return;
                 Haptics.selectionAsync().catch(() => null);
-                navigation.navigate(route.name);
+                navigateToTab(route.key);
               }}
               style={({ pressed }) => ({
                 flex: 1,
