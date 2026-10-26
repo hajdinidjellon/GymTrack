@@ -54,6 +54,14 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.customDays).toEqual({});
   });
 
+  it('saves own sets and reps for an exercise, and removes them', () => {
+    const { setRuleOverride } = useSettingsStore.getState();
+    setRuleOverride('Squat', { sets: 5, repMin: 3, repMax: 5 });
+    expect(useSettingsStore.getState().settings.ruleOverrides).toEqual({ Squat: { sets: 5, repMin: 3, repMax: 5 } });
+    setRuleOverride('Squat', null);
+    expect(useSettingsStore.getState().settings.ruleOverrides).toEqual({});
+  });
+
   it('loads what was saved', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();

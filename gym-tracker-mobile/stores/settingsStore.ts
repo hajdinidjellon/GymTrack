@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
 import { settingsPatchSchema } from '@/domain/schemas';
 import { logger } from '@/services/logger';
-import type { AppSettings } from '@/types';
+import type { AppSettings, RuleOverride } from '@/types';
 
 const SETTINGS_KEY = '@gymtrack/settings';
 
@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   plates: DEFAULT_PLATES,
   increments: {},
   customDays: {},
+  ruleOverrides: {},
   signedOut: false,
 };
 
@@ -69,6 +70,8 @@ interface SettingsStore {
   togglePlate: (plate: number) => void;
   /** Saves the exercises of a program day. `null` goes back to the program's list. */
   setDayExercises: (key: string, names: string[] | null) => void;
+  /** Own sets and reps for an exercise. `null` goes back to the goal's rule. */
+  setRuleOverride: (exerciseName: string, rule: RuleOverride | null) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -95,6 +98,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setDayExercises: (key, names) => {
     const { [key]: _old, ...others } = get().settings.customDays;
     get().updateSettings({ customDays: names ? { ...others, [key]: names } : others });
+  },
+
+  setRuleOverride: (exerciseName, rule) => {
+    const { [exerciseName]: _old, ...others } = get().settings.ruleOverrides;
+    get().updateSettings({ ruleOverrides: rule ? { ...others, [exerciseName]: rule } : others });
   },
 
   togglePlate: (plate) => {

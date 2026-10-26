@@ -5,7 +5,7 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatShortDay } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
-import { findExerciseDef } from '@/domain/programs';
+import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
 import { exerciseHistory, lastTimeLabel, planLift, reasonLabel, weightHistory } from '@/domain/sessionBuilder';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -17,6 +17,7 @@ import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
 import { Sparkline } from '@/components/stats/Sparkline';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { RuleEditor } from '@/components/program/RuleEditor';
 
 const STEPS = [1, 2, 2.5, 5];
 
@@ -27,6 +28,8 @@ export default function ExerciseScreen() {
   const def = findExerciseDef(name ?? '');
   const ctx = useBuildContext();
   const setIncrement = useSettingsStore((s) => s.setIncrement);
+  const setRuleOverride = useSettingsStore((s) => s.setRuleOverride);
+  const overrides = useSettingsStore((s) => s.settings.ruleOverrides);
 
   if (!def || !ctx) {
     return (
@@ -44,6 +47,7 @@ export default function ExerciseScreen() {
   const history = exerciseHistory(def, ctx.workouts).slice(0, 5);
   const bodyweight = def.equipment === 'bodyweight';
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
+  const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def.equipment, ctx.settings.units));
 
   return (
     <Screen scroll>
@@ -104,14 +108,16 @@ export default function ExerciseScreen() {
       ) : null}
 
       <StickerCard style={{ marginTop: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <Text size={16} weight="semibold" color={colors.inkMuted}>
-            Règle
-          </Text>
-          <Text size={22} weight="black">
-            {lift.rule.sets} × {lift.rule.repMin}–{lift.rule.repMax} reps
-          </Text>
-        </View>
+        <Text size={17} weight="black" style={{ marginBottom: 12 }}>
+          Tes séries et tes reps
+        </Text>
+        <RuleEditor
+          rule={lift.rule}
+          base={base}
+          custom={def.name in overrides}
+          onChange={(rule) => setRuleOverride(def.name, rule)}
+          onReset={() => setRuleOverride(def.name, null)}
+        />
         {!bodyweight ? (
           <>
             <Text size={16} weight="semibold" color={colors.inkMuted} style={{ marginTop: 14 }}>

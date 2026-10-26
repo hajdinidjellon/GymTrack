@@ -38,7 +38,9 @@ app/
   session/preview.tsx      ← today's session, "Lancer la séance"
   session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state
   session/summary.tsx      ← tonnage, next targets
-  exercise/[name].tsx      ← next target, rule, increment picker, history
+  exercise/[name].tsx      ← next target, own sets/reps (RuleEditor), increment picker, history
+  days/index.tsx           ← "Mes séances": every day of the program (Profil → Mes séances)
+  days/[name].tsx          ← one day: add, remove, drag to reorder its exercises
 ```
 
 ### Layers — enforced by ESLint (`import/no-restricted-paths`)
@@ -78,7 +80,7 @@ A layer never imports a layer above it. Always import with `@/`.
 | `sessionStore` | Running session, persisted in `expo-sqlite/kv-store`. Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here. |
 | `workoutStore` | Past workouts (SQLite) |
 | `profileStore` | Goal, program, PRs. Normalizes profiles from the old app version. |
-| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments. Validated on load. |
+| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments, own exercises per day (`customDays`, key `"ppl/Legs"`) and own sets/reps per exercise (`ruleOverrides`). Validated on load. |
 
 ### Tests
 

@@ -104,6 +104,15 @@ describe('planLift', () => {
     expect(deltaLabel(p)).toBe('+5 kg');
   });
 
+  it('uses the sets and reps the user chose for the exercise', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 60, [8, 8, 8, 8, 8])])]);
+    c.settings.ruleOverrides = { 'Développé couché': { sets: 5, repMin: 5, repMax: 8 } };
+    const p = planLift(EXERCISES.bench, c);
+    expect(p.rule).toMatchObject({ sets: 5, repMin: 5, repMax: 8 });
+    expect(p.decision).toBe('add_weight');
+    expect(p.targets).toHaveLength(5);
+  });
+
   it('goes heavy and rests longer for strength on barbell lifts only', () => {
     const c = ctx([], { goal: 'force' });
     expect(planLift(EXERCISES.squat, c).rule).toMatchObject({ sets: 5, repMin: 3, repMax: 5 });
