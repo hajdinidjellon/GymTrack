@@ -1,211 +1,80 @@
-import React, { useRef } from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  ActivityIndicator,
-  View,
-  Animated,
-  type TouchableOpacityProps,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { colors, radius } from '@/constants/theme';
+import { PressableScale, type HapticKind } from './PressableScale';
+import { Text } from './Text';
 
-type Variant = 'primary' | 'gradient' | 'secondary' | 'ghost' | 'danger' | 'success';
-type Size = 'sm' | 'md' | 'lg';
+type Variant = 'primary' | 'go' | 'secondary' | 'outline' | 'ghost';
 
-interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
-  variant?: Variant;
-  size?: Size;
-  loading?: boolean;
-  icon?: React.ReactNode;
-  iconPosition?: 'left' | 'right';
-  fullWidth?: boolean;
-  pill?: boolean;
+interface Props {
   label: string;
+  onPress: () => void;
+  variant?: Variant;
+  /** 60 by default; 80 for the set validation button. */
+  height?: number;
+  icon?: React.ReactNode;
+  disabled?: boolean;
+  onLongPress?: () => void;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
+  testID?: string;
+  haptic?: HapticKind;
 }
 
-const SIZE_PADDING: Record<Size, { px: number; py: number }> = {
-  sm: { px: 14, py: 8 },
-  md: { px: 20, py: 13 },
-  lg: { px: 24, py: 16 },
-};
-
-const LABEL_SIZE: Record<Size, number> = {
-  sm: 13,
-  md: 15,
-  lg: 17,
+const look: Record<Variant, { bg: string; fg: string; border?: string }> = {
+  primary: { bg: colors.cream, fg: colors.bg },
+  go: { bg: colors.go, fg: colors.onGo },
+  secondary: { bg: colors.surfaceHigh, fg: colors.cream },
+  outline: { bg: 'transparent', fg: colors.cream, border: colors.line },
+  ghost: { bg: 'transparent', fg: colors.muted },
 };
 
 export function Button({
-  variant = 'primary',
-  size = 'md',
-  loading = false,
-  icon,
-  iconPosition = 'left',
-  fullWidth = false,
-  pill = false,
   label,
-  disabled,
   onPress,
-  ...rest
-}: ButtonProps) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.96,
-      useNativeDriver: true,
-      speed: 60,
-      bounciness: 4,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 60,
-      bounciness: 4,
-    }).start();
-  };
-
-  const isDisabled = disabled || loading;
-  const { px, py } = SIZE_PADDING[size];
-  const fontSize = LABEL_SIZE[size];
-  const borderRadius = pill ? 999 : size === 'sm' ? 10 : size === 'md' ? 14 : 18;
-
-  const content = (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        paddingHorizontal: px,
-        paddingVertical: py,
-      }}
-    >
-      {loading ? (
-        <ActivityIndicator size="small" color="white" />
-      ) : (
-        <>
-          {icon && iconPosition === 'left' && <View>{icon}</View>}
-          <Text
-            style={{
-              fontSize,
-              fontWeight: '700',
-              color: variant === 'secondary' ? 'rgba(248,250,252,0.9)' : variant === 'ghost' ? 'rgba(248,250,252,0.55)' : '#fff',
-              letterSpacing: 0.2,
-            }}
-          >
-            {label}
-          </Text>
-          {icon && iconPosition === 'right' && <View>{icon}</View>}
-        </>
-      )}
-    </View>
-  );
-
-  const getBackground = () => {
-    switch (variant) {
-      case 'secondary':
-        return (
-          <View
-            style={{
-              borderRadius,
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.12)',
-              overflow: 'hidden',
-            }}
-          >
-            {content}
-          </View>
-        );
-      case 'ghost':
-        return (
-          <View style={{ borderRadius, overflow: 'hidden' }}>{content}</View>
-        );
-      case 'danger':
-        return (
-          <View
-            style={{
-              borderRadius,
-              backgroundColor: '#ef4444',
-              overflow: 'hidden',
-            }}
-          >
-            {content}
-          </View>
-        );
-      case 'success':
-        return (
-          <View
-            style={{
-              borderRadius,
-              backgroundColor: '#10b981',
-              overflow: 'hidden',
-            }}
-          >
-            {content}
-          </View>
-        );
-      case 'gradient':
-        return (
-          <LinearGradient
-            colors={['#7c3aed', '#06b6d4']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              borderRadius,
-              overflow: 'hidden',
-              shadowColor: '#7c3aed',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.45,
-              shadowRadius: 14,
-              elevation: 8,
-            }}
-          >
-            {content}
-          </LinearGradient>
-        );
-      default: // primary
-        return (
-          <View
-            style={{
-              borderRadius,
-              backgroundColor: '#7c3aed',
-              overflow: 'hidden',
-              shadowColor: '#7c3aed',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.4,
-              shadowRadius: 12,
-              elevation: 6,
-            }}
-          >
-            {content}
-          </View>
-        );
-    }
-  };
-
+  onLongPress,
+  variant = 'primary',
+  height = 60,
+  icon,
+  disabled,
+  style,
+  accessibilityLabel,
+  testID,
+  haptic,
+}: Props) {
+  const { bg, fg, border } = look[variant];
+  const fontSize = height >= 76 ? 22 : height >= 56 ? 18 : 16;
   return (
-    <Animated.View
-      style={{
-        transform: [{ scale }],
-        alignSelf: fullWidth ? 'stretch' : 'flex-start',
-        opacity: isDisabled ? 0.4 : 1,
-      }}
+    <PressableScale
+      onPress={onPress}
+      onLongPress={onLongPress}
+      disabled={disabled}
+      haptic={haptic}
+      scaleTo={0.96}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: !!disabled }}
+      style={[
+        {
+          height,
+          borderRadius: radius.pill,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'row',
+          gap: 10,
+          backgroundColor: bg,
+          borderWidth: border ? 1.5 : 0,
+          borderColor: border,
+          opacity: disabled ? 0.4 : 1,
+        },
+        style,
+      ]}
     >
-      <TouchableOpacity
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={isDisabled}
-        activeOpacity={1}
-        {...rest}
-      >
-        {getBackground()}
-      </TouchableOpacity>
-    </Animated.View>
+      {icon ? <View>{icon}</View> : null}
+      <Text size={fontSize} weight={variant === 'ghost' ? 'bold' : 'black'} color={fg}>
+        {label}
+      </Text>
+    </PressableScale>
   );
 }

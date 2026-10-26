@@ -1,42 +1,23 @@
 import { create } from 'zustand';
-import { saveProfileLocal, loadProfileLocal, loadGoalsLocal, saveGoalLocal } from '@/lib/db';
-import { flushSyncQueue } from '@/lib/sync';
-import { calculateXPFromWorkouts, calculateStreakFromWorkouts, getRankByXP } from '@/lib/gamification';
-import type { UserProfile, PersonalRecord, BodyStats, TrainingGoal, Rank } from '@/types';
-import { useWorkoutStore } from './workoutStore';
+import { normalizeProfile } from '@/domain/profile';
+import { loadProfileLocal, saveProfileLocal } from '@/services/db';
+import { flushSyncQueue } from '@/services/sync';
+import type { PersonalRecord, UserProfile } from '@/types';
 
 interface ProfileStore {
   profile: UserProfile | null;
-  goals: TrainingGoal[];
-  isLoading: boolean;
 
   loadProfile: () => Promise<void>;
   saveProfile: (profile: UserProfile) => Promise<void>;
   updateProfile: (patch: Partial<UserProfile>) => Promise<void>;
-
   addPR: (pr: PersonalRecord) => Promise<void>;
-  addBodyStats: (stats: BodyStats) => Promise<void>;
-
-  loadGoals: () => Promise<void>;
-  saveGoal: (goal: TrainingGoal) => Promise<void>;
-  updateGoalProgress: (goalId: string, progress: number) => Promise<void>;
-
-  // Sélecteurs gamification calculés à la volée
-  getTotalXP: () => number;
-  getStreak: () => number;
-  getCurrentRank: () => Rank | null;
-  getXPProgress: () => number;
 }
 
 export const useProfileStore = create<ProfileStore>((set, get) => ({
   profile: null,
-  goals: [],
-  isLoading: false,
 
   loadProfile: async () => {
-    set({ isLoading: true });
-    const profile = await loadProfileLocal();
-    set({ profile, isLoading: false });
+    set({ profile: normalizeProfile(await loadProfileLocal()) });
   },
 
   saveProfile: async (profile) => {
@@ -48,79 +29,13 @@ export const useProfileStore = create<ProfileStore>((set, get) => ({
   updateProfile: async (patch) => {
     const current = get().profile;
     if (!current) return;
-    const updated = { ...current, ...patch };
-    await get().saveProfile(updated);
+    await get().saveProfile({ ...current, ...patch });
   },
 
   addPR: async (pr) => {
     const current = get().profile;
     if (!current) return;
-    const existing = current.prs.findIndex(
-      (p) => p.exercise.toLowerCase() === pr.exercise.toLowerCase(),
-    );
-    const prs = [...current.prs];
-    if (existing >= 0) {
-      prs[existing] = pr;
-    } else {
-      prs.push(pr);
-    }
-    await get().saveProfile({ ...current, prs });
-  },
-
-  addBodyStats: async (stats) => {
-    const current = get().profile;
-    if (!current) return;
-    const bodyStats = [stats, ...current.bodyStats.filter((s) => s.date !== stats.date)];
-    await get().saveProfile({ ...current, bodyStats });
-  },
-
-  loadGoals: async () => {
-    const goals = await loadGoalsLocal();
-    set({ goals });
-  },
-
-  saveGoal: async (goal) => {
-    await saveGoalLocal(goal);
-    set((s) => {
-      const idx = s.goals.findIndex((g) => g.id === goal.id);
-      const goals = [...s.goals];
-      if (idx >= 0) goals[idx] = goal;
-      else goals.push(goal);
-      return { goals };
-    });
-    flushSyncQueue().catch(() => null);
-  },
-
-  updateGoalProgress: async (goalId, progress) => {
-    const goal = get().goals.find((g) => g.id === goalId);
-    if (!goal) return;
-    const updated: TrainingGoal = {
-      ...goal,
-      progress,
-      status: progress >= 100 ? 'completed' : goal.status,
-    };
-    await get().saveGoal(updated);
-  },
-
-  getTotalXP: () => {
-    const workouts = useWorkoutStore.getState().workouts;
-    return calculateXPFromWorkouts(workouts);
-  },
-
-  getStreak: () => {
-    const workouts = useWorkoutStore.getState().workouts;
-    return calculateStreakFromWorkouts(workouts);
-  },
-
-  getCurrentRank: () => {
-    const xp = get().getTotalXP();
-    return getRankByXP(xp);
-  },
-
-  getXPProgress: () => {
-    const xp = get().getTotalXP();
-    const rank = getRankByXP(xp);
-    if (rank.maxXP === Infinity) return 100;
-    return Math.round(((xp - rank.minXP) / (rank.maxXP - rank.minXP)) * 100);
+    const prs = current.prs.filter((p) => p.exercise.toLowerCase() !== pr.exercise.toLowerCase());
+    await get().saveProfile({ ...current, prs: [...prs, pr] });
   },
 }));

@@ -1,18 +1,35 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
-import { BottomNav } from '@/components/ui/BottomNav';
+import React, { useEffect } from 'react';
+import { Redirect, router } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
+import { colors } from '@/constants/theme';
+import { TabBar } from '@/components/navigation/TabBar';
+import { useProfileStore } from '@/stores/profileStore';
+import { useSessionStore } from '@/stores/sessionStore';
+import { useSettingsStore } from '@/stores/settingsStore';
+
+// Une séance restée ouverte (app tuée en plein milieu) se rouvre une seule fois au lancement
+let resumeChecked = false;
 
 export default function TabsLayout() {
+  const hasProfile = useProfileStore((s) => !!s.profile);
+  const signedOut = useSettingsStore((s) => s.settings.signedOut);
+
+  useEffect(() => {
+    if (resumeChecked || !hasProfile || signedOut) return;
+    resumeChecked = true;
+    if (useSessionStore.getState().activeSession) router.push('/session');
+  }, [hasProfile, signedOut]);
+
+  if (!hasProfile || signedOut) return <Redirect href="/welcome" />;
+
   return (
     <Tabs
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => <BottomNav {...props} />}
+      tabBar={(props) => <TabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
     >
-      <Tabs.Screen name="index"    options={{ title: 'Accueil' }} />
-      <Tabs.Screen name="session"  options={{ title: 'Séance'  }} />
-      <Tabs.Screen name="planner"  options={{ title: 'Plan'    }} />
-      <Tabs.Screen name="progress" options={{ title: 'Progrès' }} />
-      <Tabs.Screen name="profile"  options={{ title: 'Profil'  }} />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="progress" />
+      <Tabs.Screen name="profile" />
     </Tabs>
   );
 }
