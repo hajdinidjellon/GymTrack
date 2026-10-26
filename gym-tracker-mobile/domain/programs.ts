@@ -39,6 +39,12 @@ export const EXERCISES = {
   legcurl: ex('Leg curl', 'machine', 'isolation', ['legs'], ['Leg curl couché']),
   lunge: ex('Fentes haltères', 'dumbbell', 'compound', ['legs', 'glutes'], ['Fentes bulgares']),
   calves: ex('Mollets debout', 'machine', 'isolation', ['calves'], ['Mollets debout machine']),
+  fly: ex('Écarté poulie', 'machine', 'isolation', ['chest']),
+  dbrow: ex('Rowing haltère', 'dumbbell', 'compound', ['back', 'arms']),
+  pushdown: ex('Extension triceps poulie', 'machine', 'isolation', ['arms']),
+  hammer: ex('Curl marteau', 'dumbbell', 'isolation', ['arms']),
+  legext: ex('Leg extension', 'machine', 'isolation', ['legs']),
+  hipthrust: ex('Hip thrust', 'barbell', 'compound', ['glutes', 'legs']),
 } satisfies Record<string, ExerciseDef>;
 
 export interface ProgramDay {
@@ -88,6 +94,30 @@ export const SPLITS: Split[] = [
 
 export function getSplit(id: SplitId): Split {
   return SPLITS.find((s) => s.id === id) ?? SPLITS[0]!;
+}
+
+/** A day of the program by name, if it exists. */
+export function findDay(split: Split, name: string): ProgramDay | undefined {
+  return split.days.find((d) => d.name === name);
+}
+
+export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
+  chest: 'Pectoraux',
+  back: 'Dos',
+  shoulders: 'Épaules',
+  arms: 'Bras',
+  legs: 'Jambes',
+  glutes: 'Fessiers',
+  calves: 'Mollets',
+  core: 'Abdos',
+};
+
+/** The whole catalog grouped by main muscle, in the order of MUSCLE_LABELS. */
+export function catalogByMuscle(): { muscle: MuscleGroup; exercises: ExerciseDef[] }[] {
+  const all: ExerciseDef[] = Object.values(EXERCISES);
+  return (Object.keys(MUSCLE_LABELS) as MuscleGroup[])
+    .map((muscle) => ({ muscle, exercises: all.filter((e) => e.muscleGroups[0] === muscle) }))
+    .filter((g) => g.exercises.length > 0);
 }
 
 export function findExerciseDef(name: string): ExerciseDef | undefined {
