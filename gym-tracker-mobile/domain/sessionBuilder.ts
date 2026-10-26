@@ -12,11 +12,11 @@ import {
   type ProgressionDecision,
 } from '@/domain/progression';
 import { formatKg } from '@/domain/plates';
+import { planRest, type RestSource } from '@/domain/rest';
 import {
   defaultIncrementFor,
   findExerciseDef,
   programDays,
-  restFor,
   ruleFor,
   withOverride,
   type ExerciseDef,
@@ -25,6 +25,7 @@ import {
 import type {
   ActiveExercise,
   AppSettings,
+  CustomExercise,
   PersonalRecord,
   ProgressionRule,
   SetTarget,
@@ -36,8 +37,10 @@ import type {
 export interface BuildContext {
   profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
   settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> &
-    Partial<Pick<AppSettings, 'customDays' | 'ruleOverrides'>>;
+    Partial<Pick<AppSettings, 'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises'>>;
   workouts: Workout[];
+  /** Today. Without it, breaks are not looked at. */
+  now?: Date;
 }
 
 export interface PlannedLift {
@@ -46,8 +49,13 @@ export interface PlannedLift {
   decision: ProgressionDecision;
   targets: SetTarget[];
   restTime: number;
+  restSource: RestSource;
+  /** Why the rest lasts what it lasts. */
+  restNote: string;
   /** Working sets of the last session, if any. */
   last: SetTarget[];
+  /** Comeback only: days since the last session of the exercise. */
+  daysOff?: number;
 }
 
 export interface PlannedDay {
@@ -77,7 +85,7 @@ export function exerciseHistory(
 
 /** The day after the last one done, in program order. */
 export function nextDay(ctx: BuildContext): ProgramDay {
-  const days = programDays(ctx.profile.program.split, ctx.settings.customDays);
+  const days = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
   const last = [...ctx.workouts]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .find((w) => days.some((d) => d.name === w.name));
@@ -103,10 +111,21 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
     if (pr) startWeight = startWeightFromOneRepMax(pr.oneRepMax, increment);
   }
 
-  const { decision, targets } = nextTargets(history, rule, { startWeight });
+  const { decision, targets, daysOff } = nextTargets(history, rule, { startWeight, now: ctx.now });
   const lastSession = history.find((h) => workingSets(h.sets).length > 0);
   const last = lastSession ? workingSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
-  return { def, rule, decision, targets, restTime: restFor(rule, ctx.settings.defaultRestTime), last };
+  const rest = planRest(def, rule, ctx.settings.defaultRestTime, history, ctx.settings.restOverrides?.[def.name]);
+  return {
+    def,
+    rule,
+    decision,
+    targets,
+    restTime: rest.seconds,
+    restSource: rest.source,
+    restNote: rest.note,
+    last,
+    daysOff,
+  };
 }
 
 export function planDay(day: ProgramDay, ctx: BuildContext): PlannedDay {
@@ -117,29 +136,32 @@ export function planDay(day: ProgramDay, ctx: BuildContext): PlannedDay {
 }
 
 export function toActiveExercises(day: PlannedDay): ActiveExercise[] {
-  return day.lifts.map((lift, i) => {
-    const needsWeight = lift.decision === 'calibrate';
-    return {
-      id: `${lift.def.name}-${Date.now()}-${i}`,
-      name: lift.def.name,
-      category: lift.def.category,
-      muscleGroups: lift.def.muscleGroups,
-      equipment: lift.def.equipment,
-      rule: lift.rule,
-      calibration: needsWeight || undefined,
-      needsWeight,
-      lastTime: lift.last.length ? lastTimeLabel(lift.last) : undefined,
-      reason: reasonLabel(lift),
-      sets: lift.targets.map((t) => ({
-        weight: t.weight,
-        reps: t.reps,
-        setType: 'normal' as const,
-        restTime: lift.restTime,
-        completed: false,
-        target: t,
-      })),
-    };
-  });
+  return day.lifts.map(toActiveExercise);
+}
+
+export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
+  const needsWeight = lift.decision === 'calibrate';
+  return {
+    id: `${lift.def.name}-${Date.now()}-${i}`,
+    name: lift.def.name,
+    category: lift.def.category,
+    muscleGroups: lift.def.muscleGroups,
+    equipment: lift.def.equipment,
+    rule: lift.rule,
+    calibration: needsWeight || undefined,
+    needsWeight,
+    lastTime: lift.last.length ? lastTimeLabel(lift.last) : undefined,
+    reason: reasonLabel(lift),
+    restNote: lift.restNote || undefined,
+    sets: lift.targets.map((t) => ({
+      weight: t.weight,
+      reps: t.reps,
+      setType: 'normal' as const,
+      restTime: lift.restTime,
+      completed: false,
+      target: t,
+    })),
+  };
 }
 
 /** What changed since last time, in a few words. */
@@ -153,6 +175,8 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
       return 'même cible';
     case 'deload':
       return 'allégé';
+    case 'comeback':
+      return 'reprise';
     case 'start':
       return 'départ';
     case 'calibrate':
@@ -168,7 +192,7 @@ export function lastTimeLabel(sets: SetTarget[]): string {
 }
 
 /** Why today's target is what it is, in one sentence. */
-export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targets'>): string {
+export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targets' | 'daysOff'>): string {
   const { rule } = lift;
   const bodyweight = (lift.targets[0]?.weight ?? 0) === 0;
   switch (lift.decision) {
@@ -182,6 +206,8 @@ export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targe
       return `Une série est passée sous ${rule.repMin} reps : on garde la même cible.`;
     case 'deload':
       return 'Deux séances difficiles de suite : on allège de 10 % pour mieux repartir.';
+    case 'comeback':
+      return `${breakLabel(lift.daysOff ?? 14)} sans cet exercice : on reprend un peu plus léger pour retrouver tes marques.`;
     case 'start':
       return bodyweight
         ? 'Première séance : vise le bas de la fourchette.'
@@ -189,6 +215,13 @@ export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targe
     case 'calibrate':
       return 'Première fois : choisis ta charge, ensuite on calcule tout.';
   }
+}
+
+/** "2 semaines", "1 mois", "3 mois". */
+export function breakLabel(days: number): string {
+  if (days < 30) return `${Math.max(1, Math.floor(days / 7))} semaine${days >= 14 ? 's' : ''}`;
+  const months = Math.floor(days / 30);
+  return `${months} mois`;
 }
 
 /** "3 × 10 · 62,5 kg", or "3 × 13" at bodyweight. Uneven reps show the lowest. */
@@ -218,10 +251,10 @@ export interface NewRecord {
  * Exercises of `workout` lifted heavier than ever before (best validated
  * working set). A first session is not a record: there is nothing to beat.
  */
-export function newRecords(workout: Workout, history: Workout[]): NewRecord[] {
+export function newRecords(workout: Workout, history: Workout[], own: CustomExercise[] = []): NewRecord[] {
   const best = (sets: WorkoutSet[]) => Math.max(0, ...workingSets(sets).map((s) => s.weight));
   return workout.exercises.flatMap((exercise) => {
-    const def = findExerciseDef(exercise.name);
+    const def = findExerciseDef(exercise.name, own);
     const now = best(exercise.sets);
     if (!def || now === 0) return [];
     const before = history

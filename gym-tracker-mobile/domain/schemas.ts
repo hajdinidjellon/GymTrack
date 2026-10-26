@@ -5,7 +5,16 @@
  */
 
 import { z } from 'zod';
-import type { AppSettings, Exercise, PersonalRecord, ProgressionRule, UserProfile, Workout, WorkoutSet } from '@/types';
+import type {
+  AppSettings,
+  CustomExercise,
+  Exercise,
+  PersonalRecord,
+  ProgressionRule,
+  UserProfile,
+  Workout,
+  WorkoutSet,
+} from '@/types';
 
 const weight = z.number().finite().min(0).max(1000);
 const reps = z.number().int().min(0).max(1000);
@@ -29,15 +38,25 @@ const setSchema: z.ZodType<WorkoutSet> = z.object({
   notes: z.string().max(500).optional(),
   completed: z.boolean().optional(),
   restTime: z.number().int().min(0).max(3600).optional(),
+  restTaken: z.number().int().min(0).max(3600).optional(),
+  doneAt: z.number().int().min(0).optional(),
   target: setTarget.optional(),
 });
 
 const muscleGroup = z.enum(['chest', 'back', 'shoulders', 'arms', 'legs', 'core', 'glutes', 'calves']);
+const category = z.enum(['compound', 'isolation', 'accessory']);
+
+const customExerciseSchema: z.ZodType<CustomExercise> = z.object({
+  name: z.string().trim().min(1).max(100),
+  equipment: z.enum(['barbell', 'dumbbell', 'machine', 'bodyweight']),
+  category,
+  muscleGroups: z.array(muscleGroup).min(1).max(10),
+});
 
 const exerciseSchema: z.ZodType<Exercise> = z.object({
   id: z.string().min(1).max(200),
   name: z.string().min(1).max(100),
-  category: z.enum(['compound', 'isolation', 'accessory']),
+  category,
   muscleGroups: z.array(muscleGroup).max(10),
   sets: z.array(setSchema).max(50),
   notes: z.string().max(500).optional(),
@@ -115,6 +134,8 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
         repMax: z.number().int().min(1).max(50),
       }),
     ),
+    restOverrides: z.record(z.string().max(100), z.number().int().min(15).max(600)),
+    customExercises: z.array(customExerciseSchema).max(200),
     signedOut: z.boolean(),
   })
   .partial();

@@ -30,3 +30,17 @@ export function parseAmount(text: string, integer = false): number | null {
   if (!Number.isFinite(n)) return null;
   return integer ? Math.round(n) : Math.round(n * 100) / 100;
 }
+
+/** "1:30" for a timer. */
+export function formatClock(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** "45 s", "2 min", "2 min 30" for a rest. */
+export function formatRest(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return `${s} s`;
+  const rest = s % 60;
+  return rest ? `${Math.floor(s / 60)} min ${String(rest).padStart(2, '0')}` : `${s / 60} min`;
+}

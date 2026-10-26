@@ -23,6 +23,10 @@ export interface WorkoutSet {
   notes?: string;
   completed?: boolean;
   restTime?: number;
+  /** Seconds really rested before this set, measured from the validations. */
+  restTaken?: number;
+  /** When the set was validated (epoch ms). Running session only, not saved in the history. */
+  doneAt?: number;
   /** What the progression engine asked for when this set was logged. */
   target?: SetTarget;
 }
@@ -113,6 +117,14 @@ export interface UserProfile {
   bodyStats: BodyStats[];
 }
 
+/** An exercise the user created, next to the catalog. */
+export interface CustomExercise {
+  name: string;
+  equipment: Equipment;
+  category: ExerciseCategory;
+  muscleGroups: MuscleGroup[];
+}
+
 export interface RuleOverride {
   sets: number;
   repMin: number;
@@ -135,6 +147,10 @@ export interface AppSettings {
   customDays: Record<string, string[]>;
   /** Sets and rep range chosen by the user, per exercise name. Missing: the goal's rule. */
   ruleOverrides: Record<string, RuleOverride>;
+  /** Rest between sets chosen by the user, in seconds, per exercise name. Missing: computed. */
+  restOverrides: Record<string, number>;
+  /** Exercises the user created. */
+  customExercises: CustomExercise[];
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
 }
@@ -154,6 +170,8 @@ export interface ActiveExercise extends Exercise {
   lastTime?: string;
   /** Why today's target is what it is. */
   reason?: string;
+  /** Why the rest lasts what it lasts, when it is not the default. */
+  restNote?: string;
 }
 
 export interface ActiveSession {

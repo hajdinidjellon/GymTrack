@@ -12,6 +12,9 @@
  * Poids du corps (poids à 0) : jamais de charge ajoutée automatiquement,
  * on continue +1 rep par série sans plafond.
  *
+ * Après une pause (2 semaines sans l'exercice), on reprend plus léger :
+ * 90 %, et 80 % au-delà de 4 semaines.
+ *
  * Le moteur est sans état : tout se déduit de l'historique de l'exercice.
  */
 
@@ -20,6 +23,12 @@ import type { ProgressionRule, SetTarget, WorkoutSet } from '@/types';
 export const DELOAD_FACTOR = 0.9;
 export const FAILURES_BEFORE_DELOAD = 2;
 export const START_PERCENT_OF_1RM = 0.7;
+/** Days off before the comeback weight, and how much is kept. Longest break first. */
+export const COMEBACK_STEPS = [
+  { days: 28, keep: 0.8 },
+  { days: 14, keep: 0.9 },
+] as const;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type Units = 'kg' | 'lbs';
 
@@ -34,12 +43,15 @@ export type ProgressionDecision =
   | 'add_weight' // every set hit the top of the range
   | 'repeat' // a set fell under the minimum: same weight, same targets
   | 'deload' // failed twice in a row at the same weight
+  | 'comeback' // back after a break: a bit lighter to find the groove again
   | 'start' // no history, starting weight derived from a PR
   | 'calibrate'; // no history and no PR: the user picks the weight
 
 export interface ProgressionResult {
   decision: ProgressionDecision;
   targets: SetTarget[];
+  /** Comeback only: days since the last session of the exercise. */
+  daysOff?: number;
 }
 
 export function defaultIncrement(units: Units): number {
@@ -125,7 +137,7 @@ function fill(rule: ProgressionRule, weight: number, reps: (i: number) => number
 export function nextTargets(
   history: ExerciseSession[],
   rule: ProgressionRule,
-  options: { startWeight?: number } = {},
+  options: { startWeight?: number; now?: Date } = {},
 ): ProgressionResult {
   const sessions = history
     .map((h) => ({ date: h.date, sets: workingSets(h.sets) }))
@@ -142,6 +154,15 @@ export function nextTargets(
 
   const weight = referenceWeight(last.sets);
   const bodyweight = weight === 0;
+
+  if (options.now && !bodyweight) {
+    const daysOff = Math.floor((options.now.getTime() - new Date(last.date).getTime()) / DAY_MS);
+    const step = COMEBACK_STEPS.find((s) => daysOff >= s.days);
+    if (step) {
+      const lighter = Math.max(0, Math.min(roundDownToIncrement(weight * step.keep, rule.increment), weight));
+      return { decision: 'comeback', targets: fill(rule, lighter, () => rule.repMin), daysOff };
+    }
+  }
   // Au poids du corps, pas de plafond : les reps sont la seule progression
   const clampReps = (r: number) => Math.max(rule.repMin, bodyweight ? r : Math.min(rule.repMax, r));
 

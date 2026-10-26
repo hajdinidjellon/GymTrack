@@ -50,6 +50,17 @@ describe('settingsPatchSchema', () => {
   it('rejects wrong types', () => {
     expect(settingsPatchSchema.safeParse({ plates: 'all' }).success).toBe(false);
   });
+
+  it('checks own rests and own exercises', () => {
+    const own = { name: 'Pec deck', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] };
+    expect(settingsPatchSchema.parse({ restOverrides: { Squat: 150 }, customExercises: [own] })).toEqual({
+      restOverrides: { Squat: 150 },
+      customExercises: [own],
+    });
+    expect(settingsPatchSchema.safeParse({ restOverrides: { Squat: 5 } }).success).toBe(false);
+    expect(settingsPatchSchema.safeParse({ customExercises: [{ ...own, name: '  ' }] }).success).toBe(false);
+    expect(settingsPatchSchema.safeParse({ customExercises: [{ ...own, muscleGroups: [] }] }).success).toBe(false);
+  });
 });
 
 describe('parseList', () => {

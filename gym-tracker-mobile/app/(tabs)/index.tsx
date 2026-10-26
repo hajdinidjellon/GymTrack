@@ -5,6 +5,7 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
+  breakLabel,
   deltaLabel,
   targetLabel,
   tonnage,
@@ -114,6 +115,7 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
   const target = featured?.targets[0];
   const perSide = usePerSide(target?.weight ?? 0);
   const sets = plan.lifts.reduce((n, l) => n + l.targets.length, 0);
+  const daysOff = Math.max(0, ...plan.lifts.map((l) => (l.decision === 'comeback' ? (l.daysOff ?? 0) : 0)));
 
   return (
     <>
@@ -136,6 +138,26 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
           <Chip label={`${sets} séries`} />
           <Chip label={`~${plan.minutes} min`} />
         </View>
+        {daysOff > 0 ? (
+          <View
+            style={{
+              marginTop: space.md,
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              borderRadius: radius.row,
+              borderWidth: border.base,
+              borderColor: colors.ink,
+              backgroundColor: colors.sun,
+            }}
+          >
+            <Text size={14} weight="black">
+              Content de te revoir !
+            </Text>
+            <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
+              Après {breakLabel(daysOff)} de pause, on reprend un peu plus léger. Ça remonte vite.
+            </Text>
+          </View>
+        ) : null}
 
         {featured && target ? (
           <View

@@ -4,6 +4,7 @@
  * vibrations, de la voix et des notifications.
  */
 
+import { withRestTaken } from '@/domain/rest';
 import { findCurrent } from '@/domain/sessionCursor';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
@@ -67,8 +68,9 @@ export function setStartWeight(session: ActiveSession, exerciseId: string, weigh
 /**
  * Marks the set done. The sets after it start from what was really done:
  * 100 kg instead of the planned 70 on set 1 means 100 kg on set 2 too.
+ * `now` dates the validation: the gaps tell how long the user really rests.
  */
-export function completeSet(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
+export function completeSet(session: ActiveSession, exerciseId: string, setIndex: number, now?: number): ActiveSession {
   return {
     ...mapExercise(session, exerciseId, (e) => {
       const done = e.sets[setIndex];
@@ -76,7 +78,7 @@ export function completeSet(session: ActiveSession, exerciseId: string, setIndex
       return {
         ...e,
         sets: e.sets.map((set, i) => {
-          if (i === setIndex) return { ...set, completed: true };
+          if (i === setIndex) return { ...set, completed: true, doneAt: now };
           if (i > setIndex && !set.completed) return { ...set, weight: done.weight, reps: done.reps };
           return set;
         }),
@@ -133,13 +135,16 @@ export function remainingSets(exercise: ActiveExercise): number[] {
   return exercise.sets.flatMap((s, i) => (s.completed ? [] : [i]));
 }
 
-export function completeRemaining(session: ActiveSession, exerciseId: string): ActiveSession {
+export function completeRemaining(session: ActiveSession, exerciseId: string, now?: number): ActiveSession {
   const exercise = session.exercises.find((e) => e.id === exerciseId);
   const indexes = exercise ? remainingSets(exercise) : [];
   const lastIndex = indexes[indexes.length - 1];
   if (lastIndex === undefined) return session;
   return {
-    ...mapExercise(session, exerciseId, (e) => ({ ...e, sets: e.sets.map((s) => ({ ...s, completed: true })) })),
+    ...mapExercise(session, exerciseId, (e) => ({
+      ...e,
+      sets: e.sets.map((s) => (s.completed ? s : { ...s, completed: true, doneAt: now })),
+    })),
     lastCompleted: { exerciseId, setIndex: lastIndex },
   };
 }
@@ -162,6 +167,22 @@ export function restLeft(session: ActiveSession, now: number): number {
   return session.restEndsAt == null ? 0 : Math.max(0, Math.ceil((session.restEndsAt - now) / 1000));
 }
 
+/**
+ * Swaps an exercise for another one (machine taken, sore shoulder…). Not
+ * started yet: it takes its place. Started: the sets done stay, the ones
+ * left are dropped and the new exercise comes right after.
+ */
+export function replaceExercise(session: ActiveSession, exerciseId: string, next: ActiveExercise): ActiveSession {
+  const index = session.exercises.findIndex((e) => e.id === exerciseId);
+  const current = session.exercises[index];
+  if (!current) return session;
+  const done = current.sets.filter((s) => s.completed);
+  const exercises = [...session.exercises];
+  if (done.length === 0) exercises.splice(index, 1, next);
+  else exercises.splice(index, 1, { ...current, sets: done }, next);
+  return { ...session, exercises };
+}
+
 /** What goes into the history: only exercises with at least one validated set. */
 export function toWorkout(session: ActiveSession, now: Date): Workout {
   return {
@@ -171,7 +192,10 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
     type: 'strength',
     exercises: session.exercises
       .filter((e) => e.sets.some((s) => s.completed))
-      .map(({ equipment: _e, needsWeight: _n, lastTime: _l, reason: _r, ...exercise }) => exercise),
+      .map(({ equipment: _e, needsWeight: _n, lastTime: _l, reason: _r, restNote: _rn, ...exercise }) => ({
+        ...exercise,
+        sets: withRestTaken(exercise.sets),
+      })),
     duration: Math.round((now.getTime() - new Date(session.startedAt).getTime()) / 60000),
     feeling: 3,
     completed: true,

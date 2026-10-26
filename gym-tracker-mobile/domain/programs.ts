@@ -2,15 +2,22 @@
  * PROGRAMMES — les séances prêtes à l'emploi et les règles par objectif.
  */
 
-import type { Equipment, ExerciseCategory, Goal, MuscleGroup, ProgressionRule, RuleOverride, SplitId } from '@/types';
+import type {
+  CustomExercise,
+  Equipment,
+  ExerciseCategory,
+  Goal,
+  MuscleGroup,
+  ProgressionRule,
+  RuleOverride,
+  SplitId,
+} from '@/types';
 
-export interface ExerciseDef {
-  name: string;
-  equipment: Equipment;
-  category: ExerciseCategory;
-  muscleGroups: MuscleGroup[];
+export interface ExerciseDef extends CustomExercise {
   /** Older names in the history that refer to the same exercise. */
   aliases?: string[];
+  /** Created by the user. */
+  custom?: boolean;
 }
 
 const ex = (
@@ -105,11 +112,15 @@ export function dayKey(split: SplitId, day: string): string {
  * The days of the program with the user's own exercises when they chose
  * some. Names no longer in the catalog are skipped.
  */
-export function programDays(split: SplitId, customDays: Record<string, string[]> = {}): ProgramDay[] {
+export function programDays(
+  split: SplitId,
+  customDays: Record<string, string[]> = {},
+  own: CustomExercise[] = [],
+): ProgramDay[] {
   return getSplit(split).days.map((day) => {
     const names = customDays[dayKey(split, day.name)];
     if (!names) return day;
-    const exercises = names.map(findExerciseDef).filter((e): e is ExerciseDef => !!e);
+    const exercises = names.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
     return { name: day.name, exercises };
   });
 }
@@ -130,19 +141,46 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   core: 'Abdos',
 };
 
+/** The catalog, then the user's own exercises. */
+export function allExercises(own: CustomExercise[] = []): ExerciseDef[] {
+  return [...Object.values(EXERCISES), ...own.map((e) => ({ ...e, custom: true }))];
+}
+
 /** The whole catalog grouped by main muscle, in the order of MUSCLE_LABELS. */
-export function catalogByMuscle(): { muscle: MuscleGroup; exercises: ExerciseDef[] }[] {
-  const all: ExerciseDef[] = Object.values(EXERCISES);
+export function catalogByMuscle(own: CustomExercise[] = []): { muscle: MuscleGroup; exercises: ExerciseDef[] }[] {
+  const all = allExercises(own);
   return (Object.keys(MUSCLE_LABELS) as MuscleGroup[])
     .map((muscle) => ({ muscle, exercises: all.filter((e) => e.muscleGroups[0] === muscle) }))
     .filter((g) => g.exercises.length > 0);
 }
 
-export function findExerciseDef(name: string): ExerciseDef | undefined {
-  const lower = name.toLowerCase();
-  return Object.values(EXERCISES).find(
+export function findExerciseDef(name: string, own: CustomExercise[] = []): ExerciseDef | undefined {
+  const lower = name.trim().toLowerCase();
+  return allExercises(own).find(
     (e) => e.name.toLowerCase() === lower || e.aliases?.some((a) => a.toLowerCase() === lower),
   );
+}
+
+/** Other exercises for the same main muscle, to swap when the machine is taken. */
+export function alternativesFor(def: ExerciseDef, own: CustomExercise[] = []): ExerciseDef[] {
+  const main = def.muscleGroups[0];
+  return allExercises(own).filter((e) => e.name !== def.name && e.muscleGroups[0] === main);
+}
+
+export const NAME_MAX = 40;
+
+/**
+ * A new exercise from the form. Refused when the name is empty or already
+ * taken by the catalog, an old name, or another own exercise.
+ */
+export function makeCustomExercise(
+  input: { name: string; equipment: Equipment; category: ExerciseCategory; muscle: MuscleGroup },
+  own: CustomExercise[] = [],
+): CustomExercise | { error: string } {
+  const name = input.name.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
+  if (!name) return { error: 'Donne un nom à ton exercice.' };
+  if (findExerciseDef(name, own)) return { error: 'Cet exercice existe déjà.' };
+  return { name, equipment: input.equipment, category: input.category, muscleGroups: [input.muscle] };
 }
 
 export interface GoalDef {
@@ -192,7 +230,14 @@ export function withOverride(rule: ProgressionRule, override: RuleOverride | und
   return override ? { ...rule, ...clampRule(override) } : rule;
 }
 
-/** Rest between sets: heavy sets need longer. */
-export function restFor(rule: ProgressionRule, defaultRest: number): number {
-  return rule.repMax <= 5 ? Math.max(defaultRest, 180) : defaultRest;
+/**
+ * Rest between sets from the kind of exercise: heavy sets and big barbell
+ * lifts need longer, a small single-muscle exercise less.
+ */
+export function restFor(rule: ProgressionRule, defaultRest: number, def?: ExerciseDef): number {
+  if (rule.repMax <= 5) return Math.max(defaultRest, 180);
+  if (!def) return defaultRest;
+  if (def.category === 'compound' && def.equipment === 'barbell') return defaultRest + 30;
+  if (def.category === 'isolation') return Math.max(45, defaultRest - 15);
+  return defaultRest;
 }

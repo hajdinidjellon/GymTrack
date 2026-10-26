@@ -201,6 +201,32 @@ describe('what counts as history', () => {
   });
 });
 
+describe('coming back after a break', () => {
+  // Dernière séance le 1er janvier 2026 (jour 1)
+  const daysLater = (n: number) => new Date(new Date(2026, 0, 1).getTime() + n * 24 * 60 * 60 * 1000);
+
+  it('changes nothing under two weeks', () => {
+    expect(nextTargets([session(100, [10, 10, 10])], rule, { now: daysLater(13) }).decision).toBe('add_reps');
+  });
+
+  it('starts again at 90 % after two weeks, from the bottom of the range', () => {
+    const r = nextTargets([session(100, [12, 12, 12])], rule, { now: daysLater(15) });
+    expect(r).toMatchObject({ decision: 'comeback', daysOff: 15 });
+    expect(weights(r)).toEqual([90, 90, 90]);
+    expect(reps(r)).toEqual([8, 8, 8]);
+  });
+
+  it('starts again at 80 % after four weeks, on a loadable weight', () => {
+    const r = nextTargets([session(62.5, [10, 10, 10])], rule, { now: daysLater(40) });
+    expect(weights(r)).toEqual([50, 50, 50]);
+  });
+
+  it('leaves bodyweight lifts alone, and needs to know the date', () => {
+    expect(nextTargets([session(0, [10, 10, 10])], rule, { now: daysLater(60) }).decision).toBe('add_reps');
+    expect(nextTargets([session(100, [10, 10, 10])], rule).decision).toBe('add_reps');
+  });
+});
+
 describe('helpers', () => {
   it('picks the most frequent weight, the heavier one on a tie', () => {
     const set = (weight: number): WorkoutSet => ({ weight, reps: 8, setType: 'normal' });

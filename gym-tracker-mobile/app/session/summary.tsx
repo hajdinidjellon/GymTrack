@@ -23,14 +23,15 @@ export default function Summary() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const workouts = useWorkoutStore((s) => s.workouts);
   const workout = workouts.find((w) => w.id === id);
-  const records = useMemo(() => (workout ? newRecords(workout, workouts) : []), [workout, workouts]);
   const ctx = useBuildContext();
+  const own = ctx?.settings.customExercises;
+  const records = useMemo(() => (workout ? newRecords(workout, workouts, own) : []), [workout, workouts, own]);
 
   // Ce que le moteur prévoit maintenant que cette séance est dans l'historique
   const next = useMemo(() => {
     if (!workout || !ctx) return [];
     return workout.exercises.flatMap((e) => {
-      const def = findExerciseDef(e.name);
+      const def = findExerciseDef(e.name, own);
       if (!def) return [];
       const lift = planLift(def, ctx);
       const label =
@@ -39,7 +40,7 @@ export default function Summary() {
           : deltaLabel(lift);
       return [{ name: def.name, label }];
     });
-  }, [workout, ctx]);
+  }, [workout, ctx, own]);
 
   if (!workout)
     return (

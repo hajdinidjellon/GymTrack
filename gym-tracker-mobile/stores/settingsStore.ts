@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
 import { settingsPatchSchema } from '@/domain/schemas';
 import { logger } from '@/services/logger';
-import type { AppSettings, RuleOverride } from '@/types';
+import type { AppSettings, CustomExercise, RuleOverride } from '@/types';
 
 const SETTINGS_KEY = '@gymtrack/settings';
 
@@ -22,6 +22,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   increments: {},
   customDays: {},
   ruleOverrides: {},
+  restOverrides: {},
+  customExercises: [],
   signedOut: false,
 };
 
@@ -72,6 +74,9 @@ interface SettingsStore {
   setDayExercises: (key: string, names: string[] | null) => void;
   /** Own sets and reps for an exercise. `null` goes back to the goal's rule. */
   setRuleOverride: (exerciseName: string, rule: RuleOverride | null) => void;
+  /** Own rest for an exercise, in seconds. `null` goes back to the computed one. */
+  setRestOverride: (exerciseName: string, seconds: number | null) => void;
+  addCustomExercise: (exercise: CustomExercise) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -103,6 +108,15 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setRuleOverride: (exerciseName, rule) => {
     const { [exerciseName]: _old, ...others } = get().settings.ruleOverrides;
     get().updateSettings({ ruleOverrides: rule ? { ...others, [exerciseName]: rule } : others });
+  },
+
+  setRestOverride: (exerciseName, seconds) => {
+    const { [exerciseName]: _old, ...others } = get().settings.restOverrides;
+    get().updateSettings({ restOverrides: seconds == null ? others : { ...others, [exerciseName]: seconds } });
+  },
+
+  addCustomExercise: (exercise) => {
+    get().updateSettings({ customExercises: [...get().settings.customExercises, exercise] });
   },
 
   togglePlate: (plate) => {

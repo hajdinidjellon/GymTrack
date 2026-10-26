@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, Pressable, Share, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
 import { totals } from '@/domain/stats';
+import { insights } from '@/domain/insights';
+import { workoutsToCsv } from '@/domain/exportCsv';
 import { hasSession, signOut } from '@/services/supabase';
 import { speak } from '@/services/speech';
 import { useProfileStore } from '@/stores/profileStore';
@@ -23,6 +25,8 @@ import { StatTile } from '@/components/stats/StatTile';
 import { Chip } from '@/components/ui/Chip';
 import { Check, ChevronRight } from '@/components/ui/icons';
 import { PlateFace } from '@/components/disc/PlateFace';
+import { InsightsCard } from '@/components/stats/InsightsCard';
+import { logger } from '@/services/logger';
 
 export default function Profile() {
   const profile = useProfileStore((s) => s.profile);
@@ -30,6 +34,9 @@ export default function Profile() {
   const { updateSettings, togglePlate } = useSettingsStore.getState();
   const workouts = useWorkoutStore((s) => s.workouts);
   const stats = useMemo(() => totals(workouts), [workouts]);
+  const perWeek = profile?.program.perWeek ?? 3;
+  const own = settings.customExercises;
+  const learned = useMemo(() => insights(workouts, { perWeek, own, now: new Date() }), [workouts, perWeek, own]);
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
@@ -80,6 +87,10 @@ export default function Profile() {
       </FadeIn>
 
       <FadeIn index={2}>
+        <View style={{ marginTop: space.lg }}>
+          <InsightsCard insights={learned} sessions={workouts.length} />
+        </View>
+
         <SectionTitle title="Entraînement" />
         <Group>
           <Row
@@ -177,6 +188,18 @@ export default function Profile() {
           })}
         </View>
 
+        <SectionTitle title="Tes données" />
+        <Group>
+          <Row
+            label="Exporter mes séances"
+            value={workouts.length ? `${workouts.length} · CSV` : 'Rien encore'}
+            onPress={() => void exportWorkouts(workouts)}
+            hint="Ouvre le partage : mail, Fichiers, Drive…"
+            chevron
+            last
+          />
+        </Group>
+
         <SectionTitle title="Compte" />
         <StickerCard style={{ gap: space.md }}>
           <Text size={15} color={colors.inkMuted} style={{ lineHeight: 21 }}>
@@ -194,6 +217,20 @@ export default function Profile() {
       </FadeIn>
     </Screen>
   );
+}
+
+/** Every set in a CSV, through the share sheet: a copy the user keeps wherever they want. */
+async function exportWorkouts(workouts: Parameters<typeof workoutsToCsv>[0]) {
+  if (workouts.length === 0) {
+    Alert.alert('Rien à exporter', 'Fais ta première séance : elle apparaîtra dans le fichier.');
+    return;
+  }
+  try {
+    await Share.share({ title: 'GymTrack · mes séances', message: workoutsToCsv(workouts) });
+  } catch (error) {
+    logger.warn('export failed', error);
+    Alert.alert('Export impossible', 'Réessaie dans un instant.');
+  }
 }
 
 /** "oct. 26" */

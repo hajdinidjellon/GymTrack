@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { colors, space } from '@/constants/theme';
 import { formatShortDay, formatThousands } from '@/domain/format';
 import { formatKg, platesForSide, platesPhrase } from '@/domain/plates';
-import { EXERCISES } from '@/domain/programs';
+import { allExercises } from '@/domain/programs';
 import { weightHistory } from '@/domain/sessionBuilder';
 import { personalBests, weeklyVolume } from '@/domain/stats';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -36,20 +36,21 @@ export default function Progress() {
   const workouts = useWorkoutStore((s) => s.workouts);
   const bar = useSettingsStore((s) => s.settings.barWeight);
   const available = useSettingsStore((s) => s.settings.plates);
+  const own = useSettingsStore((s) => s.settings.customExercises);
 
   const lifts = useMemo<LiftProgress[]>(
     () =>
-      Object.values(EXERCISES).flatMap((def) => {
+      allExercises(own).flatMap((def) => {
         const points = weightHistory(def, workouts);
         const first = points[0];
         const last = points[points.length - 1];
         if (!first || !last) return [];
         return [{ name: def.name, barbell: def.equipment === 'barbell', points, first, last }];
       }),
-    [workouts],
+    [workouts, own],
   );
   const weeks = useMemo(() => weeklyVolume(workouts, 8), [workouts]);
-  const records = useMemo(() => personalBests(workouts).slice(0, 5), [workouts]);
+  const records = useMemo(() => personalBests(workouts, allExercises(own)).slice(0, 5), [workouts, own]);
 
   if (workouts.length === 0) {
     return (

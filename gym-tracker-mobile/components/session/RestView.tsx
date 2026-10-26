@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useRestSecondsLeft } from '@/hooks/useSessionClock';
+import { formatClock } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -19,17 +20,19 @@ interface Props {
   doneLabel?: string;
   /** Shrinks the popup to a small bar at the bottom. */
   onMinimize?: () => void;
+  /** Why this rest lasts what it lasts: "Gros mouvement à la barre…". */
+  note?: string;
 }
 
 /** The rest, in a popup in the middle of the screen: the timer, and what comes next so the bar can be loaded now. */
-export function RestView({ next, restEndsAt, total, doneLabel, onMinimize }: Props) {
+export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note }: Props) {
   const left = useRestSecondsLeft(restEndsAt) ?? 0;
   const addRestTime = useSessionStore((s) => s.addRestTime);
   const stopRestTimer = useSessionStore((s) => s.stopRestTimer);
   const undoLastSet = useSessionStore((s) => s.undoLastSet);
   const perSide = usePerSide(next?.set.weight ?? 0);
   const ratio = Math.max(0, Math.min(1, left / Math.max(total, left, 1)));
-  const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  const clock = formatClock(left);
 
   return (
     <StickerCard tone="sun" style={{ paddingVertical: 14, gap: space.md }}>
@@ -42,6 +45,12 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize }: Pro
           <Nudge label="✕" a11y="Fermer le repos" onPress={stopRestTimer} />
         </View>
       </View>
+
+      {note ? (
+        <Text size={13} weight="semibold" style={{ marginTop: -6, lineHeight: 18 }}>
+          {note}
+        </Text>
+      ) : null}
 
       <View
         accessible
@@ -139,7 +148,7 @@ function Nudge({ label, a11y, onPress }: { label: string; a11y: string; onPress:
 /** The rest once minimized: a small bar at the bottom. A tap brings the popup back. */
 export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpand: () => void }) {
   const left = useRestSecondsLeft(restEndsAt) ?? 0;
-  const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  const clock = formatClock(left);
   return (
     <Pressable
       onPress={onExpand}

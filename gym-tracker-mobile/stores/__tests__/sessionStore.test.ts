@@ -154,3 +154,26 @@ describe('end of session', () => {
     expect(store().finishSession()).toBeNull();
   });
 });
+
+describe('swapping an exercise', () => {
+  it('puts the new one in place and announces it', () => {
+    store().replaceExercise('bench', exercise('row', 3));
+    expect(session().exercises.map((e) => e.id)).toEqual(['row', 'ohp']);
+    expect(Speech.speak).toHaveBeenCalledWith(expect.stringContaining('row'), expect.anything());
+  });
+
+  it('stays quiet during a rest, and on an exercise that is not next', () => {
+    store().completeSet('bench', 0);
+    jest.clearAllMocks();
+    store().replaceExercise('ohp', exercise('row', 3));
+    store().replaceExercise('bench', exercise('dips', 1));
+    expect(session().exercises.map((e) => e.id)).toEqual(['bench', 'dips', 'row']);
+    expect(Speech.speak).not.toHaveBeenCalled();
+  });
+
+  it('dates each validation', () => {
+    jest.setSystemTime(new Date('2026-10-20T18:00:00Z'));
+    store().completeSet('bench', 0);
+    expect(session().exercises[0]!.sets[0]!.doneAt).toBe(new Date('2026-10-20T18:00:00Z').getTime());
+  });
+});
