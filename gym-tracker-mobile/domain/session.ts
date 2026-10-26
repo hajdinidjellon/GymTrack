@@ -84,6 +84,35 @@ export function undoLastSet(session: ActiveSession): ActiveSession {
   };
 }
 
+/** One more set at the end, a copy of the last one, still to do. */
+export function addSet(session: ActiveSession, exerciseId: string): ActiveSession {
+  return mapExercise(session, exerciseId, (e) => {
+    const last = e.sets[e.sets.length - 1];
+    if (!last) return e;
+    const target = last.target ?? { weight: last.weight, reps: last.reps };
+    return { ...e, sets: [...e.sets, { ...last, completed: false, target }] };
+  });
+}
+
+/**
+ * Removes a set still to do. A validated set stays (undo it first), and an
+ * exercise always keeps one set.
+ */
+export function removeSet(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
+  const exercise = session.exercises.find((e) => e.id === exerciseId);
+  const set = exercise?.sets[setIndex];
+  if (!exercise || !set || set.completed || exercise.sets.length <= 1) return session;
+  const last = session.lastCompleted;
+  const shifted =
+    last && last.exerciseId === exerciseId && last.setIndex > setIndex
+      ? { ...last, setIndex: last.setIndex - 1 }
+      : last;
+  return {
+    ...mapExercise(session, exerciseId, (e) => ({ ...e, sets: e.sets.filter((_, i) => i !== setIndex) })),
+    lastCompleted: shifted,
+  };
+}
+
 /** Indexes of the sets still to do on this exercise. */
 export function remainingSets(exercise: ActiveExercise): number[] {
   return exercise.sets.flatMap((s, i) => (s.completed ? [] : [i]));

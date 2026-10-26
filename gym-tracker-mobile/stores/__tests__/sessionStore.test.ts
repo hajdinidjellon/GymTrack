@@ -93,6 +93,20 @@ describe('sets', () => {
   });
 });
 
+describe('adding and removing sets', () => {
+  it('adds a set, then removes it with a haptic', () => {
+    store().addSet('bench');
+    expect(session().exercises[0]!.sets).toHaveLength(3);
+    store().removeSet('bench', 2);
+    expect(session().exercises[0]!.sets).toHaveLength(2);
+  });
+
+  it('never removes the only set of an exercise', () => {
+    store().removeSet('ohp', 0);
+    expect(session().exercises[1]!.sets).toHaveLength(1);
+  });
+});
+
 describe('rest timer', () => {
   it('ends by itself and says the next set', () => {
     store().completeSet('bench', 0);

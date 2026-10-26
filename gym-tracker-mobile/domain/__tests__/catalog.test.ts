@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
+import { formatDay, formatShortDay, formatThousands, parseAmount } from '@/domain/format';
 import {
   catalogByMuscle,
   defaultIncrementFor,
@@ -56,6 +56,23 @@ describe('choosing a session', () => {
     expect(groups[0]?.muscle).toBe('chest');
     expect(groups.flatMap((g) => g.exercises)).toHaveLength(Object.keys(EXERCISES).length);
     expect(groups.some((g) => g.muscle === 'core')).toBe(false);
+  });
+});
+
+describe('parseAmount', () => {
+  it.each<[string, boolean, number | null]>([
+    ['62,5', false, 62.5],
+    ['62.5', false, 62.5],
+    [' 80 ', false, 80],
+    ['62,', false, 62],
+    [',5', false, 0.5],
+    ['10.6', true, 11],
+    ['', false, null],
+    ['abc', false, null],
+    ['-5', false, null],
+    ['1,2,3', false, null],
+  ])('reads %p', (text, integer, expected) => {
+    expect(parseAmount(text, integer)).toBe(expected);
   });
 });
 

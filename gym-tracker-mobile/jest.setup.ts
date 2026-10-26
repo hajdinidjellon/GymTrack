@@ -49,3 +49,13 @@ jest.mock('react-native-reanimated', () => ({
   ...require('react-native-reanimated/mock'),
   useReducedMotion: () => false,
 }));
+
+// Le glissement est natif : en test, les actions de droite sont rendues à côté de la ligne
+jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ children, renderRightActions }: { children: unknown; renderRightActions?: Function }) =>
+      require('react').createElement(View, null, children, renderRightActions?.(0, 0, { close: () => undefined })),
+  };
+});

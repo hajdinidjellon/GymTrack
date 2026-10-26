@@ -37,6 +37,10 @@ interface SessionStore {
   updateSet: (exerciseId: string, setIndex: number, patch: Partial<WorkoutSet>) => void;
   /** One step on weight or reps, with a haptic tick. */
   nudgeSet: (exerciseId: string, setIndex: number, field: NudgeField, delta: number) => void;
+  /** One more set at the end of the exercise, same target as the last one. */
+  addSet: (exerciseId: string) => void;
+  /** Removes a set still to do (swipe left on its row). */
+  removeSet: (exerciseId: string, setIndex: number) => void;
   /** First time on an exercise: sets the weight of every remaining set. */
   setStartWeight: (exerciseId: string, weight: number) => void;
   /** Marks the set done and starts the rest timer, unless it was the last set. */
@@ -135,6 +139,19 @@ export const useSessionStore = create<SessionStore>()(
           if (next === current[field]) return;
           get().updateSet(exerciseId, setIndex, { [field]: next });
           Haptics.selectionAsync().catch(() => null);
+        },
+
+        addSet: (exerciseId) => {
+          apply((s) => Session.addSet(s, exerciseId));
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
+        },
+
+        removeSet: (exerciseId, setIndex) => {
+          const before = get().activeSession;
+          apply((s) => Session.removeSet(s, exerciseId, setIndex));
+          if (get().activeSession !== before) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
+          }
         },
 
         setStartWeight: (exerciseId, weight) => {

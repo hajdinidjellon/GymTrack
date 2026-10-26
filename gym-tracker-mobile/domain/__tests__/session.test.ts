@@ -9,6 +9,40 @@ const bench = () =>
     { weight: 60, reps: 10 },
   ]);
 
+describe('adding and removing sets', () => {
+  it('adds a set copying the last target', () => {
+    const s = Session.addSet(Session.completeSet(session([bench()]), 'bench', 1), 'bench');
+    expect(s.exercises[0]!.sets).toHaveLength(3);
+    expect(s.exercises[0]!.sets[2]).toMatchObject({ weight: 60, reps: 10, completed: false });
+  });
+
+  it('ignores an exercise with no sets or unknown', () => {
+    const empty = session([active('x', [])]);
+    expect(Session.addSet(empty, 'x')).toEqual(empty);
+    expect(Session.removeSet(empty, 'nope', 0)).toBe(empty);
+  });
+
+  it('removes a set still to do and shifts the last validated one', () => {
+    const three = session([
+      active('bench', [
+        { weight: 50, reps: 5 },
+        { weight: 60, reps: 5 },
+        { weight: 70, reps: 5 },
+      ]),
+    ]);
+    const s = Session.removeSet(Session.completeSet(three, 'bench', 2), 'bench', 0);
+    expect(s.exercises[0]!.sets.map((set) => set.weight)).toEqual([60, 70]);
+    expect(s.lastCompleted).toEqual({ exerciseId: 'bench', setIndex: 1 });
+  });
+
+  it('keeps validated sets and the last set', () => {
+    const done = Session.completeSet(session([bench()]), 'bench', 0);
+    expect(Session.removeSet(done, 'bench', 0)).toBe(done);
+    const one = session([active('bench', [{ weight: 60, reps: 10 }])]);
+    expect(Session.removeSet(one, 'bench', 0)).toBe(one);
+  });
+});
+
 describe('createSession', () => {
   it('starts with no rest and nothing done', () => {
     const s = Session.createSession('id', 'Push', [bench()], new Date('2026-10-20T18:00:00Z'));

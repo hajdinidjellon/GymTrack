@@ -18,3 +18,15 @@ export function formatThousands(n: number): string {
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
+
+/**
+ * A number typed on the keyboard: "62,5" or "62.5". Null while it is not a
+ * valid amount yet (empty, "abc", negative). `integer` rounds reps.
+ */
+export function parseAmount(text: string, integer = false): number | null {
+  const clean = text.trim().replace(',', '.');
+  if (!/^\d+(\.\d*)?$|^\.\d+$/.test(clean)) return null;
+  const n = Number(clean);
+  if (!Number.isFinite(n)) return null;
+  return integer ? Math.round(n) : Math.round(n * 100) / 100;
+}

@@ -4,6 +4,7 @@ import { border, colors, radius } from '@/constants/theme';
 import { formatKg } from '@/domain/plates';
 import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
+import { SwipeToDelete } from '@/components/ui/SwipeToDelete';
 import { Check } from '@/components/ui/icons';
 
 type State = 'done' | 'current' | 'upcoming';
@@ -36,9 +37,9 @@ export function SetRow({ index, kg, reps, state, noWeight }: Props) {
         height: current ? 58 : 48,
         paddingHorizontal: 10,
         borderRadius: radius.row,
-        backgroundColor: done ? colors.successSoft : current ? colors.coralSoft : 'transparent',
         borderWidth: current ? border.strong : 0,
         borderColor: colors.ink,
+        backgroundColor: done ? colors.successSoft : current ? colors.coralSoft : colors.paper,
       }}
     >
       <Text size={16} weight="bold" color={color} style={{ width: 52 }}>
@@ -104,9 +105,17 @@ function DoneMark() {
   );
 }
 
+interface TableProps {
+  exercise: ActiveExercise;
+  current: number;
+  /** Sets still to do can be swiped away. */
+  onRemove?: (setIndex: number) => void;
+}
+
 /** Every set of the exercise. Column headers are the only capitals of the app. */
-export function SetsTable({ exercise, current }: { exercise: ActiveExercise; current: number }) {
+export function SetsTable({ exercise, current, onRemove }: TableProps) {
   const noWeight = exercise.equipment === 'bodyweight';
+  const canRemove = !!onRemove && exercise.sets.length > 1;
   return (
     <View>
       <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 4 }}>
@@ -117,14 +126,19 @@ export function SetsTable({ exercise, current }: { exercise: ActiveExercise; cur
       </View>
       <View style={{ gap: 4 }}>
         {exercise.sets.map((s, i) => (
-          <SetRow
-            key={i}
-            index={i + 1}
-            kg={s.weight}
-            reps={s.reps}
-            noWeight={noWeight}
-            state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
-          />
+          <SwipeToDelete
+            key={`${i}-${exercise.sets.length}`}
+            deleteLabel={`Supprimer la série ${i + 1}`}
+            onDelete={canRemove && !s.completed ? () => onRemove(i) : undefined}
+          >
+            <SetRow
+              index={i + 1}
+              kg={s.weight}
+              reps={s.reps}
+              noWeight={noWeight}
+              state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
+            />
+          </SwipeToDelete>
         ))}
       </View>
     </View>
