@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Modal, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, space } from '@/constants/theme';
 import { findCurrent } from '@/domain/sessionCursor';
@@ -8,7 +8,7 @@ import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { SetView } from '@/components/session/SetView';
-import { RestView } from '@/components/session/RestView';
+import { RestMini, RestView } from '@/components/session/RestView';
 import { CalibrationView } from '@/components/session/CalibrationView';
 import { SessionProgress } from '@/components/session/SessionProgress';
 
@@ -51,6 +51,12 @@ export default function SessionScreen() {
   const session = useSessionStore((s) => s.activeSession);
   const cursor = session ? findCurrent(session.exercises) : null;
   const done = !!session && !cursor;
+  const resting = session?.restEndsAt != null;
+  // Réduit pour ce repos seulement : il revient en grand après la série suivante
+  const restKey = resting ? JSON.stringify(session.lastCompleted) : null;
+  const [minimizedKey, setMinimizedKey] = useState<string | null>(null);
+  const minimized = resting && minimizedKey === restKey;
+  const setMinimized = (on: boolean) => setMinimizedKey(on ? restKey : null);
 
   useEffect(() => {
     leaving = false;
@@ -72,21 +78,13 @@ export default function SessionScreen() {
       </Screen>
     );
 
-  const resting = session.restEndsAt != null;
   const { exercise, exerciseIndex, setIndex } = cursor;
   const last = session.lastCompleted;
   const doneExercise = last && session.exercises.find((e) => e.id === last.exerciseId);
   const left = session.exercises.reduce((n, e) => n + e.sets.filter((set) => !set.completed).length, 0);
 
-  // Le repos s'affiche en bas du même écran : on ne change jamais de vue pendant la séance
-  const rest = resting ? (
-    <RestView
-      next={cursor}
-      restEndsAt={session.restEndsAt!}
-      total={session.restDuration ?? 90}
-      doneLabel={doneExercise ? `Série ${last.setIndex + 1} validée` : undefined}
-    />
-  ) : null;
+  // Pendant le repos, le bas de l'écran garde le minuteur en petit ; en grand, il s'ouvre au milieu
+  const rest = resting ? <RestMini restEndsAt={session.restEndsAt!} onExpand={() => setMinimized(false)} /> : null;
 
   return (
     <Screen style={{ paddingBottom: space.lg }}>
@@ -124,6 +122,25 @@ export default function SessionScreen() {
       ) : (
         <SetView cursor={cursor} footer={rest ?? undefined} />
       )}
+
+      <Modal visible={resting && !minimized} transparent animationType="fade" onRequestClose={() => setMinimized(true)}>
+        <View style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'center', padding: space.gutter }}>
+          <Pressable
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+            onPress={() => setMinimized(true)}
+            accessibilityLabel="Réduire le minuteur"
+          />
+          {resting ? (
+            <RestView
+              next={cursor}
+              restEndsAt={session.restEndsAt!}
+              total={session.restDuration ?? 90}
+              doneLabel={doneExercise ? `Série ${last.setIndex + 1} validée` : undefined}
+              onMinimize={() => setMinimized(true)}
+            />
+          ) : null}
+        </View>
+      </Modal>
     </Screen>
   );
 }
