@@ -96,6 +96,8 @@ export interface BodyStats {
 
 export type Goal = 'muscle' | 'force' | 'forme';
 export type SplitId = 'ppl' | 'ul' | 'fb';
+/** How long the user has been lifting: sets the first weights to try. */
+export type Experience = 'new' | 'months' | 'years';
 
 export interface Program {
   split: SplitId;
@@ -106,6 +108,7 @@ export interface UserProfile {
   name?: string;
   goal: Goal;
   program: Program;
+  experience?: Experience;
   prs: PersonalRecord[];
   bodyStats: BodyStats[];
 }

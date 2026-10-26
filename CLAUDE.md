@@ -33,7 +33,7 @@ Branches, commits and PRs: see `CONTRIBUTING.md`.
 ```
 app/
   _layout.tsx              ← fonts, SQLite init, local data load (offline-first)
-  (onboarding)/            ← welcome, login, goal, program (goal/program also used from Profile with ?edit=1)
+  (onboarding)/            ← welcome, setup (the 4 first-launch questions + recap), login; goal/program edit from Profile (?edit=1)
   (tabs)/                  ← index (Aujourd'hui), progress, profile; _layout gates on profile and resumes a running session
   session/preview.tsx      ← today's session, "Lancer la séance"
   session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { border, colors, hardShadow, radius } from '@/constants/theme';
 import { describeSide, formatKg } from '@/domain/plates';
+import { calibrationPreset } from '@/domain/onboarding';
 import type { ActiveExercise } from '@/types';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useProfileStore } from '@/stores/profileStore';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
@@ -20,7 +22,8 @@ const PRESETS: Record<ActiveExercise['equipment'], number[]> = {
 /** First time on an exercise: pick a starting weight, the engine takes over from there. */
 export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   const presets = PRESETS[exercise.equipment];
-  const [weight, setWeight] = useState(presets[2] ?? 20);
+  const experience = useProfileStore((s) => s.profile?.experience);
+  const [weight, setWeight] = useState(() => calibrationPreset(presets, experience) ?? 20);
   const setStartWeight = useSessionStore((s) => s.setStartWeight);
   const step = exercise.rule?.increment ?? 2.5;
   const min = exercise.equipment === 'barbell' ? 20 : step;
