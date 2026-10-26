@@ -59,6 +59,13 @@ describe('sets', () => {
     expect(s.lastCompleted).toEqual({ exerciseId: 'bench', setIndex: 0 });
   });
 
+  it('carries the weight and reps really done over to the next sets', () => {
+    const changed = Session.updateSet(session([bench()]), 'bench', 0, { weight: 100, reps: 8 });
+    const s = Session.completeSet(changed, 'bench', 0);
+    expect(s.exercises[0]!.sets[1]).toMatchObject({ weight: 100, reps: 8, completed: false });
+    expect(Session.completeSet(changed, 'bench', 9).exercises).toEqual(changed.exercises);
+  });
+
   it('ignores an unknown set or exercise', () => {
     const s = session([bench()]);
     expect(Session.updateSet(s, 'bench', 9, { reps: 1 }).exercises).toEqual(s.exercises);

@@ -64,9 +64,24 @@ export function setStartWeight(session: ActiveSession, exerciseId: string, weigh
   }));
 }
 
+/**
+ * Marks the set done. The sets after it start from what was really done:
+ * 100 kg instead of the planned 70 on set 1 means 100 kg on set 2 too.
+ */
 export function completeSet(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
   return {
-    ...updateSet(session, exerciseId, setIndex, { completed: true }),
+    ...mapExercise(session, exerciseId, (e) => {
+      const done = e.sets[setIndex];
+      if (!done) return e;
+      return {
+        ...e,
+        sets: e.sets.map((set, i) => {
+          if (i === setIndex) return { ...set, completed: true };
+          if (i > setIndex && !set.completed) return { ...set, weight: done.weight, reps: done.reps };
+          return set;
+        }),
+      };
+    }),
     lastCompleted: { exerciseId, setIndex },
   };
 }
