@@ -4,6 +4,7 @@
  * vibrations, de la voix et des notifications.
  */
 
+import { moveItem } from '@/domain/reorder';
 import { withRestTaken } from '@/domain/rest';
 import { findCurrent } from '@/domain/sessionCursor';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
@@ -181,6 +182,33 @@ export function replaceExercise(session: ActiveSession, exerciseId: string, next
   if (done.length === 0) exercises.splice(index, 1, next);
   else exercises.splice(index, 1, { ...current, sets: done }, next);
   return { ...session, exercises };
+}
+
+const isFinished = (e: ActiveExercise) => e.sets.every((s) => s.completed);
+
+/**
+ * The machine just freed up: this exercise becomes the current one. It moves
+ * in front of the exercise in progress, which simply waits its turn. The
+ * cursor stays "the first exercise not finished", so nothing else changes.
+ */
+export function doNow(session: ActiveSession, exerciseId: string): ActiveSession {
+  const from = session.exercises.findIndex((e) => e.id === exerciseId);
+  const target = session.exercises[from];
+  const current = findCurrent(session.exercises);
+  if (!target || !current || isFinished(target) || current.exercise.id === exerciseId) return session;
+  return { ...session, exercises: moveItem(session.exercises, from, current.exerciseIndex) };
+}
+
+/**
+ * The machine is taken: this exercise goes to the end of the session. Already
+ * the last one left to do: the session is returned as is.
+ */
+export function doLater(session: ActiveSession, exerciseId: string): ActiveSession {
+  const from = session.exercises.findIndex((e) => e.id === exerciseId);
+  const target = session.exercises[from];
+  const waitingAfter = session.exercises.slice(from + 1).some((e) => !isFinished(e));
+  if (!target || isFinished(target) || !waitingAfter) return session;
+  return { ...session, exercises: moveItem(session.exercises, from, session.exercises.length - 1) };
 }
 
 /** What goes into the history: only exercises with at least one validated set. */

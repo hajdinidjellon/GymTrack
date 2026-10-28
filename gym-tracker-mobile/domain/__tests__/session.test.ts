@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import * as Session from '@/domain/session';
 import { formatKg } from '@/domain/plates';
+import { findCurrent } from '@/domain/sessionCursor';
 import { active, session } from './fixtures';
 
 const bench = () =>
@@ -181,6 +182,67 @@ describe('replaceExercise', () => {
   it('ignores an unknown exercise', () => {
     const s = session([bench()]);
     expect(Session.replaceExercise(s, 'nope', rows)).toBe(s);
+  });
+});
+
+describe('changing the order', () => {
+  const ohp = () => active('ohp', [{ weight: 40, reps: 8 }]);
+  const dips = () => active('dips', [{ weight: 0, reps: 12 }]);
+  const three = () => session([bench(), ohp(), dips()]);
+  const ids = (s: ReturnType<typeof session>) => s.exercises.map((e) => e.id);
+
+  describe('doNow', () => {
+    it('brings a later exercise in front of the current one', () => {
+      expect(ids(Session.doNow(three(), 'dips'))).toEqual(['dips', 'bench', 'ohp']);
+    });
+
+    it('puts a started exercise on hold, keeping its validated sets', () => {
+      const started = Session.completeSet(three(), 'bench', 0);
+      const s = Session.doNow(started, 'dips');
+      expect(ids(s)).toEqual(['dips', 'bench', 'ohp']);
+      expect(s.exercises[1]!.sets[0]!.completed).toBe(true);
+      expect(s.lastCompleted).toEqual({ exerciseId: 'bench', setIndex: 0 });
+    });
+
+    it('lands after the exercises already finished', () => {
+      const finished = Session.completeRemaining(three(), 'bench');
+      expect(ids(Session.doNow(finished, 'dips'))).toEqual(['bench', 'dips', 'ohp']);
+    });
+
+    it.each([
+      ['the current exercise', three(), 'bench'],
+      ['a finished exercise', Session.completeRemaining(three(), 'ohp'), 'ohp'],
+      ['an unknown exercise', three(), 'nope'],
+      ['a finished session', Session.completeRemaining(session([bench()]), 'bench'), 'bench'],
+    ])('leaves the session untouched for %s', (_, s, id) => {
+      expect(Session.doNow(s, id)).toBe(s);
+    });
+  });
+
+  describe('doLater', () => {
+    it('sends the exercise to the end of the session', () => {
+      expect(ids(Session.doLater(three(), 'bench'))).toEqual(['ohp', 'dips', 'bench']);
+    });
+
+    it('keeps the sets already validated on a started exercise', () => {
+      const s = Session.doLater(Session.completeSet(three(), 'bench', 0), 'bench');
+      expect(ids(s)).toEqual(['ohp', 'dips', 'bench']);
+      expect(s.exercises[2]!.sets.map((x) => x.completed)).toEqual([true, false]);
+    });
+
+    it('makes the next exercise the current one', () => {
+      const s = Session.doLater(three(), 'bench');
+      expect(findCurrent(s.exercises)?.exercise.id).toBe('ohp');
+    });
+
+    it.each([
+      ['the last exercise left', Session.completeRemaining(Session.completeRemaining(three(), 'ohp'), 'dips'), 'bench'],
+      ['the last exercise of the list', three(), 'dips'],
+      ['a finished exercise', Session.completeRemaining(three(), 'bench'), 'bench'],
+      ['an unknown exercise', three(), 'nope'],
+    ])('leaves the session untouched for %s', (_, s, id) => {
+      expect(Session.doLater(s, id)).toBe(s);
+    });
   });
 });
 
