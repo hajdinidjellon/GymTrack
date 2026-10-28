@@ -169,8 +169,11 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
   switch (lift.decision) {
     case 'add_reps':
       return '+1 rep';
+    case 'add_two_reps':
+      return '+2 reps';
     case 'add_weight':
       return `+${formatKg(lift.rule.increment)} kg`;
+    case 'hold':
     case 'repeat':
       return 'même cible';
     case 'deload':
@@ -202,6 +205,10 @@ export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targe
       return bodyweight
         ? 'Une rep de plus par série que la dernière fois.'
         : `Une rep de plus par série. À ${rule.repMax} reps partout, on ajoute du poids.`;
+    case 'add_two_reps':
+      return 'Ta dernière série était facile : deux reps de plus par série.';
+    case 'hold':
+      return 'Ta dernière série était à fond : on garde la même cible pour consolider.';
     case 'repeat':
       return `Une série est passée sous ${rule.repMin} reps : on garde la même cible.`;
     case 'deload':

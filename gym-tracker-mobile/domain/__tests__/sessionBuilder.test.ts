@@ -235,6 +235,8 @@ describe('last time and reason', () => {
     ['add_weight', 60, 'atteint 12 reps : on ajoute 2,5 kg'],
     ['add_reps', 60, 'À 12 reps partout'],
     ['add_reps', 0, 'Une rep de plus par série que la dernière fois'],
+    ['add_two_reps', 60, 'était facile : deux reps de plus'],
+    ['hold', 60, 'était à fond : on garde la même cible'],
     ['repeat', 60, 'sous 8 reps'],
     ['deload', 60, 'on allège de 10 %'],
     ['start', 60, '70 % de ton record'],
@@ -275,6 +277,8 @@ describe('labels', () => {
 
   it.each<[ProgressionDecision, string]>([
     ['add_reps', '+1 rep'],
+    ['add_two_reps', '+2 reps'],
+    ['hold', 'même cible'],
     ['add_weight', '+2,5 kg'],
     ['repeat', 'même cible'],
     ['deload', 'allégé'],
