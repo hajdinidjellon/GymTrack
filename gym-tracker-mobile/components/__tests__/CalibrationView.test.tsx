@@ -64,4 +64,14 @@ describe('CalibrationView', () => {
     await fireEvent.press(screen.getByLabelText('Plus 2,5 kg'));
     expect(screen.getByText('Commencer à 22,5 kg')).toBeTruthy();
   });
+
+  it('takes a weight typed on the keyboard, never under the empty bar', async () => {
+    await show(fresh({ name: 'Squat', equipment: 'barbell' }));
+    const input = screen.getByLabelText('Charge de départ en kilos');
+    await fireEvent(input, 'focus');
+    await fireEvent.changeText(input, '72,5');
+    expect(screen.getByText('Commencer à 72,5 kg')).toBeTruthy();
+    await fireEvent.changeText(input, '5');
+    expect(screen.getByText('Commencer à 20 kg')).toBeTruthy();
+  });
 });

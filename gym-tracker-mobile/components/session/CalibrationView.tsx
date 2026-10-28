@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Keyboard, Pressable, View } from 'react-native';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { loadingOf, type Loading } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
+import { Stepper } from '@/components/ui/Stepper';
 import { Barbell } from '@/components/disc/Barbell';
 import { useSidePlates } from '@/components/disc/LoadedBar';
 import { PlateFace } from '@/components/disc/PlateFace';
@@ -36,29 +37,35 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   const min = loading === 'bar' ? barWeight : step;
   const perSide = useSidePlates(loading, weight);
 
-  return (
-    <View style={{ flex: 1 }}>
-      {/* The free height is shared between the blocks instead of piling up above the button */}
-      <View style={{ flex: 1, justifyContent: 'space-evenly', gap: space.md, paddingVertical: space.sm }}>
-        <View
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            borderRadius: radius.row,
-            borderWidth: border.base,
-            borderColor: colors.ink,
-            backgroundColor: colors.sun,
-          }}
-        >
-          <Text size={15} weight="black">
-            Première fois
-          </Text>
-          <Text size={15} weight="semibold">
-            {loading === 'bar' ? 'Charge ta barre de départ.' : 'Choisis ta charge de départ.'} Ensuite, on s'occupe de
-            tout.
-          </Text>
-        </View>
+  const pick = (w: number) => {
+    Keyboard.dismiss();
+    setWeight(w);
+  };
 
+  return (
+    <Pressable onPress={Keyboard.dismiss} accessible={false} style={{ flex: 1 }}>
+      <View
+        style={{
+          marginTop: space.md,
+          paddingVertical: 10,
+          paddingHorizontal: 14,
+          borderRadius: radius.row,
+          borderWidth: border.base,
+          borderColor: colors.ink,
+          backgroundColor: colors.sun,
+        }}
+      >
+        <Text size={15} weight="black">
+          Première fois
+        </Text>
+        <Text size={15} weight="semibold">
+          {loading === 'bar' ? 'Charge ta barre de départ.' : 'Choisis ta charge de départ.'} Ensuite, on s'occupe de
+          tout.
+        </Text>
+      </View>
+
+      {/* The weight and the presets share the free height, centred, instead of piling up above the button */}
+      <View style={{ flex: 1, justifyContent: 'center', gap: space.xl, paddingVertical: space.md }}>
         <StickerCard tone="hero" style={{ paddingHorizontal: 12, paddingVertical: 18, gap: space.sm }}>
           {loading === 'bar' ? (
             <View style={{ height: 120, justifyContent: 'center' }}>
@@ -76,20 +83,16 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
               ))}
             </View>
           ) : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Round
-              label="−"
-              a11y={`Moins ${formatKg(step)} kg`}
-              onPress={() => setWeight((w) => Math.max(min, w - step))}
-            />
-            <Text size={64} weight="black" style={{ lineHeight: 70 }}>
-              {formatKg(weight)}{' '}
-              <Text size={22} weight="black">
-                kg
-              </Text>
-            </Text>
-            <Round label="+" a11y={`Plus ${formatKg(step)} kg`} onPress={() => setWeight((w) => w + step)} />
-          </View>
+          <Stepper
+            value={formatKg(weight)}
+            unit="kg"
+            onMinus={() => pick(Math.max(min, weight - step))}
+            onPlus={() => pick(weight + step)}
+            minusLabel={`Moins ${formatKg(step)} kg`}
+            plusLabel={`Plus ${formatKg(step)} kg`}
+            onChange={(typed) => setWeight(Math.max(min, typed))}
+            inputLabel="Charge de départ en kilos"
+          />
           <LoadHint loading={loading} weight={weight} />
         </StickerCard>
 
@@ -99,7 +102,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
             return (
               <Pressable
                 key={v}
-                onPress={() => setWeight(v)}
+                onPress={() => pick(v)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={`${v} kilos`}
@@ -126,33 +129,13 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
         </View>
       </View>
 
-      <StickerButton label={`Commencer à ${formatKg(weight)} kg`} onPress={() => setStartWeight(exercise.id, weight)} />
-    </View>
-  );
-}
-
-function Round({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      style={({ pressed }) => ({
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        borderWidth: border.base,
-        borderColor: colors.ink,
-        backgroundColor: colors.card,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...(pressed ? {} : hardShadow(2)),
-        transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : [],
-      })}
-    >
-      <Text size={30} weight="black">
-        {label}
-      </Text>
+      <StickerButton
+        label={`Commencer à ${formatKg(weight)} kg`}
+        onPress={() => {
+          Keyboard.dismiss();
+          setStartWeight(exercise.id, weight);
+        }}
+      />
     </Pressable>
   );
 }
