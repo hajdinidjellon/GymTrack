@@ -87,10 +87,6 @@ export default function Profile() {
       </FadeIn>
 
       <FadeIn index={2}>
-        <View style={{ marginTop: space.lg }}>
-          <InsightsCard insights={learned} sessions={workouts.length} />
-        </View>
-
         <SectionTitle title="Entraînement" />
         <Group>
           <Row
@@ -186,6 +182,10 @@ export default function Profile() {
               </PressableScale>
             );
           })}
+        </View>
+
+        <View style={{ marginTop: space.xl + 4 }}>
+          <InsightsCard insights={learned} sessions={workouts.length} />
         </View>
 
         <SectionTitle title="Tes données" />
