@@ -192,3 +192,40 @@ describe('swapping an exercise', () => {
     expect(session().exercises[0]!.sets[0]!.doneAt).toBe(new Date('2026-10-20T18:00:00Z').getTime());
   });
 });
+
+describe('changing the order', () => {
+  const ids = () => session().exercises.map((e) => e.id);
+
+  it('does an exercise now and announces it', () => {
+    store().doNow('ohp');
+    expect(ids()).toEqual(['ohp', 'bench']);
+    expect(Speech.speak).toHaveBeenCalledWith(expect.stringContaining('Prochain exercice : ohp'), expect.anything());
+  });
+
+  it('keeps an exercise for later and announces the next one', () => {
+    store().doLater('bench');
+    expect(ids()).toEqual(['ohp', 'bench']);
+    expect(Speech.speak).toHaveBeenCalledWith(expect.stringContaining('Prochain exercice : ohp'), expect.anything());
+  });
+
+  it('names the new exercise in the rest notification instead of speaking', () => {
+    store().completeSet('bench', 0);
+    jest.clearAllMocks();
+    store().doNow('ohp');
+    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(120, 'ohp · 60 kg × 10');
+    expect(Speech.speak).not.toHaveBeenCalled();
+  });
+
+  it('does nothing, silently, when the order cannot change', () => {
+    store().doLater('ohp');
+    store().doNow('bench');
+    expect(ids()).toEqual(['bench', 'ohp']);
+    expect(Speech.speak).not.toHaveBeenCalled();
+  });
+
+  it('does nothing without a running session', () => {
+    store().discardSession();
+    store().doNow('ohp');
+    expect(store().activeSession).toBeNull();
+  });
+});

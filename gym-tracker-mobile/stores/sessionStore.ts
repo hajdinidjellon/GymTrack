@@ -51,6 +51,10 @@ interface SessionStore {
   undoLastSet: () => void;
   /** Another exercise instead of this one; the sets already done stay. */
   replaceExercise: (exerciseId: string, next: ActiveExercise) => void;
+  /** This exercise right now (its machine just freed up). */
+  doNow: (exerciseId: string) => void;
+  /** This exercise at the end of the session (its machine is taken). */
+  doLater: (exerciseId: string) => void;
 
   startRestTimer: (seconds: number) => void;
   addRestTime: (seconds: number) => void;
@@ -124,6 +128,15 @@ export const useSessionStore = create<SessionStore>()(
       const apply = (fn: (s: ActiveSession) => ActiveSession) =>
         set((state) => (state.activeSession ? { activeSession: fn(state.activeSession) } : state));
       const currentId = () => findCurrent(get().activeSession?.exercises ?? [])?.exercise.id;
+      /** Applies a new order; a no-op stays silent. */
+      const reorder = (fn: (s: ActiveSession) => ActiveSession) => {
+        const before = get().activeSession;
+        const previous = currentId();
+        apply(fn);
+        if (get().activeSession === before) return;
+        Haptics.selectionAsync().catch(() => null);
+        afterCurrentChanged(previous);
+      };
 
       return {
         activeSession: null,
@@ -207,6 +220,10 @@ export const useSessionStore = create<SessionStore>()(
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
           afterCurrentChanged(previous);
         },
+
+        doNow: (exerciseId) => reorder((s) => Session.doNow(s, exerciseId)),
+
+        doLater: (exerciseId) => reorder((s) => Session.doLater(s, exerciseId)),
 
         startRestTimer: (seconds) => {
           if (!get().activeSession) return;
