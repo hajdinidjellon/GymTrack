@@ -5,34 +5,21 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "splash": {
-      "backgroundColor": "#080810"
-    },
+    "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gymtrack.mobile",
-      "infoPlist": {
-        "NSHealthShareUsageDescription": "GymTrack lit votre poids depuis Apple Santé pour suivre votre progression.",
-        "NSHealthUpdateUsageDescription": "GymTrack peut enregistrer vos séances dans Apple Santé.",
-        "NSCameraUsageDescription": "GymTrack utilise la caméra pour scanner des QR codes."
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#080810"
-      },
-      "notification": {
-        "icon": "./assets/notification-icon.png",
-        "color": "#17B8FF"
+        "backgroundColor": "#FFF6EC"
       },
       "package": "com.gymtrack.mobile",
-      "permissions": [
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.VIBRATE",
-        "android.permission.CAMERA"
-      ]
+      "permissions": ["android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]
     },
     "web": {
       "bundler": "metro",
@@ -40,11 +27,27 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#F7F5F0"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF6EC"
+        }
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
     },
-    "scheme": "gymtrack"
+    "scheme": "gymtrack",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

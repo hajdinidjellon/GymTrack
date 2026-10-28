@@ -1,359 +1,220 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import {
-  View, Text, ScrollView, Pressable, Animated, Easing,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBottomNavPadding } from '@/hooks/useBottomNavPadding';
-import { format } from 'date-fns';
-import { useT, useDateLocale } from '@/lib/i18n';
-import { ProgressChart } from '@/components/charts/ProgressChart';
-import { VolumeBar, MiniVolumeBar } from '@/components/charts/VolumeBar';
-import { MuscleHeatmap } from '@/components/muscle/MuscleHeatmap';
-import { Mascot } from '@/components/mascot/Mascot';
-import { ScreenBackground, BG_COLORS } from '@/components/ui/ScreenBackground';
-import { useWorkoutStore } from '@/stores/workoutStore';
-import { useProfileStore } from '@/stores/profileStore';
+import React, { useMemo } from 'react';
+import { View } from 'react-native';
+import { router } from 'expo-router';
+import { colors, space } from '@/constants/theme';
+import { formatShortDay, formatThousands } from '@/domain/format';
+import { formatKg, platesForSide, platesPhrase } from '@/domain/plates';
+import { allExercises } from '@/domain/programs';
+import { weightHistory } from '@/domain/sessionBuilder';
+import { personalBests, weeklyVolume } from '@/domain/stats';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { calculate1RM } from '@/lib/aiPlanner';
-import type { MuscleGroup } from '@/types';
+import { useWorkoutStore } from '@/stores/workoutStore';
+import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { SectionTitle } from '@/components/ui/SectionTitle';
+import { StickerButton } from '@/components/ui/StickerButton';
+import { Text } from '@/components/ui/Text';
+import { StickerCard } from '@/components/ui/StickerCard';
+import { Chip } from '@/components/ui/Chip';
+import { FadeIn } from '@/components/ui/FadeIn';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { ChevronRight } from '@/components/ui/icons';
+import { Barbell } from '@/components/disc/Barbell';
+import { Sparkline } from '@/components/stats/Sparkline';
+import { StatTile } from '@/components/stats/StatTile';
+import { VolumeChart } from '@/components/stats/VolumeChart';
 
-type ProgressTab = 'exercises' | 'volume' | 'muscles';
+interface LiftProgress {
+  name: string;
+  barbell: boolean;
+  points: { date: string; weight: number }[];
+  first: { date: string; weight: number };
+  last: { date: string; weight: number };
+}
 
-const TAB_ICONS: Record<ProgressTab, keyof typeof Ionicons.glyphMap> = {
-  exercises: 'barbell-outline',
-  volume:    'bar-chart-outline',
-  muscles:   'body-outline',
-};
+export default function Progress() {
+  const workouts = useWorkoutStore((s) => s.workouts);
+  const bar = useSettingsStore((s) => s.settings.barWeight);
+  const available = useSettingsStore((s) => s.settings.plates);
+  const own = useSettingsStore((s) => s.settings.customExercises);
 
-export default function ProgressScreen() {
-  const bottomPad = useBottomNavPadding();
-  const { workouts } = useWorkoutStore();
-  const { profile }  = useProfileStore();
-  const units        = useSettingsStore((s) => s.settings.units);
-  const t = useT();
-  const dateLocale = useDateLocale();
+  const lifts = useMemo<LiftProgress[]>(
+    () =>
+      allExercises(own).flatMap((def) => {
+        const points = weightHistory(def, workouts);
+        const first = points[0];
+        const last = points[points.length - 1];
+        if (!first || !last) return [];
+        return [{ name: def.name, barbell: def.equipment === 'barbell', points, first, last }];
+      }),
+    [workouts, own],
+  );
+  const weeks = useMemo(() => weeklyVolume(workouts, 8), [workouts]);
+  const records = useMemo(() => personalBests(workouts, allExercises(own)).slice(0, 5), [workouts, own]);
 
-  const TABS: Array<{ id: ProgressTab; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
-    { id: 'exercises', label: t('progress.tab.exercises'), icon: TAB_ICONS.exercises },
-    { id: 'volume',    label: t('progress.tab.volume'),    icon: TAB_ICONS.volume    },
-    { id: 'muscles',   label: t('progress.tab.muscles'),   icon: TAB_ICONS.muscles   },
-  ];
+  if (workouts.length === 0) {
+    return (
+      <Screen tabs footer={<StickerButton label="Voir la séance du jour" onPress={() => router.navigate('/')} />}>
+        <ScreenHeader title="Progrès" subtitle="Ce que tu as gagné depuis le début, en disques." />
+        <StickerCard style={{ marginTop: space.sm, alignItems: 'center', paddingVertical: space.xxl, gap: space.md }}>
+          <Barbell perSide={[]} scale={0.8} barWidth={80} />
+          <Text size={20} weight="black" align="center">
+            Ta barre est encore vide
+          </Text>
+          <Text size={15} color={colors.inkMuted} align="center" style={{ lineHeight: 21, maxWidth: 280 }}>
+            Fais ta première séance : tes courbes, ton volume et tes records s'afficheront ici.
+          </Text>
+        </StickerCard>
+      </Screen>
+    );
+  }
 
-  const [activeTab, setActiveTab]               = useState<ProgressTab>('exercises');
-  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
-  const [heatmapPeriod, setHeatmapPeriod]       = useState<7 | 30>(7);
-  const [showAllExercises, setShowAllExercises] = useState(false);
+  const thisWeek = weeks[weeks.length - 1]!;
+  const lastWeek = weeks[weeks.length - 2];
+  const trend = lastWeek?.tonnage ? Math.round(((thisWeek.tonnage - lastWeek.tonnage) / lastWeek.tonnage) * 100) : null;
+  const gained = lifts.reduce((sum, l) => sum + Math.max(0, l.last.weight - l.first.weight), 0);
 
-  const fade  = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fade,  { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(slide, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, []);
-
-  const exercises = useMemo(() => {
-    const map = new Map<string, { name: string; dataPoints: Array<{ date: string; maxWeight: number; totalVolume: number; estimated1RM: number }> }>();
-    for (const workout of workouts) {
-      for (const exercise of workout.exercises) {
-        if (!map.has(exercise.name)) map.set(exercise.name, { name: exercise.name, dataPoints: [] });
-        const maxWeight   = Math.max(...exercise.sets.map((s) => s.weight), 0);
-        const maxReps     = exercise.sets.find((s) => s.weight === maxWeight)?.reps ?? 1;
-        const totalVolume = exercise.sets.reduce((t, s) => t + s.weight * s.reps, 0);
-        map.get(exercise.name)!.dataPoints.push({ date: workout.date, maxWeight, totalVolume, estimated1RM: calculate1RM(maxWeight, maxReps) });
-      }
-    }
-    return Array.from(map.values())
-      .map((e) => ({ ...e, dataPoints: [...e.dataPoints].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) }))
-      .filter((e) => e.dataPoints.length >= 2)
-      .sort((a, b) => b.dataPoints.length - a.dataPoints.length);
-  }, [workouts]);
-
-  const weeklyVolume = useMemo(() => {
-    const start = new Date(); start.setDate(start.getDate() - 7);
-    const byMuscle = new Map<MuscleGroup, { sets: number; volume: number }>();
-    for (const workout of workouts) {
-      if (new Date(workout.date) < start) continue;
-      for (const exercise of workout.exercises) {
-        for (const muscle of exercise.muscleGroups) {
-          const prev = byMuscle.get(muscle) ?? { sets: 0, volume: 0 };
-          byMuscle.set(muscle, { sets: prev.sets + exercise.sets.length, volume: prev.volume + exercise.sets.reduce((t, s) => t + s.weight * s.reps, 0) });
-        }
-      }
-    }
-    return Array.from(byMuscle.entries()).map(([muscle, v]) => ({ muscle, ...v })).sort((a, b) => b.sets - a.sets);
-  }, [workouts]);
+  // La plus belle progression à la barre, racontée en disques
+  const hero = lifts
+    .filter((l) => l.barbell && l.last.weight > l.first.weight)
+    .sort((a, b) => b.last.weight - b.first.weight - (a.last.weight - a.first.weight))[0];
+  const loadOf = (w: number) => platesForSide(Math.max(0, (w - bar) / 2), available);
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG_COLORS.base }}>
-      <ScreenBackground variant="progress" />
+    <Screen tabs scroll>
+      <FadeIn>
+        <ScreenHeader title="Progrès" subtitle="Ce que tu as gagné depuis le début, en disques." />
+      </FadeIn>
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
-          <ScrollView
-            contentContainerStyle={{ paddingBottom: bottomPad }}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* ── HEADER ── */}
-            <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 22 }}>
-              <Text style={{ fontSize: 11, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 6 }}>
-                {t('progress.supertitle')}
-              </Text>
-              <Text style={{ fontSize: 38, fontWeight: '900', color: '#fff', letterSpacing: -1.6, lineHeight: 42 }}>
-                {t('progress.title')}
-              </Text>
-              <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.50)', fontWeight: '600', marginTop: 8, lineHeight: 20 }}>
-                {t('progress.subtitle')}
-              </Text>
-            </View>
+      <FadeIn index={1} style={{ flexDirection: 'row', gap: space.sm }}>
+        <StatTile value={String(workouts.length)} label={workouts.length > 1 ? 'séances' : 'séance'} />
+        <StatTile value={`+${formatKg(gained)} kg`} label="gagnés au total" highlight={gained > 0} />
+        <StatTile value={String(records.length)} label={records.length > 1 ? 'records' : 'record'} />
+      </FadeIn>
 
-            {/* ── TABS ── */}
-            <View style={{
-              flexDirection: 'row', marginHorizontal: 20,
-              backgroundColor: 'rgba(255,255,255,0.04)',
-              borderRadius: 14, padding: 4, marginBottom: 22,
-              borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-            }}>
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <Pressable
-                    key={tab.id}
-                    onPress={() => setActiveTab(tab.id)}
-                    style={{
-                      flex: 1, borderRadius: 10,
-                      backgroundColor: isActive ? BG_COLORS.accent : 'transparent',
-                      paddingVertical: 11,
-                      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    }}
-                  >
-                    <Ionicons name={tab.icon} size={14} color={isActive ? '#07090f' : 'rgba(255,255,255,0.45)'} />
-                    <Text style={{
-                      fontSize: 12, fontWeight: '900',
-                      color: isActive ? '#07090f' : 'rgba(255,255,255,0.45)',
-                      letterSpacing: 0.5, textTransform: 'uppercase',
-                    }}>
-                      {tab.label}
+      <FadeIn index={2}>
+        <SectionTitle
+          title="Volume par semaine"
+          right={
+            trend != null ? (
+              <Chip tone={trend >= 0 ? 'sun' : 'neutral'} label={`${trend >= 0 ? '+' : ''}${trend} %`} />
+            ) : undefined
+          }
+        />
+        <StickerCard>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: space.md }}>
+            <Text size={28} weight="black">
+              {formatThousands(thisWeek.tonnage)}
+            </Text>
+            <Text size={14} weight="bold" color={colors.inkMuted}>
+              kg cette semaine
+            </Text>
+          </View>
+          <VolumeChart weeks={weeks} />
+        </StickerCard>
+      </FadeIn>
+
+      {hero ? (
+        <FadeIn index={3}>
+          <SectionTitle title="Ta plus belle progression" />
+          <StickerCard tone="hero" style={{ gap: space.md }}>
+            <Text size={14} weight="semibold">
+              {hero.name} · depuis le {formatShortDay(hero.first.date).toLowerCase()}
+            </Text>
+            <Text size={22} weight="black" style={{ lineHeight: 27 }}>
+              Tu as gagné {platesPhrase((hero.last.weight - hero.first.weight) / 2, available)} de chaque côté.
+            </Text>
+            {[hero.first, hero.last].map((point, i) => {
+              const before = loadOf(hero.first.weight);
+              const after = loadOf(point.weight);
+              // Les disques déjà là au départ sont estompés, ceux gagnés sont pleins
+              let shared = 0;
+              while (i > 0 && shared < before.length && before[shared] === after[shared]) shared++;
+              if (i === 0) shared = after.length;
+              return (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                  <View style={{ width: 92 }}>
+                    <Text size={13} weight="semibold">
+                      {i === 0 ? 'Au début' : 'Maintenant'}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* ── EXERCICES ── */}
-            {activeTab === 'exercises' && (
-              <View style={{ paddingHorizontal: 20, gap: 12 }}>
-                {exercises.length === 0 ? (
-                  <View style={{
-                    alignItems: 'center',
-                    paddingVertical: 32, paddingHorizontal: 18,
-                    backgroundColor: 'rgba(255,255,255,0.03)',
-                    borderRadius: 24, borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.06)', gap: 16,
-                  }}>
-                    <Mascot pose="mimi_mesure" height={140} animate float />
-                    <View style={{ alignItems: 'center', gap: 8 }}>
-                      <Text style={{ fontSize: 22, fontWeight: '900', color: '#fff', textAlign: 'center', letterSpacing: -0.8, lineHeight: 26 }}>
-                        {t('progress.noDataTitle')}
-                      </Text>
-                      <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.50)', textAlign: 'center', fontWeight: '600', lineHeight: 20, paddingHorizontal: 8 }}>
-                        {t('progress.noDataSubtitle')}
-                      </Text>
-                    </View>
+                    <Text size={20} weight="black">
+                      {formatKg(point.weight)} kg
+                    </Text>
                   </View>
-                ) : (
-                  <>
-                    {(showAllExercises ? exercises : exercises.slice(0, 5)).map((ex) => {
-                      const first       = ex.dataPoints[0];
-                      const latest      = ex.dataPoints[ex.dataPoints.length - 1];
-                      const progression = latest && first && first.estimated1RM > 0
-                        ? ((latest.estimated1RM - first.estimated1RM) / first.estimated1RM) * 100
-                        : 0;
-                      const isSelected = selectedExercise === ex.name;
+                  <View style={{ flex: 1, height: 80, justifyContent: 'center' }}>
+                    <Barbell perSide={after} scale={0.62} barWidth={40} highlightFrom={shared} />
+                  </View>
+                </View>
+              );
+            })}
+          </StickerCard>
+        </FadeIn>
+      ) : null}
 
-                      return (
-                        <Pressable key={ex.name} onPress={() => setSelectedExercise(isSelected ? null : ex.name)}>
-                          <View style={{
-                            borderRadius: 18, overflow: 'hidden',
-                            borderWidth: 1,
-                            borderColor: isSelected ? 'rgba(56,189,248,0.45)' : 'rgba(255,255,255,0.08)',
-                            backgroundColor: isSelected ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.04)',
-                          }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 }}>
-                              <View style={{
-                                width: 44, height: 44, borderRadius: 14,
-                                backgroundColor: isSelected ? `${BG_COLORS.accent}28` : 'rgba(255,255,255,0.06)',
-                                borderWidth: 1,
-                                borderColor: isSelected ? `${BG_COLORS.accent}45` : 'rgba(255,255,255,0.08)',
-                                alignItems: 'center', justifyContent: 'center',
-                              }}>
-                                <Ionicons
-                                  name="barbell"
-                                  size={20}
-                                  color={isSelected ? BG_COLORS.accent : 'rgba(255,255,255,0.50)'}
-                                />
-                              </View>
-
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: -0.2 }}>
-                                  {ex.name}
-                                </Text>
-                                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginTop: 2 }}>
-                                  {t('progress.sessions', { n: ex.dataPoints.length })}{latest ? ` · ${t('progress.pr', { value: latest.maxWeight, unit: units })}` : ''}
-                                </Text>
-                              </View>
-
-                              {progression !== 0 && (
-                                <View style={{
-                                  flexDirection: 'row', alignItems: 'center', gap: 4,
-                                  paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
-                                  backgroundColor: progression > 0 ? 'rgba(16,185,129,0.14)' : 'rgba(239,68,68,0.14)',
-                                  borderWidth: 1,
-                                  borderColor: progression > 0 ? 'rgba(16,185,129,0.30)' : 'rgba(239,68,68,0.30)',
-                                }}>
-                                  <Ionicons
-                                    name={progression > 0 ? 'trending-up' : 'trending-down'}
-                                    size={13}
-                                    color={progression > 0 ? '#10b981' : '#ef4444'}
-                                  />
-                                  <Text style={{
-                                    fontSize: 12, fontWeight: '900',
-                                    color: progression > 0 ? '#10b981' : '#ef4444',
-                                  }}>
-                                    {Math.abs(progression).toFixed(1)}%
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-
-                            {isSelected && (
-                              <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                                <ProgressChart data={ex.dataPoints} exerciseName={ex.name} metric="estimated1RM" height={180} units={units} />
-                              </View>
-                            )}
-                          </View>
-                        </Pressable>
-                      );
-                    })}
-
-                    {exercises.length > 5 && (
-                      <Pressable
-                        onPress={() => setShowAllExercises((v) => !v)}
-                        style={({ pressed }) => ({
-                          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                          paddingVertical: 14, borderRadius: 16,
-                          backgroundColor: pressed ? 'rgba(56,189,248,0.10)' : 'rgba(255,255,255,0.04)',
-                          borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-                        })}
-                      >
-                        <Ionicons
-                          name={showAllExercises ? 'chevron-up' : 'chevron-down'}
-                          size={16}
-                          color={BG_COLORS.accent}
-                        />
-                        <Text style={{ fontSize: 13, fontWeight: '800', color: BG_COLORS.accent, letterSpacing: 0.3 }}>
-                          {showAllExercises
-                            ? t('progress.seeLess')
-                            : t('progress.seeMore', { n: exercises.length - 5, plural: exercises.length - 5 > 1 ? 's' : '' })}
-                        </Text>
-                      </Pressable>
-                    )}
-
-                    {profile?.prs && profile.prs.length > 0 && (
-                      <View style={{ gap: 10, marginTop: 12 }}>
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                          {t('progress.personalRecords')}
-                        </Text>
-                        {profile.prs.map((pr) => (
-                          <View key={pr.exercise} style={{
-                            flexDirection: 'row', alignItems: 'center', gap: 14,
-                            padding: 16, borderRadius: 16,
-                            backgroundColor: 'rgba(255,255,255,0.04)',
-                            borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-                          }}>
-                            <View style={{
-                              width: 44, height: 44, borderRadius: 14,
-                              backgroundColor: 'rgba(251,191,36,0.16)',
-                              borderWidth: 1, borderColor: 'rgba(251,191,36,0.32)',
-                              alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              <Ionicons name="trophy" size={20} color="#fbbf24" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: -0.2 }}>
-                                {pr.exercise}
-                              </Text>
-                              <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: '600', marginTop: 2 }}>
-                                {format(new Date(pr.date), 'd MMM yyyy', { locale: dateLocale })} · 1RM ~{pr.oneRepMax.toFixed(1)}{units}
-                              </Text>
-                            </View>
-                            <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.5 }}>
-                              {pr.weight}<Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.50)', fontWeight: '700' }}>{units}</Text>
-                              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.40)', fontWeight: '700' }}> ×{pr.reps}</Text>
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-                  </>
-                )}
-              </View>
-            )}
-
-            {/* ── VOLUME ── */}
-            {activeTab === 'volume' && (
-              <View style={{ paddingHorizontal: 20, gap: 12 }}>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  borderRadius: 22, padding: 18,
-                  borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', gap: 16,
-                }}>
-                  <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase' }}>
-                    {t('progress.weekVolume')}
+      {records.length ? (
+        <FadeIn index={4}>
+          <SectionTitle title="Tes records" />
+          <StickerCard style={{ paddingVertical: 4 }}>
+            {records.map((r, i) => (
+              <View
+                key={r.name}
+                style={{
+                  minHeight: 54,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: space.md,
+                  borderBottomWidth: i === records.length - 1 ? 0 : 2,
+                  borderBottomColor: colors.line,
+                }}
+              >
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text size={16} weight="bold" numberOfLines={1}>
+                    {r.name}
                   </Text>
-                  {weeklyVolume.length > 0 ? (
-                    <>
-                      <VolumeBar data={weeklyVolume} metric="sets" height={180} />
-                      <View style={{ gap: 6, marginTop: 8 }}>
-                        {weeklyVolume.map((d) => (
-                          <MiniVolumeBar
-                            key={d.muscle} muscle={d.muscle}
-                            sets={d.sets}
-                            maxSets={Math.max(...weeklyVolume.map((x) => x.sets), 1)}
-                          />
-                        ))}
-                      </View>
-                    </>
-                  ) : (
-                    <View style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
-                      <Ionicons name="bar-chart-outline" size={36} color="rgba(255,255,255,0.25)" />
-                      <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontWeight: '600' }}>
-                        {t('progress.noSessionsWeek')}
-                      </Text>
-                    </View>
-                  )}
+                  <Text size={13} color={colors.inkMuted}>
+                    {formatShortDay(r.date)} · {r.reps} reps
+                  </Text>
                 </View>
+                <Chip tone="sun" label={`${formatKg(r.weight)} kg`} />
               </View>
-            )}
+            ))}
+          </StickerCard>
+        </FadeIn>
+      ) : null}
 
-            {/* ── MUSCLES ── */}
-            {activeTab === 'muscles' && (
-              <View style={{ paddingHorizontal: 20, gap: 12 }}>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  borderRadius: 22, padding: 18,
-                  borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-                }}>
-                  <MuscleHeatmap workouts={workouts} period={heatmapPeriod} onPeriodChange={setHeatmapPeriod} />
-                </View>
-              </View>
-            )}
-          </ScrollView>
-        </Animated.View>
-      </SafeAreaView>
-    </View>
+      <FadeIn index={5}>
+        <SectionTitle title="Tous tes exercices" />
+        <View style={{ gap: space.md }}>
+          {lifts.map((l) => {
+            const diff = l.last.weight - l.first.weight;
+            return (
+              <PressableScale
+                key={l.name}
+                haptic="selection"
+                onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: l.name } })}
+                accessibilityRole="button"
+                accessibilityLabel={`${l.name}, ${formatKg(l.last.weight)} kilos${diff > 0 ? `, plus ${formatKg(diff)} depuis le début` : ''}`}
+              >
+                <StickerCard small style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text size={16} weight="bold" numberOfLines={1}>
+                      {l.name}
+                    </Text>
+                    <Text size={13} color={colors.inkMuted}>
+                      {formatKg(l.last.weight)} kg · {diff > 0 ? `+${formatKg(diff)} kg` : 'stable'}
+                    </Text>
+                  </View>
+                  <View style={{ width: 72 }}>
+                    <Sparkline values={l.points.map((p) => p.weight)} height={34} />
+                  </View>
+                  <ChevronRight size={18} />
+                </StickerCard>
+              </PressableScale>
+            );
+          })}
+        </View>
+      </FadeIn>
+    </Screen>
   );
 }

@@ -1,4 +1,5 @@
-node_modules/
+# sans « / » : couvre aussi une jonction vers un autre node_modules
+node_modules
 .expo/
 dist/
 build/
@@ -19,3 +20,4 @@ android/
 
 expo-env.d.ts
 # @end expo-cli
+coverage/

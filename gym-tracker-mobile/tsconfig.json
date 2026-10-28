@@ -7,29 +7,16 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "moduleResolution": "bundler",
     "jsx": "react-native",
     "target": "ES2022",
-    "lib": [
-      "ES2022"
-    ],
+    "lib": ["ES2022"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.d.ts",
-    "expo-env.d.ts",
-    "nativewind-env.d.ts",
-    ".expo/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.d.ts", "expo-env.d.ts", ".expo/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }
