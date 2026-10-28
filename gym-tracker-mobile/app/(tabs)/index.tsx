@@ -240,7 +240,7 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
   );
 }
 
-/** One exercise: today's target in bold, last time underneath, what changed on the right. */
+/** One exercise: its name, today's target in bold with what changed, last time underneath. */
 function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; last: boolean }) {
   const calibrate = lift.decision === 'calibrate';
   const progress = isProgress(lift.decision);
@@ -252,7 +252,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       accessibilityRole="button"
       accessibilityLabel={`${lift.def.name}, ${calibrate ? 'charge à choisir' : targetLabel(lift.targets)}`}
       style={{
-        paddingVertical: space.md,
+        paddingVertical: space.md + 2,
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.md,
@@ -261,27 +261,27 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       }}
     >
       <IndexBadge value={index + 1} />
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text size={16} weight="bold" numberOfLines={2} style={{ lineHeight: 20 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+        <Text size={17} weight="black" numberOfLines={2} style={{ lineHeight: 21 }}>
           {lift.def.name}
         </Text>
-        <Text size={15} weight="black" numberOfLines={1}>
-          {calibrate ? 'Charge à choisir' : targetLoad(lift.targets)}
-          <Text size={14} weight="semibold" color={colors.inkMuted}>
-            {'  '}· {sets}
+        {/* Today's target, then what changed: the badge sits right after it, not at the edge */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 }}>
+          <Text size={16} weight="black">
+            {calibrate ? 'Charge à choisir' : targetLoad(lift.targets)}
           </Text>
-        </Text>
+          <Text size={14} weight="semibold" color={colors.inkMuted}>
+            {sets}
+          </Text>
+          {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
+        </View>
         {lift.last.length ? (
           <Text size={13} color={colors.inkMuted} numberOfLines={1}>
             Dernière fois : {lastTimeLabel(lift.last)}
           </Text>
         ) : null}
       </View>
-      {/* Badge and chevron centred together on the row */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
-        <ChevronRight size={18} />
-      </View>
+      <ChevronRight size={18} />
     </PressableScale>
   );
 }
