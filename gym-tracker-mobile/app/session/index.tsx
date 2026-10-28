@@ -12,6 +12,7 @@ import { RestMini, RestView } from '@/components/session/RestView';
 import { CalibrationView } from '@/components/session/CalibrationView';
 import { SessionProgress } from '@/components/session/SessionProgress';
 import { SwapExercise } from '@/components/session/SwapExercise';
+import { DoLater } from '@/components/session/DoLater';
 
 // Pendant qu'on quitte l'écran, la séance est déjà vidée : on ne redirige pas une deuxième fois
 let leaving = false;
@@ -99,7 +100,11 @@ export default function SessionScreen() {
           </Text>
         </Pressable>
       </View>
-      <SessionProgress exercises={session.exercises} current={exerciseIndex} />
+      <SessionProgress
+        exercises={session.exercises}
+        current={exerciseIndex}
+        onPick={(id) => useSessionStore.getState().doNow(id)}
+      />
 
       <View style={{ marginTop: space.lg, flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
         <Text size={28} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 32 }}>
@@ -107,9 +112,12 @@ export default function SessionScreen() {
         </Text>
         <SwapExercise exercise={exercise} sessionName={session.name} />
       </View>
-      <Text size={15} weight="bold" color={colors.inkMuted}>
-        {resting ? 'Prochaine série' : 'Série'} {setIndex + 1} sur {exercise.sets.length}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text size={15} weight="bold" color={colors.inkMuted}>
+          {resting ? 'Prochaine série' : 'Série'} {setIndex + 1} sur {exercise.sets.length}
+        </Text>
+        <DoLater exercise={exercise} />
+      </View>
 
       {exercise.needsWeight ? (
         rest ? (
