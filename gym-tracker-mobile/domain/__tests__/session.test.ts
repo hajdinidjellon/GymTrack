@@ -146,6 +146,44 @@ describe('rest', () => {
   });
 });
 
+describe('timing the sets', () => {
+  it('dates each validation, and only the sets left when all are done at once', () => {
+    const one = Session.completeSet(session([bench()]), 'bench', 0, 1000);
+    expect(one.exercises[0]!.sets[0]!.doneAt).toBe(1000);
+    const all = Session.completeRemaining(one, 'bench', 5000);
+    expect(all.exercises[0]!.sets.map((s) => s.doneAt)).toEqual([1000, 5000]);
+  });
+
+  it('saves the rest really taken, without the timestamps', () => {
+    const s = Session.completeSet(Session.completeSet(session([bench()]), 'bench', 0, 0), 'bench', 1, 150_000);
+    const sets = Session.toWorkout(s, new Date('2026-10-20T19:00:00Z')).exercises[0]!.sets;
+    expect(sets.map((x) => x.restTaken)).toEqual([undefined, 110]);
+    expect(sets[1]).not.toHaveProperty('doneAt');
+  });
+});
+
+describe('replaceExercise', () => {
+  const rows = active('row', [{ weight: 50, reps: 10 }]);
+
+  it('takes the place of an exercise not started yet', () => {
+    const s = Session.replaceExercise(session([bench(), active('ohp', [{ weight: 40, reps: 8 }])]), 'bench', rows);
+    expect(s.exercises.map((e) => e.id)).toEqual(['row', 'ohp']);
+  });
+
+  it('keeps the sets already done and comes right after', () => {
+    const started = Session.completeSet(session([bench(), active('ohp', [{ weight: 40, reps: 8 }])]), 'bench', 0);
+    const s = Session.replaceExercise(started, 'bench', rows);
+    expect(s.exercises.map((e) => e.id)).toEqual(['bench', 'row', 'ohp']);
+    expect(s.exercises[0]!.sets).toHaveLength(1);
+    expect(s.lastCompleted).toEqual({ exerciseId: 'bench', setIndex: 0 });
+  });
+
+  it('ignores an unknown exercise', () => {
+    const s = session([bench()]);
+    expect(Session.replaceExercise(s, 'nope', rows)).toBe(s);
+  });
+});
+
 describe('toWorkout', () => {
   it('keeps only exercises with a validated set and drops session-only fields', () => {
     const ex = { ...bench(), lastTime: '60 kg × 10', reason: 'x' };

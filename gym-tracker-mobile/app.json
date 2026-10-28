@@ -8,7 +8,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.gymtrack.mobile"
+      "bundleIdentifier": "com.gymtrack.mobile",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -42,6 +45,9 @@
     "experiments": {
       "typedRoutes": true
     },
-    "scheme": "gymtrack"
+    "scheme": "gymtrack",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

@@ -11,6 +11,7 @@ import { SetView } from '@/components/session/SetView';
 import { RestMini, RestView } from '@/components/session/RestView';
 import { CalibrationView } from '@/components/session/CalibrationView';
 import { SessionProgress } from '@/components/session/SessionProgress';
+import { SwapExercise } from '@/components/session/SwapExercise';
 
 // Pendant qu'on quitte l'écran, la séance est déjà vidée : on ne redirige pas une deuxième fois
 let leaving = false;
@@ -100,15 +101,12 @@ export default function SessionScreen() {
       </View>
       <SessionProgress exercises={session.exercises} current={exerciseIndex} />
 
-      <Text
-        size={28}
-        weight="black"
-        accessibilityRole="header"
-        numberOfLines={2}
-        style={{ marginTop: space.lg, lineHeight: 32 }}
-      >
-        {exercise.name}
-      </Text>
+      <View style={{ marginTop: space.lg, flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
+        <Text size={28} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 32 }}>
+          {exercise.name}
+        </Text>
+        <SwapExercise exercise={exercise} sessionName={session.name} />
+      </View>
       <Text size={15} weight="bold" color={colors.inkMuted}>
         {resting ? 'Prochaine série' : 'Série'} {setIndex + 1} sur {exercise.sets.length}
       </Text>
@@ -136,6 +134,7 @@ export default function SessionScreen() {
               restEndsAt={session.restEndsAt!}
               total={session.restDuration ?? 90}
               doneLabel={doneExercise ? `Série ${last.setIndex + 1} validée` : undefined}
+              note={doneExercise?.restNote}
               onMinimize={() => setMinimized(true)}
             />
           ) : null}

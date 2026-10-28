@@ -62,6 +62,25 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.ruleOverrides).toEqual({});
   });
 
+  it('saves an own rest for an exercise, and lets the app choose again', () => {
+    const { setRestOverride } = useSettingsStore.getState();
+    setRestOverride('Squat', 150);
+    expect(useSettingsStore.getState().settings.restOverrides).toEqual({ Squat: 150 });
+    setRestOverride('Squat', null);
+    expect(useSettingsStore.getState().settings.restOverrides).toEqual({});
+  });
+
+  it('adds an own exercise', () => {
+    const own = {
+      name: 'Écarté Panatta',
+      equipment: 'machine' as const,
+      category: 'isolation' as const,
+      muscleGroups: ['chest' as const],
+    };
+    useSettingsStore.getState().addCustomExercise(own);
+    expect(useSettingsStore.getState().settings.customExercises).toEqual([own]);
+  });
+
   it('loads what was saved', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();

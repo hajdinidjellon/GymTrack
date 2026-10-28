@@ -1,9 +1,10 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
-import { formatShortDay } from '@/domain/format';
+import { formatClock, formatRest, formatShortDay } from '@/domain/format';
+import { clampRest, REST_STEP } from '@/domain/rest';
 import { formatKg } from '@/domain/plates';
 import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
@@ -16,7 +17,7 @@ import { StickerCard } from '@/components/ui/StickerCard';
 import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
 import { Sparkline } from '@/components/stats/Sparkline';
-import { PressableScale } from '@/components/ui/PressableScale';
+import { buzz, PressableScale } from '@/components/ui/PressableScale';
 import { RuleEditor } from '@/components/program/RuleEditor';
 
 const STEPS = [1, 2, 2.5, 5];
@@ -25,11 +26,12 @@ const EQUIPMENT = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Machine',
 
 export default function ExerciseScreen() {
   const { name } = useLocalSearchParams<{ name: string }>();
-  const def = findExerciseDef(name ?? '');
   const ctx = useBuildContext();
+  const def = findExerciseDef(name ?? '', ctx?.settings.customExercises);
   const setIncrement = useSettingsStore((s) => s.setIncrement);
   const setRuleOverride = useSettingsStore((s) => s.setRuleOverride);
   const overrides = useSettingsStore((s) => s.settings.ruleOverrides);
+  const setRestOverride = useSettingsStore((s) => s.setRestOverride);
 
   if (!def || !ctx) {
     return (
@@ -52,7 +54,7 @@ export default function ExerciseScreen() {
   return (
     <Screen scroll>
       <BackButton />
-      <ScreenHeader eyebrow={EQUIPMENT[def.equipment]} title={def.name} />
+      <ScreenHeader eyebrow={`${EQUIPMENT[def.equipment]}${def.custom ? ' · ton exercice' : ''}`} title={def.name} />
 
       <StickerCard tone="hero">
         <Text size={15} weight="bold">
@@ -168,6 +170,43 @@ export default function ExerciseScreen() {
         ) : null}
       </StickerCard>
 
+      <StickerCard style={{ marginTop: 16, gap: 10 }}>
+        <Text size={17} weight="black">
+          Ton repos entre les séries
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <RoundButton
+            label="−"
+            a11y="Repos : moins 15 secondes"
+            onPress={() => setRestOverride(def.name, clampRest(lift.restTime - REST_STEP))}
+          />
+          <Text size={34} weight="black" accessibilityLabel={`Repos : ${formatRest(lift.restTime)}`}>
+            {formatClock(lift.restTime)}
+          </Text>
+          <RoundButton
+            label="+"
+            a11y="Repos : plus 15 secondes"
+            onPress={() => setRestOverride(def.name, clampRest(lift.restTime + REST_STEP))}
+          />
+        </View>
+        <Text size={14} color={colors.inkMuted} style={{ lineHeight: 19 }}>
+          {lift.restNote ||
+            "Ton repos par défaut. Si tu te reposes plus ou moins longtemps d'habitude, le minuteur s'adaptera."}
+        </Text>
+        {lift.restSource === 'own' ? (
+          <Pressable
+            onPress={() => setRestOverride(def.name, null)}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
+              Laisser l'app choisir
+            </Text>
+          </Pressable>
+        ) : null}
+      </StickerCard>
+
       {history.length ? (
         <>
           <Text size={19} weight="black" style={{ marginTop: 24 }}>
@@ -203,5 +242,32 @@ export default function ExerciseScreen() {
         </>
       ) : null}
     </Screen>
+  );
+}
+
+function RoundButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={() => {
+        buzz('selection');
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      style={({ pressed }) => ({
+        width: 52,
+        height: 52,
+        borderRadius: radius.pill,
+        borderWidth: border.base,
+        borderColor: colors.ink,
+        backgroundColor: pressed ? colors.coralSoft : colors.card,
+        alignItems: 'center',
+        justifyContent: 'center',
+      })}
+    >
+      <Text size={26} weight="black">
+        {label}
+      </Text>
+    </Pressable>
   );
 }

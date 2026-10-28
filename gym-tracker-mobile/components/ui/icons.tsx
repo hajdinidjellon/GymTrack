@@ -90,3 +90,21 @@ export function ProfileIcon({ size = 22, color = colors.ink }: IconProps) {
     </Svg>
   );
 }
+
+/** A light bulb: the short explanation after an answer. */
+export function BulbIcon({ size = 22, color = colors.ink }: IconProps) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" />
+    </Svg>
+  );
+}

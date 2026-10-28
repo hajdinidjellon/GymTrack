@@ -12,7 +12,7 @@ import { Choice } from '@/components/ui/Choice';
 import { StepHeader } from '@/components/ui/StepHeader';
 import type { Goal, SplitId } from '@/types';
 
-const PER_WEEK = [2, 3, 4, 5];
+const PER_WEEK = [2, 3, 4, 5, 6];
 
 export default function ProgramScreen() {
   const { goal, edit } = useLocalSearchParams<{ goal?: Goal; edit?: string }>();
@@ -90,9 +90,9 @@ export default function ProgramScreen() {
               accessibilityState={{ selected: on }}
               accessibilityLabel={`${n} séances par semaine`}
               style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
+                width: 62,
+                height: 62,
+                borderRadius: 31,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: on ? colors.coralSoft : colors.card,

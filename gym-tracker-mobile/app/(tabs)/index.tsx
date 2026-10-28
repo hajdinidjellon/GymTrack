@@ -1,11 +1,14 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
+  breakLabel,
   deltaLabel,
+  nextDay,
+  planDay,
   targetLabel,
   tonnage,
   toActiveExercises,
@@ -14,7 +17,8 @@ import {
 } from '@/domain/sessionBuilder';
 import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
-import { useTodayPlan } from '@/hooks/useTodayPlan';
+import { programDays, type ProgramDay } from '@/domain/programs';
+import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -27,7 +31,7 @@ import { StickerCard } from '@/components/ui/StickerCard';
 import { Chip } from '@/components/ui/Chip';
 import { Sparkle } from '@/components/ui/Sparkle';
 import { FadeIn } from '@/components/ui/FadeIn';
-import { PressableScale } from '@/components/ui/PressableScale';
+import { buzz, PressableScale } from '@/components/ui/PressableScale';
 import { ChevronRight } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
@@ -39,7 +43,15 @@ function start(plan: PlannedDay) {
 }
 
 export default function Today() {
-  const plan = useTodayPlan();
+  const ctx = useBuildContext();
+  const [dayName, setDayName] = useState<string | null>(null);
+  const { days, today, plan } = useMemo(() => {
+    if (!ctx) return { days: [], today: null, plan: null };
+    const list = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
+    const next = nextDay(ctx);
+    const day = list.find((d) => d.name === dayName) ?? next;
+    return { days: list, today: next, plan: planDay(day, ctx) };
+  }, [ctx, dayName]);
   const running = useSessionStore((s) => !!s.activeSession);
   const perWeek = useProfileStore((s) => s.profile?.program.perWeek ?? 3);
   const workouts = useWorkoutStore((s) => s.workouts);
@@ -74,7 +86,7 @@ export default function Today() {
       </FadeIn>
       {plan ? (
         <FadeIn index={2}>
-          <TodayCard plan={plan} running={running} />
+          <TodayCard plan={plan} running={running} days={days} today={today?.name ?? plan.name} onChoose={setDayName} />
         </FadeIn>
       ) : null}
       <FadeIn index={3}>
@@ -108,16 +120,29 @@ function WeekCard() {
   );
 }
 
-function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
+interface TodayProps {
+  plan: PlannedDay;
+  running: boolean;
+  days: ProgramDay[];
+  /** The day the program plans next. */
+  today: string;
+  onChoose: (name: string) => void;
+}
+
+function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
   // Le premier mouvement à la barre déjà réglé : c'est lui qu'on dessine
   const featured = plan.lifts.find((l) => l.def.equipment === 'barbell' && l.decision !== 'calibrate');
   const target = featured?.targets[0];
   const perSide = usePerSide(target?.weight ?? 0);
   const sets = plan.lifts.reduce((n, l) => n + l.targets.length, 0);
+  const daysOff = Math.max(0, ...plan.lifts.map((l) => (l.decision === 'comeback' ? (l.daysOff ?? 0) : 0)));
 
   return (
     <>
-      <SectionTitle title={running ? 'Séance en cours' : 'Séance du jour'} />
+      <SectionTitle title={running ? 'Séance en cours' : plan.name === today ? 'Séance du jour' : 'Séance choisie'} />
+      {!running && days.length > 1 ? (
+        <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} />
+      ) : null}
       <StickerCard tone="hero" style={{ paddingTop: 18, paddingBottom: 8 }}>
         <View style={{ position: 'absolute', top: -14, right: 18 }}>
           <Sparkle size={34} />
@@ -136,6 +161,26 @@ function TodayCard({ plan, running }: { plan: PlannedDay; running: boolean }) {
           <Chip label={`${sets} séries`} />
           <Chip label={`~${plan.minutes} min`} />
         </View>
+        {daysOff > 0 ? (
+          <View
+            style={{
+              marginTop: space.md,
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              borderRadius: radius.row,
+              borderWidth: border.base,
+              borderColor: colors.ink,
+              backgroundColor: colors.sun,
+            }}
+          >
+            <Text size={14} weight="black">
+              Content de te revoir !
+            </Text>
+            <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
+              Après {breakLabel(daysOff)} de pause, on reprend un peu plus léger. Ça remonte vite.
+            </Text>
+          </View>
+        ) : null}
 
         {featured && target ? (
           <View
@@ -253,5 +298,68 @@ function LastWorkout() {
         </View>
       </StickerCard>
     </>
+  );
+}
+
+/** "Pas envie de ça ?": every day of the program, one tap to do it today instead. */
+function DayPicker({
+  days,
+  current,
+  today,
+  onChoose,
+}: {
+  days: ProgramDay[];
+  current: string;
+  today: string;
+  onChoose: (name: string) => void;
+}) {
+  return (
+    <View style={{ marginBottom: space.md }}>
+      <Text size={14} weight="bold" color={colors.inkMuted}>
+        Pas envie de ça ? Choisis ta séance :
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginHorizontal: -space.gutter, marginTop: 8, flexGrow: 0 }}
+        contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 8 }}
+      >
+        {days.map((d) => {
+          const on = d.name === current;
+          return (
+            <Pressable
+              key={d.name}
+              onPress={() => {
+                buzz('selection');
+                onChoose(d.name);
+              }}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={`Séance ${d.name}${d.name === today ? ', prévue aujourd’hui' : ''}`}
+              style={{
+                height: 44,
+                paddingHorizontal: 18,
+                borderRadius: radius.pill,
+                borderWidth: on ? border.strong : border.base,
+                borderColor: colors.ink,
+                backgroundColor: on ? colors.coralSoft : colors.card,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Text size={16} weight={on ? 'black' : 'titleMedium'}>
+                {d.name}
+              </Text>
+              {d.name === today ? (
+                <Text size={12} weight="bold" color={colors.inkMuted}>
+                  prévue
+                </Text>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }

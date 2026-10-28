@@ -49,6 +49,8 @@ interface SessionStore {
   completeRemaining: (exerciseId: string) => void;
   /** Takes back the last validated set and cancels its rest. */
   undoLastSet: () => void;
+  /** Another exercise instead of this one; the sets already done stay. */
+  replaceExercise: (exerciseId: string, next: ActiveExercise) => void;
 
   startRestTimer: (seconds: number) => void;
   addRestTime: (seconds: number) => void;
@@ -165,7 +167,7 @@ export const useSessionStore = create<SessionStore>()(
           const session = get().activeSession;
           const target = session && Session.findSet(session, exerciseId, setIndex);
           if (!target || target.completed) return;
-          apply((s) => Session.completeSet(s, exerciseId, setIndex));
+          apply((s) => Session.completeSet(s, exerciseId, setIndex, Date.now()));
           afterSet(exerciseId, target.restTime ?? settings().defaultRestTime);
         },
 
@@ -173,7 +175,7 @@ export const useSessionStore = create<SessionStore>()(
           const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
           const last = exercise ? Session.remainingSets(exercise).pop() : undefined;
           if (!exercise || last === undefined) return;
-          apply((s) => Session.completeRemaining(s, exerciseId));
+          apply((s) => Session.completeRemaining(s, exerciseId, Date.now()));
           afterSet(exerciseId, exercise.sets[last]?.restTime ?? settings().defaultRestTime);
         },
 
@@ -182,6 +184,15 @@ export const useSessionStore = create<SessionStore>()(
           void cancelRestCompleteNotification();
           apply(Session.undoLastSet);
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
+        },
+
+        replaceExercise: (exerciseId, next) => {
+          apply((s) => Session.replaceExercise(s, exerciseId, next));
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
+          const cursor = findCurrent(get().activeSession?.exercises ?? []);
+          if (cursor && cursor.exercise.id === next.id && get().activeSession?.restEndsAt == null && settings().voice) {
+            speak(nextExerciseLine(cursor, settings()));
+          }
         },
 
         startRestTimer: (seconds) => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { EXERCISES } from '@/domain/programs';
 import {
+  breakLabel,
   deltaLabel,
   lastTimeLabel,
   newRecords,
@@ -11,6 +12,7 @@ import {
   targetLabel,
   tonnage,
   weightHistory,
+  toActiveExercise,
   toActiveExercises,
   type BuildContext,
 } from '@/domain/sessionBuilder';
@@ -116,8 +118,66 @@ describe('planLift', () => {
   it('goes heavy and rests longer for strength on barbell lifts only', () => {
     const c = ctx([], { goal: 'force' });
     expect(planLift(EXERCISES.squat, c).rule).toMatchObject({ sets: 5, repMin: 3, repMax: 5 });
-    expect(planLift(EXERCISES.squat, c).restTime).toBe(180);
+    expect(planLift(EXERCISES.squat, c).restTime).toBe(240);
     expect(planLift(EXERCISES.curl, c).rule).toMatchObject({ sets: 3, repMin: 8 });
+  });
+});
+
+describe('personal touches', () => {
+  it('starts lighter after a break and says why', () => {
+    const c = ctx([workout('2026-10-01T18:00:00Z', 'Push', [lift('Développé couché', 80, [12, 12, 12])])]);
+    c.now = new Date('2026-10-22T18:00:00Z');
+    const p = planLift(EXERCISES.bench, c);
+    expect(p).toMatchObject({ decision: 'comeback', daysOff: 21 });
+    expect(p.targets[0]?.weight).toBe(70);
+    expect(deltaLabel(p)).toBe('reprise');
+    expect(reasonLabel(p)).toBe(
+      '3 semaines sans cet exercice : on reprend un peu plus léger pour retrouver tes marques.',
+    );
+  });
+
+  it('rests by kind of exercise, or as the user chose', () => {
+    const c = ctx();
+    expect(planLift(EXERCISES.squat, c)).toMatchObject({ restTime: 180, restSource: 'kind' });
+    expect(planLift(EXERCISES.curl, c).restTime).toBe(120);
+    c.settings.restOverrides = { Squat: 150 };
+    expect(planLift(EXERCISES.squat, c)).toMatchObject({ restTime: 150, restSource: 'own' });
+  });
+
+  it('learns the rest the user really takes', () => {
+    const sets = [0, 200, 200, 200].map((restTaken, i) => ({
+      weight: 60,
+      reps: 10,
+      setType: 'normal' as const,
+      completed: true,
+      restTaken: i === 0 ? undefined : restTaken,
+    }));
+    const done = { ...lift('Curl haltères', 12, []), sets };
+    const c = ctx([workout('2026-10-01', 'Pull', [done]), workout('2026-10-03', 'Pull', [done])]);
+    const p = planLift(EXERCISES.curl, c);
+    expect(p).toMatchObject({ restTime: 195, restSource: 'learned' });
+    expect(toActiveExercise(p).restNote).toMatch(/tu prends ton temps/);
+    expect(toActiveExercise(p).sets[0]?.restTime).toBe(195);
+  });
+
+  it('plans the user own exercises in their days', () => {
+    const own = {
+      name: 'Écarté Panatta',
+      equipment: 'machine' as const,
+      category: 'isolation' as const,
+      muscleGroups: ['chest' as const],
+    };
+    const c = ctx();
+    c.settings.customExercises = [own];
+    c.settings.customDays = { 'ppl/Push': ['Écarté Panatta', 'Développé couché'] };
+    expect(nextDay(c).exercises.map((e) => e.name)).toEqual(['Écarté Panatta', 'Développé couché']);
+  });
+
+  it('says how long the break was', () => {
+    expect(breakLabel(10)).toBe('1 semaine');
+    expect(breakLabel(15)).toBe('2 semaines');
+    expect(breakLabel(45)).toBe('1 mois');
+    expect(breakLabel(95)).toBe('3 mois');
   });
 });
 
@@ -131,7 +191,7 @@ describe('planDay', () => {
     expect(active[1]?.sets[0]).toMatchObject({
       reps: 8,
       completed: false,
-      restTime: 90,
+      restTime: 180,
       target: { weight: 0, reps: 8 },
     });
   });

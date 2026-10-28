@@ -4,7 +4,8 @@
 
 export type SetType = 'warmup' | 'normal' | 'top' | 'backoff' | 'amrap' | 'drop' | 'failure';
 
-export type MuscleGroup = 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'glutes' | 'calves';
+export type MuscleGroup =
+  'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'arms' | 'legs' | 'core' | 'glutes' | 'calves';
 
 export type WorkoutType =
   'strength' | 'hypertrophy' | 'power' | 'endurance' | 'cardio' | 'mobility' | 'ppl' | 'fullbody';
@@ -23,6 +24,10 @@ export interface WorkoutSet {
   notes?: string;
   completed?: boolean;
   restTime?: number;
+  /** Seconds really rested before this set, measured from the validations. */
+  restTaken?: number;
+  /** When the set was validated (epoch ms). Running session only, not saved in the history. */
+  doneAt?: number;
   /** What the progression engine asked for when this set was logged. */
   target?: SetTarget;
 }
@@ -96,6 +101,8 @@ export interface BodyStats {
 
 export type Goal = 'muscle' | 'force' | 'forme';
 export type SplitId = 'ppl' | 'ul' | 'fb';
+/** How long the user has been lifting: sets the first weights to try. */
+export type Experience = 'new' | 'months' | 'years';
 
 export interface Program {
   split: SplitId;
@@ -106,8 +113,17 @@ export interface UserProfile {
   name?: string;
   goal: Goal;
   program: Program;
+  experience?: Experience;
   prs: PersonalRecord[];
   bodyStats: BodyStats[];
+}
+
+/** An exercise the user created, next to the catalog. */
+export interface CustomExercise {
+  name: string;
+  equipment: Equipment;
+  category: ExerciseCategory;
+  muscleGroups: MuscleGroup[];
 }
 
 export interface RuleOverride {
@@ -132,6 +148,10 @@ export interface AppSettings {
   customDays: Record<string, string[]>;
   /** Sets and rep range chosen by the user, per exercise name. Missing: the goal's rule. */
   ruleOverrides: Record<string, RuleOverride>;
+  /** Rest between sets chosen by the user, in seconds, per exercise name. Missing: computed. */
+  restOverrides: Record<string, number>;
+  /** Exercises the user created. */
+  customExercises: CustomExercise[];
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
 }
@@ -151,6 +171,8 @@ export interface ActiveExercise extends Exercise {
   lastTime?: string;
   /** Why today's target is what it is. */
   reason?: string;
+  /** Why the rest lasts what it lasts, when it is not the default. */
+  restNote?: string;
 }
 
 export interface ActiveSession {
