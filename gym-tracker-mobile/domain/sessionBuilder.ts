@@ -15,6 +15,7 @@ import { formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
 import {
   defaultIncrementFor,
+  isPlateLoaded,
   findExerciseDef,
   programDays,
   ruleFor,
@@ -37,7 +38,7 @@ import type {
 export interface BuildContext {
   profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
   settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> &
-    Partial<Pick<AppSettings, 'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises'>>;
+    Partial<Pick<AppSettings, 'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded'>>;
   workouts: Workout[];
   /** Today. Without it, breaks are not looked at. */
   now?: Date;
@@ -48,6 +49,8 @@ export interface PlannedLift {
   rule: ProgressionRule;
   decision: ProgressionDecision;
   targets: SetTarget[];
+  /** Plate-loaded machine in the user's gym: the weight is per side. */
+  plateLoaded: boolean;
   restTime: number;
   restSource: RestSource;
   /** Why the rest lasts what it lasts. */
@@ -100,8 +103,11 @@ function prFor(def: ExerciseDef, prs: PersonalRecord[]): PersonalRecord | undefi
 export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   const history = exerciseHistory(def, ctx.workouts);
   const lastRule = history.find((h) => h.rule)?.rule;
+  const plateLoaded = isPlateLoaded(def, ctx.settings.plateLoaded);
   const increment =
-    ctx.settings.increments[def.name] ?? lastRule?.increment ?? defaultIncrementFor(def.equipment, ctx.settings.units);
+    ctx.settings.increments[def.name] ??
+    lastRule?.increment ??
+    defaultIncrementFor(def.equipment, ctx.settings.units, plateLoaded);
   const rule = withOverride(ruleFor(ctx.profile.goal, def, increment), ctx.settings.ruleOverrides?.[def.name]);
 
   let startWeight: number | undefined;
@@ -120,6 +126,7 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
     rule,
     decision,
     targets,
+    plateLoaded,
     restTime: rest.seconds,
     restSource: rest.source,
     restNote: rest.note,
@@ -147,6 +154,7 @@ export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
     category: lift.def.category,
     muscleGroups: lift.def.muscleGroups,
     equipment: lift.def.equipment,
+    plateLoaded: lift.plateLoaded || undefined,
     rule: lift.rule,
     calibration: needsWeight || undefined,
     needsWeight,

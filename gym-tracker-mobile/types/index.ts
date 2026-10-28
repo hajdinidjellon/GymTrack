@@ -154,6 +154,8 @@ export interface AppSettings {
   customExercises: CustomExercise[];
   /** The user's own note per exercise name: machine setting, grip… */
   exerciseNotes: Record<string, string>;
+  /** Machine loaded with plates (true) or a weight stack (false), per exercise name. Missing: the catalog's. */
+  plateLoaded: Record<string, boolean>;
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
 }
@@ -169,6 +171,8 @@ export interface ActiveExercise extends Exercise {
   equipment: Equipment;
   /** First time on this exercise: the user picks the weight before the first set. */
   needsWeight: boolean;
+  /** Plate-loaded machine: the weight is what goes on each side. */
+  plateLoaded?: boolean;
   /** "60 kg × 10 · 10 · 9": the last session, shown while logging. */
   lastTime?: string;
   /** Why today's target is what it is. */

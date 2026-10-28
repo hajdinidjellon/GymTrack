@@ -13,8 +13,18 @@ describe('voice lines', () => {
     expect(platesLine(cursor(active('Squat', [{ weight: 20, reps: 5 }])), gym)).toBe('Barre à vide.');
   });
 
-  it('says nothing about plates off the barbell', () => {
+  it('says the plates of a plate-loaded machine, the weight being per side', () => {
+    const press = active('Chest press', [{ weight: 25, reps: 10 }], { equipment: 'machine', plateLoaded: true });
+    expect(platesLine(cursor(press), gym)).toBe('Mets 20 et 5 de chaque côté.');
+    const empty = active('Chest press', [{ weight: 0.5, reps: 10 }], { equipment: 'machine', plateLoaded: true });
+    expect(platesLine(cursor(empty), gym)).toBeNull();
+  });
+
+  it('says nothing about plates off the barbell and the plate-loaded machines', () => {
     expect(platesLine(cursor(active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' })), gym)).toBeNull();
+    expect(
+      platesLine(cursor(active('Pec deck', [{ weight: 40, reps: 10 }], { equipment: 'machine' })), gym),
+    ).toBeNull();
   });
 
   it('announces a set', () => {
@@ -25,10 +35,19 @@ describe('voice lines', () => {
     expect(restOverLine(cursor())).toBe("C'est reparti. Série 1. 62,5 kilos, 10 reps.");
   });
 
+  it('says when the weight is per dumbbell or per side', () => {
+    const curl = active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' });
+    expect(setLine(cursor(curl))).toBe('Série 1. 12 kilos par haltère, 10 reps.');
+    const press = active('Chest press', [{ weight: 30, reps: 8 }], { equipment: 'machine', plateLoaded: true });
+    expect(setLine(cursor(press))).toBe('Série 1. 30 kilos de chaque côté, 8 reps.');
+  });
+
   it('announces the next exercise with what to load', () => {
     expect(nextExerciseLine(cursor(), gym)).toBe('Prochain exercice : Squat. Mets 20 et 1,25 de chaque côté.');
     const curl = active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' });
-    expect(nextExerciseLine(cursor(curl), gym)).toBe('Prochain exercice : Curl. Série 1. 12 kilos, 10 reps.');
+    expect(nextExerciseLine(cursor(curl), gym)).toBe(
+      'Prochain exercice : Curl. Série 1. 12 kilos par haltère, 10 reps.',
+    );
     const fresh = active('Row', [{ weight: 0, reps: 8 }], { needsWeight: true });
     expect(nextExerciseLine(cursor(fresh), gym)).toBe('Prochain exercice : Row. Choisis ta charge de départ.');
   });

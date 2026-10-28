@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   restOverrides: {},
   customExercises: [],
   exerciseNotes: {},
+  plateLoaded: {},
   signedOut: false,
 };
 
@@ -86,6 +87,8 @@ interface SettingsStore {
   addCustomExercise: (exercise: CustomExercise) => void;
   /** Own note for an exercise. Empty text removes it. */
   setExerciseNote: (exerciseName: string, text: string) => void;
+  /** Plates on each side or a weight stack. The catalog's answer is not stored. */
+  setPlateLoaded: (def: ExerciseDef, on: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -132,6 +135,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const { [exerciseName]: _old, ...others } = get().settings.exerciseNotes;
     const note = cleanNote(text);
     get().updateSettings({ exerciseNotes: note ? { ...others, [exerciseName]: note } : others });
+  },
+
+  setPlateLoaded: (def, on) => {
+    const { [def.name]: _old, ...others } = get().settings.plateLoaded;
+    get().updateSettings({ plateLoaded: on === !!def.plateLoaded ? others : { ...others, [def.name]: on } });
   },
 
   togglePlate: (plate) => {
