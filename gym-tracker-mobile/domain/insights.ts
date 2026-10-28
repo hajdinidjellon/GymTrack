@@ -4,7 +4,7 @@
  * il se repose sur chaque exercice, où il progresse le plus. Logique pure.
  */
 
-import { formatRest } from '@/domain/format';
+import { formatRest, listFr } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { allExercises } from '@/domain/programs';
 import { usualRest } from '@/domain/rest';
@@ -22,12 +22,6 @@ export const INSIGHTS_AFTER = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-
-/** "a, b et c" */
-export function listFr(items: string[]): string {
-  if (items.length <= 1) return items.join('');
-  return `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`;
-}
 
 function partOfDay(hour: number): string {
   if (hour < 12) return 'le matin';

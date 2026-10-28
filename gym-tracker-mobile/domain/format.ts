@@ -44,3 +44,9 @@ export function formatRest(seconds: number): string {
   const rest = s % 60;
   return rest ? `${Math.floor(s / 60)} min ${String(rest).padStart(2, '0')}` : `${s / 60} min`;
 }
+
+/** "a, b et c" */
+export function listFr(items: string[]): string {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`;
+}
