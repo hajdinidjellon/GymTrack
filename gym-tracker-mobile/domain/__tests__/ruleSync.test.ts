@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { EXERCISES, similarExercises } from '@/domain/programs';
-import { applyRule, effectiveRule, followers, type RuleContext } from '@/domain/ruleSync';
+import { applyRule, effectiveRule, followers, followersLabel, type RuleContext } from '@/domain/ruleSync';
 
 const ctx = (overrides: RuleContext['overrides'] = {}, goal: RuleContext['goal'] = 'muscle'): RuleContext => ({
   goal,
@@ -72,5 +72,14 @@ describe('applyRule', () => {
     // Strength goal: the barbell runs on 5 × 3-5, so it does not follow the machine
     expect(names(followers(EXERCISES.chestpress, force))).not.toContain('Développé couché');
     expect(names(followers(EXERCISES.chestpress, force))).toContain('Développé couché Smith');
+  });
+});
+
+describe('followersLabel', () => {
+  it('names a few, then counts the rest', () => {
+    expect(followersLabel(['A'])).toBe('A');
+    expect(followersLabel(['A', 'B', 'C'])).toBe('A, B et C');
+    expect(followersLabel(['A', 'B', 'C', 'D'])).toBe('A, B, C + 1 autre');
+    expect(followersLabel(['A', 'B', 'C', 'D', 'E'])).toBe('A, B, C + 2 autres');
   });
 });

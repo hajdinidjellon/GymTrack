@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { EXERCISES } from '@/domain/programs';
 import { DEFAULT_SETTINGS, parseSettings, useSettingsStore } from '@/stores/settingsStore';
 
 describe('parseSettings', () => {
@@ -62,11 +63,20 @@ describe('settings store', () => {
   });
 
   it('saves own sets and reps for an exercise, and removes them', () => {
-    const { setRuleOverride } = useSettingsStore.getState();
-    setRuleOverride('Squat', { sets: 5, repMin: 3, repMax: 5 });
+    const { setRule } = useSettingsStore.getState();
+    setRule(EXERCISES.squat, { sets: 5, repMin: 3, repMax: 5 }, 'muscle', false);
     expect(useSettingsStore.getState().settings.ruleOverrides).toEqual({ Squat: { sets: 5, repMin: 3, repMax: 5 } });
-    setRuleOverride('Squat', null);
+    setRule(EXERCISES.squat, null, 'muscle', false);
     expect(useSettingsStore.getState().settings.ruleOverrides).toEqual({});
+  });
+
+  it('shares sets and reps with the similar exercises when asked', () => {
+    useSettingsStore.getState().setRule(EXERCISES.chestpress, { sets: 2, repMin: 6, repMax: 9 }, 'muscle', true);
+    expect(useSettingsStore.getState().settings.ruleOverrides['Développé couché Smith']).toEqual({
+      sets: 2,
+      repMin: 6,
+      repMax: 9,
+    });
   });
 
   it('saves an own rest for an exercise, and lets the app choose again', () => {

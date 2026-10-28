@@ -4,6 +4,7 @@
  * differently on purpose keep their own.
  */
 
+import { listFr } from '@/domain/format';
 import { clampRule, ruleFor, similarExercises, type ExerciseDef } from '@/domain/programs';
 import type { CustomExercise, Goal, RuleOverride } from '@/types';
 
@@ -52,4 +53,11 @@ export function applyRule(
     else overrides[e.name] = rule;
   }
   return overrides;
+}
+
+/** "Développé couché, Smith et Dips", or the first three and "+ 4 autres". */
+export function followersLabel(names: string[], shown = 3): string {
+  if (names.length <= shown) return listFr(names);
+  const more = names.length - shown;
+  return `${names.slice(0, shown).join(', ')} + ${more} autre${more > 1 ? 's' : ''}`;
 }
