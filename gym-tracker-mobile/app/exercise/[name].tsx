@@ -172,8 +172,8 @@ export default function ExerciseScreen() {
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
                     accessibilityLabel={`${formatKg(v)} kilos par palier`}
+                    containerStyle={{ flex: 1 }}
                     style={{
-                      flex: 1,
                       height: 44,
                       borderRadius: radius.pill,
                       alignItems: 'center',

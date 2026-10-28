@@ -8,6 +8,8 @@ export type HapticKind = 'selection' | 'light' | 'medium';
 
 interface Props extends Omit<PressableProps, 'style'> {
   style?: StyleProp<ViewStyle>;
+  /** Layout in the parent (flex: 1 in a row): `style` sits on the inner view that scales. */
+  containerStyle?: StyleProp<ViewStyle>;
   /** 0.97 for cards, 0.96 for buttons. */
   scaleTo?: number;
   haptic?: HapticKind;
@@ -25,6 +27,7 @@ export function buzz(kind: HapticKind) {
 /** Everything you can tap sinks a little under the finger and springs back. */
 export function PressableScale({
   style,
+  containerStyle,
   scaleTo = 0.97,
   haptic,
   onPressIn,
@@ -41,6 +44,7 @@ export function PressableScale({
   return (
     <Pressable
       {...rest}
+      style={containerStyle}
       onPressIn={(e) => {
         pressed.value = withTiming(1, { duration: 90 });
         onPressIn?.(e);
