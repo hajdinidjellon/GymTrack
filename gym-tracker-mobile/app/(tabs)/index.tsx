@@ -219,7 +219,7 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
               </Text>
             </View>
             <Text size={14} color={colors.inkMuted} style={{ marginTop: 2 }}>
-              {describeSide(perSide)} de chaque côté
+              {perSide.length ? `${describeSide(perSide)} de chaque côté` : 'Barre à vide'}
             </Text>
           </View>
         ) : (
