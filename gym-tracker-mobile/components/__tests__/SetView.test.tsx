@@ -111,4 +111,11 @@ describe('SetView', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Supprimer la série 3' }));
     expect(sets()).toHaveLength(2);
   });
+
+  it('says a plate-loaded machine is loaded per side', async () => {
+    const press = { ...bench, id: 'press', name: 'Chest press', equipment: 'machine' as const, plateLoaded: true };
+    useSessionStore.getState().startSession('Push', [press]);
+    await renderCurrentSet();
+    expect(screen.getByText('De chaque côté : 20 + 20 + 20 + 2,5')).toBeTruthy();
+  });
 });
