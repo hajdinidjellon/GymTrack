@@ -103,7 +103,7 @@ describe('choosing a session', () => {
   });
 
   it('keeps the program days the user did not touch', () => {
-    const days = programDays('ppl', { [dayKey('ppl', 'Legs')]: ['Squat', 'Hip thrust'] });
+    const days = programDays('ppl', { [dayKey('ppl', 'Legs')]: ['Squat', 'Hip thrust'] }, []);
     expect(days[0]).toBe(getSplit('ppl').days[0]);
     expect(days[2]?.exercises).toEqual([EXERCISES.squat, EXERCISES.hipthrust]);
   });

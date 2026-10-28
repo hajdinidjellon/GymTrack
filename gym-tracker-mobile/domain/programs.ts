@@ -218,13 +218,14 @@ export function dayKey(split: SplitId, day: string): string {
  * The days of the program with the user's own exercises when they chose
  * some. Names no longer in the catalog are skipped.
  */
+// Both lists are required, even when undefined: without the own exercises, they vanish from their days
 export function programDays(
   split: SplitId,
-  customDays: Record<string, string[]> = {},
-  own: CustomExercise[] = [],
+  customDays: Record<string, string[]> | undefined,
+  own: CustomExercise[] | undefined,
 ): ProgramDay[] {
   return getSplit(split).days.map((day) => {
-    const names = customDays[dayKey(split, day.name)];
+    const names = customDays?.[dayKey(split, day.name)];
     if (!names) return day;
     const exercises = names.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
     return { name: day.name, exercises };
