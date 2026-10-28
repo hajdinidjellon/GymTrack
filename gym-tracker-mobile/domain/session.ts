@@ -5,6 +5,7 @@
  */
 
 import { moveItem } from '@/domain/reorder';
+import { EFFORT_RPE, effortOf, type Effort } from '@/domain/effort';
 import { withRestTaken } from '@/domain/rest';
 import { findCurrent } from '@/domain/sessionCursor';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
@@ -102,14 +103,24 @@ export function undoLastSet(session: ActiveSession): ActiveSession {
   };
 }
 
-/** One more set at the end, a copy of the last one, still to do. */
+/** One more set at the end, a copy of the last one, still to do: no rating, no time. */
 export function addSet(session: ActiveSession, exerciseId: string): ActiveSession {
   return mapExercise(session, exerciseId, (e) => {
     const last = e.sets[e.sets.length - 1];
     if (!last) return e;
+    const { rpe: _rpe, doneAt: _doneAt, ...copy } = last;
     const target = last.target ?? { weight: last.weight, reps: last.reps };
-    return { ...e, sets: [...e.sets, { ...last, completed: false, target }] };
+    return { ...e, sets: [...e.sets, { ...copy, completed: false, target }] };
   });
+}
+
+/** How the last validated set felt. The same effort a second time takes the rating back. */
+export function rateLastSet(session: ActiveSession, effort: Effort): ActiveSession {
+  const last = session.lastCompleted;
+  const set = last && findSet(session, last.exerciseId, last.setIndex);
+  if (!last || !set?.completed) return session;
+  const rpe = effortOf(set.rpe) === effort ? undefined : EFFORT_RPE[effort];
+  return updateSet(session, last.exerciseId, last.setIndex, { rpe });
 }
 
 /**

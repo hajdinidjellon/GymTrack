@@ -15,6 +15,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { Storage } from 'expo-sqlite/kv-store';
 import * as Haptics from 'expo-haptics';
+import type { Effort } from '@/domain/effort';
 import * as Session from '@/domain/session';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
@@ -47,6 +48,8 @@ interface SessionStore {
   completeSet: (exerciseId: string, setIndex: number) => void;
   /** "Done as planned": completes every remaining set of the exercise at once. */
   completeRemaining: (exerciseId: string) => void;
+  /** How the last validated set felt; the same effort again clears it. */
+  rateLastSet: (effort: Effort) => void;
   /** Takes back the last validated set and cancels its rest. */
   undoLastSet: () => void;
   /** Another exercise instead of this one; the sets already done stay. */
@@ -205,6 +208,11 @@ export const useSessionStore = create<SessionStore>()(
           if (!exercise || last === undefined) return;
           apply((s) => Session.completeRemaining(s, exerciseId, Date.now()));
           afterSet(exerciseId, exercise.sets[last]?.restTime ?? settings().defaultRestTime);
+        },
+
+        rateLastSet: (effort) => {
+          apply((s) => Session.rateLastSet(s, effort));
+          Haptics.selectionAsync().catch(() => null);
         },
 
         undoLastSet: () => {

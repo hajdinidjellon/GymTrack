@@ -246,6 +246,37 @@ describe('changing the order', () => {
   });
 });
 
+describe('rateLastSet', () => {
+  const done = () => Session.completeSet(session([bench()]), 'bench', 0);
+  const rpe = (s: ReturnType<typeof session>) => s.exercises[0]!.sets[0]!.rpe;
+
+  it('stores how the last validated set felt', () => {
+    expect(rpe(Session.rateLastSet(done(), 'easy'))).toBe(6);
+    expect(rpe(Session.rateLastSet(done(), 'max'))).toBe(10);
+  });
+
+  it('changes the rating, and takes it back on a second tap', () => {
+    const rated = Session.rateLastSet(done(), 'easy');
+    expect(rpe(Session.rateLastSet(rated, 'good'))).toBe(8);
+    expect(rpe(Session.rateLastSet(rated, 'easy'))).toBeUndefined();
+  });
+
+  it('does nothing before a set is validated, or after an undo', () => {
+    const fresh = session([bench()]);
+    expect(Session.rateLastSet(fresh, 'easy')).toBe(fresh);
+    const undone = Session.undoLastSet(done());
+    expect(Session.rateLastSet(undone, 'easy')).toBe(undone);
+  });
+
+  it('does not copy a rating onto an added set', () => {
+    const rated = Session.rateLastSet(done(), 'max');
+    const added = Session.addSet(rated, 'bench').exercises[0]!.sets[2]!;
+    expect(added).not.toHaveProperty('rpe');
+    expect(added).not.toHaveProperty('doneAt');
+    expect(added.completed).toBe(false);
+  });
+});
+
 describe('toWorkout', () => {
   it('keeps only exercises with a validated set and drops session-only fields', () => {
     const ex = { ...bench(), lastTime: '60 kg × 10', reason: 'x' };
