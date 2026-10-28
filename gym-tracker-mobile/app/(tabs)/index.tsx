@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { border, colors, radius, space } from '@/constants/theme';
+import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
@@ -9,7 +9,9 @@ import {
   deltaLabel,
   nextDay,
   planDay,
+  lastTimeLabel,
   targetLabel,
+  targetLoad,
   tonnage,
   toActiveExercises,
   type PlannedDay,
@@ -29,7 +31,7 @@ import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
-import { Chip } from '@/components/ui/Chip';
+import { Chip, IndexBadge } from '@/components/ui/Chip';
 import { Sparkle } from '@/components/ui/Sparkle';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { buzz, PressableScale } from '@/components/ui/PressableScale';
@@ -238,9 +240,11 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
   );
 }
 
+/** One exercise: today's target in bold, last time underneath, what changed on the right. */
 function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; last: boolean }) {
   const calibrate = lift.decision === 'calibrate';
   const progress = isProgress(lift.decision);
+  const sets = `${lift.targets.length} série${lift.targets.length > 1 ? 's' : ''}`;
   return (
     <PressableScale
       onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: lift.def.name } })}
@@ -248,7 +252,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       accessibilityRole="button"
       accessibilityLabel={`${lift.def.name}, ${calibrate ? 'charge à choisir' : targetLabel(lift.targets)}`}
       style={{
-        minHeight: 56,
+        paddingVertical: space.md,
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.md,
@@ -256,19 +260,28 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         borderBottomColor: colors.line,
       }}
     >
-      <Text size={15} weight="black" style={{ width: 18 }}>
-        {index + 1}
-      </Text>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text size={16} weight="bold" numberOfLines={1}>
+      <IndexBadge value={index + 1} />
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <Text size={16} weight="bold" numberOfLines={2} style={{ lineHeight: 20 }}>
           {lift.def.name}
         </Text>
-        <Text size={14} color={colors.inkMuted} numberOfLines={1}>
-          {calibrate ? 'Charge à choisir' : targetLabel(lift.targets)}
+        <Text size={15} weight="black" numberOfLines={1}>
+          {calibrate ? 'Charge à choisir' : targetLoad(lift.targets)}
+          <Text size={14} weight="semibold" color={colors.inkMuted}>
+            {'  '}· {sets}
+          </Text>
         </Text>
+        {lift.last.length ? (
+          <Text size={13} color={colors.inkMuted} numberOfLines={1}>
+            Dernière fois : {lastTimeLabel(lift.last)}
+          </Text>
+        ) : null}
       </View>
-      {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
-      <ChevronRight size={18} />
+      {/* Badge and chevron centred together on the row */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+        {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
+        <ChevronRight size={18} />
+      </View>
     </PressableScale>
   );
 }
@@ -302,7 +315,7 @@ function LastWorkout() {
   );
 }
 
-/** "Pas envie de ça ?": every day of the program, one tap to do it today instead. */
+/** "Pas envie de ça ?": every day of the program side by side, one tap to do it today instead. */
 function DayPicker({
   days,
   current,
@@ -317,16 +330,12 @@ function DayPicker({
   return (
     <View style={{ marginBottom: space.md }}>
       <Text size={14} weight="bold" color={colors.inkMuted}>
-        Pas envie de ça ? Choisis ta séance :
+        Envie d'autre chose ? Choisis ta séance
       </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ marginHorizontal: -space.gutter, marginTop: 8, flexGrow: 0 }}
-        contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 8 }}
-      >
+      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
         {days.map((d) => {
           const on = d.name === current;
+          const planned = d.name === today;
           return (
             <Pressable
               key={d.name}
@@ -336,23 +345,26 @@ function DayPicker({
               }}
               accessibilityRole="radio"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`Séance ${d.name}${d.name === today ? ', prévue aujourd’hui' : ''}`}
+              accessibilityLabel={`Séance ${d.name}${planned ? ', prévue aujourd’hui' : ''}`}
               style={{
-                height: 44,
-                paddingHorizontal: 18,
-                borderRadius: radius.pill,
+                // Equal widths on one row; a long program wraps onto a second one
+                flexGrow: 1,
+                flexBasis: days.length > 3 ? '45%' : 0,
+                minHeight: 56,
+                paddingHorizontal: 10,
+                borderRadius: radius.row,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: colors.ink,
+                borderColor: on ? colors.ink : colors.line,
                 backgroundColor: on ? colors.coralSoft : colors.card,
-                flexDirection: 'row',
                 alignItems: 'center',
-                gap: 6,
+                justifyContent: 'center',
+                ...(on ? hardShadow(2) : {}),
               }}
             >
-              <Text size={16} weight={on ? 'black' : 'titleMedium'}>
+              <Text size={16} weight="black" numberOfLines={1} color={on ? colors.ink : colors.inkMuted}>
                 {d.name}
               </Text>
-              {d.name === today ? (
+              {planned ? (
                 <Text size={12} weight="bold" color={colors.inkMuted}>
                   prévue
                 </Text>
@@ -360,7 +372,7 @@ function DayPicker({
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }
