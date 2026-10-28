@@ -59,7 +59,8 @@ A layer never imports a layer above it. Always import with `@/`.
 
 ### Domain (`domain/`)
 
-- `progression.ts` — double progression engine (`nextTargets`), lighter comeback after 2+ weeks off.
+- `progression.ts` — double progression engine (`nextTargets`), lighter comeback after 2+ weeks off. The last set's effort steers the reps: easy = +2, all-out = same target once.
+- `effort.ts` — "Comment c'était ?" after a set: Facile / Juste bien / À fond, stored as RPE.
 - `programs.ts` — exercise catalog (equipment, old-name aliases), splits, rules per goal.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
 - `session.ts` — pure transitions of the running session (complete set, rest, to workout).

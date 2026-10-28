@@ -11,6 +11,7 @@ import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { MiniPlates } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
+import { EffortPicker } from './EffortPicker';
 
 interface Props {
   next: Cursor | null;
@@ -51,6 +52,8 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note 
           {note}
         </Text>
       ) : null}
+
+      {doneLabel ? <EffortPicker /> : null}
 
       <View
         accessible
