@@ -411,10 +411,10 @@ function Recap({
       <OnboardingHeader total={QUESTIONS} onBack={onBack} />
       <FadeIn>
         <StickerCard tone="hero" style={{ marginTop: 26, gap: 14 }}>
-          <View style={{ position: 'absolute', top: -18, right: 24 }}>
+          <View style={{ position: 'absolute', top: 14, right: 18 }}>
             <Sparkle size={34} />
           </View>
-          <View style={{ position: 'absolute', top: 18, right: 6 }}>
+          <View style={{ position: 'absolute', top: 50, right: 58 }}>
             <Sparkle size={22} />
           </View>
           <Text size={32} weight="black" accessibilityRole="header" style={{ lineHeight: 36 }}>

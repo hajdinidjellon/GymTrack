@@ -56,10 +56,10 @@ export default function Summary() {
   return (
     <Screen scroll footer={<StickerButton label="Retour à l'accueil" onPress={() => router.dismissTo('/(tabs)')} />}>
       <StickerCard tone="hero" style={{ marginTop: 8, paddingVertical: 20 }}>
-        <View style={{ position: 'absolute', top: -16, right: 22 }}>
+        <View style={{ position: 'absolute', top: 14, right: 18 }}>
           <Sparkle size={38} />
         </View>
-        <View style={{ position: 'absolute', top: 30, right: 64 }}>
+        <View style={{ position: 'absolute', top: 52, right: 66 }}>
           <Sparkle size={20} fill={colors.card} />
         </View>
         <View
