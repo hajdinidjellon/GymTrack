@@ -32,4 +32,11 @@ describe('voice lines', () => {
     const fresh = active('Row', [{ weight: 0, reps: 8 }], { needsWeight: true });
     expect(nextExerciseLine(cursor(fresh), gym)).toBe('Prochain exercice : Row. Choisis ta charge de départ.');
   });
+
+  it('reads the note on the exercise last', () => {
+    const notes = { exerciseNotes: { Squat: 'pieds écartés.' } };
+    expect(nextExerciseLine(cursor(), { ...gym, ...notes })).toBe(
+      'Prochain exercice : Squat. Mets 20 et 1,25 de chaque côté. Note : pieds écartés.',
+    );
+  });
 });
