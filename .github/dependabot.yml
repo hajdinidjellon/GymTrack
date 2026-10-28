@@ -18,6 +18,14 @@ updates:
         update-types: [version-update:semver-major, version-update:semver-minor]
       - dependency-name: 'react'
       - dependency-name: 'react-dom'
+      # Suivent aussi le SDK : `npx expo install --fix`
+      - dependency-name: '@expo/*'
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      # Majeures pas encore prises en charge par Expo (eslint-config-expo, babel-preset-expo)
+      - dependency-name: 'eslint'
+        update-types: [version-update:semver-major]
+      - dependency-name: '@babel/*'
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
