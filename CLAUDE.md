@@ -38,7 +38,7 @@ app/
   session/preview.tsx      ← today's session, "Lancer la séance"
   session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state
   session/summary.tsx      ← tonnage, next targets
-  exercise/[name].tsx      ← next target, own sets/reps (RuleEditor), increment picker, history
+  exercise/[name].tsx      ← next target, own sets/reps (RuleEditor), plate-loaded or stack, increment picker, history
   days/index.tsx           ← "Mes séances": every day of the program (Profil → Mes séances)
   days/[name].tsx          ← one day: add, remove, drag to reorder its exercises
 ```
@@ -69,6 +69,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `rest.ts` — rest per exercise: the user's choice, else the rest they really take (measured between validations), else the kind of exercise.
 - `insights.ts` — "Ce que l'app sait de toi": time of day, usual days, duration, rhythm, rests, strongest lift.
 - `exportCsv.ts` — every set as CSV for the share sheet.
+- `loading.ts` — what the weight counts: the whole bar, each side of a plate-loaded machine (chest press, leg press…), each dumbbell, or the stack; the plates for one side.
 - `notes.ts` — the per-exercise note ("siège cran 4"), one clean line.
 - `profile.ts`, `week.ts`, `plates.ts`, `sessionCursor.ts`, `voiceLines.ts`, `format.ts`.
 
@@ -86,7 +87,7 @@ A layer never imports a layer above it. Always import with `@/`.
 | `sessionStore` | Running session, persisted in `expo-sqlite/kv-store`. Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here. |
 | `workoutStore` | Past workouts (SQLite) |
 | `profileStore` | Goal, program, PRs. Normalizes profiles from the old app version. |
-| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments, own exercises per day (`customDays`, key `"ppl/Legs"`) and own sets/reps per exercise (`ruleOverrides`), own rest per exercise (`restOverrides`), own exercises (`customExercises`), a note per exercise (`exerciseNotes`, read by the voice). Validated on load. |
+| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments, own exercises per day (`customDays`, key `"ppl/Legs"`) and own sets/reps per exercise (`ruleOverrides`), own rest per exercise (`restOverrides`), own exercises (`customExercises`), a note per exercise (`exerciseNotes`, read by the voice), plate-loaded or stack machine per exercise (`plateLoaded`, over the catalog's). Validated on load. |
 
 ### Tests
 

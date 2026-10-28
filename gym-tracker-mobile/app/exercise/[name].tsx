@@ -5,6 +5,7 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatClock, formatRest, formatShortDay } from '@/domain/format';
 import { clampRest, REST_STEP } from '@/domain/rest';
+import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
@@ -20,6 +21,8 @@ import { Sparkline } from '@/components/stats/Sparkline';
 import { buzz, PressableScale } from '@/components/ui/PressableScale';
 import { SharedRuleEditor } from '@/components/program/SharedRuleEditor';
 import { ExerciseNote } from '@/components/session/ExerciseNote';
+import { LoadHint } from '@/components/session/LoadHint';
+import { CheckRow } from '@/components/ui/CheckRow';
 
 const STEPS = [1, 2, 2.5, 5];
 
@@ -31,6 +34,7 @@ export default function ExerciseScreen() {
   const def = findExerciseDef(name ?? '', ctx?.settings.customExercises);
   const setIncrement = useSettingsStore((s) => s.setIncrement);
   const setRestOverride = useSettingsStore((s) => s.setRestOverride);
+  const setPlateLoaded = useSettingsStore((s) => s.setPlateLoaded);
 
   if (!def || !ctx) {
     return (
@@ -49,6 +53,7 @@ export default function ExerciseScreen() {
   const bodyweight = def.equipment === 'bodyweight';
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
   const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def.equipment, ctx.settings.units));
+  const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded });
 
   return (
     <Screen scroll>
@@ -87,10 +92,17 @@ export default function ExerciseScreen() {
             Dernière fois : {lastTimeLabel(lift.last)}
           </Text>
         ) : null}
-        {def.equipment === 'barbell' && target && target.weight > 0 ? (
-          <View style={{ marginTop: 8, height: 80, justifyContent: 'center' }}>
-            <LoadedBar weight={target.weight} scale={0.77} barWidth={110} />
-          </View>
+        {lift.decision !== 'calibrate' && target && target.weight > 0 ? (
+          <>
+            {loading === 'bar' ? (
+              <View style={{ marginTop: 8, height: 80, justifyContent: 'center' }}>
+                <LoadedBar weight={target.weight} scale={0.77} barWidth={110} />
+              </View>
+            ) : null}
+            <View style={{ marginTop: 8, alignItems: 'flex-start' }}>
+              <LoadHint loading={loading} weight={target.weight} />
+            </View>
+          </>
         ) : null}
       </StickerCard>
 
@@ -120,6 +132,18 @@ export default function ExerciseScreen() {
           Tes séries et tes reps
         </Text>
         <SharedRuleEditor def={def} goal={ctx.profile.goal} base={base} />
+        {def.equipment === 'machine' ? (
+          <View style={{ marginTop: 14 }}>
+            <CheckRow
+              label="Machine à disques"
+              checked={lift.plateLoaded}
+              onChange={(on) => setPlateLoaded(def, on)}
+              detail={
+                lift.plateLoaded ? 'Le poids se compte de chaque côté.' : 'Le poids se lit sur la pile de la machine.'
+              }
+            />
+          </View>
+        ) : null}
         {!bodyweight ? (
           <>
             <Text size={16} weight="semibold" color={colors.inkMuted} style={{ marginTop: 14 }}>
