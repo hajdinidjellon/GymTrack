@@ -224,11 +224,11 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
               {perSide.length ? `${describeSide(perSide)} de chaque côté` : 'Barre à vide'}
             </Text>
           </View>
-        ) : (
+        ) : plan.lifts.every((l) => l.decision === 'calibrate') ? (
           <Text size={15} color={colors.ink} style={{ marginTop: space.md, lineHeight: 21 }}>
             Première séance : tu choisiras ta charge de départ sur chaque exercice, ensuite on calcule tout.
           </Text>
-        )}
+        ) : null}
 
         <View style={{ marginTop: space.sm }}>
           {plan.lifts.map((lift, i) => (
