@@ -24,10 +24,12 @@ interface Props {
   onMinimize?: () => void;
   /** Why this rest lasts what it lasts: "Gros mouvement à la barre…". */
   note?: string;
+  /** The exercise of the set just validated: the next one is named when it differs. */
+  doneExerciseId?: string;
 }
 
 /** The rest, in a popup in the middle of the screen: the timer, and what comes next so the bar can be loaded now. */
-export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note }: Props) {
+export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note, doneExerciseId }: Props) {
   const left = useRestSecondsLeft(restEndsAt) ?? 0;
   const addRestTime = useSessionStore((s) => s.addRestTime);
   const stopRestTimer = useSessionStore((s) => s.stopRestTimer);
@@ -91,7 +93,10 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note 
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md }}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text size={13} weight="semibold" numberOfLines={1}>
-              Ensuite · {next.setIndex === 0 ? next.exercise.name : `série ${next.setIndex + 1}`}
+              Ensuite ·{' '}
+              {next.setIndex === 0 || (doneExerciseId && next.exercise.id !== doneExerciseId)
+                ? `${next.exercise.name}${next.setIndex > 0 ? `, série ${next.setIndex + 1}` : ''}`
+                : `série ${next.setIndex + 1}`}
             </Text>
             <Text size={22} weight="black" numberOfLines={1}>
               {next.exercise.needsWeight

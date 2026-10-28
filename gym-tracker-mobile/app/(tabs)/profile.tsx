@@ -208,7 +208,7 @@ export default function Profile() {
               : 'Sans compte : tes séances restent sur ce téléphone.'}
           </Text>
           <StickerButton
-            label="Se déconnecter"
+            label={signedIn ? 'Se déconnecter' : 'Créer un compte ou se connecter'}
             variant="secondary"
             size="small"
             onPress={() => confirmLogout(signedIn)}
@@ -259,19 +259,22 @@ function Group({ children }: { children: React.ReactNode }) {
 }
 
 /** Back to the login page. Workouts stay on the phone, nothing is deleted. */
+function toLogin() {
+  useSettingsStore.getState().updateSettings({ signedOut: true });
+  router.replace('/login');
+}
+
 function confirmLogout(signedIn: boolean) {
-  const message = signedIn
-    ? 'Tes séances sont sauvegardées dans ton compte.'
-    : "Tu n'as pas de compte : tes séances restent sur ce téléphone.";
-  Alert.alert('Se déconnecter ?', message, [
+  // Sans compte, rien à quitter : on va droit à la connexion
+  if (!signedIn) return toLogin();
+  Alert.alert('Se déconnecter ?', 'Tes séances sont sauvegardées dans ton compte.', [
     { text: 'Annuler', style: 'cancel' },
     {
       text: 'Se déconnecter',
       style: 'destructive',
       onPress: async () => {
-        if (signedIn) await signOut().catch(() => null);
-        useSettingsStore.getState().updateSettings({ signedOut: true });
-        router.replace('/login');
+        await signOut().catch(() => null);
+        toLogin();
       },
     },
   ]);

@@ -8,6 +8,8 @@ import { CheckRow } from '@/components/ui/CheckRow';
 import { RuleEditor } from './RuleEditor';
 
 interface Props {
+  /** No weight to add: the reps climb with no ceiling. */
+  bodyweight?: boolean;
   def: ExerciseDef;
   goal: Goal;
   /** The goal's rule, to go back to. */
@@ -18,7 +20,7 @@ interface Props {
  * Sets and reps of an exercise. By default, the similar exercises on the
  * same rule change with it: 2 × 6-9 on the chest press, on the bench too.
  */
-export function SharedRuleEditor({ def, goal, base }: Props) {
+export function SharedRuleEditor({ def, goal, base, bodyweight }: Props) {
   const overrides = useSettingsStore((s) => s.settings.ruleOverrides);
   const own = useSettingsStore((s) => s.settings.customExercises);
   const setRule = useSettingsStore((s) => s.setRule);
@@ -33,6 +35,7 @@ export function SharedRuleEditor({ def, goal, base }: Props) {
         rule={effectiveRule(def, ctx)}
         base={base}
         custom={def.name in overrides}
+        bodyweight={bodyweight}
         onChange={(rule) => setRule(def, rule, goal, similar)}
         onReset={() => setRule(def, null, goal, similar)}
       />

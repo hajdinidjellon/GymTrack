@@ -9,7 +9,14 @@ import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
-import { exerciseHistory, lastTimeLabel, planLift, reasonLabel, weightHistory } from '@/domain/sessionBuilder';
+import {
+  exerciseHistory,
+  lastTimeLabel,
+  planLift,
+  reasonLabel,
+  targetLoad,
+  weightHistory,
+} from '@/domain/sessionBuilder';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -65,11 +72,7 @@ export default function ExerciseScreen() {
           Prochaine cible
         </Text>
         <Text size={34} weight="black" style={{ lineHeight: 42 }}>
-          {lift.decision === 'calibrate'
-            ? 'À régler'
-            : target && target.weight > 0
-              ? `${formatKg(target.weight)} kg × ${target.reps}`
-              : `${target?.reps ?? 0} reps`}
+          {lift.decision === 'calibrate' ? 'À régler' : targetLoad(lift.targets)}
         </Text>
         <View
           style={{
@@ -131,7 +134,7 @@ export default function ExerciseScreen() {
         <Text size={17} weight="black" style={{ marginBottom: 12 }}>
           Tes séries et tes reps
         </Text>
-        <SharedRuleEditor def={def} goal={ctx.profile.goal} base={base} />
+        <SharedRuleEditor def={def} goal={ctx.profile.goal} base={base} bodyweight={bodyweight} />
         {def.equipment === 'machine' ? (
           <View style={{ marginTop: 14 }}>
             <CheckRow
@@ -256,7 +259,7 @@ export default function ExerciseScreen() {
                     {formatShortDay(h.date)}
                   </Text>
                   <Text size={18} weight="black">
-                    {w > 0 ? `${formatKg(w)} × ` : ''}
+                    {w > 0 ? `${formatKg(w)} kg × ` : ''}
                     {sets.map((s) => s.reps).join(' · ')}
                   </Text>
                 </View>
