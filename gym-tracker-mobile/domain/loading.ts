@@ -3,7 +3,7 @@
  * plate-loaded machine, each dumbbell, or the stack.
  */
 
-import { describeSide, loadBar, platesForSide } from '@/domain/plates';
+import { describeSide, formatKg, loadBar, platesForSide } from '@/domain/plates';
 import type { ActiveExercise, AppSettings } from '@/types';
 
 export type Loading = 'bar' | 'perSide' | 'perHand' | 'stack';
@@ -30,6 +30,21 @@ export function sidePlates(loading: Loading, weight: number, gym: Pick<AppSettin
   return [];
 }
 
+/**
+ * What the gym's plates cannot make on each side: 62,5 kg on a 20 kg bar
+ * without 1,25 kg plates leaves 1,25 per side out. 0 when it loads exactly.
+ */
+export function missingPerSide(
+  loading: Loading,
+  weight: number,
+  gym: Pick<AppSettings, 'barWeight' | 'plates'>,
+): number {
+  if (loading === 'bar') return weight > gym.barWeight ? loadBar(weight, gym.barWeight, gym.plates).missing / 2 : 0;
+  if (loading === 'perSide')
+    return Math.round((weight - platesForSide(weight, gym.plates).reduce((a, b) => a + b, 0)) * 100) / 100;
+  return 0;
+}
+
 /** The line under the weight: "Par côté : 20 + 5", "De chaque côté : 20 + 5", "Par haltère". */
 export function loadHint(
   loading: Loading,
@@ -37,11 +52,15 @@ export function loadHint(
   gym: Pick<AppSettings, 'barWeight' | 'plates'>,
 ): string | null {
   const plates = sidePlates(loading, weight, gym);
+  const missing = missingPerSide(loading, weight, gym);
+  // Never silent: the drawn plates would not add up to the weight shown
+  const gap = missing > 0 ? ` · il manque ${formatKg(missing)} kg par côté` : '';
   switch (loading) {
     case 'bar':
-      return plates.length ? `Par côté : ${describeSide(plates)}` : 'Barre à vide';
+      if (weight > 0 && weight < gym.barWeight) return `Plus léger que la barre (${formatKg(gym.barWeight)} kg)`;
+      return plates.length ? `Par côté : ${describeSide(plates)}${gap}` : 'Barre à vide';
     case 'perSide':
-      return plates.length ? `De chaque côté : ${describeSide(plates)}` : 'De chaque côté';
+      return plates.length ? `De chaque côté : ${describeSide(plates)}${gap}` : 'De chaque côté';
     case 'perHand':
       return 'Par haltère';
     case 'stack':

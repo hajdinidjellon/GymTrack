@@ -3,7 +3,7 @@
  * la lecture à voix haute est dans services/speech.ts.
  */
 
-import { LOADING_SUFFIX, loadingOf, sidePlates } from '@/domain/loading';
+import { LOADING_SUFFIX, loadingOf, missingPerSide, sidePlates } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
 import type { AppSettings } from '@/types';
@@ -18,7 +18,9 @@ export function platesLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeigh
   if (perSide.length === 0) return loading === 'bar' ? 'Barre à vide.' : null;
   const list = perSide.map(formatKg);
   const last = list.pop()!;
-  return `Mets ${list.length ? `${list.join(', ')} et ${last}` : last} de chaque côté.`;
+  const missing = missingPerSide(loading, cursor.set.weight, settings);
+  const gap = missing > 0 ? ` Il manque ${formatKg(missing)} de chaque côté.` : '';
+  return `Mets ${list.length ? `${list.join(', ')} et ${last}` : last} de chaque côté.${gap}`;
 }
 
 /** "Série 2. 62,5 kilos, 10 reps." or "Série 1. 12 kilos par haltère, 10 reps." */
