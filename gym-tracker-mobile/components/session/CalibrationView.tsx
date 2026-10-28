@@ -4,6 +4,7 @@ import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { calibrationPreset } from '@/domain/onboarding';
+import { nudge } from '@/domain/session';
 import { findExerciseDef } from '@/domain/programs';
 import { startPresets } from '@/domain/startWeights';
 import type { ActiveExercise } from '@/types';
@@ -31,7 +32,8 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   const [weight, setWeight] = useState(() => calibrationPreset(presets, experience) ?? 20);
   const setStartWeight = useSessionStore((s) => s.setStartWeight);
   const step = exercise.rule?.increment ?? 2.5;
-  const min = loading === 'bar' ? barWeight : step;
+  // Any weight goes, down to the empty bar; off the bar, anything above zero (a 2,9 kg cable)
+  const allowed = (w: number) => (loading === 'bar' ? w >= barWeight : w > 0);
   const perSide = useSidePlates(loading, weight);
 
   const pick = (w: number) => {
@@ -83,11 +85,14 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
           <Stepper
             value={formatKg(weight)}
             unit="kg"
-            onMinus={() => pick(Math.max(min, weight - step))}
-            onPlus={() => pick(weight + step)}
+            onMinus={() => pick(allowed(nudge(weight, -step)) ? nudge(weight, -step) : weight)}
+            onPlus={() => pick(nudge(weight, step))}
             minusLabel={`Moins ${formatKg(step)} kg`}
             plusLabel={`Plus ${formatKg(step)} kg`}
-            onChange={(typed) => setWeight(Math.max(min, typed))}
+            onChange={(typed) => {
+              if (allowed(typed)) setWeight(typed);
+              else if (loading === 'bar') setWeight(barWeight);
+            }}
             inputLabel="Charge de départ en kilos"
           />
           <LoadHint loading={loading} weight={weight} />
