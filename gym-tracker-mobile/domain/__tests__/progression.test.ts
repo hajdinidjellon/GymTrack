@@ -288,6 +288,12 @@ describe('coming back after a break', () => {
     expect(weights(r)).toEqual([50, 50, 50]);
   });
 
+  it('never comes back at 0 kg on a weight lighter than one step', () => {
+    const r = nextTargets([session(2, [10, 10, 10])], rule, { now: daysLater(40) });
+    expect(r.decision).toBe('comeback');
+    expect(weights(r)).toEqual([2, 2, 2]);
+  });
+
   it('leaves bodyweight lifts alone, and needs to know the date', () => {
     expect(nextTargets([session(0, [10, 10, 10])], rule, { now: daysLater(60) }).decision).toBe('add_reps');
     expect(nextTargets([session(100, [10, 10, 10])], rule).decision).toBe('add_reps');
