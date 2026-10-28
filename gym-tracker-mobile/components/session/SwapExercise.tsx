@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { border, colors, radius } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import {
@@ -15,8 +15,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
-import { Check } from '@/components/ui/icons';
-import { buzz } from '@/components/ui/PressableScale';
+import { CheckRow } from '@/components/ui/CheckRow';
 import { ExercisePicker } from './ExercisePicker';
 
 /** "Changer" next to the exercise name: machine taken, sore shoulder… another exercise, computed the same way. */
@@ -80,33 +79,11 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
         onClose={() => setOpen(false)}
         footer={
           day ? (
-            <Pressable
-              onPress={() => {
-                buzz('selection');
-                setKeep(!keep);
-              }}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: keep }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}
-            >
-              <View
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  borderWidth: border.base,
-                  borderColor: colors.ink,
-                  backgroundColor: keep ? colors.success : colors.card,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {keep ? <Check size={16} /> : null}
-              </View>
-              <Text size={15} weight="bold" style={{ flex: 1 }}>
-                Garder ce changement pour mes prochaines séances {day.name}
-              </Text>
-            </Pressable>
+            <CheckRow
+              label={`Garder ce changement pour mes prochaines séances ${day.name}`}
+              checked={keep}
+              onChange={setKeep}
+            />
           ) : null
         }
       />
