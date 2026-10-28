@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import type { MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
+import { buzz } from '@/components/ui/PressableScale';
 import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 
 interface Props {
@@ -25,7 +26,12 @@ interface Props {
   footer?: React.ReactNode;
 }
 
-/** Every exercise of the catalog and the user's own, by muscle. One tap picks it; a new one can be created. */
+type Tab = 'suggested' | MuscleGroup;
+
+/**
+ * Every exercise of the catalog and the user's own, one muscle tab at a time.
+ * A search looks through all of them. One tap picks it; a new one can be created.
+ */
 export function ExercisePicker({
   visible,
   taken,
@@ -41,7 +47,13 @@ export function ExercisePicker({
   const own = useSettingsStore((s) => s.settings.customExercises);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState('');
+  const [chosenTab, setTab] = useState<Tab | null>(null);
   const groups = catalogByMuscle(own);
+  const tabs: Tab[] = [...(suggested?.length ? ['suggested' as const] : []), ...groups.map((g) => g.muscle)];
+  // Ouverte sur les suggestions, sinon sur le muscle de l'exercice, sinon le premier
+  const defaultTab = tabs.find((t) => t === 'suggested') ?? tabs.find((t) => t === muscle) ?? tabs[0];
+  const tab = chosenTab && tabs.includes(chosenTab) ? chosenTab : defaultTab;
+  const shown = tab === 'suggested' ? (suggested ?? []) : (groups.find((g) => g.muscle === tab)?.exercises ?? []);
   const found = searchExercises(query, own);
   const exact = found.some((e) => searchKey(e.name) === searchKey(query));
 
@@ -49,6 +61,7 @@ export function ExercisePicker({
   const reset = () => {
     setCreating(false);
     setQuery('');
+    setTab(null);
   };
   const close = () => {
     reset();
@@ -123,6 +136,46 @@ export function ExercisePicker({
           <Text size={28} weight="black" style={{ marginTop: 18, paddingHorizontal: 24 }} accessibilityRole="header">
             {creating ? 'Nouvel exercice' : title}
           </Text>
+          {!creating ? (
+            <View style={{ paddingHorizontal: 24 }}>
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Chercher : hack squat, smith, convergent…"
+                placeholderTextColor={colors.inkFaint}
+                returnKeyType="search"
+                autoCorrect={false}
+                accessibilityLabel="Chercher un exercice"
+                style={{
+                  marginTop: space.md,
+                  height: 52,
+                  paddingHorizontal: 16,
+                  borderRadius: radius.row,
+                  borderWidth: border.base,
+                  borderColor: colors.ink,
+                  backgroundColor: colors.card,
+                  fontFamily: fonts.bold,
+                  fontSize: 16,
+                  color: colors.ink,
+                }}
+              />
+              {!query.trim() ? (
+                <View
+                  accessibilityRole="tablist"
+                  style={{ marginTop: space.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+                >
+                  {tabs.map((t) => (
+                    <MuscleTab
+                      key={t}
+                      label={t === 'suggested' ? suggestedTitle : MUSCLE_LABELS[t]}
+                      selected={t === tab}
+                      onPress={() => setTab(t)}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: space.md }}
             keyboardShouldPersistTaps="handled"
@@ -136,27 +189,18 @@ export function ExercisePicker({
               />
             ) : (
               <>
-                <TextInput
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Chercher : hack squat, smith, convergent…"
-                  placeholderTextColor={colors.inkFaint}
-                  returnKeyType="search"
-                  autoCorrect={false}
-                  accessibilityLabel="Chercher un exercice"
-                  style={{
-                    marginTop: space.md,
-                    height: 52,
-                    paddingHorizontal: 16,
-                    borderRadius: radius.row,
-                    borderWidth: border.base,
-                    borderColor: colors.ink,
-                    backgroundColor: colors.card,
-                    fontFamily: fonts.bold,
-                    fontSize: 16,
-                    color: colors.ink,
-                  }}
-                />
+                {query.trim() ? (
+                  <View style={{ marginTop: space.md, gap: 8 }}>
+                    <Text size={14} weight="bold" color={colors.inkMuted}>
+                      {found.length
+                        ? `${found.length} exercice${found.length > 1 ? 's' : ''}`
+                        : 'Pas dans la liste : crée-le, il sera rangé avec son muscle.'}
+                    </Text>
+                    {found.map(row)}
+                  </View>
+                ) : (
+                  <View style={{ marginTop: space.md, gap: 8 }}>{shown.map(row)}</View>
+                )}
                 <Pressable
                   onPress={() => setCreating(true)}
                   accessibilityRole="button"
@@ -177,35 +221,6 @@ export function ExercisePicker({
                     {query.trim() && !exact ? `+ Créer « ${query.trim()} »` : '+ Créer mon exercice'}
                   </Text>
                 </Pressable>
-                {query.trim() ? (
-                  <View style={{ marginTop: space.lg, gap: 8 }}>
-                    <Text size={14} weight="bold" color={colors.inkMuted}>
-                      {found.length
-                        ? `${found.length} exercice${found.length > 1 ? 's' : ''}`
-                        : 'Pas dans la liste : crée-le, il sera rangé avec son muscle.'}
-                    </Text>
-                    {found.map(row)}
-                  </View>
-                ) : (
-                  <>
-                    {suggested?.length ? (
-                      <View style={{ marginTop: space.lg, gap: 8 }}>
-                        <Text size={14} weight="bold" color={colors.inkMuted}>
-                          {suggestedTitle}
-                        </Text>
-                        {suggested.map(row)}
-                      </View>
-                    ) : null}
-                    {groups.map(({ muscle: m, exercises }) => (
-                      <View key={m} style={{ marginTop: space.lg, gap: 8 }}>
-                        <Text size={14} weight="bold" color={colors.inkMuted}>
-                          {MUSCLE_LABELS[m]}
-                        </Text>
-                        {exercises.map(row)}
-                      </View>
-                    ))}
-                  </>
-                )}
               </>
             )}
           </ScrollView>
@@ -216,5 +231,33 @@ export function ExercisePicker({
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+/** One muscle in the tab row: coral-soft and outlined thicker when it is the one shown. */
+function MuscleTab({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={() => {
+        buzz('selection');
+        onPress();
+      }}
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      hitSlop={4}
+      style={({ pressed }) => ({
+        height: 38,
+        paddingHorizontal: 14,
+        borderRadius: radius.pill,
+        borderWidth: selected ? border.strong : border.base,
+        borderColor: colors.ink,
+        backgroundColor: selected || pressed ? colors.coralSoft : colors.card,
+        justifyContent: 'center',
+      })}
+    >
+      <Text size={15} weight={selected ? 'black' : 'titleMedium'}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
