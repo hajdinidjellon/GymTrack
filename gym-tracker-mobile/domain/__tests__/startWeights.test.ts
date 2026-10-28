@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { EXERCISES } from '@/domain/programs';
-import { startPresets } from '@/domain/startWeights';
+import { fitToGym, startPresets } from '@/domain/startWeights';
 
 const first = (def: Parameters<typeof startPresets>[0]) => startPresets(def)[0];
 
@@ -38,5 +38,24 @@ describe('startPresets', () => {
       const presets = startPresets(def);
       expect([...presets].sort((a, b) => a - b)).toEqual(presets);
     }
+  });
+});
+
+describe('fitToGym', () => {
+  const gym = { barWeight: 20, plates: [20, 10, 5] };
+
+  it('only offers bar weights the plates can make', () => {
+    expect(fitToGym([20, 30, 35, 40, 45, 50], 'bar', gym, 2.5)).toEqual([20, 30, 40, 50]);
+    expect(fitToGym([15], 'bar', gym, 2.5)).toEqual([20]);
+  });
+
+  it('only offers per-side weights the plates can make', () => {
+    expect(fitToGym([10, 15, 20, 25, 27], 'perSide', gym, 2.5)).toEqual([10, 15, 20, 25]);
+  });
+
+  it('moves stack and dumbbell weights onto the weight step', () => {
+    expect(fitToGym([5, 10, 15, 20, 25, 30], 'stack', gym, 7)).toEqual([7, 14, 21, 28]);
+    expect(fitToGym([4, 6, 8], 'perHand', gym, 2.5)).toEqual([2.5, 5, 7.5]);
+    expect(fitToGym([10], 'stack', gym, 0)).toEqual([10]);
   });
 });

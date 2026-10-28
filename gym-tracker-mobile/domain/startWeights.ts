@@ -4,8 +4,10 @@
  * do not start at the same numbers, and legs start heavier than arms.
  */
 
+import type { Loading } from '@/domain/loading';
+import { platesForSide } from '@/domain/plates';
 import type { ExerciseDef } from '@/domain/programs';
-import type { MuscleGroup } from '@/types';
+import type { AppSettings, MuscleGroup } from '@/types';
 
 type Station = 'bar' | 'smith' | 'perSide' | 'cable' | 'stack' | 'dumbbell';
 
@@ -46,3 +48,29 @@ export function startPresets(
   if (main && LOWER.includes(main)) return row.lower;
   return def.category === 'compound' ? row.upper : row.isolation;
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * The presets moved to weights the gym can really make, never heavier:
+ * the bar and the plates that are there, one weight step on a stack or a
+ * dumbbell rack. Duplicates are dropped.
+ */
+export function fitToGym(
+  presets: number[],
+  loading: Loading,
+  gym: Pick<AppSettings, 'barWeight' | 'plates'>,
+  increment: number,
+): number[] {
+  const fit = (p: number): number => {
+    if (loading === 'bar') {
+      if (p <= gym.barWeight) return gym.barWeight;
+      return round2(gym.barWeight + 2 * sum(platesForSide((p - gym.barWeight) / 2, gym.plates)));
+    }
+    if (loading === 'perSide') return round2(sum(platesForSide(p, gym.plates)));
+    return increment > 0 ? round2(Math.max(increment, Math.floor(p / increment + 1e-9) * increment)) : p;
+  };
+  return [...new Set(presets.map(fit))].filter((p) => p > 0).sort((a, b) => a - b);
+}
+
+const sum = (list: number[]) => list.reduce((a, b) => a + b, 0);
