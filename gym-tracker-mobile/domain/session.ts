@@ -70,6 +70,8 @@ export function setStartWeight(session: ActiveSession, exerciseId: string, weigh
 /**
  * Marks the set done. The sets after it start from what was really done:
  * 100 kg instead of the planned 70 on set 1 means 100 kg on set 2 too.
+ * A missed set (fewer reps than its target) passes on its weight only:
+ * the next sets still aim for their own reps.
  * `now` dates the validation: the gaps tell how long the user really rests.
  */
 export function completeSet(session: ActiveSession, exerciseId: string, setIndex: number, now?: number): ActiveSession {
@@ -81,7 +83,10 @@ export function completeSet(session: ActiveSession, exerciseId: string, setIndex
         ...e,
         sets: e.sets.map((set, i) => {
           if (i === setIndex) return { ...set, completed: true, doneAt: now };
-          if (i > setIndex && !set.completed) return { ...set, weight: done.weight, reps: done.reps };
+          if (i > setIndex && !set.completed) {
+            const missed = done.target != null && done.reps < done.target.reps;
+            return { ...set, weight: done.weight, reps: missed ? set.reps : done.reps };
+          }
           return set;
         }),
       };
