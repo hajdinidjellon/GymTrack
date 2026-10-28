@@ -167,10 +167,17 @@ describe('catalog', () => {
   });
 
   it('tells which other name the search found an exercise under', () => {
-    expect(searchExercises('tirage horizontal').map((e) => e.name)).toEqual(['Rowing assis poulie']);
-    expect(aliasMatch(EXERCISES.seatedrow, 'tirage horiz')).toBe('Tirage horizontal');
-    expect(aliasMatch(EXERCISES.seatedrow, 'rowing')).toBeUndefined();
+    expect(searchExercises('lat pulldown').map((e) => e.name)).toEqual(['Tirage vertical']);
+    expect(aliasMatch(EXERCISES.pulldown, 'lat pull')).toBe('Lat pulldown');
+    expect(aliasMatch(EXERCISES.pulldown, 'tirage')).toBeUndefined();
     expect(aliasMatch(EXERCISES.squat, '  ')).toBeUndefined();
+  });
+
+  it('lets the user create a variant that is not the same exercise', () => {
+    const input = { equipment: 'machine' as const, category: 'compound' as const, muscle: 'back' as const };
+    for (const name of ['Tirage horizontal', 'Dips triceps', 'Rowing convergent', 'Curl haltères alternés']) {
+      expect(makeCustomExercise({ ...input, name })).toMatchObject({ name });
+    }
   });
 });
 

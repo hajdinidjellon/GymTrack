@@ -14,7 +14,10 @@ import type {
 } from '@/types';
 
 export interface ExerciseDef extends CustomExercise {
-  /** Older names in the history that refer to the same exercise. */
+  /**
+   * Other names of the very same exercise (old names, English names). Never a
+   * variant: an alias blocks creating an exercise of that name.
+   */
   aliases?: string[];
   /** Created by the user. */
   custom?: boolean;
@@ -58,7 +61,7 @@ export const EXERCISES = {
   ),
   chestpress: withPlates(ex('Chest press', 'machine', 'compound', ['chest', 'triceps'], ['Développé assis machine'])),
   inclinemachine: withPlates(ex('Développé incliné machine', 'machine', 'compound', ['chest', 'shoulders'])),
-  dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'triceps'], ['Dips triceps', 'Dips poitrine']),
+  dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'triceps']),
   pushup: ex('Pompes', 'bodyweight', 'compound', ['chest', 'triceps']),
   fly: onCable(ex('Écarté poulie', 'machine', 'isolation', ['chest'], ['Crossover poulie'])),
   lowfly: onCable(ex('Écarté poulie basse', 'machine', 'isolation', ['chest'])),
@@ -76,10 +79,8 @@ export const EXERCISES = {
   row: ex('Rowing barre', 'barbell', 'compound', ['back', 'biceps']),
   pendlay: ex('Rowing Pendlay', 'barbell', 'compound', ['back', 'biceps']),
   dbrow: ex('Rowing haltère', 'dumbbell', 'compound', ['back', 'biceps']),
-  seatedrow: onCable(ex('Rowing assis poulie', 'machine', 'compound', ['back', 'biceps'], ['Tirage horizontal'])),
-  machinerow: withPlates(
-    ex('Rowing machine', 'machine', 'compound', ['back', 'biceps'], ['Low row', 'Rowing convergent']),
-  ),
+  seatedrow: onCable(ex('Rowing assis poulie', 'machine', 'compound', ['back', 'biceps'])),
+  machinerow: withPlates(ex('Rowing machine', 'machine', 'compound', ['back', 'biceps'], ['Low row'])),
   tbar: withPlates(ex('Rowing T-bar', 'machine', 'compound', ['back', 'biceps'])),
   deadlift: ex('Soulevé de terre', 'barbell', 'compound', ['back', 'legs', 'glutes']),
   pullover: onCable(ex('Pull-over poulie', 'machine', 'isolation', ['back'])),
@@ -101,13 +102,13 @@ export const EXERCISES = {
   cablelateral: onCable(ex('Élévations latérales poulie', 'machine', 'isolation', ['shoulders'])),
   machinelateral: ex('Élévations latérales machine', 'machine', 'isolation', ['shoulders']),
   frontraise: ex('Élévations frontales', 'dumbbell', 'isolation', ['shoulders']),
-  reardelt: ex('Oiseau haltères', 'dumbbell', 'isolation', ['shoulders'], ['Élévations postérieures']),
+  reardelt: ex('Oiseau haltères', 'dumbbell', 'isolation', ['shoulders']),
   reversepec: ex('Reverse pec deck', 'machine', 'isolation', ['shoulders', 'back']),
   facepull: onCable(ex('Face pull', 'machine', 'isolation', ['shoulders', 'back'], ['Face pulls'])),
   uprightrow: ex('Rowing menton', 'barbell', 'compound', ['shoulders', 'back']),
 
   // Biceps
-  curl: ex('Curl haltères', 'dumbbell', 'isolation', ['biceps'], ['Curl haltères alternés']),
+  curl: ex('Curl haltères', 'dumbbell', 'isolation', ['biceps']),
   barcurl: ex('Curl barre', 'barbell', 'isolation', ['biceps']),
   ezcurl: ex('Curl barre EZ', 'barbell', 'isolation', ['biceps']),
   hammer: ex('Curl marteau', 'dumbbell', 'isolation', ['biceps']),
@@ -295,8 +296,8 @@ export function searchExercises(query: string, own: CustomExercise[] = []): Exer
 const hasWords = (text: string, words: string[]) => words.every((w) => searchKey(text).includes(w));
 
 /**
- * The other name the search found the exercise under: "Tirage horizontal"
- * finds "Rowing assis poulie". Nothing when its own name matches.
+ * The other name the search found the exercise under: "Lat pulldown"
+ * finds "Tirage vertical". Nothing when its own name matches.
  */
 export function aliasMatch(def: ExerciseDef, query: string): string | undefined {
   const words = searchKey(query).split(/\s+/).filter(Boolean);
