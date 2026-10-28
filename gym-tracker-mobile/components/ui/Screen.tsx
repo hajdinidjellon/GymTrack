@@ -33,6 +33,13 @@ export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, s
       ) : (
         <View style={[{ flex: 1 }, content]}>{children}</View>
       )}
+      {scroll ? (
+        // Scrolled content slides under a paper band instead of under the clock
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: colors.paper }}
+        />
+      ) : null}
       {footer ? (
         <View style={{ paddingHorizontal: space.gutter, paddingBottom: bottom, gap: space.sm }}>{footer}</View>
       ) : null}
