@@ -20,6 +20,8 @@ export interface ExerciseDef extends CustomExercise {
   custom?: boolean;
   /** A machine loaded with plates on each side, like a Hammer Strength press. */
   plateLoaded?: boolean;
+  /** A cable station or a Smith machine: the usual weights differ from a stack machine's. */
+  gear?: 'cable' | 'smith';
 }
 
 const ex = (
@@ -31,15 +33,19 @@ const ex = (
 ): ExerciseDef => ({ name, equipment, category, muscleGroups, aliases });
 
 const withPlates = (def: ExerciseDef): ExerciseDef => ({ ...def, plateLoaded: true });
+const onCable = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'cable' });
+const onSmith = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'smith' });
 
 export const EXERCISES = {
   // Pectoraux
   bench: ex('Développé couché', 'barbell', 'compound', ['chest', 'shoulders', 'triceps'], ['Développé couché barre']),
   dbbench: ex('Développé couché haltères', 'dumbbell', 'compound', ['chest', 'shoulders', 'triceps']),
-  smithbench: ex('Développé couché Smith', 'machine', 'compound', ['chest', 'shoulders', 'triceps'], ['Smith bench']),
+  smithbench: onSmith(
+    ex('Développé couché Smith', 'machine', 'compound', ['chest', 'shoulders', 'triceps'], ['Smith bench']),
+  ),
   inclinebar: ex('Développé incliné barre', 'barbell', 'compound', ['chest', 'shoulders', 'triceps']),
   incline: ex('Développé incliné haltères', 'dumbbell', 'compound', ['chest', 'shoulders']),
-  inclinesmith: ex('Développé incliné Smith', 'machine', 'compound', ['chest', 'shoulders']),
+  inclinesmith: onSmith(ex('Développé incliné Smith', 'machine', 'compound', ['chest', 'shoulders'])),
   decline: ex('Développé décliné', 'barbell', 'compound', ['chest', 'triceps']),
   convergent: withPlates(
     ex(
@@ -54,8 +60,8 @@ export const EXERCISES = {
   inclinemachine: withPlates(ex('Développé incliné machine', 'machine', 'compound', ['chest', 'shoulders'])),
   dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'triceps'], ['Dips triceps', 'Dips poitrine']),
   pushup: ex('Pompes', 'bodyweight', 'compound', ['chest', 'triceps']),
-  fly: ex('Écarté poulie', 'machine', 'isolation', ['chest'], ['Crossover poulie']),
-  lowfly: ex('Écarté poulie basse', 'machine', 'isolation', ['chest']),
+  fly: onCable(ex('Écarté poulie', 'machine', 'isolation', ['chest'], ['Crossover poulie'])),
+  lowfly: onCable(ex('Écarté poulie basse', 'machine', 'isolation', ['chest'])),
   pecdeck: ex('Pec deck', 'machine', 'isolation', ['chest'], ['Butterfly']),
   dbfly: ex('Écarté haltères', 'dumbbell', 'isolation', ['chest']),
 
@@ -63,24 +69,20 @@ export const EXERCISES = {
   pullup: ex('Tractions', 'bodyweight', 'compound', ['back', 'biceps'], ['Tractions pronation']),
   chinup: ex('Tractions supination', 'bodyweight', 'compound', ['back', 'biceps'], ['Chin-up']),
   assisted: ex('Tractions assistées', 'machine', 'compound', ['back', 'biceps']),
-  pulldown: ex(
-    'Tirage vertical',
-    'machine',
-    'compound',
-    ['back', 'biceps'],
-    ['Tirage vertical poulie', 'Lat pulldown'],
+  pulldown: onCable(
+    ex('Tirage vertical', 'machine', 'compound', ['back', 'biceps'], ['Tirage vertical poulie', 'Lat pulldown']),
   ),
-  closepulldown: ex('Tirage vertical prise serrée', 'machine', 'compound', ['back', 'biceps']),
+  closepulldown: onCable(ex('Tirage vertical prise serrée', 'machine', 'compound', ['back', 'biceps'])),
   row: ex('Rowing barre', 'barbell', 'compound', ['back', 'biceps']),
   pendlay: ex('Rowing Pendlay', 'barbell', 'compound', ['back', 'biceps']),
   dbrow: ex('Rowing haltère', 'dumbbell', 'compound', ['back', 'biceps']),
-  seatedrow: ex('Rowing assis poulie', 'machine', 'compound', ['back', 'biceps'], ['Tirage horizontal']),
+  seatedrow: onCable(ex('Rowing assis poulie', 'machine', 'compound', ['back', 'biceps'], ['Tirage horizontal'])),
   machinerow: withPlates(
     ex('Rowing machine', 'machine', 'compound', ['back', 'biceps'], ['Low row', 'Rowing convergent']),
   ),
   tbar: withPlates(ex('Rowing T-bar', 'machine', 'compound', ['back', 'biceps'])),
   deadlift: ex('Soulevé de terre', 'barbell', 'compound', ['back', 'legs', 'glutes']),
-  pullover: ex('Pull-over poulie', 'machine', 'isolation', ['back']),
+  pullover: onCable(ex('Pull-over poulie', 'machine', 'isolation', ['back'])),
   shrug: ex('Shrugs haltères', 'dumbbell', 'isolation', ['back'], ['Shrugs']),
   backext: ex('Extensions lombaires', 'bodyweight', 'isolation', ['back', 'glutes']),
 
@@ -96,12 +98,12 @@ export const EXERCISES = {
   shoulderpress: withPlates(ex('Shoulder press machine', 'machine', 'compound', ['shoulders', 'triceps'])),
   arnold: ex('Développé Arnold', 'dumbbell', 'compound', ['shoulders', 'triceps']),
   lateral: ex('Élévations latérales', 'dumbbell', 'isolation', ['shoulders'], ['Élévations latérales haltères']),
-  cablelateral: ex('Élévations latérales poulie', 'machine', 'isolation', ['shoulders']),
+  cablelateral: onCable(ex('Élévations latérales poulie', 'machine', 'isolation', ['shoulders'])),
   machinelateral: ex('Élévations latérales machine', 'machine', 'isolation', ['shoulders']),
   frontraise: ex('Élévations frontales', 'dumbbell', 'isolation', ['shoulders']),
   reardelt: ex('Oiseau haltères', 'dumbbell', 'isolation', ['shoulders'], ['Élévations postérieures']),
   reversepec: ex('Reverse pec deck', 'machine', 'isolation', ['shoulders', 'back']),
-  facepull: ex('Face pull', 'machine', 'isolation', ['shoulders', 'back'], ['Face pulls']),
+  facepull: onCable(ex('Face pull', 'machine', 'isolation', ['shoulders', 'back'], ['Face pulls'])),
   uprightrow: ex('Rowing menton', 'barbell', 'compound', ['shoulders', 'back']),
 
   // Biceps
@@ -111,11 +113,11 @@ export const EXERCISES = {
   hammer: ex('Curl marteau', 'dumbbell', 'isolation', ['biceps']),
   inclinecurl: ex('Curl incliné haltères', 'dumbbell', 'isolation', ['biceps']),
   preacher: ex('Curl pupitre', 'machine', 'isolation', ['biceps'], ['Larry Scott']),
-  cablecurl: ex('Curl poulie', 'machine', 'isolation', ['biceps']),
+  cablecurl: onCable(ex('Curl poulie', 'machine', 'isolation', ['biceps'])),
 
   // Triceps
-  pushdown: ex('Extension triceps poulie', 'machine', 'isolation', ['triceps'], ['Pushdown']),
-  overhead: ex('Extension triceps nuque poulie', 'machine', 'isolation', ['triceps']),
+  pushdown: onCable(ex('Extension triceps poulie', 'machine', 'isolation', ['triceps'], ['Pushdown'])),
+  overhead: onCable(ex('Extension triceps nuque poulie', 'machine', 'isolation', ['triceps'])),
   dbext: ex('Extension triceps haltère', 'dumbbell', 'isolation', ['triceps']),
   skull: ex('Barre au front', 'barbell', 'isolation', ['triceps'], ['Skull crusher']),
   closegrip: ex('Développé couché prise serrée', 'barbell', 'compound', ['triceps', 'chest']),
@@ -125,7 +127,7 @@ export const EXERCISES = {
   // Jambes
   squat: ex('Squat', 'barbell', 'compound', ['legs', 'glutes'], ['Squat barre']),
   frontsquat: ex('Squat avant', 'barbell', 'compound', ['legs', 'glutes'], ['Front squat']),
-  smithsquat: ex('Squat Smith', 'machine', 'compound', ['legs', 'glutes']),
+  smithsquat: onSmith(ex('Squat Smith', 'machine', 'compound', ['legs', 'glutes'])),
   hacksquat: withPlates(ex('Hack squat', 'machine', 'compound', ['legs', 'glutes'])),
   pendulum: withPlates(ex('Pendulum squat', 'machine', 'compound', ['legs', 'glutes'])),
   goblet: ex('Goblet squat', 'dumbbell', 'compound', ['legs', 'glutes']),
@@ -144,7 +146,7 @@ export const EXERCISES = {
   hipthrust: ex('Hip thrust', 'barbell', 'compound', ['glutes', 'legs']),
   hipthrustmachine: withPlates(ex('Hip thrust machine', 'machine', 'compound', ['glutes', 'legs'])),
   abductor: ex('Abducteurs machine', 'machine', 'isolation', ['glutes']),
-  glutekick: ex('Kickback fessier poulie', 'machine', 'isolation', ['glutes']),
+  glutekick: onCable(ex('Kickback fessier poulie', 'machine', 'isolation', ['glutes'])),
 
   // Mollets
   calves: ex('Mollets debout', 'machine', 'isolation', ['calves'], ['Mollets debout machine']),
@@ -152,7 +154,7 @@ export const EXERCISES = {
   presscalves: ex('Mollets à la presse', 'machine', 'isolation', ['calves']),
 
   // Abdos
-  cablecrunch: ex('Crunch poulie', 'machine', 'isolation', ['core']),
+  cablecrunch: onCable(ex('Crunch poulie', 'machine', 'isolation', ['core'])),
   crunch: ex('Crunch', 'bodyweight', 'isolation', ['core']),
   legraise: ex('Relevés de jambes', 'bodyweight', 'isolation', ['core']),
   abwheel: ex('Roue abdominale', 'bodyweight', 'isolation', ['core']),

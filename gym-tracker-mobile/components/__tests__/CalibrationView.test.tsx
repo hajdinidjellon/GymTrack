@@ -45,13 +45,19 @@ describe('CalibrationView', () => {
     expect(screen.getByText('Par haltère')).toBeTruthy();
   });
 
+  it('offers weights that fit the exercise', async () => {
+    await show(fresh({ name: 'Squat', equipment: 'barbell', muscleGroups: ['legs'] }));
+    expect(screen.getByLabelText('120 kilos')).toBeTruthy();
+    expect(screen.queryByLabelText('20 kilos')).toBeNull();
+  });
+
   it('says nothing more for a weight stack', async () => {
     await show(fresh({ name: 'Pec deck' }));
     expect(screen.queryByText(/côté|haltère/)).toBeNull();
   });
 
   it('never goes under the empty bar', async () => {
-    await show(fresh({ name: 'Squat', equipment: 'barbell' }));
+    await show(fresh({ name: 'Développé couché', equipment: 'barbell' }));
     await fireEvent.press(screen.getByLabelText('20 kilos'));
     await fireEvent.press(screen.getByLabelText('Moins 2,5 kg'));
     expect(screen.getByText('Barre à vide')).toBeTruthy();
