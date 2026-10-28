@@ -11,6 +11,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { Check } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
+import { ExerciseNote } from './ExerciseNote';
 import { MissedRepsSheet } from './MissedRepsSheet';
 import { SetsTable } from './SetRow';
 
@@ -56,6 +57,9 @@ export function SetView({ cursor, footer }: Props) {
             </Text>
           </View>
         ) : null}
+        <View style={{ marginTop: space.sm }}>
+          <ExerciseNote exerciseName={exercise.name} />
+        </View>
         {why ? (
           <View
             style={{
