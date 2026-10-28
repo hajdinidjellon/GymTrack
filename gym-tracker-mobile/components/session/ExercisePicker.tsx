@@ -2,7 +2,14 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { border, colors, fonts, radius, space } from '@/constants/theme';
-import { catalogByMuscle, MUSCLE_LABELS, searchExercises, searchKey, type ExerciseDef } from '@/domain/programs';
+import {
+  aliasMatch,
+  catalogByMuscle,
+  MUSCLE_LABELS,
+  searchExercises,
+  searchKey,
+  type ExerciseDef,
+} from '@/domain/programs';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
@@ -55,7 +62,8 @@ export function ExercisePicker({
   const tab = chosenTab && tabs.includes(chosenTab) ? chosenTab : defaultTab;
   const shown = tab === 'suggested' ? (suggested ?? []) : (groups.find((g) => g.muscle === tab)?.exercises ?? []);
   const found = searchExercises(query, own);
-  const exact = found.some((e) => searchKey(e.name) === searchKey(query));
+  // Typed exactly, even under another name: no offer to create it again
+  const exact = found.some((e) => [e.name, ...(e.aliases ?? [])].some((n) => searchKey(n) === searchKey(query)));
 
   // Rouverte, la fenêtre repart toujours sur la liste
   const reset = () => {
@@ -74,6 +82,7 @@ export function ExercisePicker({
 
   const row = (def: ExerciseDef) => {
     const added = taken.includes(def.name);
+    const alias = aliasMatch(def, query);
     return (
       <Pressable
         key={def.name}
@@ -99,7 +108,11 @@ export function ExercisePicker({
           <Text size={16} weight="bold" color={added ? colors.inkFaint : colors.ink} numberOfLines={1}>
             {def.name}
           </Text>
-          {def.custom ? (
+          {alias ? (
+            <Text size={12} weight="semibold" color={colors.inkMuted}>
+              Aussi appelé {alias}
+            </Text>
+          ) : def.custom ? (
             <Text size={12} weight="semibold" color={colors.inkMuted}>
               Ton exercice
             </Text>

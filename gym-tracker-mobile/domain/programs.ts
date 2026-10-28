@@ -291,6 +291,18 @@ export function searchExercises(query: string, own: CustomExercise[] = []): Exer
   });
 }
 
+const hasWords = (text: string, words: string[]) => words.every((w) => searchKey(text).includes(w));
+
+/**
+ * The other name the search found the exercise under: "Tirage horizontal"
+ * finds "Rowing assis poulie". Nothing when its own name matches.
+ */
+export function aliasMatch(def: ExerciseDef, query: string): string | undefined {
+  const words = searchKey(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0 || hasWords(def.name, words)) return undefined;
+  return def.aliases?.find((a) => hasWords(a, words));
+}
+
 /** Other exercises for the same main muscle, to swap when the machine is taken. */
 export function alternativesFor(def: ExerciseDef, own: CustomExercise[] = []): ExerciseDef[] {
   const main = def.muscleGroups[0];
@@ -317,7 +329,12 @@ export function makeCustomExercise(
 ): CustomExercise | { error: string } {
   const name = input.name.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
   if (!name) return { error: 'Donne un nom à ton exercice.' };
-  if (findExerciseDef(name, own)) return { error: 'Cet exercice existe déjà.' };
+  const existing = findExerciseDef(name, own);
+  if (existing) {
+    return existing.name.toLowerCase() === name.toLowerCase()
+      ? { error: 'Cet exercice existe déjà.' }
+      : { error: `Il existe déjà sous le nom « ${existing.name} ».` };
+  }
   return { name, equipment: input.equipment, category: input.category, muscleGroups: [input.muscle] };
 }
 

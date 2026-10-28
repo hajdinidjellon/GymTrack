@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { formatDay, formatShortDay, formatThousands, parseAmount } from '@/domain/format';
 import {
+  aliasMatch,
   allExercises,
   alternativesFor,
   catalogByMuscle,
@@ -164,6 +165,13 @@ describe('catalog', () => {
     expect(searchExercises('smith').length).toBe(3);
     expect(searchExercises('  ')).toEqual([]);
   });
+
+  it('tells which other name the search found an exercise under', () => {
+    expect(searchExercises('tirage horizontal').map((e) => e.name)).toEqual(['Rowing assis poulie']);
+    expect(aliasMatch(EXERCISES.seatedrow, 'tirage horiz')).toBe('Tirage horizontal');
+    expect(aliasMatch(EXERCISES.seatedrow, 'rowing')).toBeUndefined();
+    expect(aliasMatch(EXERCISES.squat, '  ')).toBeUndefined();
+  });
 });
 
 describe('own exercises', () => {
@@ -198,7 +206,9 @@ describe('own exercises', () => {
     });
     expect(makeCustomExercise({ ...input, name: '   ' })).toEqual({ error: 'Donne un nom à ton exercice.' });
     expect(makeCustomExercise({ ...input, name: 'squat' })).toEqual({ error: 'Cet exercice existe déjà.' });
-    expect(makeCustomExercise({ ...input, name: 'Leg press' })).toEqual({ error: 'Cet exercice existe déjà.' });
+    expect(makeCustomExercise({ ...input, name: 'Leg press' })).toEqual({
+      error: 'Il existe déjà sous le nom « Presse à cuisses ».',
+    });
     expect(makeCustomExercise({ ...input, name: 'Écarté Panatta' }, own)).toEqual({
       error: 'Cet exercice existe déjà.',
     });

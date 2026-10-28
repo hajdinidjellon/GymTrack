@@ -50,4 +50,12 @@ describe('ExercisePicker', () => {
     expect(screen.queryByRole('tab', { name: 'Pectoraux' })).toBeNull();
     expect(screen.getByText(EXERCISES.squat.name)).toBeOnTheScreen();
   });
+
+  it('shows the other name an exercise was found under, and does not offer to create it again', async () => {
+    await renderPicker();
+    await fireEvent.changeText(screen.getByLabelText('Chercher un exercice'), 'Tirage horizontal');
+    expect(screen.getByText(EXERCISES.seatedrow.name)).toBeOnTheScreen();
+    expect(screen.getByText('Aussi appelé Tirage horizontal')).toBeOnTheScreen();
+    expect(screen.queryByText('+ Créer « Tirage horizontal »')).toBeNull();
+  });
 });
