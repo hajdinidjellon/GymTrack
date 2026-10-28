@@ -171,6 +171,21 @@ describe('swapping an exercise', () => {
     expect(Speech.speak).not.toHaveBeenCalled();
   });
 
+  it('names the new exercise in the rest notification', () => {
+    store().completeSet('bench', 0);
+    jest.advanceTimersByTime(20_000);
+    jest.clearAllMocks();
+    store().replaceExercise('bench', exercise('dips', 1));
+    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(100, 'dips · 60 kg × 10');
+  });
+
+  it('leaves the rest notification alone when the next exercise stays the same', () => {
+    store().completeSet('bench', 0);
+    jest.clearAllMocks();
+    store().replaceExercise('ohp', exercise('row', 3));
+    expect(scheduleRestCompleteNotification).not.toHaveBeenCalled();
+  });
+
   it('dates each validation', () => {
     jest.setSystemTime(new Date('2026-10-20T18:00:00Z'));
     store().completeSet('bench', 0);

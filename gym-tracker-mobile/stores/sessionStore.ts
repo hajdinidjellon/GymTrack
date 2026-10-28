@@ -94,6 +94,20 @@ function afterSet(previousExerciseId: string, restSeconds: number) {
   if (next && voice && next.exercise.id !== previousExerciseId) speak(nextExerciseLine(next, settings()));
 }
 
+/**
+ * The exercise to do just changed under the user's thumb (swap, reorder).
+ * Resting: the rest notification now names the right exercise. Not resting:
+ * the voice announces it, plates included.
+ */
+function afterCurrentChanged(previousExerciseId: string | undefined) {
+  const session = useSessionStore.getState().activeSession;
+  const next = session && findCurrent(session.exercises);
+  if (!session || !next || next.exercise.id === previousExerciseId) return;
+  const left = Session.restLeft(session, Date.now());
+  if (left > 0) void scheduleRestCompleteNotification(left, Session.nextSetSummary(session, formatKg));
+  else if (settings().voice) speak(nextExerciseLine(next, settings()));
+}
+
 // Lecture/écriture synchrones : la séance est déjà là au premier rendu
 const kvStorage: StateStorage = {
   getItem: (key) => Storage.getItemSync(key),
@@ -109,6 +123,7 @@ export const useSessionStore = create<SessionStore>()(
       /** Applies a pure transition to the running session, if any. */
       const apply = (fn: (s: ActiveSession) => ActiveSession) =>
         set((state) => (state.activeSession ? { activeSession: fn(state.activeSession) } : state));
+      const currentId = () => findCurrent(get().activeSession?.exercises ?? [])?.exercise.id;
 
       return {
         activeSession: null,
@@ -187,12 +202,10 @@ export const useSessionStore = create<SessionStore>()(
         },
 
         replaceExercise: (exerciseId, next) => {
+          const previous = currentId();
           apply((s) => Session.replaceExercise(s, exerciseId, next));
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
-          const cursor = findCurrent(get().activeSession?.exercises ?? []);
-          if (cursor && cursor.exercise.id === next.id && get().activeSession?.restEndsAt == null && settings().voice) {
-            speak(nextExerciseLine(cursor, settings()));
-          }
+          afterCurrentChanged(previous);
         },
 
         startRestTimer: (seconds) => {
