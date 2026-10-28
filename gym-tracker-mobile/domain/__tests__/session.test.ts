@@ -185,6 +185,15 @@ describe('replaceExercise', () => {
   });
 });
 
+describe('addExercise', () => {
+  it('adds an exercise at the end, once', () => {
+    const rows = active('row', [{ weight: 50, reps: 10 }]);
+    const s = Session.addExercise(session([bench()]), rows);
+    expect(s.exercises.map((e) => e.id)).toEqual(['bench', 'row']);
+    expect(Session.addExercise(s, { ...rows, id: 'row-2' })).toBe(s);
+  });
+});
+
 describe('changing the order', () => {
   const ohp = () => active('ohp', [{ weight: 40, reps: 8 }]);
   const dips = () => active('dips', [{ weight: 0, reps: 12 }]);
