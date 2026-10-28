@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
-import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
+import { countFr, formatDay, formatShortDay, formatThousands } from '@/domain/format';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
   breakLabel,
@@ -39,6 +39,7 @@ import { ChevronRight } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 import { WeekStrip } from '@/components/stats/WeekStrip';
+import { RunningCard } from '@/components/session/RunningCard';
 
 function start(plan: PlannedDay) {
   useSessionStore.getState().startSession(plan.name, toActiveExercises(plan));
@@ -47,7 +48,10 @@ function start(plan: PlannedDay) {
 
 export default function Today() {
   const ctx = useBuildContext();
-  const [dayName, setDayName] = useState<string | null>(null);
+  const workouts = useWorkoutStore((s) => s.workouts);
+  // A day picked by hand holds until the next saved session, then the program leads again
+  const [choice, setChoice] = useState<{ name: string; after: number } | null>(null);
+  const dayName = choice?.after === workouts.length ? choice.name : null;
   const { days, today, plan } = useMemo(() => {
     if (!ctx) return { days: [], today: null, plan: null };
     const list = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
@@ -55,9 +59,9 @@ export default function Today() {
     const day = list.find((d) => d.name === dayName) ?? next;
     return { days: list, today: next, plan: planDay(day, ctx) };
   }, [ctx, dayName]);
-  const running = useSessionStore((s) => !!s.activeSession);
+  const active = useSessionStore((s) => s.activeSession);
+  const running = !!active;
   const perWeek = useProfileStore((s) => s.profile?.program.perWeek ?? 3);
-  const workouts = useWorkoutStore((s) => s.workouts);
   const streak = weekStreak(workouts, perWeek);
 
   return (
@@ -72,7 +76,7 @@ export default function Today() {
             haptic="medium"
             onPress={() => router.push('/session')}
           />
-        ) : plan ? (
+        ) : plan && plan.lifts.length > 0 ? (
           <StickerButton label="Lancer la séance" testID="start-session" haptic="medium" onPress={() => start(plan)} />
         ) : null
       }
@@ -87,9 +91,18 @@ export default function Today() {
       <FadeIn index={1}>
         <WeekCard />
       </FadeIn>
-      {plan ? (
+      {active ? (
         <FadeIn index={2}>
-          <TodayCard plan={plan} running={running} days={days} today={today?.name ?? plan.name} onChoose={setDayName} />
+          <RunningCard session={active} />
+        </FadeIn>
+      ) : plan ? (
+        <FadeIn index={2}>
+          <TodayCard
+            plan={plan}
+            days={days}
+            today={today?.name ?? plan.name}
+            onChoose={(name) => setChoice({ name, after: workouts.length })}
+          />
         </FadeIn>
       ) : null}
       <FadeIn index={3}>
@@ -125,14 +138,13 @@ function WeekCard() {
 
 interface TodayProps {
   plan: PlannedDay;
-  running: boolean;
   days: ProgramDay[];
   /** The day the program plans next. */
   today: string;
   onChoose: (name: string) => void;
 }
 
-function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
+function TodayCard({ plan, days, today, onChoose }: TodayProps) {
   // Le premier mouvement à la barre déjà réglé : c'est lui qu'on dessine
   const featured = plan.lifts.find((l) => l.def.equipment === 'barbell' && l.decision !== 'calibrate');
   const target = featured?.targets[0];
@@ -142,10 +154,8 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
 
   return (
     <>
-      <SectionTitle title={running ? 'Séance en cours' : plan.name === today ? 'Séance du jour' : 'Séance choisie'} />
-      {!running && days.length > 1 ? (
-        <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} />
-      ) : null}
+      <SectionTitle title={plan.name === today ? 'Séance du jour' : 'Séance choisie'} />
+      {days.length > 1 ? <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} /> : null}
       <StickerCard tone="hero" style={{ paddingTop: 18, paddingBottom: 8 }}>
         <View style={{ position: 'absolute', top: 14, right: 16 }}>
           <Sparkle size={34} />
@@ -160,8 +170,8 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
           {plan.name}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
-          <Chip label={`${plan.lifts.length} exercices`} />
-          <Chip label={`${sets} séries`} />
+          <Chip label={countFr(plan.lifts.length, 'exercice')} />
+          <Chip label={countFr(sets, 'série')} />
           <Chip label={`~${plan.minutes} min`} />
         </View>
         {daysOff > 0 ? (
@@ -224,6 +234,22 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
               {perSide.length ? `${describeSide(perSide)} de chaque côté` : 'Barre à vide'}
             </Text>
           </View>
+        ) : plan.lifts.length === 0 ? (
+          <View style={{ marginTop: space.md, gap: space.sm }}>
+            <Text size={15} color={colors.ink} style={{ lineHeight: 21 }}>
+              Aucun exercice dans cette séance pour l'instant.
+            </Text>
+            <Pressable
+              onPress={() => router.push({ pathname: '/days/[name]', params: { name: plan.name } })}
+              accessibilityRole="button"
+              hitSlop={8}
+              style={{ alignSelf: 'flex-start', paddingBottom: space.sm }}
+            >
+              <Text size={15} weight="black" style={{ textDecorationLine: 'underline' }}>
+                Ajouter des exercices
+              </Text>
+            </Pressable>
+          </View>
         ) : plan.lifts.every((l) => l.decision === 'calibrate') ? (
           <Text size={15} color={colors.ink} style={{ marginTop: space.md, lineHeight: 21 }}>
             Première séance : tu choisiras ta charge de départ sur chaque exercice, ensuite on calcule tout.
@@ -244,7 +270,7 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
 function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; last: boolean }) {
   const calibrate = lift.decision === 'calibrate';
   const progress = isProgress(lift.decision);
-  const sets = `${lift.targets.length} série${lift.targets.length > 1 ? 's' : ''}`;
+  const sets = countFr(lift.targets.length, 'série');
   return (
     <PressableScale
       onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: lift.def.name } })}
@@ -299,7 +325,7 @@ function LastWorkout() {
             {last.name}
           </Text>
           <Text size={13} color={colors.inkMuted}>
-            {formatShortDay(last.date)} · {sets} séries · {last.duration ?? 0} min
+            {formatShortDay(last.date)} · {countFr(sets, 'série')} · {last.duration ?? 0} min
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
