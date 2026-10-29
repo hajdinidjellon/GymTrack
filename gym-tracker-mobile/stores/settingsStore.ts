@@ -6,9 +6,11 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cleanNote } from '@/domain/notes';
 import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
+import type { ExerciseDef } from '@/domain/programs';
+import { applyRule } from '@/domain/ruleSync';
 import { settingsPatchSchema } from '@/domain/schemas';
 import { logger } from '@/services/logger';
-import type { AppSettings, CustomExercise, RuleOverride } from '@/types';
+import type { AppSettings, CustomExercise, Goal, RuleOverride } from '@/types';
 
 const SETTINGS_KEY = '@gymtrack/settings';
 
@@ -74,8 +76,11 @@ interface SettingsStore {
   togglePlate: (plate: number) => void;
   /** Saves the exercises of a program day. `null` goes back to the program's list. */
   setDayExercises: (key: string, names: string[] | null) => void;
-  /** Own sets and reps for an exercise. `null` goes back to the goal's rule. */
-  setRuleOverride: (exerciseName: string, rule: RuleOverride | null) => void;
+  /**
+   * Own sets and reps for an exercise. `null` goes back to the goal's rule.
+   * With `similar`, the similar exercises on the same rule follow.
+   */
+  setRule: (def: ExerciseDef, rule: RuleOverride | null, goal: Goal, similar: boolean) => void;
   /** Own rest for an exercise, in seconds. `null` goes back to the computed one. */
   setRestOverride: (exerciseName: string, seconds: number | null) => void;
   addCustomExercise: (exercise: CustomExercise) => void;
@@ -109,9 +114,9 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     get().updateSettings({ customDays: names ? { ...others, [key]: names } : others });
   },
 
-  setRuleOverride: (exerciseName, rule) => {
-    const { [exerciseName]: _old, ...others } = get().settings.ruleOverrides;
-    get().updateSettings({ ruleOverrides: rule ? { ...others, [exerciseName]: rule } : others });
+  setRule: (def, rule, goal, similar) => {
+    const { customExercises: own, ruleOverrides: overrides } = get().settings;
+    get().updateSettings({ ruleOverrides: applyRule(def, rule, { goal, own, overrides }, similar) });
   },
 
   setRestOverride: (exerciseName, seconds) => {

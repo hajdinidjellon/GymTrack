@@ -65,6 +65,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
 - `session.ts` — pure transitions of the running session (complete set, rest, to workout).
 - `schemas.ts` — zod schemas; everything read from disk or the cloud is validated here.
+- `ruleSync.ts` — sets/reps shared with similar exercises (same main muscle and kind of movement): the ones on the same rule follow a change.
 - `rest.ts` — rest per exercise: the user's choice, else the rest they really take (measured between validations), else the kind of exercise.
 - `insights.ts` — "Ce que l'app sait de toi": time of day, usual days, duration, rhythm, rests, strongest lift.
 - `exportCsv.ts` — every set as CSV for the share sheet.

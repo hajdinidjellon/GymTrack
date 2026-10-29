@@ -287,6 +287,14 @@ export function alternativesFor(def: ExerciseDef, own: CustomExercise[] = []): E
   return allExercises(own).filter((e) => e.name !== def.name && e.muscleGroups[0] === main);
 }
 
+/** Close enough to share sets and reps: same main muscle, same kind of movement, both loaded or both bodyweight. */
+export function similarExercises(def: ExerciseDef, own: CustomExercise[] = []): ExerciseDef[] {
+  const bodyweight = def.equipment === 'bodyweight';
+  return alternativesFor(def, own).filter(
+    (e) => e.category === def.category && (e.equipment === 'bodyweight') === bodyweight,
+  );
+}
+
 export const NAME_MAX = 40;
 
 /**

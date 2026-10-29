@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { insights, listFr } from '@/domain/insights';
+import { listFr } from '@/domain/format';
+import { insights } from '@/domain/insights';
 import { workoutsToCsv } from '@/domain/exportCsv';
 import type { Exercise, Workout } from '@/types';
 import { lift, workout } from './fixtures';

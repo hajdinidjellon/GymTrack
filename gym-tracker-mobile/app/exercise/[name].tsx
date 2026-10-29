@@ -18,7 +18,7 @@ import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
 import { Sparkline } from '@/components/stats/Sparkline';
 import { buzz, PressableScale } from '@/components/ui/PressableScale';
-import { RuleEditor } from '@/components/program/RuleEditor';
+import { SharedRuleEditor } from '@/components/program/SharedRuleEditor';
 import { ExerciseNote } from '@/components/session/ExerciseNote';
 
 const STEPS = [1, 2, 2.5, 5];
@@ -30,8 +30,6 @@ export default function ExerciseScreen() {
   const ctx = useBuildContext();
   const def = findExerciseDef(name ?? '', ctx?.settings.customExercises);
   const setIncrement = useSettingsStore((s) => s.setIncrement);
-  const setRuleOverride = useSettingsStore((s) => s.setRuleOverride);
-  const overrides = useSettingsStore((s) => s.settings.ruleOverrides);
   const setRestOverride = useSettingsStore((s) => s.setRestOverride);
 
   if (!def || !ctx) {
@@ -121,13 +119,7 @@ export default function ExerciseScreen() {
         <Text size={17} weight="black" style={{ marginBottom: 12 }}>
           Tes séries et tes reps
         </Text>
-        <RuleEditor
-          rule={lift.rule}
-          base={base}
-          custom={def.name in overrides}
-          onChange={(rule) => setRuleOverride(def.name, rule)}
-          onReset={() => setRuleOverride(def.name, null)}
-        />
+        <SharedRuleEditor def={def} goal={ctx.profile.goal} base={base} />
         {!bodyweight ? (
           <>
             <Text size={16} weight="semibold" color={colors.inkMuted} style={{ marginTop: 14 }}>
