@@ -106,6 +106,15 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.exerciseNotes).toEqual({});
   });
 
+  it('stores a machine as plate-loaded or not only when it differs from the catalog', () => {
+    const { setPlateLoaded } = useSettingsStore.getState();
+    setPlateLoaded(EXERCISES.chestpress, false);
+    setPlateLoaded(EXERCISES.pecdeck, true);
+    expect(useSettingsStore.getState().settings.plateLoaded).toEqual({ 'Chest press': false, 'Pec deck': true });
+    setPlateLoaded(EXERCISES.chestpress, true);
+    expect(useSettingsStore.getState().settings.plateLoaded).toEqual({ 'Pec deck': true });
+  });
+
   it('loads what was saved', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();

@@ -11,6 +11,7 @@ import {
   findDay,
   findExerciseDef,
   getSplit,
+  isPlateLoaded,
   makeCustomExercise,
   searchExercises,
   searchKey,
@@ -39,7 +40,16 @@ describe('programs', () => {
     expect(defaultIncrementFor('barbell', 'kg')).toBe(2.5);
     expect(defaultIncrementFor('dumbbell', 'kg')).toBe(2);
     expect(defaultIncrementFor('machine', 'kg')).toBe(5);
+    expect(defaultIncrementFor('machine', 'kg', true)).toBe(2.5);
     expect(defaultIncrementFor('dumbbell', 'lbs')).toBe(5);
+  });
+
+  it('knows the plate-loaded machines, and lets the user say otherwise', () => {
+    expect(isPlateLoaded(EXERCISES.legpress)).toBe(true);
+    expect(isPlateLoaded(EXERCISES.pecdeck)).toBe(false);
+    expect(isPlateLoaded(EXERCISES.legpress, { 'Presse à cuisses': false })).toBe(false);
+    expect(isPlateLoaded(EXERCISES.pecdeck, { 'Pec deck': true })).toBe(true);
+    expect(isPlateLoaded(EXERCISES.bench, { 'Développé couché': true })).toBe(false);
   });
 
   it('uses heavy sets for strength on the barbell only', () => {

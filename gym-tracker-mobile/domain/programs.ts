@@ -18,6 +18,8 @@ export interface ExerciseDef extends CustomExercise {
   aliases?: string[];
   /** Created by the user. */
   custom?: boolean;
+  /** A machine loaded with plates on each side, like a Hammer Strength press. */
+  plateLoaded?: boolean;
 }
 
 const ex = (
@@ -28,6 +30,8 @@ const ex = (
   aliases?: string[],
 ): ExerciseDef => ({ name, equipment, category, muscleGroups, aliases });
 
+const withPlates = (def: ExerciseDef): ExerciseDef => ({ ...def, plateLoaded: true });
+
 export const EXERCISES = {
   // Pectoraux
   bench: ex('Développé couché', 'barbell', 'compound', ['chest', 'shoulders', 'triceps'], ['Développé couché barre']),
@@ -37,15 +41,17 @@ export const EXERCISES = {
   incline: ex('Développé incliné haltères', 'dumbbell', 'compound', ['chest', 'shoulders']),
   inclinesmith: ex('Développé incliné Smith', 'machine', 'compound', ['chest', 'shoulders']),
   decline: ex('Développé décliné', 'barbell', 'compound', ['chest', 'triceps']),
-  convergent: ex(
-    'Développé convergent machine',
-    'machine',
-    'compound',
-    ['chest', 'shoulders', 'triceps'],
-    ['Bench press convergent', 'Chest press convergente'],
+  convergent: withPlates(
+    ex(
+      'Développé convergent machine',
+      'machine',
+      'compound',
+      ['chest', 'shoulders', 'triceps'],
+      ['Bench press convergent', 'Chest press convergente'],
+    ),
   ),
-  chestpress: ex('Chest press', 'machine', 'compound', ['chest', 'triceps'], ['Développé assis machine']),
-  inclinemachine: ex('Développé incliné machine', 'machine', 'compound', ['chest', 'shoulders']),
+  chestpress: withPlates(ex('Chest press', 'machine', 'compound', ['chest', 'triceps'], ['Développé assis machine'])),
+  inclinemachine: withPlates(ex('Développé incliné machine', 'machine', 'compound', ['chest', 'shoulders'])),
   dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'triceps'], ['Dips triceps', 'Dips poitrine']),
   pushup: ex('Pompes', 'bodyweight', 'compound', ['chest', 'triceps']),
   fly: ex('Écarté poulie', 'machine', 'isolation', ['chest'], ['Crossover poulie']),
@@ -69,8 +75,10 @@ export const EXERCISES = {
   pendlay: ex('Rowing Pendlay', 'barbell', 'compound', ['back', 'biceps']),
   dbrow: ex('Rowing haltère', 'dumbbell', 'compound', ['back', 'biceps']),
   seatedrow: ex('Rowing assis poulie', 'machine', 'compound', ['back', 'biceps'], ['Tirage horizontal']),
-  machinerow: ex('Rowing machine', 'machine', 'compound', ['back', 'biceps'], ['Low row', 'Rowing convergent']),
-  tbar: ex('Rowing T-bar', 'machine', 'compound', ['back', 'biceps']),
+  machinerow: withPlates(
+    ex('Rowing machine', 'machine', 'compound', ['back', 'biceps'], ['Low row', 'Rowing convergent']),
+  ),
+  tbar: withPlates(ex('Rowing T-bar', 'machine', 'compound', ['back', 'biceps'])),
   deadlift: ex('Soulevé de terre', 'barbell', 'compound', ['back', 'legs', 'glutes']),
   pullover: ex('Pull-over poulie', 'machine', 'isolation', ['back']),
   shrug: ex('Shrugs haltères', 'dumbbell', 'isolation', ['back'], ['Shrugs']),
@@ -85,7 +93,7 @@ export const EXERCISES = {
     ['shoulders', 'triceps'],
     ['Développé haltères assis'],
   ),
-  shoulderpress: ex('Shoulder press machine', 'machine', 'compound', ['shoulders', 'triceps']),
+  shoulderpress: withPlates(ex('Shoulder press machine', 'machine', 'compound', ['shoulders', 'triceps'])),
   arnold: ex('Développé Arnold', 'dumbbell', 'compound', ['shoulders', 'triceps']),
   lateral: ex('Élévations latérales', 'dumbbell', 'isolation', ['shoulders'], ['Élévations latérales haltères']),
   cablelateral: ex('Élévations latérales poulie', 'machine', 'isolation', ['shoulders']),
@@ -118,10 +126,10 @@ export const EXERCISES = {
   squat: ex('Squat', 'barbell', 'compound', ['legs', 'glutes'], ['Squat barre']),
   frontsquat: ex('Squat avant', 'barbell', 'compound', ['legs', 'glutes'], ['Front squat']),
   smithsquat: ex('Squat Smith', 'machine', 'compound', ['legs', 'glutes']),
-  hacksquat: ex('Hack squat', 'machine', 'compound', ['legs', 'glutes']),
-  pendulum: ex('Pendulum squat', 'machine', 'compound', ['legs', 'glutes']),
+  hacksquat: withPlates(ex('Hack squat', 'machine', 'compound', ['legs', 'glutes'])),
+  pendulum: withPlates(ex('Pendulum squat', 'machine', 'compound', ['legs', 'glutes'])),
   goblet: ex('Goblet squat', 'dumbbell', 'compound', ['legs', 'glutes']),
-  legpress: ex('Presse à cuisses', 'machine', 'compound', ['legs', 'glutes'], ['Leg press']),
+  legpress: withPlates(ex('Presse à cuisses', 'machine', 'compound', ['legs', 'glutes'], ['Leg press'])),
   lunge: ex('Fentes haltères', 'dumbbell', 'compound', ['legs', 'glutes']),
   bulgarian: ex('Fentes bulgares', 'dumbbell', 'compound', ['legs', 'glutes']),
   rdl: ex('Soulevé de terre roumain', 'barbell', 'compound', ['legs', 'glutes', 'back']),
@@ -134,7 +142,7 @@ export const EXERCISES = {
 
   // Fessiers
   hipthrust: ex('Hip thrust', 'barbell', 'compound', ['glutes', 'legs']),
-  hipthrustmachine: ex('Hip thrust machine', 'machine', 'compound', ['glutes', 'legs']),
+  hipthrustmachine: withPlates(ex('Hip thrust machine', 'machine', 'compound', ['glutes', 'legs'])),
   abductor: ex('Abducteurs machine', 'machine', 'isolation', ['glutes']),
   glutekick: ex('Kickback fessier poulie', 'machine', 'isolation', ['glutes']),
 
@@ -325,12 +333,20 @@ export const GOALS: GoalDef[] = [
   { id: 'forme', title: 'Rester en forme', sub: '3 × 10–15 reps, court', plates: [5] },
 ];
 
-/** Default weight step per equipment. Machines usually move by a full stack plate. */
-export function defaultIncrementFor(equipment: Equipment, units: 'kg' | 'lbs'): number {
+/**
+ * Default weight step per equipment. Stack machines move by a full stack plate,
+ * plate-loaded ones by a small plate on each side.
+ */
+export function defaultIncrementFor(equipment: Equipment, units: 'kg' | 'lbs', plateLoaded = false): number {
   if (units === 'lbs') return 5;
   if (equipment === 'dumbbell') return 2;
-  if (equipment === 'machine') return 5;
+  if (equipment === 'machine' && !plateLoaded) return 5;
   return 2.5;
+}
+
+/** Loaded with plates on each side: the user's choice, else the catalog's. Machines only. */
+export function isPlateLoaded(def: ExerciseDef, own: Record<string, boolean> = {}): boolean {
+  return def.equipment === 'machine' && (own[def.name] ?? !!def.plateLoaded);
 }
 
 /** Heavy low reps only make sense on the big barbell lifts. */

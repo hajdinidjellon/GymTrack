@@ -149,6 +149,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     restOverrides: z.record(z.string().max(100), z.number().int().min(15).max(600)),
     customExercises: z.array(customExerciseSchema).max(200),
     exerciseNotes: z.record(z.string().max(100), z.string().min(1).max(NOTE_MAX_LENGTH)),
+    plateLoaded: z.record(z.string().max(100), z.boolean()),
     signedOut: z.boolean(),
   })
   .partial();

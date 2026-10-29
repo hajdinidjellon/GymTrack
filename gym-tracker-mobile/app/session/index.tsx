@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { colors, space } from '@/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, radius, space } from '@/constants/theme';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -51,6 +52,7 @@ function confirmFinish(left: number) {
 
 export default function SessionScreen() {
   const session = useSessionStore((s) => s.activeSession);
+  const insets = useSafeAreaInsets();
   const cursor = session ? findCurrent(session.exercises) : null;
   const done = !!session && !cursor;
   const resting = session?.restEndsAt != null;
@@ -89,10 +91,13 @@ export default function SessionScreen() {
   const rest = resting ? <RestMini restEndsAt={session.restEndsAt!} onExpand={() => setMinimized(false)} /> : null;
 
   return (
-    <Screen style={{ paddingBottom: space.lg }}>
+    <Screen style={{ paddingBottom: Math.max(insets.bottom, space.lg) + space.sm }}>
       <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text size={15} weight="bold" color={colors.inkMuted} numberOfLines={1} style={{ flex: 1 }}>
-          {session.name} · exercice {exerciseIndex + 1} / {session.exercises.length}
+        <Text size={16} weight="black" numberOfLines={1} style={{ flex: 1 }}>
+          {session.name}
+          <Text size={15} weight="bold" color={colors.inkMuted}>
+            {'  '}· exercice {exerciseIndex + 1} sur {session.exercises.length}
+          </Text>
         </Text>
         <Pressable onPress={() => confirmFinish(left)} accessibilityRole="button" hitSlop={12}>
           <Text size={16} weight="black" style={{ textDecorationLine: 'underline' }}>
@@ -106,16 +111,29 @@ export default function SessionScreen() {
         onPick={(id) => useSessionStore.getState().doNow(id)}
       />
 
-      <View style={{ marginTop: space.lg, flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
-        <Text size={28} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 32 }}>
+      <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+        <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 34 }}>
           {exercise.name}
         </Text>
         <SwapExercise exercise={exercise} sessionName={session.name} />
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text size={15} weight="bold" color={colors.inkMuted}>
-          {resting ? 'Prochaine série' : 'Série'} {setIndex + 1} sur {exercise.sets.length}
-        </Text>
+      <View
+        style={{ marginTop: space.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <View
+          style={{
+            paddingVertical: 4,
+            paddingHorizontal: 12,
+            borderRadius: radius.pill,
+            borderWidth: 2,
+            borderColor: colors.ink,
+            backgroundColor: colors.card,
+          }}
+        >
+          <Text size={14} weight="black">
+            {resting ? 'Prochaine série' : 'Série'} {setIndex + 1} sur {exercise.sets.length}
+          </Text>
+        </View>
         <DoLater exercise={exercise} />
       </View>
 

@@ -231,10 +231,20 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
     type: 'strength',
     exercises: session.exercises
       .filter((e) => e.sets.some((s) => s.completed))
-      .map(({ equipment: _e, needsWeight: _n, lastTime: _l, reason: _r, restNote: _rn, ...exercise }) => ({
-        ...exercise,
-        sets: withRestTaken(exercise.sets),
-      })),
+      .map(
+        ({
+          equipment: _e,
+          needsWeight: _n,
+          plateLoaded: _p,
+          lastTime: _l,
+          reason: _r,
+          restNote: _rn,
+          ...exercise
+        }) => ({
+          ...exercise,
+          sets: withRestTaken(exercise.sets),
+        }),
+      ),
     duration: Math.round((now.getTime() - new Date(session.startedAt).getTime()) / 60000),
     feeling: 3,
     completed: true,

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 import { border, colors, radius, space } from '@/constants/theme';
-import { describeSide, formatKg } from '@/domain/plates';
+import { loadingOf } from '@/domain/loading';
+import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
@@ -12,6 +13,7 @@ import { Check } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 import { ExerciseNote } from './ExerciseNote';
+import { LoadHint } from './LoadHint';
 import { MissedRepsSheet } from './MissedRepsSheet';
 import { SetsTable } from './SetRow';
 
@@ -36,6 +38,7 @@ export function SetView({ cursor, footer }: Props) {
   const perSide = usePerSide(set.weight);
   const remaining = exercise.sets.filter((s) => !s.completed).length;
   const bodyweight = exercise.equipment === 'bodyweight';
+  const loading = loadingOf(exercise);
   const targetReps = set.target?.reps ?? set.reps;
   const why = setIndex === 0 && exercise.reason;
 
@@ -96,16 +99,12 @@ export function SetView({ cursor, footer }: Props) {
                 onChange={(weight) => updateSet(exercise.id, setIndex, { weight })}
                 inputLabel="Charge en kilos"
               />
-              {exercise.equipment === 'barbell' ? (
-                <>
-                  <View style={{ height: 96, justifyContent: 'center' }}>
-                    <Barbell perSide={perSide} scale={0.85} />
-                  </View>
-                  <Text size={14} weight="bold" color={colors.inkMuted} align="center">
-                    {perSide.length ? `Par côté : ${describeSide(perSide)}` : 'Barre à vide'}
-                  </Text>
-                </>
+              {loading === 'bar' ? (
+                <View style={{ height: 96, justifyContent: 'center' }}>
+                  <Barbell perSide={perSide} scale={0.85} />
+                </View>
               ) : null}
+              <LoadHint loading={loading} weight={set.weight} />
               <View
                 style={{
                   height: 2,

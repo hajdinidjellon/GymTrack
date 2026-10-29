@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useRestSecondsLeft } from '@/hooks/useSessionClock';
 import { formatClock } from '@/domain/format';
+import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -10,7 +11,7 @@ import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { MiniPlates } from '@/components/disc/Barbell';
-import { usePerSide } from '@/components/disc/LoadedBar';
+import { useSidePlates } from '@/components/disc/LoadedBar';
 import { EffortPicker } from './EffortPicker';
 
 interface Props {
@@ -31,7 +32,8 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note 
   const addRestTime = useSessionStore((s) => s.addRestTime);
   const stopRestTimer = useSessionStore((s) => s.stopRestTimer);
   const undoLastSet = useSessionStore((s) => s.undoLastSet);
-  const perSide = usePerSide(next?.set.weight ?? 0);
+  const loading = next ? loadingOf(next.exercise) : 'stack';
+  const perSide = useSidePlates(loading, next?.set.weight ?? 0);
   const ratio = Math.max(0, Math.min(1, left / Math.max(total, left, 1)));
   const clock = formatClock(left);
 
@@ -99,9 +101,7 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note 
                   : `${next.set.reps} reps`}
             </Text>
           </View>
-          {next.exercise.equipment === 'barbell' && !next.exercise.needsWeight ? (
-            <MiniPlates perSide={perSide} />
-          ) : null}
+          {perSide.length > 0 && !next.exercise.needsWeight ? <MiniPlates perSide={perSide} /> : null}
         </View>
       ) : null}
 

@@ -144,6 +144,17 @@ describe('personal touches', () => {
     expect(planLift(EXERCISES.squat, c)).toMatchObject({ restTime: 150, restSource: 'own' });
   });
 
+  it('counts a plate-loaded machine per side, unless the user has a stack', () => {
+    const c = ctx();
+    const press = planLift(EXERCISES.chestpress, c);
+    expect(press).toMatchObject({ plateLoaded: true, rule: { increment: 2.5 } });
+    expect(toActiveExercise(press).plateLoaded).toBe(true);
+    expect(planLift(EXERCISES.pecdeck, c)).toMatchObject({ plateLoaded: false, rule: { increment: 5 } });
+    expect(toActiveExercise(planLift(EXERCISES.pecdeck, c)).plateLoaded).toBeUndefined();
+    c.settings.plateLoaded = { 'Chest press': false };
+    expect(planLift(EXERCISES.chestpress, c)).toMatchObject({ plateLoaded: false, rule: { increment: 5 } });
+  });
+
   it('learns the rest the user really takes', () => {
     const sets = [0, 200, 200, 200].map((restTaken, i) => ({
       weight: 60,
