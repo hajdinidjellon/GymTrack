@@ -12,16 +12,23 @@ interface Props {
   scrollEnabled?: boolean;
   /** Room for the tab bar. */
   tabs?: boolean;
+  /** Drawn behind the content, over the paper: a decoration that must not hide under the background. */
+  background?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
-export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, style }: Props) {
+export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, style, background }: Props) {
   const insets = useSafeAreaInsets();
   const bottom = tabs ? space.lg : Math.max(insets.bottom, space.lg) + space.sm;
   const content = [{ paddingTop: insets.top + space.md, paddingHorizontal: space.gutter }, style];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
+      {background ? (
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          {background}
+        </View>
+      ) : null}
       {scroll ? (
         <ScrollView
           scrollEnabled={scrollEnabled}
