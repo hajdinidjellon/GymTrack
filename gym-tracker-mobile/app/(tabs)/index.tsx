@@ -145,7 +145,7 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
         <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} />
       ) : null}
       <StickerCard tone="hero" style={{ paddingTop: 18, paddingBottom: 8 }}>
-        <View style={{ position: 'absolute', top: -14, right: 18 }}>
+        <View style={{ position: 'absolute', top: 14, right: 16 }}>
           <Sparkle size={34} />
         </View>
         <Text
@@ -219,7 +219,7 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
               </Text>
             </View>
             <Text size={14} color={colors.inkMuted} style={{ marginTop: 2 }}>
-              {describeSide(perSide)} de chaque côté
+              {perSide.length ? `${describeSide(perSide)} de chaque côté` : 'Barre à vide'}
             </Text>
           </View>
         ) : (
