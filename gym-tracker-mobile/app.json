@@ -40,7 +40,13 @@
           "backgroundColor": "#FFF6EC"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.gymtrack.mobile"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

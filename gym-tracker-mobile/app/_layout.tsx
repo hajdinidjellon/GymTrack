@@ -17,6 +17,7 @@ import { LaunchAnimation } from '@/components/brand/LaunchAnimation';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useLiveActivity } from '@/hooks/useLiveActivity';
 
 SplashScreen.preventAutoHideAsync().catch(() => null);
 
@@ -29,6 +30,7 @@ export default function RootLayout() {
     'Fredoka-Bold': Fredoka_700Bold,
   });
   const [dataLoaded, setDataLoaded] = useState(false);
+  useLiveActivity();
 
   useEffect(() => {
     // Tout est local : l'app démarre sans réseau, la sync cloud suit en arrière-plan
