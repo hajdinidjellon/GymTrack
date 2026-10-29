@@ -1,5 +1,6 @@
 import { DEFAULT_PLATES } from '@/domain/plates';
 import { getSplit } from '@/domain/programs';
+import { TRAINING_DAYS } from '@/domain/schedule';
 import type { Experience, Goal, SplitId } from '@/types';
 
 /** What the first-launch questions collect. Every answer has a default, so "Passer" always works. */
@@ -40,15 +41,6 @@ export function splitFor(perWeek: number): SplitId {
   return 'ppl';
 }
 
-// Jours d'exemple, lundi = 0 : on laisse au moins un jour de repos quand c'est possible
-const WEEK_DAYS: Record<number, number[]> = {
-  2: [0, 3],
-  3: [0, 2, 4],
-  4: [0, 1, 3, 4],
-  5: [0, 1, 2, 4, 5],
-  6: [0, 1, 2, 3, 4, 5],
-};
-
 export const WEEKDAYS = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
 
 /**
@@ -57,7 +49,7 @@ export const WEEKDAYS = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
  */
 export function weekPlan(perWeek: number): (string | null)[] {
   const days = getSplit(splitFor(perWeek)).days.length;
-  const training = WEEK_DAYS[perWeek] ?? WEEK_DAYS[3]!;
+  const training = TRAINING_DAYS[perWeek] ?? TRAINING_DAYS[3]!;
   return WEEKDAYS.map((_, i) => {
     const n = training.indexOf(i);
     return n < 0 ? null : String.fromCharCode(65 + (n % days));

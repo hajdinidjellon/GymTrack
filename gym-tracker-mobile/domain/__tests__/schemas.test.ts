@@ -39,6 +39,13 @@ describe('profileSchema', () => {
   it('rejects an unknown split or an impossible frequency', () => {
     expect(profileSchema.safeParse({ ...profile, program: { split: 'bro', perWeek: 3 } }).success).toBe(false);
     expect(profileSchema.safeParse({ ...profile, program: { split: 'ppl', perWeek: 9 } }).success).toBe(false);
+    const week = ['Push', null, 'Pull', null, 'Legs', null, null];
+    expect(profileSchema.safeParse({ ...profile, program: { split: 'ppl', perWeek: 3, schedule: week } }).success).toBe(
+      true,
+    );
+    expect(
+      profileSchema.safeParse({ ...profile, program: { split: 'ppl', perWeek: 3, schedule: week.slice(1) } }).success,
+    ).toBe(false);
   });
 });
 

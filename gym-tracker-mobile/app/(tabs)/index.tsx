@@ -12,6 +12,7 @@ import {
   lastTimeLabel,
   targetLabel,
   targetLoad,
+  todayStatus,
   tonnage,
   toActiveExercises,
   type PlannedDay,
@@ -20,7 +21,8 @@ import {
 import { isProgress } from '@/domain/progression';
 import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
-import { programDays, type ProgramDay } from '@/domain/programs';
+import { getSplit, programDays, type ProgramDay } from '@/domain/programs';
+import { nextScheduled, validSchedule, whenLabel } from '@/domain/schedule';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useProfileStore } from '@/stores/profileStore';
@@ -53,12 +55,20 @@ export default function Today() {
   // A day picked by hand holds until the next saved session, then the program leads again
   const [choice, setChoice] = useState<{ name: string; after: number } | null>(null);
   const dayName = choice?.after === workouts.length ? choice.name : null;
-  const { days, today, plan } = useMemo(() => {
-    if (!ctx) return { days: [], today: null, plan: null };
+  const { days, today, plan, off } = useMemo(() => {
+    if (!ctx) return { days: [], today: null, plan: null, off: null };
     const list = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
     const next = nextDay(ctx);
     const day = list.find((d) => d.name === dayName) ?? next;
-    return { days: list, today: next, plan: planDay(day, ctx) };
+    const status = todayStatus(ctx);
+    const resting = status.kind === 'rest' || status.kind === 'done';
+    return {
+      days: list,
+      // Un jour sans séance prévue, aucune n'est « du jour »
+      today: resting ? null : next,
+      plan: planDay(day, ctx),
+      off: resting && !dayName ? status.kind : null,
+    };
   }, [ctx, dayName]);
   const active = useSessionStore((s) => s.activeSession);
   const running = !!active;
@@ -77,7 +87,7 @@ export default function Today() {
             haptic="medium"
             onPress={() => router.push('/session')}
           />
-        ) : plan && plan.lifts.length > 0 ? (
+        ) : plan && !off && plan.lifts.length > 0 ? (
           <StickerButton label="Lancer la séance" testID="start-session" haptic="medium" onPress={() => start(plan)} />
         ) : null
       }
@@ -96,12 +106,20 @@ export default function Today() {
         <FadeIn index={2}>
           <RunningCard session={active} />
         </FadeIn>
+      ) : off ? (
+        <FadeIn index={2}>
+          <RestCard
+            done={off === 'done'}
+            days={days}
+            onChoose={(name) => setChoice({ name, after: workouts.length })}
+          />
+        </FadeIn>
       ) : plan ? (
         <FadeIn index={2}>
           <TodayCard
             plan={plan}
             days={days}
-            today={today?.name ?? plan.name}
+            today={today?.name ?? null}
             onChoose={(name) => setChoice({ name, after: workouts.length })}
           />
         </FadeIn>
@@ -140,8 +158,8 @@ function WeekCard() {
 interface TodayProps {
   plan: PlannedDay;
   days: ProgramDay[];
-  /** The day the program plans next. */
-  today: string;
+  /** The day planned today, none on a day off. */
+  today: string | null;
   onChoose: (name: string) => void;
 }
 
@@ -343,22 +361,61 @@ function LastWorkout() {
   );
 }
 
+/** A day off in the user's week, or the session already done today. Training anyway is one tap away. */
+function RestCard({ done, days, onChoose }: { done: boolean; days: ProgramDay[]; onChoose: (name: string) => void }) {
+  const profile = useProfileStore((s) => s.profile);
+  const now = new Date();
+  const schedule = profile
+    ? validSchedule(
+        profile.program.schedule,
+        getSplit(profile.program.split).days.map((d) => d.name),
+      )
+    : null;
+  const next = schedule ? nextScheduled(schedule, now) : null;
+
+  return (
+    <>
+      <SectionTitle title="Séance du jour" />
+      <StickerCard tone="hero" style={{ gap: space.sm }}>
+        <Text size={34} weight="black" style={{ lineHeight: 40 }}>
+          {done ? 'Séance faite' : "Repos aujourd'hui"}
+        </Text>
+        <Text size={16} weight="semibold" color={colors.inkMuted} style={{ lineHeight: 22 }}>
+          {done ? 'Bien joué. ' : 'Tes muscles récupèrent, ça fait partie du programme. '}
+          {next ? `Prochaine séance : ${next.name}, ${whenLabel(next.inDays, now)}.` : ''}
+        </Text>
+      </StickerCard>
+      <View style={{ marginTop: space.md }}>
+        <DayPicker
+          days={days}
+          current={null}
+          today={null}
+          label="Envie de t'entraîner quand même ? Choisis ta séance"
+          onChoose={onChoose}
+        />
+      </View>
+    </>
+  );
+}
+
 /** "Pas envie de ça ?": every day of the program side by side, one tap to do it today instead. */
 function DayPicker({
   days,
   current,
   today,
+  label = "Envie d'autre chose ? Choisis ta séance",
   onChoose,
 }: {
   days: ProgramDay[];
-  current: string;
-  today: string;
+  current: string | null;
+  today: string | null;
+  label?: string;
   onChoose: (name: string) => void;
 }) {
   return (
     <View style={{ marginBottom: space.md }}>
       <Text size={14} weight="bold" color={colors.inkMuted}>
-        Envie d'autre chose ? Choisis ta séance
+        {label}
       </Text>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
         {days.map((d) => {

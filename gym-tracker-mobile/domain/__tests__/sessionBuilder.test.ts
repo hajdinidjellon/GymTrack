@@ -7,6 +7,7 @@ import {
   newRecords,
   nextDay,
   planDay,
+  todayStatus,
   planLift,
   reasonLabel,
   targetLabel,
@@ -62,6 +63,37 @@ describe('nextDay', () => {
 
   it('ignores workouts from another program', () => {
     expect(nextDay(ctx([workout('2026-10-01', 'Séance', [])])).name).toBe('Push');
+  });
+
+  describe('with a week set', () => {
+    // 2026-10-28 is a Wednesday
+    const wednesday = new Date(2026, 9, 28, 18);
+    const week = (schedule: (string | null)[], workouts: Workout[] = []) => ({
+      ...ctx(workouts, { program: { split: 'ppl', perWeek: 3, schedule } }),
+      now: wednesday,
+    });
+
+    it('does the session planned today, whatever was done before', () => {
+      const c = week(['Push', null, 'Legs', null, 'Pull', null, null], [workout('2026-10-26', 'Push', [])]);
+      expect(todayStatus(c)).toEqual({ kind: 'train', name: 'Legs' });
+      expect(nextDay(c).name).toBe('Legs');
+    });
+
+    it('rests on a day off, and offers the next one in order', () => {
+      const c = week(['Push', null, null, null, 'Pull', null, null], [workout('2026-10-26', 'Push', [])]);
+      expect(todayStatus(c)).toEqual({ kind: 'rest' });
+      expect(nextDay(c).name).toBe('Pull');
+    });
+
+    it('is done once a session is saved today', () => {
+      const c = week(['Push', null, 'Legs', null, 'Pull', null, null], [workout(wednesday.toISOString(), 'Legs', [])]);
+      expect(todayStatus(c)).toEqual({ kind: 'done' });
+    });
+
+    it('ignores a week that no longer fits the program', () => {
+      expect(todayStatus(week(['Haut', null, 'Bas', null, null, null, null]))).toEqual({ kind: 'free' });
+      expect(todayStatus(ctx())).toEqual({ kind: 'free' });
+    });
   });
 });
 
