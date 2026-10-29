@@ -54,6 +54,8 @@ interface SessionStore {
   undoLastSet: () => void;
   /** Another exercise instead of this one; the sets already done stay. */
   replaceExercise: (exerciseId: string, next: ActiveExercise) => void;
+  /** One more exercise, done last. */
+  addExercise: (next: ActiveExercise) => void;
   /** This exercise right now (its machine just freed up). */
   doNow: (exerciseId: string) => void;
   /** This exercise at the end of the session (its machine is taken). */
@@ -227,6 +229,11 @@ export const useSessionStore = create<SessionStore>()(
           apply((s) => Session.replaceExercise(s, exerciseId, next));
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
           afterCurrentChanged(previous);
+        },
+
+        addExercise: (next) => {
+          apply((s) => Session.addExercise(s, next));
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
         },
 
         doNow: (exerciseId) => reorder((s) => Session.doNow(s, exerciseId)),

@@ -195,6 +195,12 @@ export function replaceExercise(session: ActiveSession, exerciseId: string, next
   return { ...session, exercises };
 }
 
+/** One more exercise at the end of the session. Already in it: nothing changes. */
+export function addExercise(session: ActiveSession, next: ActiveExercise): ActiveSession {
+  if (session.exercises.some((e) => e.name === next.name)) return session;
+  return { ...session, exercises: [...session.exercises, next] };
+}
+
 const isFinished = (e: ActiveExercise) => e.sets.every((s) => s.completed);
 
 /**

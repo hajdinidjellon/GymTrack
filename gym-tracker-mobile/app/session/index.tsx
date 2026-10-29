@@ -14,6 +14,7 @@ import { CalibrationView } from '@/components/session/CalibrationView';
 import { SessionProgress } from '@/components/session/SessionProgress';
 import { SwapExercise } from '@/components/session/SwapExercise';
 import { DoLater } from '@/components/session/DoLater';
+import { AddExercise } from '@/components/session/AddExercise';
 
 // Pendant qu'on quitte l'écran, la séance est déjà vidée : on ne redirige pas une deuxième fois
 let leaving = false;
@@ -105,11 +106,16 @@ export default function SessionScreen() {
           </Text>
         </Pressable>
       </View>
-      <SessionProgress
-        exercises={session.exercises}
-        current={exerciseIndex}
-        onPick={(id) => useSessionStore.getState().doNow(id)}
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1 }}>
+          <SessionProgress
+            exercises={session.exercises}
+            current={exerciseIndex}
+            onPick={(id) => useSessionStore.getState().doNow(id)}
+          />
+        </View>
+        <AddExercise current={exercise} sessionName={session.name} />
+      </View>
 
       <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
         <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 34 }}>
