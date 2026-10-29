@@ -4,6 +4,7 @@ import { splitFor, type OnboardingAnswers } from '@/domain/onboarding';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { OnboardingFlow, type FlowEnd } from '@/components/onboarding/OnboardingFlow';
+import { resetTo } from '@/components/navigation/resetTo';
 
 export default function Setup() {
   const finish = async (answers: OnboardingAnswers, end: FlowEnd) => {
@@ -20,8 +21,7 @@ export default function Setup() {
       prs: profile?.prs ?? [],
       bodyStats: profile?.bodyStats ?? [],
     });
-    router.dismissAll();
-    router.replace('/(tabs)');
+    resetTo('/(tabs)');
     if (end === 'session') router.push('/session/preview');
   };
 

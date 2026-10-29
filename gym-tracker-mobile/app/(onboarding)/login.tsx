@@ -11,6 +11,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { BackButton } from '@/components/ui/BackButton';
+import { resetTo } from '@/components/navigation/resetTo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -26,8 +27,7 @@ export default function Login() {
       return;
     }
     useSettingsStore.getState().updateSettings({ signedOut: false });
-    router.dismissAll();
-    router.replace('/(tabs)');
+    resetTo('/(tabs)');
   };
 
   const signIn = async () => {
