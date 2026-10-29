@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 import {
   defaultRule,
   deloadWeight,
+  isProgress,
   nextTargets,
   referenceWeight,
   roundDownToIncrement,
@@ -150,6 +151,72 @@ describe('failed sets', () => {
     expect(r.decision).toBe('add_reps');
     expect(weights(r)).toEqual([90, 90, 90]);
     expect(reps(r)).toEqual([9, 9, 9]);
+  });
+});
+
+describe('how the last set felt', () => {
+  /** Every set at `weight`, the last one rated with this RPE. */
+  const felt = (weight: number, r: number[], rpe: number) =>
+    session(
+      weight,
+      r,
+      r.map((_, i) => (i === r.length - 1 ? { rpe } : {})),
+    );
+
+  it('adds two reps when the last set was easy', () => {
+    const r = nextTargets([felt(60, [9, 9, 9], 6)], rule);
+    expect(r.decision).toBe('add_two_reps');
+    expect(reps(r)).toEqual([11, 11, 11]);
+  });
+
+  it('never goes past the top of the range', () => {
+    expect(reps(nextTargets([felt(60, [11, 11, 10], 6)], rule))).toEqual([12, 12, 12]);
+  });
+
+  it('adds one rep when the last set was just right', () => {
+    expect(nextTargets([felt(60, [9, 9, 9], 8)], rule).decision).toBe('add_reps');
+  });
+
+  it('keeps the same target once when the last set was all-out', () => {
+    const r = nextTargets([felt(60, [10, 9, 9], 10)], rule);
+    expect(r.decision).toBe('hold');
+    expect(weights(r)).toEqual([60, 60, 60]);
+    expect(reps(r)).toEqual([10, 9, 9]);
+  });
+
+  it('moves on after a hold, even all-out again, then holds again', () => {
+    expect(nextTargets([felt(60, [10, 9, 9], 10), felt(60, [10, 9, 9], 10)], rule).decision).toBe('add_reps');
+    const three = [felt(60, [9, 9, 9], 10), felt(60, [10, 9, 9], 10), felt(60, [10, 10, 10], 10)];
+    expect(nextTargets(three, rule).decision).toBe('hold');
+  });
+
+  it('holds on a first all-out session at a new weight', () => {
+    expect(nextTargets([felt(60, [12, 12, 12], 10), felt(62.5, [8, 8, 8], 10)], rule).decision).toBe('hold');
+  });
+
+  it('still adds weight at the top of the range, however it felt', () => {
+    expect(nextTargets([felt(60, [12, 12, 12], 10)], rule).decision).toBe('add_weight');
+  });
+
+  it('still repeats a failed session, however it felt', () => {
+    expect(nextTargets([felt(60, [9, 8, 7], 6)], rule).decision).toBe('repeat');
+  });
+
+  it('adds two reps at bodyweight too', () => {
+    expect(reps(nextTargets([felt(0, [12, 12, 12], 6)], rule))).toEqual([14, 14, 14]);
+  });
+});
+
+describe('isProgress', () => {
+  it.each([
+    ['add_weight', true],
+    ['add_reps', true],
+    ['add_two_reps', true],
+    ['hold', false],
+    ['repeat', false],
+    ['deload', false],
+  ] as const)('%s → %s', (decision, expected) => {
+    expect(isProgress(decision)).toBe(expected);
   });
 });
 

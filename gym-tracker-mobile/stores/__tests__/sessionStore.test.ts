@@ -229,3 +229,17 @@ describe('changing the order', () => {
     expect(store().activeSession).toBeNull();
   });
 });
+
+describe('rating a set', () => {
+  it('stores how the last set felt', () => {
+    store().completeSet('bench', 0);
+    store().rateLastSet('easy');
+    expect(session().exercises[0]!.sets[0]!.rpe).toBe(6);
+  });
+
+  it('keeps the rating in the saved workout', () => {
+    store().completeSet('bench', 0);
+    store().rateLastSet('max');
+    expect(store().finishSession()!.exercises[0]!.sets[0]!.rpe).toBe(10);
+  });
+});

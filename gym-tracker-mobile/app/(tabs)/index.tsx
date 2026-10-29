@@ -15,6 +15,7 @@ import {
   type PlannedDay,
   type PlannedLift,
 } from '@/domain/sessionBuilder';
+import { isProgress } from '@/domain/progression';
 import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
 import { programDays, type ProgramDay } from '@/domain/programs';
@@ -239,7 +240,7 @@ function TodayCard({ plan, running, days, today, onChoose }: TodayProps) {
 
 function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; last: boolean }) {
   const calibrate = lift.decision === 'calibrate';
-  const progress = lift.decision === 'add_weight' || lift.decision === 'add_reps';
+  const progress = isProgress(lift.decision);
   return (
     <PressableScale
       onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: lift.def.name } })}

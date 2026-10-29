@@ -53,6 +53,23 @@ describe('RestView', () => {
     expect(screen.getByText('80 kg × 5')).toBeOnTheScreen();
   });
 
+  it('rates the set just validated in one tap, and takes it back', async () => {
+    await renderRest();
+    const easy = screen.getByRole('radio', { name: 'Facile' });
+    await fireEvent.press(easy);
+    expect(session().exercises[0]!.sets[0]!.rpe).toBe(6);
+    expect(easy).toBeChecked();
+    await fireEvent.press(easy);
+    expect(session().exercises[0]!.sets[0]!.rpe).toBeUndefined();
+    expect(easy).not.toBeChecked();
+  });
+
+  it('asks how it felt only right after a set', async () => {
+    const s = session();
+    await render(<RestView next={findCurrent(s.exercises)} restEndsAt={s.restEndsAt!} total={120} />);
+    expect(screen.queryByText("Comment c'était ?")).toBeNull();
+  });
+
   it('skips the rest', async () => {
     await renderRest();
     await fireEvent.press(screen.getByRole('button', { name: 'Passer le repos' }));

@@ -12,12 +12,17 @@
  * Poids du corps (poids à 0) : jamais de charge ajoutée automatiquement,
  * on continue +1 rep par série sans plafond.
  *
+ * Ressenti de la dernière série (domain/effort.ts) : « Facile » = +2 reps,
+ * « À fond » = même cible une fois pour consolider (une séance sur deux si
+ * ça se répète, pour ne jamais stagner).
+ *
  * Après une pause (2 semaines sans l'exercice), on reprend plus léger :
  * 90 %, et 80 % au-delà de 4 semaines.
  *
  * Le moteur est sans état : tout se déduit de l'historique de l'exercice.
  */
 
+import { effortOf, type Effort } from '@/domain/effort';
 import type { ProgressionRule, SetTarget, WorkoutSet } from '@/types';
 
 export const DELOAD_FACTOR = 0.9;
@@ -40,12 +45,19 @@ export interface ExerciseSession {
 
 export type ProgressionDecision =
   | 'add_reps' // same weight, +1 rep on each set
+  | 'add_two_reps' // same weight, +2 reps: the last set felt easy
+  | 'hold' // same weight, same reps: the last set was all-out
   | 'add_weight' // every set hit the top of the range
   | 'repeat' // a set fell under the minimum: same weight, same targets
   | 'deload' // failed twice in a row at the same weight
   | 'comeback' // back after a break: a bit lighter to find the groove again
   | 'start' // no history, starting weight derived from a PR
   | 'calibrate'; // no history and no PR: the user picks the weight
+
+/** The decisions that ask for more than last time. */
+export function isProgress(decision: ProgressionDecision): boolean {
+  return decision === 'add_weight' || decision === 'add_reps' || decision === 'add_two_reps';
+}
 
 export interface ProgressionResult {
   decision: ProgressionDecision;
@@ -126,6 +138,21 @@ function hitTopOfRange(sets: WorkoutSet[], weight: number, rule: ProgressionRule
   return sets.length >= rule.sets && sets.every((s) => s.weight >= weight && s.reps >= rule.repMax);
 }
 
+/** How the last working set of a session felt: what was left in the tank. */
+function lastEffort(sets: WorkoutSet[]): Effort | undefined {
+  return effortOf(sets[sets.length - 1]?.rpe);
+}
+
+/** All-out sessions in a row at this weight, the latest first. */
+function allOutStreak(sessions: { sets: WorkoutSet[] }[], weight: number): number {
+  let streak = 0;
+  for (const s of sessions) {
+    if (lastEffort(s.sets) !== 'max' || referenceWeight(s.sets) !== weight) break;
+    streak++;
+  }
+  return streak;
+}
+
 function fill(rule: ProgressionRule, weight: number, reps: (i: number) => number): SetTarget[] {
   return Array.from({ length: rule.sets }, (_, i) => ({ weight: round2(weight), reps: reps(i) }));
 }
@@ -194,13 +221,16 @@ export function nextTargets(
     return { decision: 'add_weight', targets: fill(rule, weight + rule.increment, () => rule.repMin) };
   }
 
+  const effort = lastEffort(last.sets);
+  const hold = effort === 'max' && allOutStreak(sessions, weight) % 2 === 1;
+  const step = hold ? 0 : effort === 'easy' ? 2 : 1;
   return {
-    decision: 'add_reps',
+    decision: hold ? 'hold' : step === 2 ? 'add_two_reps' : 'add_reps',
     targets: fill(rule, weight, (i) => {
       const set = last.sets[i];
       if (!set) return rule.repMin;
       // Une série faite plus légère ne compte pas comme un progrès à ce poids
-      return clampReps(set.weight >= weight ? set.reps + 1 : set.reps);
+      return clampReps(set.weight >= weight ? set.reps + step : set.reps);
     }),
   };
 }

@@ -13,6 +13,7 @@ import {
   toActiveExercises,
   type PlannedLift,
 } from '@/domain/sessionBuilder';
+import { isProgress } from '@/domain/progression';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -121,7 +122,7 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
   const weight = lift.targets[0]?.weight ?? 0;
   const perSide = loadBar(weight, bar, plates).perSide;
   const showPlates = lift.def.equipment === 'barbell' && !calibrate;
-  const progress = lift.decision === 'add_weight' || lift.decision === 'add_reps';
+  const progress = isProgress(lift.decision);
 
   return (
     <PressableScale
