@@ -186,7 +186,9 @@ export function nextTargets(
     const daysOff = Math.floor((options.now.getTime() - new Date(last.date).getTime()) / DAY_MS);
     const step = COMEBACK_STEPS.find((s) => daysOff >= s.days);
     if (step) {
-      const lighter = Math.max(0, Math.min(roundDownToIncrement(weight * step.keep, rule.increment), weight));
+      // Never down to 0 kg: under one step, the comeback keeps the last weight
+      const rounded = Math.min(roundDownToIncrement(weight * step.keep, rule.increment), weight);
+      const lighter = rounded > 0 ? rounded : weight;
       return { decision: 'comeback', targets: fill(rule, lighter, () => rule.repMin), daysOff };
     }
   }
