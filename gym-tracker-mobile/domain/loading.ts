@@ -4,6 +4,8 @@
  */
 
 import { describeSide, formatKg, loadBar, platesForSide } from '@/domain/plates';
+import { findExerciseDef, isPlateLoaded } from '@/domain/programs';
+import type { LoadFactor } from '@/domain/sessionBuilder';
 import type { ActiveExercise, AppSettings } from '@/types';
 
 export type Loading = 'bar' | 'perSide' | 'perHand' | 'stack';
@@ -66,4 +68,19 @@ export function loadHint(
     case 'stack':
       return null;
   }
+}
+
+/**
+ * How totals count the logged weight: as is, or twice for a plate-loaded
+ * machine (both sides) and dumbbells (both hands), when the user asks.
+ */
+export function loadFactor(
+  settings: Pick<AppSettings, 'countBothSides' | 'customExercises' | 'plateLoaded'>,
+): LoadFactor {
+  if (!settings.countBothSides) return () => 1;
+  return (name) => {
+    const def = findExerciseDef(name, settings.customExercises);
+    if (!def) return 1;
+    return def.equipment === 'dumbbell' || isPlateLoaded(def, settings.plateLoaded) ? 2 : 1;
+  };
 }

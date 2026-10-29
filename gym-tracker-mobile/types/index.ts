@@ -156,6 +156,8 @@ export interface AppSettings {
   exerciseNotes: Record<string, string>;
   /** Machine loaded with plates (true) or a weight stack (false), per exercise name. Missing: the catalog's. */
   plateLoaded: Record<string, boolean>;
+  /** Totals count both sides of a plate-loaded machine and both dumbbells. Off: the weight as logged. */
+  countBothSides: boolean;
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
 }

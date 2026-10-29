@@ -5,7 +5,7 @@
 
 import { workingSets } from '@/domain/progression';
 import { EXERCISES, type ExerciseDef } from '@/domain/programs';
-import { exerciseHistory, tonnage } from '@/domain/sessionBuilder';
+import { exerciseHistory, tonnage, type LoadFactor } from '@/domain/sessionBuilder';
 import { startOfWeek } from '@/domain/week';
 import type { Workout } from '@/types';
 
@@ -44,15 +44,35 @@ export interface WeekVolume {
   sessions: number;
 }
 
+/**
+ * This week against last week at the same point (same day, same hour), in
+ * %: comparing a week in progress with a full one always reads as a drop.
+ * Nothing when last week had nothing by then.
+ */
+export function weekTrend(workouts: Workout[], now = new Date(), factor?: LoadFactor): number | null {
+  const monday = startOfWeek(now).getTime();
+  const lastMonday = startOfWeek(new Date(monday - DAY / 2)).getTime();
+  const sumBetween = (from: number, to: number) =>
+    workouts
+      .filter((w) => {
+        const t = new Date(w.date).getTime();
+        return t >= from && t <= to;
+      })
+      .reduce((sum, w) => sum + tonnage(w, factor), 0);
+  const before = sumBetween(lastMonday, lastMonday + (now.getTime() - monday));
+  if (before === 0) return null;
+  return Math.round(((sumBetween(monday, now.getTime()) - before) / before) * 100);
+}
+
 /** Weight lifted per week over the last `weeks` weeks, oldest first, current week last. */
-export function weeklyVolume(workouts: Workout[], weeks: number, now = new Date()): WeekVolume[] {
+export function weeklyVolume(workouts: Workout[], weeks: number, now = new Date(), factor?: LoadFactor): WeekVolume[] {
   const thisMonday = startOfWeek(now);
   const starts = Array.from({ length: weeks }, (_, i) =>
     startOfWeek(new Date(thisMonday.getTime() - (weeks - 1 - i) * 7 * DAY + DAY / 2)),
   );
   return starts.map((start) => {
     const inWeek = workouts.filter((w) => startOfWeek(new Date(w.date)).getTime() === start.getTime());
-    return { start, tonnage: inWeek.reduce((sum, w) => sum + tonnage(w), 0), sessions: inWeek.length };
+    return { start, tonnage: inWeek.reduce((sum, w) => sum + tonnage(w, factor), 0), sessions: inWeek.length };
   });
 }
 
@@ -63,19 +83,26 @@ export interface PersonalBest {
   date: string;
 }
 
-/** Heaviest validated working set of each exercise, most recent record first. Bodyweight lifts are left out. */
+/**
+ * Records: the heaviest working set of each exercise, when it beat an
+ * earlier session. A first session sets a starting point, not a record,
+ * like on the summary. Most recent first; bodyweight lifts are left out.
+ */
 export function personalBests(workouts: Workout[], catalog: ExerciseDef[] = Object.values(EXERCISES)): PersonalBest[] {
   const bests = catalog.flatMap((def) => {
     let best: PersonalBest | null = null;
+    let beaten = false;
     // Du plus ancien au plus récent : à égalité, le premier à l'avoir soulevé garde le record
     for (const session of [...exerciseHistory(def, workouts)].reverse()) {
+      const before: PersonalBest | null = best;
       for (const set of workingSets(session.sets)) {
         if (set.weight > 0 && (!best || set.weight > best.weight)) {
           best = { name: def.name, weight: set.weight, reps: set.reps, date: session.date };
         }
       }
+      if (before && best !== before) beaten = true;
     }
-    return best ? [best] : [];
+    return best && beaten ? [best] : [];
   });
   return bests.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
@@ -86,11 +113,11 @@ export interface Totals {
   since: string | null;
 }
 
-export function totals(workouts: Workout[]): Totals {
+export function totals(workouts: Workout[], factor?: LoadFactor): Totals {
   const dates = workouts.map((w) => new Date(w.date).getTime());
   return {
     sessions: workouts.length,
-    tonnage: workouts.reduce((sum, w) => sum + tonnage(w), 0),
+    tonnage: workouts.reduce((sum, w) => sum + tonnage(w, factor), 0),
     since: dates.length ? new Date(Math.min(...dates)).toISOString() : null,
   };
 }

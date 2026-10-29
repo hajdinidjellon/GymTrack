@@ -8,6 +8,7 @@ import { GOALS, getSplit } from '@/domain/programs';
 import { totals } from '@/domain/stats';
 import { insights } from '@/domain/insights';
 import { workoutsToCsv } from '@/domain/exportCsv';
+import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { hasSession, signOut } from '@/services/supabase';
 import { speak } from '@/services/speech';
 import { useProfileStore } from '@/stores/profileStore';
@@ -33,7 +34,8 @@ export default function Profile() {
   const settings = useSettingsStore((s) => s.settings);
   const { updateSettings, togglePlate } = useSettingsStore.getState();
   const workouts = useWorkoutStore((s) => s.workouts);
-  const stats = useMemo(() => totals(workouts), [workouts]);
+  const factor = useLoadFactor();
+  const stats = useMemo(() => totals(workouts, factor), [workouts, factor]);
   const perWeek = profile?.program.perWeek ?? 3;
   const own = settings.customExercises;
   const learned = useMemo(() => insights(workouts, { perWeek, own, now: new Date() }), [workouts, perWeek, own]);
@@ -190,6 +192,16 @@ export default function Profile() {
 
         <SectionTitle title="Tes données" />
         <Group>
+          <Row
+            label="Total soulevé"
+            value={settings.countBothSides ? 'Les 2 côtés' : 'Comme noté'}
+            onPress={() => updateSettings({ countBothSides: !settings.countBothSides })}
+            hint={
+              settings.countBothSides
+                ? 'Machines à disques et haltères comptent double. Touche pour changer.'
+                : 'Un côté, une haltère, comme tu le notes. Touche pour changer.'
+            }
+          />
           <Row
             label="Exporter mes séances"
             value={workouts.length ? `${workouts.length} · CSV` : 'Rien encore'}

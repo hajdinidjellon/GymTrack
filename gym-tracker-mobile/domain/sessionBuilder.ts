@@ -256,10 +256,13 @@ export function targetLoad(targets: SetTarget[]): string {
   return first.weight > 0 ? `${formatKg(first.weight)} kg × ${reps}` : `${reps} reps`;
 }
 
+/** How many times the logged weight counts in the total: 2 for both sides or both dumbbells. */
+export type LoadFactor = (exerciseName: string) => number;
+
 /** Weight lifted on validated working sets. */
-export function tonnage(workout: Workout): number {
+export function tonnage(workout: Workout, factor: LoadFactor = () => 1): number {
   return workout.exercises.reduce(
-    (sum, e) => sum + workingSets(e.sets).reduce((s, set) => s + set.weight * set.reps, 0),
+    (sum, e) => sum + factor(e.name) * workingSets(e.sets).reduce((s, set) => s + set.weight * set.reps, 0),
     0,
   );
 }

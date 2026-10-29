@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { loadHint, loadingOf, missingPerSide, sidePlates } from '@/domain/loading';
+import { loadFactor, loadHint, loadingOf, missingPerSide, sidePlates } from '@/domain/loading';
 
 const gym = { barWeight: 20, plates: [20, 15, 10, 5, 2.5, 1.25] };
 
@@ -44,5 +44,23 @@ describe('loadHint', () => {
   it('says a dumbbell weight is per dumbbell, and nothing for a stack', () => {
     expect(loadHint('perHand', 12, gym)).toBe('Par haltère');
     expect(loadHint('stack', 40, gym)).toBeNull();
+  });
+});
+
+describe('loadFactor', () => {
+  const settings = { countBothSides: true, customExercises: [], plateLoaded: {} };
+
+  it('counts both sides and both dumbbells when asked', () => {
+    const factor = loadFactor(settings);
+    expect(factor('Presse à cuisses')).toBe(2);
+    expect(factor('Curl haltères')).toBe(2);
+    expect(factor('Squat')).toBe(1);
+    expect(factor('Pec deck')).toBe(1);
+    expect(factor('Inconnu')).toBe(1);
+    expect(loadFactor({ ...settings, plateLoaded: { 'Presse à cuisses': false } })('Presse à cuisses')).toBe(1);
+  });
+
+  it('counts the weight as logged by default', () => {
+    expect(loadFactor({ ...settings, countBothSides: false })('Presse à cuisses')).toBe(1);
   });
 });
