@@ -20,6 +20,13 @@ describe('parseSettings', () => {
     expect(parseSettings(JSON.stringify({ defaultRestTime: 5 })).defaultRestTime).toBe(90);
   });
 
+  it('reads back the notes, and refuses an oversized one', () => {
+    expect(parseSettings(JSON.stringify({ exerciseNotes: { Presse: 'cran 4' } })).exerciseNotes).toEqual({
+      Presse: 'cran 4',
+    });
+    expect(parseSettings(JSON.stringify({ exerciseNotes: { Presse: 'x'.repeat(500) } }))).toEqual(DEFAULT_SETTINGS);
+  });
+
   it('rejects tampered values', () => {
     expect(parseSettings(JSON.stringify({ barWeight: 'heavy' }))).toEqual(DEFAULT_SETTINGS);
   });
@@ -79,6 +86,14 @@ describe('settings store', () => {
     };
     useSettingsStore.getState().addCustomExercise(own);
     expect(useSettingsStore.getState().settings.customExercises).toEqual([own]);
+  });
+
+  it('saves a tidy note per exercise, and removes it once emptied', () => {
+    const { setExerciseNote } = useSettingsStore.getState();
+    setExerciseNote('Presse', '  siège   cran 4 ');
+    expect(useSettingsStore.getState().settings.exerciseNotes).toEqual({ Presse: 'siège cran 4' });
+    setExerciseNote('Presse', '   ');
+    expect(useSettingsStore.getState().settings.exerciseNotes).toEqual({});
   });
 
   it('loads what was saved', async () => {

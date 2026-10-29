@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { cleanNote } from '@/domain/notes';
 import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
 import { settingsPatchSchema } from '@/domain/schemas';
 import { logger } from '@/services/logger';
@@ -24,6 +25,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ruleOverrides: {},
   restOverrides: {},
   customExercises: [],
+  exerciseNotes: {},
   signedOut: false,
 };
 
@@ -77,6 +79,8 @@ interface SettingsStore {
   /** Own rest for an exercise, in seconds. `null` goes back to the computed one. */
   setRestOverride: (exerciseName: string, seconds: number | null) => void;
   addCustomExercise: (exercise: CustomExercise) => void;
+  /** Own note for an exercise. Empty text removes it. */
+  setExerciseNote: (exerciseName: string, text: string) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -117,6 +121,12 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   addCustomExercise: (exercise) => {
     get().updateSettings({ customExercises: [...get().settings.customExercises, exercise] });
+  },
+
+  setExerciseNote: (exerciseName, text) => {
+    const { [exerciseName]: _old, ...others } = get().settings.exerciseNotes;
+    const note = cleanNote(text);
+    get().updateSettings({ exerciseNotes: note ? { ...others, [exerciseName]: note } : others });
   },
 
   togglePlate: (plate) => {

@@ -26,11 +26,15 @@ export function setLine(cursor: Cursor): string {
   return `Série ${setIndex + 1}. ${load}${set.reps} reps.`;
 }
 
-/** Said while resting, as soon as the next set is a new exercise. */
-export function nextExerciseLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeight' | 'plates'>): string {
-  const plates = platesLine(cursor, settings);
-  if (cursor.exercise.needsWeight) return `Prochain exercice : ${cursor.exercise.name}. Choisis ta charge de départ.`;
-  return [`Prochain exercice : ${cursor.exercise.name}.`, plates ?? setLine(cursor)].join(' ');
+/** Said while resting, as soon as the next set is a new exercise. The user's note on it comes last. */
+export function nextExerciseLine(
+  cursor: Cursor,
+  settings: Pick<AppSettings, 'barWeight' | 'plates'> & Partial<Pick<AppSettings, 'exerciseNotes'>>,
+): string {
+  const { name, needsWeight } = cursor.exercise;
+  const what = needsWeight ? 'Choisis ta charge de départ.' : (platesLine(cursor, settings) ?? setLine(cursor));
+  const note = settings.exerciseNotes?.[name]?.replace(/[.!?…]+$/, '');
+  return [`Prochain exercice : ${name}.`, what, note ? `Note : ${note}.` : null].filter(Boolean).join(' ');
 }
 
 export function restOverLine(cursor: Cursor): string {

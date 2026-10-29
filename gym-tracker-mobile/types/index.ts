@@ -152,6 +152,8 @@ export interface AppSettings {
   restOverrides: Record<string, number>;
   /** Exercises the user created. */
   customExercises: CustomExercise[];
+  /** The user's own note per exercise name: machine setting, grip… */
+  exerciseNotes: Record<string, string>;
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
 }

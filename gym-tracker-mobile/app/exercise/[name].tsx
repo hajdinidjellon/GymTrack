@@ -19,6 +19,7 @@ import { LoadedBar } from '@/components/disc/LoadedBar';
 import { Sparkline } from '@/components/stats/Sparkline';
 import { buzz, PressableScale } from '@/components/ui/PressableScale';
 import { RuleEditor } from '@/components/program/RuleEditor';
+import { ExerciseNote } from '@/components/session/ExerciseNote';
 
 const STEPS = [1, 2, 2.5, 5];
 
@@ -93,6 +94,13 @@ export default function ExerciseScreen() {
             <LoadedBar weight={target.weight} scale={0.77} barWidth={110} />
           </View>
         ) : null}
+      </StickerCard>
+
+      <StickerCard style={{ marginTop: 16, gap: space.sm }}>
+        <Text size={17} weight="black">
+          Ta note
+        </Text>
+        <ExerciseNote exerciseName={def.name} />
       </StickerCard>
 
       {weights.length > 1 ? (
