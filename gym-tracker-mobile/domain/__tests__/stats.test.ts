@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { personalBests, totals, weekDays, weeklyVolume } from '@/domain/stats';
+import { personalBests, totals, weekDays, weeklyVolume, weekTrend } from '@/domain/stats';
 import { lift, workout } from './fixtures';
 
 // Jeudi 22 octobre 2026, midi
@@ -43,18 +43,36 @@ describe('personalBests', () => {
       workout(at(8), 'Push', [lift('Développé couché', 65, [6])], 'b'),
       workout(at(15), 'Push', [lift('Développé couché', 62.5, [10]), lift('Dips', 0, [12])], 'c'),
     ];
-    expect(personalBests(list)).toEqual([
-      { name: 'Développé couché', weight: 65, reps: 6, date: at(8) },
-      { name: 'Squat', weight: 100, reps: 5, date: at(1) },
-    ]);
+    expect(personalBests(list)).toEqual([{ name: 'Développé couché', weight: 65, reps: 6, date: at(8) }]);
   });
 
-  it('gives a tie to whoever lifted it first', () => {
+  it('counts no record on a first session, nor on a tie', () => {
     const list = [
       workout(at(1), 'x', [lift('Squat', 100, [5])], 'a'),
       workout(at(8), 'x', [lift('Squat', 100, [6])], 'b'),
     ];
-    expect(personalBests(list)[0]).toMatchObject({ date: at(1), reps: 5 });
+    expect(personalBests(list.slice(0, 1))).toEqual([]);
+    expect(personalBests(list)).toEqual([]);
+  });
+});
+
+describe('weekTrend', () => {
+  it('compares with last week at the same point, not with the full week', () => {
+    const list = [
+      workout(at(20), 'Legs', [lift('Squat', 100, [5])], 'this'),
+      workout(at(13), 'Legs', [lift('Squat', 100, [5])], 'same-point'),
+      workout(at(16), 'Legs', [lift('Squat', 100, [10])], 'later-last-week'),
+    ];
+    expect(weekTrend(list, now)).toBe(0);
+    expect(weekTrend([list[0]!], now)).toBeNull();
+  });
+
+  it('counts twice what the factor doubles', () => {
+    const list = [
+      workout(at(20), 'x', [lift('Curl', 10, [10])], 'a'),
+      workout(at(13), 'x', [lift('Squat', 100, [1])], 'b'),
+    ];
+    expect(weekTrend(list, now, (name) => (name === 'Curl' ? 2 : 1))).toBe(100);
   });
 });
 
@@ -66,5 +84,6 @@ describe('totals', () => {
     ];
     expect(totals(list)).toEqual({ sessions: 2, tonnage: 1000, since: at(1) });
     expect(totals([])).toEqual({ sessions: 0, tonnage: 0, since: null });
+    expect(totals(list, () => 2).tonnage).toBe(2000);
   });
 });

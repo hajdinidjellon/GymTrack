@@ -6,7 +6,8 @@ import { formatShortDay, formatThousands } from '@/domain/format';
 import { formatKg, platesForSide, platesPhrase } from '@/domain/plates';
 import { allExercises } from '@/domain/programs';
 import { weightHistory } from '@/domain/sessionBuilder';
-import { personalBests, weeklyVolume } from '@/domain/stats';
+import { personalBests, weeklyVolume, weekTrend } from '@/domain/stats';
+import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
@@ -49,8 +50,10 @@ export default function Progress() {
       }),
     [workouts, own],
   );
-  const weeks = useMemo(() => weeklyVolume(workouts, 8), [workouts]);
-  const records = useMemo(() => personalBests(workouts, allExercises(own)).slice(0, 5), [workouts, own]);
+  const factor = useLoadFactor();
+  const weeks = useMemo(() => weeklyVolume(workouts, 8, new Date(), factor), [workouts, factor]);
+  const allRecords = useMemo(() => personalBests(workouts, allExercises(own)), [workouts, own]);
+  const records = allRecords.slice(0, 5);
 
   if (workouts.length === 0) {
     return (
@@ -70,8 +73,7 @@ export default function Progress() {
   }
 
   const thisWeek = weeks[weeks.length - 1]!;
-  const lastWeek = weeks[weeks.length - 2];
-  const trend = lastWeek?.tonnage ? Math.round(((thisWeek.tonnage - lastWeek.tonnage) / lastWeek.tonnage) * 100) : null;
+  const trend = weekTrend(workouts, new Date(), factor);
   const gained = lifts.reduce((sum, l) => sum + Math.max(0, l.last.weight - l.first.weight), 0);
 
   // La plus belle progression à la barre, racontée en disques
@@ -89,7 +91,7 @@ export default function Progress() {
       <FadeIn index={1} style={{ flexDirection: 'row', gap: space.sm }}>
         <StatTile value={String(workouts.length)} label={workouts.length > 1 ? 'séances' : 'séance'} />
         <StatTile value={`+${formatKg(gained)} kg`} label="gagnés au total" highlight={gained > 0} />
-        <StatTile value={String(records.length)} label={records.length > 1 ? 'records' : 'record'} />
+        <StatTile value={String(allRecords.length)} label={allRecords.length > 1 ? 'records' : 'record'} />
       </FadeIn>
 
       <FadeIn index={2}>

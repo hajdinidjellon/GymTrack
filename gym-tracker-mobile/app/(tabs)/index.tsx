@@ -22,6 +22,7 @@ import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
 import { programDays, type ProgramDay } from '@/domain/programs';
 import { useBuildContext } from '@/hooks/useTodayPlan';
+import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -314,6 +315,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
 
 function LastWorkout() {
   const last = useWorkoutStore((s) => s.workouts[0]);
+  const factor = useLoadFactor();
   if (!last) return null;
   const sets = last.exercises.reduce((n, e) => n + e.sets.filter((s) => s.completed).length, 0);
   return (
@@ -330,7 +332,7 @@ function LastWorkout() {
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text size={17} weight="black">
-            {formatThousands(tonnage(last))} kg
+            {formatThousands(tonnage(last, factor))} kg
           </Text>
           <Text size={13} color={colors.inkMuted}>
             soulevés

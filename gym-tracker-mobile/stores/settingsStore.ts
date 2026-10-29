@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   customExercises: [],
   exerciseNotes: {},
   plateLoaded: {},
+  countBothSides: false,
   signedOut: false,
 };
 

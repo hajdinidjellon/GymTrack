@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, plateColor } from '@/constants/theme';
+import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { countFr, formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
@@ -24,6 +25,7 @@ export default function Summary() {
   const workouts = useWorkoutStore((s) => s.workouts);
   const workout = workouts.find((w) => w.id === id);
   const ctx = useBuildContext();
+  const factor = useLoadFactor();
   const own = ctx?.settings.customExercises;
   const records = useMemo(() => (workout ? newRecords(workout, workouts, own) : []), [workout, workouts, own]);
 
@@ -49,7 +51,7 @@ export default function Summary() {
       </Screen>
     );
 
-  const lifted = tonnage(workout);
+  const lifted = tonnage(workout, factor);
   const plates = Math.round(lifted / 20);
   const sets = workout.exercises.reduce((n, e) => n + workingSets(e.sets).length, 0);
 
