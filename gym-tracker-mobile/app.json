@@ -16,7 +16,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFF6EC"
+        "backgroundColor": "#FF6B4A"
       },
       "package": "com.gymtrack.mobile",
       "permissions": ["android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]
