@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, plateColor } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
-import { formatThousands } from '@/domain/format';
+import { countFr, formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { findExerciseDef } from '@/domain/programs';
 import { workingSets } from '@/domain/progression';
@@ -106,7 +106,7 @@ export default function Summary() {
         {plates > 0 ? (
           <>
             <Text size={15} weight="bold" style={{ marginTop: 2 }}>
-              soit {formatThousands(plates)} disques de 20 kg
+              soit {countFr(plates, 'disque', formatThousands)} de 20 kg
             </Text>
             <PlatePile count={plates} />
           </>

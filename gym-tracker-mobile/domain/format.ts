@@ -45,6 +45,11 @@ export function formatRest(seconds: number): string {
   return rest ? `${Math.floor(s / 60)} min ${String(rest).padStart(2, '0')}` : `${s / 60} min`;
 }
 
+/** "1 série", "3 séries". French keeps 0 and 1 singular. */
+export function countFr(n: number, word: string, format: (n: number) => string = String): string {
+  return `${format(n)} ${n > 1 ? `${word}s` : word}`;
+}
+
 /** "a, b et c" */
 export function listFr(items: string[]): string {
   if (items.length <= 1) return items.join('');

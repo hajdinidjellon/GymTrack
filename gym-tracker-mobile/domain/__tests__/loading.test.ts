@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { loadHint, loadingOf, sidePlates } from '@/domain/loading';
+import { loadHint, loadingOf, missingPerSide, sidePlates } from '@/domain/loading';
 
 const gym = { barWeight: 20, plates: [20, 15, 10, 5, 2.5, 1.25] };
 
@@ -29,6 +29,16 @@ describe('loadHint', () => {
     expect(loadHint('bar', 20, gym)).toBe('Barre à vide');
     expect(loadHint('perSide', 25, gym)).toBe('De chaque côté : 20 + 5');
     expect(loadHint('perSide', 0, gym)).toBe('De chaque côté');
+  });
+
+  it('says what the gym plates cannot make, and a weight under the bar', () => {
+    const noSmall = { barWeight: 20, plates: [20, 10, 5, 2.5] };
+    expect(missingPerSide('bar', 62.5, noSmall)).toBe(1.25);
+    expect(loadHint('bar', 62.5, noSmall)).toBe('Par côté : 20 · il manque 1,25 kg par côté');
+    expect(loadHint('perSide', 26, noSmall)).toBe('De chaque côté : 20 + 5 · il manque 1 kg par côté');
+    expect(missingPerSide('bar', 15, noSmall)).toBe(0);
+    expect(missingPerSide('perHand', 13, noSmall)).toBe(0);
+    expect(loadHint('bar', 17.5, gym)).toBe('Plus léger que la barre (20 kg)');
   });
 
   it('says a dumbbell weight is per dumbbell, and nothing for a stack', () => {

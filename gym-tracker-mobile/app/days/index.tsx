@@ -19,8 +19,9 @@ import { ChevronRight } from '@/components/ui/icons';
 export default function DaysScreen() {
   const split = useProfileStore((s) => s.profile?.program.split);
   const customDays = useSettingsStore((s) => s.settings.customDays);
+  const own = useSettingsStore((s) => s.settings.customExercises);
   if (!split) return null;
-  const days = programDays(split, customDays);
+  const days = programDays(split, customDays, own);
 
   return (
     <Screen scroll>

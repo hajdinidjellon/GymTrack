@@ -4,7 +4,7 @@
  * il se repose sur chaque exercice, où il progresse le plus. Logique pure.
  */
 
-import { formatRest, listFr } from '@/domain/format';
+import { countFr, formatRest, listFr } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { allExercises } from '@/domain/programs';
 import { usualRest } from '@/domain/rest';
@@ -77,8 +77,8 @@ function rhythm(workouts: Workout[], perWeek: number, now: Date): Insight | null
   const planned = weeks * perWeek;
   const text =
     done >= planned
-      ? `${done} séances en ${weeks} semaines : tu tiens ton rythme de ${perWeek} par semaine.`
-      : `${done} séances sur ${planned} prévues ces ${weeks} dernières semaines.`;
+      ? `${countFr(done, 'séance')} en ${weeks} semaines : tu tiens ton rythme de ${perWeek} par semaine.`
+      : `${countFr(done, 'séance')} sur ${planned} prévues ces ${weeks} dernières semaines.`;
   return { id: 'rhythm', title: 'Ton rythme', text };
 }
 

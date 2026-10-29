@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { listFr } from '@/domain/format';
+import { countFr, listFr } from '@/domain/format';
 import { insights } from '@/domain/insights';
 import { workoutsToCsv } from '@/domain/exportCsv';
 import type { Exercise, Workout } from '@/types';
@@ -79,5 +79,14 @@ describe('workoutsToCsv', () => {
       '2026-10-09;18:00;"Push; lourd";"Développé ""couché""";1;20;10;oui;',
       '2026-10-09;18:00;"Push; lourd";"Développé ""couché""";2;62,5;8;non;120',
     ]);
+  });
+});
+
+describe('countFr', () => {
+  it('keeps 0 and 1 singular', () => {
+    expect(countFr(0, 'record')).toBe('0 record');
+    expect(countFr(1, 'série')).toBe('1 série');
+    expect(countFr(3, 'série')).toBe('3 séries');
+    expect(countFr(1200, 'disque', (n) => `~${n}`)).toBe('~1200 disques');
   });
 });

@@ -33,11 +33,12 @@ const EQUIPMENT_LABEL = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Mac
 export default function Preview() {
   const ctx = useBuildContext();
   const customDays = useSettingsStore((s) => s.settings.customDays);
+  const own = useSettingsStore((s) => s.settings.customExercises);
   const [dayName, setDayName] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
   const splitId = ctx?.profile.program.split;
-  const days = splitId ? programDays(splitId, customDays) : [];
+  const days = splitId ? programDays(splitId, customDays, own) : [];
   const today = ctx ? nextDay(ctx) : null;
   const day = days.find((d) => d.name === dayName) ?? today;
   const plan = ctx && day ? planDay(day, ctx) : null;

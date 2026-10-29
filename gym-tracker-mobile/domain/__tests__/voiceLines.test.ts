@@ -11,6 +11,9 @@ describe('voice lines', () => {
     expect(platesLine(cursor(), gym)).toBe('Mets 20 et 1,25 de chaque côté.');
     expect(platesLine(cursor(active('Squat', [{ weight: 30, reps: 5 }])), gym)).toBe('Mets 5 de chaque côté.');
     expect(platesLine(cursor(active('Squat', [{ weight: 20, reps: 5 }])), gym)).toBe('Barre à vide.');
+    expect(platesLine(cursor(), { barWeight: 20, plates: [20, 10, 5, 2.5] })).toBe(
+      'Mets 20 de chaque côté. Il manque 1,25 de chaque côté.',
+    );
   });
 
   it('says the plates of a plate-loaded machine, the weight being per side', () => {

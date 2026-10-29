@@ -21,11 +21,12 @@ export default function DayScreen() {
   const { name } = useLocalSearchParams<{ name: string }>();
   const profile = useProfileStore((s) => s.profile);
   const customDays = useSettingsStore((s) => s.settings.customDays);
+  const own = useSettingsStore((s) => s.settings.customExercises);
   const [dragging, setDragging] = useState(false);
   if (!profile) return null;
 
   const split = profile.program.split;
-  const day = programDays(split, customDays).find((d) => d.name === name);
+  const day = programDays(split, customDays, own).find((d) => d.name === name);
   if (!day) {
     return (
       <Screen>
