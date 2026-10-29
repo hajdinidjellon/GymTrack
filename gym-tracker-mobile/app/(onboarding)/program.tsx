@@ -11,6 +11,7 @@ import { StickerButton } from '@/components/ui/StickerButton';
 import { Choice } from '@/components/ui/Choice';
 import { StepHeader } from '@/components/ui/StepHeader';
 import type { Goal, SplitId } from '@/types';
+import { resetTo } from '@/components/navigation/resetTo';
 
 const PER_WEEK = [2, 3, 4, 5, 6];
 
@@ -34,8 +35,7 @@ export default function ProgramScreen() {
       bodyStats: profile?.bodyStats ?? [],
     });
     useSettingsStore.getState().updateSettings({ signedOut: false });
-    router.dismissAll();
-    router.replace('/(tabs)');
+    resetTo('/(tabs)');
   };
 
   return (
