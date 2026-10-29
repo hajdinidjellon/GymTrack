@@ -45,17 +45,38 @@ describe('CalibrationView', () => {
     expect(screen.getByText('Par haltère')).toBeTruthy();
   });
 
+  it('offers weights that fit the exercise', async () => {
+    await show(fresh({ name: 'Squat', equipment: 'barbell', muscleGroups: ['legs'] }));
+    expect(screen.getByLabelText('120 kilos')).toBeTruthy();
+    expect(screen.queryByLabelText('20 kilos')).toBeNull();
+  });
+
   it('says nothing more for a weight stack', async () => {
     await show(fresh({ name: 'Pec deck' }));
     expect(screen.queryByText(/côté|haltère/)).toBeNull();
   });
 
   it('never goes under the empty bar', async () => {
-    await show(fresh({ name: 'Squat', equipment: 'barbell' }));
+    await show(fresh({ name: 'Développé couché', equipment: 'barbell' }));
     await fireEvent.press(screen.getByLabelText('20 kilos'));
     await fireEvent.press(screen.getByLabelText('Moins 2,5 kg'));
     expect(screen.getByText('Barre à vide')).toBeTruthy();
     expect(screen.getByText('Commencer à 20 kg')).toBeTruthy();
+  });
+
+  it('takes any weight typed off the bar, even under one step', async () => {
+    await show(
+      fresh({ name: 'Écarté poulie', rule: { kind: 'double', sets: 2, repMin: 8, repMax: 12, increment: 5 } }),
+    );
+    const input = screen.getByLabelText('Charge de départ en kilos');
+    await fireEvent(input, 'focus');
+    await fireEvent.changeText(input, '2,9');
+    expect(screen.getByText('Commencer à 2,9 kg')).toBeTruthy();
+    await fireEvent(input, 'blur');
+    await fireEvent.press(screen.getByLabelText('Moins 5 kg'));
+    expect(screen.getByText('Commencer à 2,9 kg')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Plus 5 kg'));
+    expect(screen.getByText('Commencer à 7,9 kg')).toBeTruthy();
   });
 
   it('steps the weight with the round buttons', async () => {

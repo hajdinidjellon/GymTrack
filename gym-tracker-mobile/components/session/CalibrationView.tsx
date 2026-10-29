@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Keyboard, Pressable, View } from 'react-native';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
-import { loadingOf, type Loading } from '@/domain/loading';
+import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { calibrationPreset } from '@/domain/onboarding';
+import { nudge } from '@/domain/session';
+import { findExerciseDef } from '@/domain/programs';
+import { startPresets } from '@/domain/startWeights';
 import type { ActiveExercise } from '@/types';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useProfileStore } from '@/stores/profileStore';
@@ -17,24 +20,20 @@ import { useSidePlates } from '@/components/disc/LoadedBar';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { LoadHint } from './LoadHint';
 
-/** Starting weights to pick from: the whole bar, one side of the machine, one dumbbell, the stack. */
-const PRESETS: Record<Loading, number[]> = {
-  bar: [20, 30, 40, 50, 60, 80],
-  perSide: [10, 15, 20, 25, 30, 40],
-  perHand: [6, 8, 10, 12, 16, 20],
-  stack: [10, 20, 30, 40, 50, 60],
-};
-
 /** First time on an exercise: pick a starting weight, the engine takes over from there. */
 export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   const loading = loadingOf(exercise);
-  const presets = PRESETS[loading];
+  const customExercises = useSettingsStore((s) => s.settings.customExercises);
+  // Cable or Smith comes from the catalog; the rest is on the exercise itself
+  const gear = findExerciseDef(exercise.name, customExercises)?.gear;
+  const presets = startPresets({ ...exercise, gear });
   const experience = useProfileStore((s) => s.profile?.experience);
   const barWeight = useSettingsStore((s) => s.settings.barWeight);
   const [weight, setWeight] = useState(() => calibrationPreset(presets, experience) ?? 20);
   const setStartWeight = useSessionStore((s) => s.setStartWeight);
   const step = exercise.rule?.increment ?? 2.5;
-  const min = loading === 'bar' ? barWeight : step;
+  // Any weight goes, down to the empty bar; off the bar, anything above zero (a 2,9 kg cable)
+  const allowed = (w: number) => (loading === 'bar' ? w >= barWeight : w > 0);
   const perSide = useSidePlates(loading, weight);
 
   const pick = (w: number) => {
@@ -86,11 +85,14 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
           <Stepper
             value={formatKg(weight)}
             unit="kg"
-            onMinus={() => pick(Math.max(min, weight - step))}
-            onPlus={() => pick(weight + step)}
+            onMinus={() => pick(allowed(nudge(weight, -step)) ? nudge(weight, -step) : weight)}
+            onPlus={() => pick(nudge(weight, step))}
             minusLabel={`Moins ${formatKg(step)} kg`}
             plusLabel={`Plus ${formatKg(step)} kg`}
-            onChange={(typed) => setWeight(Math.max(min, typed))}
+            onChange={(typed) => {
+              if (allowed(typed)) setWeight(typed);
+              else if (loading === 'bar') setWeight(barWeight);
+            }}
             inputLabel="Charge de départ en kilos"
           />
           <LoadHint loading={loading} weight={weight} />
