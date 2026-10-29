@@ -13,10 +13,12 @@ import {
 } from '@/domain/progression';
 import { formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
+import { trainedOn, validSchedule, weekdayIndex } from '@/domain/schedule';
 import {
   defaultIncrementFor,
   isPlateLoaded,
   findExerciseDef,
+  getSplit,
   programDays,
   ruleFor,
   withOverride,
@@ -86,9 +88,28 @@ export function exerciseHistory(
   return out.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-/** The day after the last one done, in program order. */
+/**
+ * What the week says about today: a session, rest, already trained, or no week set
+ * (then the program days simply follow each other).
+ */
+export type TodayStatus = { kind: 'free' } | { kind: 'train'; name: string } | { kind: 'rest' } | { kind: 'done' };
+
+export function todayStatus(ctx: BuildContext): TodayStatus {
+  const names = getSplit(ctx.profile.program.split).days.map((d) => d.name);
+  const schedule = validSchedule(ctx.profile.program.schedule, names);
+  if (!schedule) return { kind: 'free' };
+  const now = ctx.now ?? new Date();
+  if (trainedOn(ctx.workouts, now)) return { kind: 'done' };
+  const name = schedule[weekdayIndex(now)];
+  return name ? { kind: 'train', name } : { kind: 'rest' };
+}
+
+/** Today's session from the week, else the day after the last one done, in program order. */
 export function nextDay(ctx: BuildContext): ProgramDay {
   const days = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
+  const status = todayStatus(ctx);
+  const planned = status.kind === 'train' ? days.find((d) => d.name === status.name) : undefined;
+  if (planned) return planned;
   const last = [...ctx.workouts]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .find((w) => days.some((d) => d.name === w.name));

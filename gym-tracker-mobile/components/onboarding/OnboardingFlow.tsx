@@ -210,7 +210,7 @@ function RhythmStep({ answers, set }: StepProps) {
           })}
         </View>
         <Text size={14} color={colors.inkMuted} style={{ lineHeight: 20 }}>
-          {weekLegend(answers.perWeek)}. Les jours sont un exemple : tu viens quand tu veux, on suit l'ordre.
+          {weekLegend(answers.perWeek)}. Les jours sont un exemple : tu choisiras les tiens dans Profil, Programme.
         </Text>
       </StickerCard>
       <Tip tip={rhythmTip(answers.perWeek)} />

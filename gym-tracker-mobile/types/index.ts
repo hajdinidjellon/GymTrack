@@ -107,6 +107,8 @@ export type Experience = 'new' | 'months' | 'years';
 export interface Program {
   split: SplitId;
   perWeek: number;
+  /** The session of each day from Monday, null for rest. Without it, the program days follow each other. */
+  schedule?: (string | null)[];
 }
 
 export interface UserProfile {
