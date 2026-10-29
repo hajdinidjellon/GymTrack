@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, fonts, hardShadow, radius } from '@/constants/theme';
-import { isSupabaseConfigured, signInWithEmail } from '@/services/supabase';
+import { contactEmailError, loginEmail, normalizeUsername, passwordError, usernameError } from '@/domain/account';
+import { isSupabaseConfigured, signInWithEmail, signUp } from '@/services/supabase';
 import { initialSync } from '@/services/sync';
 import { useProfileStore } from '@/stores/profileStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -13,9 +14,19 @@ import { StickerButton } from '@/components/ui/StickerButton';
 import { BackButton } from '@/components/ui/BackButton';
 import { resetTo } from '@/components/navigation/resetTo';
 
+type Mode = 'signin' | 'signup';
+
+const SIGNUP_ERRORS = {
+  taken: 'Ce pseudo est déjà pris.',
+  confirm: 'Le compte attend une confirmation par mail : désactive « Confirm email » dans Supabase.',
+  other: 'Impossible de créer le compte. Vérifie ta connexion et réessaie.',
+} as const;
+
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [mode, setMode] = useState<Mode>('signin');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -30,19 +41,46 @@ export default function Login() {
     resetTo('/(tabs)');
   };
 
-  const signIn = async () => {
+  const signingUp = mode === 'signup';
+
+  const switchMode = () => {
+    setMode(signingUp ? 'signin' : 'signup');
+    setError(null);
+  };
+
+  const submit = async () => {
     if (!isSupabaseConfigured()) {
       setError("La synchro cloud n'est pas configurée sur cette version.");
       return;
     }
+    if (signingUp) {
+      const invalid = usernameError(identifier) ?? passwordError(password) ?? contactEmailError(contactEmail);
+      if (invalid) {
+        setError(invalid);
+        return;
+      }
+    }
     setBusy(true);
     setError(null);
-    const { ok } = await signInWithEmail(email.trim(), password);
-    if (!ok) {
-      setBusy(false);
-      setError('Email ou mot de passe incorrect.');
-      return;
+    if (signingUp) {
+      const result = await signUp(loginEmail(identifier), password, {
+        username: normalizeUsername(identifier),
+        contactEmail: contactEmail.trim() || undefined,
+      });
+      if (!result.ok) {
+        setBusy(false);
+        setError(SIGNUP_ERRORS[result.reason]);
+        return;
+      }
+    } else {
+      const { ok } = await signInWithEmail(loginEmail(identifier), password);
+      if (!ok) {
+        setBusy(false);
+        setError('Pseudo ou mot de passe incorrect.');
+        return;
+      }
     }
+    // À l'inscription, ça envoie les séances déjà faites sur ce téléphone
     await initialSync().catch(() => null);
     await Promise.all([useWorkoutStore.getState().loadWorkouts(), useProfileStore.getState().loadProfile()]);
     setBusy(false);
@@ -52,12 +90,13 @@ export default function Login() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Screen
+        scroll
         footer={
           <>
             <StickerButton
-              label={busy ? 'Connexion…' : 'Se connecter'}
-              onPress={signIn}
-              disabled={busy || !email || !password}
+              label={busy ? (signingUp ? 'Création…' : 'Connexion…') : signingUp ? 'Créer mon compte' : 'Se connecter'}
+              onPress={submit}
+              disabled={busy || !identifier.trim() || !password}
             />
             <StickerButton label="Continuer sans compte" variant="ghost" size="small" onPress={goOn} />
           </>
@@ -65,20 +104,49 @@ export default function Login() {
       >
         <BackButton />
         <Text size={52} weight="black" style={{ marginTop: 20, lineHeight: 58 }}>
-          Re-bonjour.
+          {signingUp ? 'Ton compte.' : 'Re-bonjour.'}
         </Text>
         <Text size={19} color={colors.inkMuted} style={{ marginTop: 12 }}>
-          Ta barre est restée chargée là où tu l'as laissée.
+          {signingUp
+            ? 'Tes séances sauvegardées, et retrouvées sur un autre téléphone.'
+            : "Ta barre est restée chargée là où tu l'as laissée."}
         </Text>
 
         <View style={{ gap: 18, marginTop: 34 }}>
-          <Field label="Email" value={email} onChangeText={setEmail} placeholder="toi@exemple.com" email />
-          <Field label="Mot de passe" value={password} onChangeText={setPassword} placeholder="••••••••" secure />
+          <Field
+            label="Pseudo"
+            value={identifier}
+            onChangeText={setIdentifier}
+            placeholder="poseidon"
+            kind="username"
+          />
+          <Field
+            label="Mot de passe"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="••••••••"
+            kind={signingUp ? 'newPassword' : 'password'}
+          />
+          {signingUp ? (
+            <Field
+              label="Email (facultatif)"
+              value={contactEmail}
+              onChangeText={setContactEmail}
+              placeholder="toi@exemple.com"
+              kind="email"
+            />
+          ) : null}
           {error ? (
             <Text size={16} weight="bold" color={colors.danger} accessibilityLiveRegion="polite">
               {error}
             </Text>
           ) : null}
+          <StickerButton
+            label={signingUp ? "J'ai déjà un compte" : 'Pas de compte ? Créer un compte'}
+            variant="ghost"
+            size="small"
+            onPress={switchMode}
+          />
         </View>
       </Screen>
     </KeyboardAvoidingView>
@@ -90,11 +158,17 @@ interface FieldProps {
   value: string;
   onChangeText: (v: string) => void;
   placeholder: string;
-  email?: boolean;
-  secure?: boolean;
+  kind: 'username' | 'password' | 'newPassword' | 'email';
 }
 
-function Field({ label, value, onChangeText, placeholder, email, secure }: FieldProps) {
+const CONTENT_TYPE = {
+  username: 'username',
+  password: 'password',
+  newPassword: 'newPassword',
+  email: 'emailAddress',
+} as const;
+
+function Field({ label, value, onChangeText, placeholder, kind }: FieldProps) {
   return (
     <View style={{ gap: 8 }}>
       <Text size={15} weight="bold">
@@ -110,9 +184,9 @@ function Field({ label, value, onChangeText, placeholder, email, secure }: Field
           accessibilityLabel={label}
           autoCapitalize="none"
           autoCorrect={false}
-          keyboardType={email ? 'email-address' : 'default'}
-          textContentType={email ? 'emailAddress' : 'password'}
-          secureTextEntry={secure}
+          keyboardType={kind === 'email' ? 'email-address' : 'default'}
+          textContentType={CONTENT_TYPE[kind]}
+          secureTextEntry={kind === 'password' || kind === 'newPassword'}
           style={{
             height: 60,
             borderRadius: radius.input,
