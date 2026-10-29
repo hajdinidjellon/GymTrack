@@ -248,6 +248,14 @@ export function targetLabel(targets: SetTarget[]): string {
   return first.weight > 0 ? `${base} · ${formatKg(first.weight)} kg` : base;
 }
 
+/** Today's target as it is read in the gym: "62,5 kg × 10", or "12 reps" without weight. */
+export function targetLoad(targets: SetTarget[]): string {
+  const first = targets[0];
+  if (!first) return '';
+  const reps = Math.min(...targets.map((t) => t.reps));
+  return first.weight > 0 ? `${formatKg(first.weight)} kg × ${reps}` : `${reps} reps`;
+}
+
 /** Weight lifted on validated working sets. */
 export function tonnage(workout: Workout): number {
   return workout.exercises.reduce(

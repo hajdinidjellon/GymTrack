@@ -149,7 +149,10 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
             <MiniPlates perSide={perSide} />
           </View>
         ) : (
-          <Chip label={calibrate ? 'Régler' : EQUIPMENT_LABEL[lift.def.equipment]} />
+          // Chip sticks to the top of a row on its own: the wrapper centres it
+          <View>
+            <Chip label={calibrate ? 'Régler' : EQUIPMENT_LABEL[lift.def.equipment]} />
+          </View>
         )}
         <Pressable
           onPress={onRemove}

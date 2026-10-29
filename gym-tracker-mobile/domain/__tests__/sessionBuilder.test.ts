@@ -10,6 +10,7 @@ import {
   planLift,
   reasonLabel,
   targetLabel,
+  targetLoad,
   tonnage,
   weightHistory,
   toActiveExercise,
@@ -75,6 +76,8 @@ describe('planLift', () => {
     const p = planLift(EXERCISES.dips, ctx());
     expect(p.decision).toBe('start');
     expect(targetLabel(p.targets)).toBe('3 × 8');
+    expect(targetLoad(p.targets)).toBe('8 reps');
+    expect(targetLoad([])).toBe('');
   });
 
   it('starts from a PR when there is one', () => {
@@ -95,6 +98,7 @@ describe('planLift', () => {
     );
     expect(p.decision).toBe('add_reps');
     expect(targetLabel(p.targets)).toBe('3 × 10 · 62,5 kg');
+    expect(targetLoad(p.targets)).toBe('62,5 kg × 10');
   });
 
   it('uses the increment chosen by the user', () => {
