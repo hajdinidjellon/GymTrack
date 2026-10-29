@@ -35,6 +35,25 @@ export async function signInWithEmail(email: string, password: string): Promise<
   return { ok: !error };
 }
 
+export type SignUpResult = { ok: true } | { ok: false; reason: 'taken' | 'confirm' | 'other' };
+
+/** `email` is the sign-in address; the contact email, if any, is kept in the user's metadata. */
+export async function signUp(
+  email: string,
+  password: string,
+  meta: { username: string; contactEmail?: string },
+): Promise<SignUpResult> {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { username: meta.username, contact_email: meta.contactEmail ?? null } },
+  });
+  if (error) return { ok: false, reason: error.code === 'user_already_exists' ? 'taken' : 'other' };
+  // Sans session, Supabase attend une confirmation par mail : impossible avec un pseudo
+  if (!data.session) return { ok: false, reason: 'confirm' };
+  return { ok: true };
+}
+
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
