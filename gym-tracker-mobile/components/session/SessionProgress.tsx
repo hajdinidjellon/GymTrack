@@ -1,25 +1,51 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 import { border, colors } from '@/constants/theme';
 import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { Check } from '@/components/ui/icons';
 
-/** One round pill per exercise: done in green, the current one circled in coral, the rest dashed. */
-export function SessionProgress({ exercises, current }: { exercises: ActiveExercise[]; current: number }) {
-  const done = exercises.reduce((n, e) => n + e.sets.filter((s) => s.completed).length, 0);
-  const total = exercises.reduce((n, e) => n + e.sets.length, 0);
+interface Props {
+  exercises: ActiveExercise[];
+  current: number;
+  /** A waiting pill was tapped: its machine just freed up. */
+  onPick: (exerciseId: string) => void;
+}
+
+type PillState = 'finished' | 'current' | 'waiting';
+
+/** Finished: green. Current: bigger, coral. Waiting: dashed, solid while pressed. */
+function pillStyle(state: PillState, pressed: boolean): ViewStyle {
+  const size = state === 'current' ? 34 : 28;
+  const solid = state !== 'waiting' || pressed;
+  return {
+    width: size,
+    height: size,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: {
+      finished: colors.success,
+      current: colors.coral,
+      waiting: pressed ? colors.coralSoft : 'transparent',
+    }[state],
+    borderWidth: state === 'current' ? border.strong : 2,
+    borderColor: solid ? colors.ink : colors.line,
+    borderStyle: solid ? 'solid' : 'dashed',
+  };
+}
+
+/**
+ * One round pill per exercise: done in green, the current one circled in coral,
+ * the rest dashed. A dashed pill is a button: tap it to do that exercise now.
+ */
+export function SessionProgress({ exercises, current, onPick }: Props) {
   return (
-    <View
-      accessible
-      accessibilityRole="progressbar"
-      accessibilityLabel={`Exercice ${current + 1} sur ${exercises.length}`}
-      accessibilityValue={{ min: 0, max: total, now: done }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-    >
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       {exercises.map((e, i) => {
         const finished = e.sets.length > 0 && e.sets.every((s) => s.completed);
         const now = i === current;
+        const waiting = !finished && !now;
         return (
           <React.Fragment key={e.id}>
             {i > 0 ? (
@@ -32,18 +58,15 @@ export function SessionProgress({ exercises, current }: { exercises: ActiveExerc
                 }}
               />
             ) : null}
-            <View
-              style={{
-                width: now ? 34 : 28,
-                height: now ? 34 : 28,
-                borderRadius: 17,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: finished ? colors.success : now ? colors.coral : 'transparent',
-                borderWidth: now ? border.strong : 2,
-                borderColor: finished || now ? colors.ink : colors.line,
-                borderStyle: finished || now ? 'solid' : 'dashed',
-              }}
+            <Pressable
+              disabled={!waiting}
+              onPress={() => onPick(e.id)}
+              hitSlop={8}
+              accessibilityRole={waiting ? 'button' : 'text'}
+              accessibilityLabel={
+                waiting ? `Faire ${e.name} maintenant` : `${e.name}, ${finished ? 'terminé' : 'en cours'}`
+              }
+              style={({ pressed }) => pillStyle(finished ? 'finished' : now ? 'current' : 'waiting', pressed)}
             >
               {finished ? (
                 <Check size={15} />
@@ -52,7 +75,7 @@ export function SessionProgress({ exercises, current }: { exercises: ActiveExerc
                   {i + 1}
                 </Text>
               )}
-            </View>
+            </Pressable>
           </React.Fragment>
         );
       })}
