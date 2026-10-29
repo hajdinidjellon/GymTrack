@@ -167,6 +167,7 @@ export default function SessionScreen() {
               total={session.restDuration ?? 90}
               doneLabel={doneExercise ? `Série ${last.setIndex + 1} validée` : undefined}
               note={doneExercise?.restNote}
+              doneExerciseId={last?.exerciseId}
               onMinimize={() => setMinimized(true)}
             />
           ) : null}

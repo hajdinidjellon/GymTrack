@@ -64,6 +64,22 @@ describe('RestView', () => {
     expect(easy).not.toBeChecked();
   });
 
+  it('says only the set number when the same exercise goes on', async () => {
+    const s = session();
+    await render(
+      <RestView next={findCurrent(s.exercises)} restEndsAt={s.restEndsAt!} total={120} doneExerciseId="squat" />,
+    );
+    expect(screen.getByText('Ensuite · série 2')).toBeOnTheScreen();
+  });
+
+  it('names the next exercise when it differs from the one just done', async () => {
+    const s = session();
+    await render(
+      <RestView next={findCurrent(s.exercises)} restEndsAt={s.restEndsAt!} total={120} doneExerciseId="bench" />,
+    );
+    expect(screen.getByText('Ensuite · Squat, série 2')).toBeOnTheScreen();
+  });
+
   it('asks how it felt only right after a set', async () => {
     const s = session();
     await render(<RestView next={findCurrent(s.exercises)} restEndsAt={s.restEndsAt!} total={120} />);

@@ -51,7 +51,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
           </Text>
           <Text size={17} color={colors.inkMuted} style={{ marginTop: 6, lineHeight: 23 }}>
             Objectif {target}
-            {weight > 0 ? ` à ${formatKg(weight)} kg` : ''}. Pas grave : on garde la même charge la prochaine fois.
+            {weight > 0 ? ` à ${formatKg(weight)} kg` : ''}. Pas grave : la prochaine séance en tient compte.
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
             {options.map((n) => {

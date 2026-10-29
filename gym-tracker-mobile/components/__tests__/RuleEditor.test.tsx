@@ -14,6 +14,14 @@ describe('RuleEditor', () => {
     expect(screen.queryByRole('button', { name: /Revenir/ })).toBeNull();
   });
 
+  it('promises no added weight on a bodyweight exercise', async () => {
+    await render(
+      <RuleEditor rule={base} base={base} custom={false} bodyweight onChange={jest.fn()} onReset={jest.fn()} />,
+    );
+    expect(screen.getByText(/sans plafond/)).toBeOnTheScreen();
+    expect(screen.queryByText(/ajoute du poids/)).toBeNull();
+  });
+
   it('does nothing at a limit', async () => {
     const onChange = jest.fn();
     const rule = { sets: 1, repMin: 8, repMax: 8 };

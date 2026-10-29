@@ -176,7 +176,9 @@ export default function Progress() {
                     {formatShortDay(r.date)} · {r.reps} reps
                   </Text>
                 </View>
-                <Chip tone="sun" label={`${formatKg(r.weight)} kg`} />
+                <View>
+                  <Chip tone="sun" label={`${formatKg(r.weight)} kg`} />
+                </View>
               </View>
             ))}
           </StickerCard>
@@ -202,7 +204,8 @@ export default function Progress() {
                       {l.name}
                     </Text>
                     <Text size={13} color={colors.inkMuted}>
-                      {formatKg(l.last.weight)} kg · {diff > 0 ? `+${formatKg(diff)} kg` : 'stable'}
+                      {formatKg(l.last.weight)} kg ·{' '}
+                      {diff > 0 ? `+${formatKg(diff)} kg` : diff < 0 ? `−${formatKg(-diff)} kg` : 'stable'}
                     </Text>
                   </View>
                   <View style={{ width: 72 }}>

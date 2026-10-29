@@ -211,7 +211,7 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
               <Text size={14} weight="bold" color={colors.inkMuted}>
                 Sur la barre en premier
               </Text>
-              <Chip tone="success" label={deltaLabel(featured)} />
+              <Chip tone={isProgress(featured.decision) ? 'success' : 'neutral'} label={deltaLabel(featured)} />
             </View>
             <View style={{ height: 96, justifyContent: 'center', marginTop: 4 }}>
               <Barbell perSide={perSide} scale={0.85} barWidth={90} />

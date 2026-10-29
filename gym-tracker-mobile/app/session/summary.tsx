@@ -36,7 +36,7 @@ export default function Summary() {
       const lift = planLift(def, ctx);
       const label =
         lift.decision === 'add_weight' && def.equipment === 'barbell'
-          ? `+${formatKg(lift.rule.increment / 2)} / côté`
+          ? `+${formatKg(lift.rule.increment / 2)} kg / côté`
           : deltaLabel(lift);
       return [{ name: def.name, label }];
     });
@@ -143,7 +143,9 @@ export default function Summary() {
                 <Text size={16} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
                   {n.name}
                 </Text>
-                <Chip tone={n.label.startsWith('+') ? 'success' : 'neutral'} label={n.label} />
+                <View>
+                  <Chip tone={n.label.startsWith('+') ? 'success' : 'neutral'} label={n.label} />
+                </View>
               </View>
             ))}
           </StickerCard>

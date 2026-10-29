@@ -60,6 +60,16 @@ describe('sets', () => {
     expect(s.lastCompleted).toEqual({ exerciseId: 'bench', setIndex: 0 });
   });
 
+  it('keeps the target reps after a missed set, but carries its weight', () => {
+    const planned = active('bench', [
+      { weight: 60, reps: 10 },
+      { weight: 60, reps: 10 },
+    ]);
+    planned.sets = planned.sets.map((set) => ({ ...set, target: { weight: 60, reps: 10 } }));
+    const missed = Session.updateSet(session([planned]), 'bench', 0, { weight: 62.5, reps: 6 });
+    expect(Session.completeSet(missed, 'bench', 0).exercises[0]!.sets[1]).toMatchObject({ weight: 62.5, reps: 10 });
+  });
+
   it('carries the weight and reps really done over to the next sets', () => {
     const changed = Session.updateSet(session([bench()]), 'bench', 0, { weight: 100, reps: 8 });
     const s = Session.completeSet(changed, 'bench', 0);

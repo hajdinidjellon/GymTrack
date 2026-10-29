@@ -77,7 +77,7 @@ export function SetView({ cursor, footer }: Props) {
           >
             {set.weight > 0 ? (
               <Text size={14} weight="black">
-                Pourquoi {formatKg(set.weight)} kg ?
+                Pourquoi {formatKg(set.target?.weight ?? set.weight)} kg ?
               </Text>
             ) : null}
             <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>

@@ -11,12 +11,14 @@ interface Props {
   /** The goal's rule: shown when the user changed it, with a way back. */
   base: RuleOverride;
   custom: boolean;
+  /** No weight to add: the reps climb with no ceiling. */
+  bodyweight?: boolean;
   onChange: (rule: RuleOverride) => void;
   onReset: () => void;
 }
 
 /** Sets and rep range of an exercise, each with − and + buttons. */
-export function RuleEditor({ rule, base, custom, onChange, onReset }: Props) {
+export function RuleEditor({ rule, base, custom, bodyweight, onChange, onReset }: Props) {
   const change = (patch: Partial<RuleOverride>) => {
     const next = clampRule({ ...rule, ...patch });
     if (next.sets === rule.sets && next.repMin === rule.repMin && next.repMax === rule.repMax) return;
@@ -30,7 +32,9 @@ export function RuleEditor({ rule, base, custom, onChange, onReset }: Props) {
       <Line label="Reps mini" value={rule.repMin} onChange={(n) => change({ repMin: n })} />
       <Line label="Reps maxi" value={rule.repMax} onChange={(n) => change({ repMax: n })} />
       <Text size={13} color={colors.inkMuted} style={{ lineHeight: 18 }}>
-        Tu montes d'une rep par séance jusqu'à {rule.repMax}, puis on ajoute du poids et tu repars à {rule.repMin}.
+        {bodyweight
+          ? `Tu commences à ${rule.repMin} reps, puis une rep de plus à chaque séance réussie, sans plafond.`
+          : `Tu montes d'une rep par séance jusqu'à ${rule.repMax}, puis on ajoute du poids et tu repars à ${rule.repMin}.`}
       </Text>
       {custom ? (
         <Pressable onPress={onReset} accessibilityRole="button" hitSlop={8} style={{ alignSelf: 'flex-start' }}>
