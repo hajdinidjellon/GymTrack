@@ -44,7 +44,7 @@
       [
         "expo-widgets",
         {
-          "groupIdentifier": "group.com.gymtrack.mobile"
+          "groupIdentifier": "group.com.hajdinidjellon.gymtrack"
         }
       ]
     ],
