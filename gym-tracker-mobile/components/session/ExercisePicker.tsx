@@ -151,27 +151,30 @@ export function ExercisePicker({
           </Text>
           {!creating ? (
             <View style={{ paddingHorizontal: 24 }}>
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Chercher : hack squat, smith, convergent…"
-                placeholderTextColor={colors.inkFaint}
-                returnKeyType="search"
-                autoCorrect={false}
-                accessibilityLabel="Chercher un exercice"
-                style={{
-                  marginTop: space.md,
-                  height: 52,
-                  paddingHorizontal: 16,
-                  borderRadius: radius.row,
-                  borderWidth: border.base,
-                  borderColor: colors.ink,
-                  backgroundColor: colors.card,
-                  fontFamily: fonts.bold,
-                  fontSize: 16,
-                  color: colors.ink,
-                }}
-              />
+              {/* Marge sur un cadre : sur iOS, une marge sur le TextInput décale son texte vers le bas */}
+              <View style={{ marginTop: space.md }}>
+                <TextInput
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder="Chercher : hack squat, smith, convergent…"
+                  placeholderTextColor={colors.inkFaint}
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  accessibilityLabel="Chercher un exercice"
+                  style={{
+                    height: 52,
+                    paddingHorizontal: 16,
+                    paddingVertical: 0,
+                    borderRadius: radius.row,
+                    borderWidth: border.base,
+                    borderColor: colors.ink,
+                    backgroundColor: colors.card,
+                    fontFamily: fonts.bold,
+                    fontSize: 16,
+                    color: colors.ink,
+                  }}
+                />
+              </View>
               {!query.trim() ? (
                 <View
                   accessibilityRole="tablist"

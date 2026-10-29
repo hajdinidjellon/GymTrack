@@ -74,6 +74,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
           style={{
             height: 54,
             paddingHorizontal: 16,
+            paddingVertical: 0,
             borderRadius: radius.row,
             borderWidth: border.base,
             borderColor: error ? colors.coral : colors.ink,
