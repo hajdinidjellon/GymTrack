@@ -3,6 +3,8 @@ import { Alert, Modal, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '@/constants/theme';
+import { useLocale } from '@/hooks/useLocale';
+import { dayName, exerciseName, t } from '@/i18n';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -32,14 +34,11 @@ async function finish() {
 }
 
 function confirmFinish(left: number) {
-  const message =
-    left > 0
-      ? `Il reste ${left} série${left > 1 ? 's' : ''}. Les séries déjà validées sont enregistrées.`
-      : 'Les séries validées sont enregistrées.';
-  Alert.alert('Terminer la séance ?', message, [
-    { text: 'Continuer', style: 'cancel' },
+  const message = left > 0 ? t('session.logger.finishLeft', { count: left }) : t('session.logger.finishNoneLeft');
+  Alert.alert(t('session.logger.finishTitle'), message, [
+    { text: t('common.continue'), style: 'cancel' },
     {
-      text: 'Abandonner',
+      text: t('session.logger.abandon'),
       style: 'destructive',
       onPress: () => {
         leaving = true;
@@ -47,11 +46,12 @@ function confirmFinish(left: number) {
         router.dismissTo('/(tabs)');
       },
     },
-    { text: 'Terminer', onPress: () => void finish() },
+    { text: t('session.logger.finish'), onPress: () => void finish() },
   ]);
 }
 
 export default function SessionScreen() {
+  useLocale();
   const session = useSessionStore((s) => s.activeSession);
   const insets = useSafeAreaInsets();
   const cursor = session ? findCurrent(session.exercises) : null;
@@ -95,14 +95,15 @@ export default function SessionScreen() {
     <Screen style={{ paddingBottom: Math.max(insets.bottom, space.lg) + space.sm }}>
       <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text size={16} weight="black" numberOfLines={1} style={{ flex: 1 }}>
-          {session.name}
+          {dayName(session.name)}
           <Text size={15} weight="bold" color={colors.inkMuted}>
-            {'  '}· exercice {exerciseIndex + 1} sur {session.exercises.length}
+            {'  '}
+            {t('session.logger.exerciseOf', { n: exerciseIndex + 1, total: session.exercises.length })}
           </Text>
         </Text>
         <Pressable onPress={() => confirmFinish(left)} accessibilityRole="button" hitSlop={12}>
           <Text size={16} weight="black" style={{ textDecorationLine: 'underline' }}>
-            Terminer
+            {t('session.logger.finish')}
           </Text>
         </Pressable>
       </View>
@@ -119,7 +120,7 @@ export default function SessionScreen() {
 
       <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
         <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 34 }}>
-          {exercise.name}
+          {exerciseName(exercise.name)}
         </Text>
         <SwapExercise exercise={exercise} sessionName={session.name} />
       </View>
@@ -137,7 +138,10 @@ export default function SessionScreen() {
           }}
         >
           <Text size={14} weight="black">
-            {resting ? 'Prochaine série' : 'Série'} {setIndex + 1} sur {exercise.sets.length}
+            {t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', {
+              n: setIndex + 1,
+              total: exercise.sets.length,
+            })}
           </Text>
         </View>
         <DoLater exercise={exercise} />
@@ -158,14 +162,14 @@ export default function SessionScreen() {
           <Pressable
             style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
             onPress={() => setMinimized(true)}
-            accessibilityLabel="Réduire le minuteur"
+            accessibilityLabel={t('session.rest.minimizeA11y')}
           />
           {resting ? (
             <RestView
               next={cursor}
               restEndsAt={session.restEndsAt!}
               total={session.restDuration ?? 90}
-              doneLabel={doneExercise ? `Série ${last.setIndex + 1} validée` : undefined}
+              doneLabel={doneExercise ? t('session.logger.setDone', { n: last.setIndex + 1 }) : undefined}
               note={doneExercise?.restNote}
               doneExerciseId={last?.exerciseId}
               onMinimize={() => setMinimized(true)}

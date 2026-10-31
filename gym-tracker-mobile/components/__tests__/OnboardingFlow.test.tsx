@@ -1,6 +1,7 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { setLocale } from '@/i18n';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
 async function setup() {
@@ -79,5 +80,25 @@ describe('OnboardingFlow', () => {
     expect(screen.getByText('Tu viens pour quoi ?')).toBeOnTheScreen();
     await tap('Retour');
     expect(onExit).toHaveBeenCalled();
+  });
+
+  describe('in English', () => {
+    afterEach(() => setLocale('fr'));
+
+    it('asks the questions and shows the recap in English', async () => {
+      setLocale('en');
+      await setup();
+      expect(screen.getByText('What are you here for?')).toBeOnTheScreen();
+      expect(screen.getByLabelText('Question 1 of 4')).toBeOnTheScreen();
+
+      await tap('Continue');
+      expect(screen.getByText('How many sessions a week?')).toBeOnTheScreen();
+      expect(screen.getByRole('radio', { name: '3 sessions a week' })).toBeSelected();
+
+      await tap('Skip');
+      expect(screen.getByText(/Your program/)).toBeOnTheScreen();
+      expect(screen.getByText('3 × a week')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'See my first session' })).toBeOnTheScreen();
+    });
   });
 });

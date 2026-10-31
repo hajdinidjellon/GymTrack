@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
-import { countFr, formatDay, formatShortDay, formatThousands } from '@/domain/format';
+import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
   breakLabel,
@@ -24,6 +24,8 @@ import { weekStreak, workoutsThisWeek } from '@/domain/week';
 import { getSplit, programDays, type ProgramDay } from '@/domain/programs';
 import { nextScheduled, validSchedule, whenLabel } from '@/domain/schedule';
 import { useBuildContext } from '@/hooks/useTodayPlan';
+import { useLocale } from '@/hooks/useLocale';
+import { dayName, exerciseName, t } from '@/i18n';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -50,16 +52,17 @@ function start(plan: PlannedDay) {
 }
 
 export default function Today() {
+  useLocale();
   const ctx = useBuildContext();
   const workouts = useWorkoutStore((s) => s.workouts);
   // A day picked by hand holds until the next saved session, then the program leads again
   const [choice, setChoice] = useState<{ name: string; after: number } | null>(null);
-  const dayName = choice?.after === workouts.length ? choice.name : null;
+  const picked = choice?.after === workouts.length ? choice.name : null;
   const { days, today, plan, off } = useMemo(() => {
     if (!ctx) return { days: [], today: null, plan: null, off: null };
     const list = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
     const next = nextDay(ctx);
-    const day = list.find((d) => d.name === dayName) ?? next;
+    const day = list.find((d) => d.name === picked) ?? next;
     const status = todayStatus(ctx);
     const resting = status.kind === 'rest' || status.kind === 'done';
     return {
@@ -67,9 +70,9 @@ export default function Today() {
       // Un jour sans séance prévue, aucune n'est « du jour »
       today: resting ? null : next,
       plan: planDay(day, ctx),
-      off: resting && !dayName ? status.kind : null,
+      off: resting && !picked ? status.kind : null,
     };
-  }, [ctx, dayName]);
+  }, [ctx, picked]);
   const active = useSessionStore((s) => s.activeSession);
   const running = !!active;
   const perWeek = useProfileStore((s) => s.profile?.program.perWeek ?? 3);
@@ -82,21 +85,21 @@ export default function Today() {
       footer={
         running ? (
           <StickerButton
-            label="Reprendre la séance"
+            label={t('home.resume')}
             testID="resume-session"
             haptic="medium"
             onPress={() => router.push('/session')}
           />
         ) : plan && !off && plan.lifts.length > 0 ? (
-          <StickerButton label="Lancer la séance" testID="start-session" haptic="medium" onPress={() => start(plan)} />
+          <StickerButton label={t('home.start')} testID="start-session" haptic="medium" onPress={() => start(plan)} />
         ) : null
       }
     >
       <FadeIn>
         <ScreenHeader
           eyebrow={formatDay(new Date())}
-          title="Aujourd'hui"
-          right={streak > 1 ? <Chip tone="sun" label={`${streak} sem. d'affilée`} /> : undefined}
+          title={t('home.title')}
+          right={streak > 1 ? <Chip tone="sun" label={t('home.streak', { count: streak })} /> : undefined}
         />
       </FadeIn>
       <FadeIn index={1}>
@@ -139,13 +142,11 @@ function WeekCard() {
 
   return (
     <>
-      <SectionTitle title="Cette semaine" first />
+      <SectionTitle title={t('home.week.title')} first />
       <StickerCard style={{ gap: space.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm }}>
           <Text size={15} weight="bold" style={{ flex: 1 }}>
-            {left === 0
-              ? 'Objectif de la semaine atteint'
-              : `Encore ${left} séance${left > 1 ? 's' : ''} cette semaine`}
+            {left === 0 ? t('home.week.reached') : t('home.week.left', { count: left })}
           </Text>
           <Chip tone={left === 0 ? 'success' : 'neutral'} label={`${done}/${perWeek}`} />
         </View>
@@ -173,7 +174,7 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
 
   return (
     <>
-      <SectionTitle title={plan.name === today ? 'Séance du jour' : 'Séance choisie'} />
+      <SectionTitle title={plan.name === today ? t('home.today.planned') : t('home.today.chosen')} />
       {days.length > 1 ? <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} /> : null}
       <StickerCard tone="hero" style={{ paddingTop: 18, paddingBottom: 8 }}>
         <View style={{ position: 'absolute', top: 14, right: 16 }}>
@@ -186,12 +187,12 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
           adjustsFontSizeToFit
           style={{ lineHeight: 44, marginRight: 36 }}
         >
-          {plan.name}
+          {dayName(plan.name)}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
-          <Chip label={countFr(plan.lifts.length, 'exercice')} />
-          <Chip label={countFr(sets, 'série')} />
-          <Chip label={`~${plan.minutes} min`} />
+          <Chip label={t('common.exercises', { count: plan.lifts.length })} />
+          <Chip label={t('common.sets', { count: sets })} />
+          <Chip label={t('home.today.minutes', { n: plan.minutes })} />
         </View>
         {daysOff > 0 ? (
           <View
@@ -206,10 +207,10 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
             }}
           >
             <Text size={14} weight="black">
-              Content de te revoir !
+              {t('home.today.welcomeBack')}
             </Text>
             <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
-              Après {breakLabel(daysOff)} de pause, on reprend un peu plus léger. Ça remonte vite.
+              {t('home.today.comeback', { pause: breakLabel(daysOff) })}
             </Text>
           </View>
         ) : null}
@@ -228,7 +229,7 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text size={14} weight="bold" color={colors.inkMuted}>
-                Sur la barre en premier
+                {t('home.today.firstOnBar')}
               </Text>
               <Chip tone={isProgress(featured.decision) ? 'success' : 'neutral'} label={deltaLabel(featured)} />
             </View>
@@ -239,24 +240,24 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
               style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.sm }}
             >
               <Text size={16} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
-                {featured.def.name}
+                {exerciseName(featured.def.name)}
               </Text>
               <Text size={22} weight="black">
                 {formatKg(target.weight)}
                 <Text size={14} weight="bold" color={colors.inkMuted}>
                   {' '}
-                  kg × {target.reps}
+                  {t('home.today.kgTimesReps', { reps: target.reps })}
                 </Text>
               </Text>
             </View>
             <Text size={14} color={colors.inkMuted} style={{ marginTop: 2 }}>
-              {perSide.length ? `${describeSide(perSide)} de chaque côté` : 'Barre à vide'}
+              {perSide.length ? t('home.today.perSide', { plates: describeSide(perSide) }) : t('home.today.emptyBar')}
             </Text>
           </View>
         ) : plan.lifts.length === 0 ? (
           <View style={{ marginTop: space.md, gap: space.sm }}>
             <Text size={15} color={colors.ink} style={{ lineHeight: 21 }}>
-              Aucun exercice dans cette séance pour l'instant.
+              {t('home.today.noExercises')}
             </Text>
             <Pressable
               onPress={() => router.push({ pathname: '/days/[name]', params: { name: plan.name } })}
@@ -265,13 +266,13 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
               style={{ alignSelf: 'flex-start', paddingBottom: space.sm }}
             >
               <Text size={15} weight="black" style={{ textDecorationLine: 'underline' }}>
-                Ajouter des exercices
+                {t('home.today.addExercises')}
               </Text>
             </Pressable>
           </View>
         ) : plan.lifts.every((l) => l.decision === 'calibrate') ? (
           <Text size={15} color={colors.ink} style={{ marginTop: space.md, lineHeight: 21 }}>
-            Première séance : tu choisiras ta charge de départ sur chaque exercice, ensuite on calcule tout.
+            {t('home.today.firstSession')}
           </Text>
         ) : null}
 
@@ -289,13 +290,18 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
 function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; last: boolean }) {
   const calibrate = lift.decision === 'calibrate';
   const progress = isProgress(lift.decision);
-  const sets = countFr(lift.targets.length, 'série');
+  const sets = t('common.sets', { count: lift.targets.length });
+  const name = exerciseName(lift.def.name);
   return (
     <PressableScale
       onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: lift.def.name } })}
       haptic="selection"
       accessibilityRole="button"
-      accessibilityLabel={`${lift.def.name}, ${calibrate ? 'charge à choisir' : targetLabel(lift.targets)}`}
+      accessibilityLabel={
+        calibrate
+          ? t('home.lift.a11yToChoose', { name })
+          : t('home.lift.a11y', { name, target: targetLabel(lift.targets) })
+      }
       style={{
         paddingVertical: space.md + 2,
         flexDirection: 'row',
@@ -308,12 +314,12 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       <IndexBadge value={index + 1} />
       <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
         <Text size={17} weight="black" numberOfLines={2} style={{ lineHeight: 21 }}>
-          {lift.def.name}
+          {name}
         </Text>
         {/* Today's target, then what changed: the badge sits right after it, not at the edge */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 }}>
           <Text size={16} weight="black">
-            {calibrate ? 'Charge à choisir' : targetLoad(lift.targets)}
+            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets)}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
             {sets}
@@ -322,7 +328,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         </View>
         {lift.last.length ? (
           <Text size={13} color={colors.inkMuted} numberOfLines={1}>
-            Dernière fois : {lastTimeLabel(lift.last)}
+            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last) })}
           </Text>
         ) : null}
       </View>
@@ -338,22 +344,26 @@ function LastWorkout() {
   const sets = last.exercises.reduce((n, e) => n + e.sets.filter((s) => s.completed).length, 0);
   return (
     <>
-      <SectionTitle title="Dernière séance" />
+      <SectionTitle title={t('home.last.title')} />
       <StickerCard style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View>
           <Text size={17} weight="black">
-            {last.name}
+            {dayName(last.name)}
           </Text>
           <Text size={13} color={colors.inkMuted}>
-            {formatShortDay(last.date)} · {countFr(sets, 'série')} · {last.duration ?? 0} min
+            {t('home.last.meta', {
+              date: formatShortDay(last.date),
+              sets: t('common.sets', { count: sets }),
+              minutes: last.duration ?? 0,
+            })}
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
           <Text size={17} weight="black">
-            {formatThousands(tonnage(last, factor))} kg
+            {formatThousands(tonnage(last, factor))} {t('common.kg')}
           </Text>
           <Text size={13} color={colors.inkMuted}>
-            soulevés
+            {t('home.last.lifted')}
           </Text>
         </View>
       </StickerCard>
@@ -375,24 +385,18 @@ function RestCard({ done, days, onChoose }: { done: boolean; days: ProgramDay[];
 
   return (
     <>
-      <SectionTitle title="Séance du jour" />
+      <SectionTitle title={t('home.today.planned')} />
       <StickerCard tone="hero" style={{ gap: space.sm }}>
         <Text size={34} weight="black" style={{ lineHeight: 40 }}>
-          {done ? 'Séance faite' : "Repos aujourd'hui"}
+          {done ? t('home.rest.done') : t('home.rest.off')}
         </Text>
         <Text size={16} weight="semibold" color={colors.inkMuted} style={{ lineHeight: 22 }}>
-          {done ? 'Bien joué. ' : 'Tes muscles récupèrent, ça fait partie du programme. '}
-          {next ? `Prochaine séance : ${next.name}, ${whenLabel(next.inDays, now)}.` : ''}
+          {done ? t('home.rest.wellDone') : t('home.rest.recovering')}
+          {next ? ` ${t('home.rest.next', { name: dayName(next.name), when: whenLabel(next.inDays, now) })}` : ''}
         </Text>
       </StickerCard>
       <View style={{ marginTop: space.md }}>
-        <DayPicker
-          days={days}
-          current={null}
-          today={null}
-          label="Envie de t'entraîner quand même ? Choisis ta séance"
-          onChoose={onChoose}
-        />
+        <DayPicker days={days} current={null} today={null} label={t('home.rest.pickAnyway')} onChoose={onChoose} />
       </View>
     </>
   );
@@ -403,7 +407,7 @@ function DayPicker({
   days,
   current,
   today,
-  label = "Envie d'autre chose ? Choisis ta séance",
+  label = t('home.picker.label'),
   onChoose,
 }: {
   days: ProgramDay[];
@@ -430,7 +434,9 @@ function DayPicker({
               }}
               accessibilityRole="radio"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`Séance ${d.name}${planned ? ', prévue aujourd’hui' : ''}`}
+              accessibilityLabel={t(planned ? 'home.picker.a11yPlanned' : 'home.picker.a11y', {
+                name: dayName(d.name),
+              })}
               style={{
                 // Equal widths on one row; a long program wraps onto a second one
                 flexGrow: 1,
@@ -447,11 +453,11 @@ function DayPicker({
               }}
             >
               <Text size={16} weight="black" numberOfLines={1} color={on ? colors.ink : colors.inkMuted}>
-                {d.name}
+                {dayName(d.name)}
               </Text>
               {planned ? (
                 <Text size={12} weight="bold" color={colors.inkMuted}>
-                  prévue
+                  {t('home.picker.planned')}
                 </Text>
               ) : null}
             </Pressable>

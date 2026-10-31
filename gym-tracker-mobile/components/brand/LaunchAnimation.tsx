@@ -11,6 +11,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { colors, plateColor } from '@/constants/theme';
+import { t } from '@/i18n';
 import { Text } from '@/components/ui/Text';
 
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -85,7 +86,7 @@ export function LaunchAnimation({ ready, onDone }: Props) {
     <Animated.View
       pointerEvents="none"
       accessible
-      accessibilityLabel="GymTrack, chargement"
+      accessibilityLabel={t('onboarding.launch.loading')}
       style={[
         StyleSheet.absoluteFill,
         { backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center' },

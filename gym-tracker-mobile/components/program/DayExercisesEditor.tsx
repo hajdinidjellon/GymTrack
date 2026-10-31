@@ -8,6 +8,7 @@ import type { SplitId } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { DraggableList } from '@/components/ui/DraggableList';
 import { ExercisePicker } from '@/components/session/ExercisePicker';
+import { dayName, t } from '@/i18n';
 
 interface Props<T> {
   split: SplitId;
@@ -47,7 +48,7 @@ export function DayExercisesEditor<T>({ split, day, items, keyOf, renderRow, onD
       <Pressable
         onPress={() => setAdding(true)}
         accessibilityRole="button"
-        accessibilityLabel="Ajouter un exercice"
+        accessibilityLabel={t('program.editor.add')}
         style={({ pressed }) => ({
           height: 56,
           borderRadius: radius.row,
@@ -59,14 +60,12 @@ export function DayExercisesEditor<T>({ split, day, items, keyOf, renderRow, onD
         })}
       >
         <Text size={16} weight="bold" color={colors.inkMuted}>
-          + Ajouter un exercice
+          {t('program.editor.addButton')}
         </Text>
       </Pressable>
       <Text size={13} color={colors.inkFaint} align="center">
-        {items.length > 1 ? 'Maintiens un exercice puis glisse-le pour changer l’ordre. ' : ''}
-        {custom
-          ? `Tes exercices pour ${day.name} sont enregistrés pour les prochaines fois.`
-          : `Ajoute, retire ou déplace des exercices : ils seront gardés pour tes prochaines séances ${day.name}.`}
+        {items.length > 1 ? t('program.editor.dragHint') : ''}
+        {t(custom ? 'program.editor.saved' : 'program.editor.howTo', { day: dayName(day.name) })}
       </Text>
       {custom ? (
         <Pressable
@@ -76,7 +75,7 @@ export function DayExercisesEditor<T>({ split, day, items, keyOf, renderRow, onD
           style={{ alignSelf: 'center' }}
         >
           <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
-            Revenir aux exercices du programme
+            {t('program.editor.reset')}
           </Text>
         </Pressable>
       ) : null}

@@ -6,6 +6,7 @@ import { formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import type { WeekVolume } from '@/domain/stats';
 import { Text } from '@/components/ui/Text';
+import { t } from '@/i18n';
 
 const HEIGHT = 120;
 
@@ -17,11 +18,17 @@ export function VolumeChart({ weeks }: { weeks: WeekVolume[] }) {
   const bar = width ? (width - gap * (weeks.length - 1)) / weeks.length : 0;
   const bestIndex = weeks.reduce((best, w, i) => (w.tonnage > (weeks[best]?.tonnage ?? 0) ? i : best), 0);
   const label = weeks
-    .map((w) => `semaine du ${w.start.getDate()}/${w.start.getMonth() + 1} : ${formatThousands(w.tonnage)} kg`)
+    .map((w) =>
+      t('progress.stats.chart.week', {
+        day: w.start.getDate(),
+        month: w.start.getMonth() + 1,
+        kg: formatThousands(w.tonnage),
+      }),
+    )
     .join(', ');
 
   return (
-    <View accessible accessibilityLabel={`Volume par semaine. ${label}`}>
+    <View accessible accessibilityLabel={t('progress.stats.chart.a11y', { weeks: label })}>
       <View onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)} style={{ height: HEIGHT }}>
         {width ? (
           <Svg width={width} height={HEIGHT}>
@@ -58,16 +65,16 @@ export function VolumeChart({ weeks }: { weeks: WeekVolume[] }) {
               top: HEIGHT - Math.max(8, (weeks[bestIndex]!.tonnage / max) * (HEIGHT - 24)) - 20,
             }}
           >
-            {formatKg(Math.round(weeks[bestIndex]!.tonnage / 100) / 10)} t
+            {t('progress.stats.chart.tons', { tons: formatKg(Math.round(weeks[bestIndex]!.tonnage / 100) / 10) })}
           </Text>
         ) : null}
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
         <Text size={13} color={colors.inkFaint}>
-          il y a {weeks.length - 1} sem.
+          {t('progress.stats.chart.weeksAgo', { count: weeks.length - 1 })}
         </Text>
         <Text size={13} weight="bold">
-          cette semaine
+          {t('progress.stats.chart.thisWeek')}
         </Text>
       </View>
     </View>

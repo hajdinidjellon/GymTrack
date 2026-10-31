@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, plateColor, radius, space } from '@/constants/theme';
+import { t } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
@@ -13,15 +15,16 @@ import { Barbell } from '@/components/disc/Barbell';
 const PREVIEW_HEIGHT = 200;
 
 export default function Welcome() {
+  useLocale();
   const [roomy, setRoomy] = useState(false);
   return (
     <Screen
       background={<BigPlate />}
       footer={
         <>
-          <StickerButton label="C'est parti" onPress={() => router.push('/setup')} />
+          <StickerButton label={t('onboarding.welcome.start')} onPress={() => router.push('/setup')} />
           <StickerButton
-            label="J'ai déjà un compte"
+            label={t('onboarding.welcome.haveAccount')}
             variant="ghost"
             size="small"
             onPress={() => router.push('/login')}
@@ -68,13 +71,13 @@ export default function Welcome() {
       </View>
 
       <Text size={60} weight="black" style={{ lineHeight: 64 }}>
-        Tu charges.{'\n'}On calcule.
+        {t('onboarding.welcome.slogan')}
       </Text>
       <Text size={19} color={colors.inkMuted} style={{ marginTop: 16, lineHeight: 27 }}>
-        Dis-nous comment tu t'entraînes : on prépare tes séances, les charges et les disques à mettre.
+        {t('onboarding.welcome.pitch')}
       </Text>
       <View style={{ marginTop: 18, marginBottom: 30 }}>
-        <Chip label="4 questions · 30 secondes" tone="sun" />
+        <Chip label={t('onboarding.welcome.chip')} tone="sun" />
       </View>
     </Screen>
   );
@@ -85,7 +88,7 @@ function PreviewCard() {
   return (
     <View
       accessible
-      accessibilityLabel="Exemple : squat, 80 kilos pour 5 reps, 20 et 10 de chaque côté"
+      accessibilityLabel={t('onboarding.welcome.previewLabel')}
       style={{
         width: 236,
         padding: space.md,
@@ -99,27 +102,27 @@ function PreviewCard() {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text size={13} weight="bold" color={colors.inkMuted}>
-          Séance du jour · Legs
+          {t('onboarding.welcome.previewDay')}
         </Text>
-        <Chip tone="success" label="+2,5 kg" />
+        <Chip tone="success" label={t('onboarding.welcome.previewGain')} />
       </View>
       <View style={{ height: 70, justifyContent: 'center' }}>
         <Barbell perSide={[20, 10]} scale={0.62} barWidth={70} />
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <Text size={17} weight="black">
-          Squat
+          {t('onboarding.welcome.previewLift')}
         </Text>
         <Text size={22} weight="black">
           80
           <Text size={13} weight="bold" color={colors.inkMuted}>
             {' '}
-            kg × 5
+            {t('common.kg')} × 5
           </Text>
         </Text>
       </View>
       <Text size={13} color={colors.inkMuted}>
-        Par côté : 20 + 10
+        {t('onboarding.welcome.previewPlates')}
       </Text>
     </View>
   );

@@ -3,6 +3,8 @@ import { View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors } from '@/constants/theme';
 import { GOALS } from '@/domain/programs';
+import { t } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -13,6 +15,7 @@ import { Barbell } from '@/components/disc/Barbell';
 import type { Goal } from '@/types';
 
 export default function GoalScreen() {
+  useLocale();
   const { edit } = useLocalSearchParams<{ edit?: string }>();
   const profile = useProfileStore((s) => s.profile);
   const [goal, setGoal] = useState<Goal>(profile?.goal ?? 'muscle');
@@ -27,13 +30,13 @@ export default function GoalScreen() {
   };
 
   return (
-    <Screen footer={<StickerButton label={edit ? 'Enregistrer' : 'Continuer'} onPress={next} />}>
+    <Screen footer={<StickerButton label={edit ? t('common.save') : t('common.continue')} onPress={next} />}>
       <StepHeader step={edit ? undefined : 1} total={edit ? undefined : 2} />
       <Text size={48} weight="black" style={{ marginTop: 26, lineHeight: 54 }}>
-        Ton objectif ?
+        {t('onboarding.goal.title')}
       </Text>
       <Text size={18} color={colors.inkMuted} style={{ marginTop: 10 }}>
-        On règle tes séries et tes reps en fonction.
+        {t('onboarding.goal.subtitle')}
       </Text>
 
       <View accessibilityRole="radiogroup" style={{ gap: 12, marginTop: 28 }}>

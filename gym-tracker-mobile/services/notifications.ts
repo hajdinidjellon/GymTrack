@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { t } from '@/i18n';
 
 /**
  * Notifications locales — fin du repos quand l'app est en arrière-plan.
@@ -48,7 +49,12 @@ export async function scheduleRestCompleteNotification(seconds: number, body: st
     await Notifications.cancelScheduledNotificationAsync(REST_COMPLETE_ID).catch(() => null);
     await Notifications.scheduleNotificationAsync({
       identifier: REST_COMPLETE_ID,
-      content: { title: 'Repos terminé', body, sound: 'default', data: { type: 'rest-complete' } },
+      content: {
+        title: t('domain.notifications.restOverTitle'),
+        body,
+        sound: 'default',
+        data: { type: 'rest-complete' },
+      },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds,

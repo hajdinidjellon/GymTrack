@@ -6,6 +6,7 @@
 import { describeSide, formatKg, loadBar, platesForSide } from '@/domain/plates';
 import { findExerciseDef, isPlateLoaded } from '@/domain/programs';
 import type { LoadFactor } from '@/domain/sessionBuilder';
+import { t } from '@/i18n';
 import type { ActiveExercise, AppSettings } from '@/types';
 
 export type Loading = 'bar' | 'perSide' | 'perHand' | 'stack';
@@ -20,8 +21,12 @@ export function loadingOf(exercise: Pick<ActiveExercise, 'equipment' | 'plateLoa
 /** Said right after the weight: "40 kg de chaque côté". */
 export const LOADING_SUFFIX: Record<Loading, string | null> = {
   bar: null,
-  perSide: 'de chaque côté',
-  perHand: 'par haltère',
+  get perSide() {
+    return t('domain.load.suffixPerSide');
+  },
+  get perHand() {
+    return t('domain.load.suffixPerHand');
+  },
   stack: null,
 };
 
@@ -56,15 +61,19 @@ export function loadHint(
   const plates = sidePlates(loading, weight, gym);
   const missing = missingPerSide(loading, weight, gym);
   // Never silent: the drawn plates would not add up to the weight shown
-  const gap = missing > 0 ? ` · il manque ${formatKg(missing)} kg par côté` : '';
+  const gap = missing > 0 ? ` · ${t('domain.load.missing', { kg: formatKg(missing) })}` : '';
   switch (loading) {
     case 'bar':
-      if (weight > 0 && weight < gym.barWeight) return `Plus léger que la barre (${formatKg(gym.barWeight)} kg)`;
-      return plates.length ? `Par côté : ${describeSide(plates)}${gap}` : 'Barre à vide';
+      if (weight > 0 && weight < gym.barWeight) return t('domain.load.lighterThanBar', { kg: formatKg(gym.barWeight) });
+      return plates.length
+        ? `${t('domain.load.perSide', { plates: describeSide(plates) })}${gap}`
+        : t('domain.load.emptyBar');
     case 'perSide':
-      return plates.length ? `De chaque côté : ${describeSide(plates)}${gap}` : 'De chaque côté';
+      return plates.length
+        ? `${t('domain.load.eachSide', { plates: describeSide(plates) })}${gap}`
+        : t('domain.load.eachSideAlone');
     case 'perHand':
-      return 'Par haltère';
+      return t('domain.load.perHand');
     case 'stack':
       return null;
   }

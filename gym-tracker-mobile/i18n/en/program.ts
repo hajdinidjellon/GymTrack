@@ -1,3 +1,61 @@
 import type { Dictionary } from '@/i18n/fr';
 
-export const program: Dictionary['program'] = {};
+export const program: Dictionary['program'] = {
+  equipment: {
+    barbell: 'Barbell',
+    dumbbell: 'Dumbbells',
+    machine: 'Machine',
+    bodyweight: 'Bodyweight',
+  },
+  kind: {
+    compound: 'Several muscles',
+    isolation: 'One muscle',
+  },
+  create: {
+    name: 'Name',
+    namePlaceholder: 'E.g. Pec deck, Preacher curl…',
+    nameA11y: 'Exercise name',
+    muscle: 'Where does it go? (muscle worked)',
+    equipment: 'Equipment',
+    kind: 'Type of movement',
+    hint: 'The equipment sets the weight step and the plates, the type of movement sets the rest time.',
+    submit: 'Create the exercise',
+    back: 'Back to the list',
+  },
+  editor: {
+    add: 'Add an exercise',
+    addButton: '+ Add an exercise',
+    dragHint: 'Hold an exercise, then drag it to reorder. ',
+    saved: 'Your exercises for {day} are saved for next time.',
+    howTo: 'Add, remove or move exercises: they’ll be kept for your next {day} sessions.',
+    reset: 'Back to the program’s exercises',
+  },
+  rule: {
+    sets: 'Sets',
+    repMin: 'Min reps',
+    repMax: 'Max reps',
+    minus: '{label}: minus one',
+    plus: '{label}: plus one',
+    value: '{label}: {value}',
+    bodyweight: 'You start at {min} reps, then one more rep each successful session, no ceiling.',
+    weighted: 'You add one rep per session up to {max}, then we add weight and you go back to {min}.',
+    reset: 'Back to {sets} × {min}–{max} (your goal)',
+    similar: 'Same for similar exercises',
+  },
+  days: {
+    title: 'My sessions',
+    subtitle: 'Pick the exercises of each session and their order. We work out the rest.',
+    editA11y: 'Edit the {day} session, {exercises}',
+    custom: 'Custom',
+    empty: 'No exercises yet',
+    changeProgram: 'To switch programs (Push · Pull · Legs, Upper · Lower…), go to Profile → Program.',
+  },
+  day: {
+    notFound: 'Session not found.',
+    subtitle: 'Tap an exercise to set its sets, reps and the weight added at each step.',
+    rowA11y: '{name}, {sets} of {min} to {max} reps',
+    rowDetail: '{equipment} · {sets} × {min}–{max}',
+    custom: ' · custom',
+    remove: 'Remove {name}',
+  },
+};

@@ -1,12 +1,14 @@
 import React from 'react';
 import { router } from 'expo-router';
 import { splitFor, type OnboardingAnswers } from '@/domain/onboarding';
+import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { OnboardingFlow, type FlowEnd } from '@/components/onboarding/OnboardingFlow';
 import { resetTo } from '@/components/navigation/resetTo';
 
 export default function Setup() {
+  useLocale();
   const finish = async (answers: OnboardingAnswers, end: FlowEnd) => {
     const profile = useProfileStore.getState().profile;
     useSettingsStore.getState().updateSettings({

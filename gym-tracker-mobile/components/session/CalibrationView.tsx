@@ -19,6 +19,7 @@ import { Barbell } from '@/components/disc/Barbell';
 import { useSidePlates } from '@/components/disc/LoadedBar';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { LoadHint } from './LoadHint';
+import { t } from '@/i18n';
 
 /** First time on an exercise: pick a starting weight, the engine takes over from there. */
 export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
@@ -57,11 +58,10 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
         }}
       >
         <Text size={15} weight="black">
-          Première fois
+          {t('session.calibration.firstTime')}
         </Text>
         <Text size={15} weight="semibold">
-          {loading === 'bar' ? 'Charge ta barre de départ.' : 'Choisis ta charge de départ.'} Ensuite, on s'occupe de
-          tout.
+          {t(loading === 'bar' ? 'session.calibration.startBar' : 'session.calibration.startOther')}
         </Text>
       </View>
 
@@ -89,13 +89,13 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
             unit="kg"
             onMinus={() => pick(allowed(nudge(weight, -step)) ? nudge(weight, -step) : weight)}
             onPlus={() => pick(nudge(weight, step))}
-            minusLabel={`Moins ${formatKg(step)} kg`}
-            plusLabel={`Plus ${formatKg(step)} kg`}
+            minusLabel={t('session.weightMinus', { kg: formatKg(step) })}
+            plusLabel={t('session.weightPlus', { kg: formatKg(step) })}
             onChange={(typed) => {
               if (allowed(typed)) setWeight(typed);
               else if (loading === 'bar') setWeight(barWeight);
             }}
-            inputLabel="Charge de départ en kilos"
+            inputLabel={t('session.calibration.inputLabel')}
           />
           <LoadHint loading={loading} weight={weight} />
         </StickerCard>
@@ -109,7 +109,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
                 onPress={() => pick(v)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`${v} kilos`}
+                accessibilityLabel={t('session.calibration.presetA11y', { kg: v })}
                 style={{
                   // Three per row: 30 % plus the gaps leaves no room for a fourth
                   flexBasis: '30%',
@@ -134,7 +134,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
       </View>
 
       <StickerButton
-        label={`Commencer à ${formatKg(weight)} kg`}
+        label={t('session.calibration.start', { kg: formatKg(weight) })}
         onPress={() => {
           Keyboard.dismiss();
           setStartWeight(exercise.id, weight);

@@ -6,13 +6,29 @@ import * as Haptics from 'expo-haptics';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 import { BarIcon, ProfileIcon, ProgressIcon } from '@/components/ui/icons';
+import { t } from '@/i18n';
 
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 export const TABS: Record<string, { label: string; Icon: typeof BarIcon }> = {
-  index: { label: "Aujourd'hui", Icon: BarIcon },
-  progress: { label: 'Progrès', Icon: ProgressIcon },
-  profile: { label: 'Profil', Icon: ProfileIcon },
+  index: {
+    get label() {
+      return t('home.tabs.today');
+    },
+    Icon: BarIcon,
+  },
+  progress: {
+    get label() {
+      return t('home.tabs.progress');
+    },
+    Icon: ProgressIcon,
+  },
+  profile: {
+    get label() {
+      return t('home.tabs.profile');
+    },
+    Icon: ProfileIcon,
+  },
 };
 
 /**

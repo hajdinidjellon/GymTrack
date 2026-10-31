@@ -8,18 +8,10 @@ import type { Equipment, ExerciseCategory, MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { buzz } from '@/components/ui/PressableScale';
+import { t } from '@/i18n';
 
-const EQUIPMENTS: { id: Equipment; label: string }[] = [
-  { id: 'barbell', label: 'Barre' },
-  { id: 'dumbbell', label: 'Haltères' },
-  { id: 'machine', label: 'Machine' },
-  { id: 'bodyweight', label: 'Poids du corps' },
-];
-
-const KINDS: { id: ExerciseCategory; label: string }[] = [
-  { id: 'compound', label: 'Plusieurs muscles' },
-  { id: 'isolation', label: 'Un seul muscle' },
-];
+const EQUIPMENTS: Equipment[] = ['barbell', 'dumbbell', 'machine', 'bodyweight'];
+const KINDS = ['compound', 'isolation'] as const satisfies readonly ExerciseCategory[];
 
 interface Props {
   /** Pre-selected muscle, e.g. the one of the exercise being swapped. */
@@ -57,7 +49,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
     <View style={{ gap: space.md, marginTop: space.lg }}>
       <View style={{ gap: 6 }}>
         <Text size={14} weight="bold" color={colors.inkMuted}>
-          Nom
+          {t('program.create.name')}
         </Text>
         <TextInput
           value={name}
@@ -65,12 +57,12 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
             setName(text);
             setError(null);
           }}
-          placeholder="Ex. Pec deck, Curl pupitre…"
+          placeholder={t('program.create.namePlaceholder')}
           placeholderTextColor={colors.inkFaint}
           maxLength={NAME_MAX}
           autoFocus={!initialName}
           returnKeyType="done"
-          accessibilityLabel="Nom de l'exercice"
+          accessibilityLabel={t('program.create.nameA11y')}
           style={{
             height: 54,
             paddingHorizontal: 16,
@@ -92,20 +84,30 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
       </View>
 
       <Options
-        label="Où le ranger ? (muscle travaillé)"
+        label={t('program.create.muscle')}
         options={MUSCLE_CHOICES.map((id) => ({ id, label: MUSCLE_LABELS[id] }))}
         value={muscle}
         onChange={setMuscle}
       />
-      <Options label="Matériel" options={EQUIPMENTS} value={equipment} onChange={setEquipment} />
-      <Options label="Type de mouvement" options={KINDS} value={category} onChange={setCategory} />
+      <Options
+        label={t('program.create.equipment')}
+        options={EQUIPMENTS.map((id) => ({ id, label: t(`program.equipment.${id}`) }))}
+        value={equipment}
+        onChange={setEquipment}
+      />
+      <Options
+        label={t('program.create.kind')}
+        options={KINDS.map((id) => ({ id, label: t(`program.kind.${id}`) }))}
+        value={category}
+        onChange={setCategory}
+      />
       <Text size={13} color={colors.inkMuted} style={{ lineHeight: 18 }}>
-        Le matériel décide du pas de charge et des disques, le type de mouvement du temps de repos.
+        {t('program.create.hint')}
       </Text>
 
       <View style={{ gap: space.sm }}>
-        <StickerButton label="Créer l'exercice" size="small" onPress={save} />
-        <StickerButton label="Retour à la liste" variant="secondary" size="small" onPress={onCancel} />
+        <StickerButton label={t('program.create.submit')} size="small" onPress={save} />
+        <StickerButton label={t('program.create.back')} variant="secondary" size="small" onPress={onCancel} />
       </View>
     </View>
   );

@@ -1,22 +1,25 @@
+import { getLocale, listOf, localeTag, t, type TKey } from '@/i18n';
+
 /** "Mardi 21 oct." */
 export function formatDay(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const text = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' });
+  const text = d.toLocaleDateString(localeTag(), { weekday: 'long', day: 'numeric', month: 'short' });
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** "Mar. 14 oct." */
 export function formatShortDay(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const text = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  const text = d.toLocaleDateString(localeTag(), { weekday: 'short', day: 'numeric', month: 'short' });
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/** "4 800" with a thin space, the French way. */
+/** "4 800" with a thin space, the French way; "4,800" in English. */
 export function formatThousands(n: number): string {
+  const separator = getLocale() === 'fr' ? ' ' : ',';
   return Math.round(n)
     .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    .replace(/\B(?=(\d{3})+(?!\d))/g, separator);
 }
 
 /**
@@ -40,9 +43,11 @@ export function formatClock(seconds: number): string {
 /** "45 s", "2 min", "2 min 30" for a rest. */
 export function formatRest(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));
-  if (s < 60) return `${s} s`;
+  if (s < 60) return t('domain.format.seconds', { s });
   const rest = s % 60;
-  return rest ? `${Math.floor(s / 60)} min ${String(rest).padStart(2, '0')}` : `${s / 60} min`;
+  return rest
+    ? t('domain.format.minutesSeconds', { m: Math.floor(s / 60), s: String(rest).padStart(2, '0') })
+    : t('domain.format.minutes', { m: s / 60 });
 }
 
 /** "1 série", "3 séries". French keeps 0 and 1 singular. */
@@ -50,8 +55,17 @@ export function countFr(n: number, word: string, format: (n: number) => string =
   return `${format(n)} ${n > 1 ? `${word}s` : word}`;
 }
 
-/** "a, b et c" */
+/** "a, b et c", "a, b and c" in English. */
 export function listFr(items: string[]): string {
-  if (items.length <= 1) return items.join('');
-  return `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`;
+  return listOf(items);
+}
+
+/**
+ * A list of display texts that follows the language: each item is read when
+ * it is used, so a module-level constant does not freeze the French.
+ */
+export function translatedList(keys: readonly TKey[]): string[] {
+  const list: string[] = [];
+  keys.forEach((key, i) => Object.defineProperty(list, i, { get: () => t(key), enumerable: true }));
+  return list;
 }

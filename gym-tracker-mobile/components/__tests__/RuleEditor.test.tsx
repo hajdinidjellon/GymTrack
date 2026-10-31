@@ -1,6 +1,7 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { setLocale } from '@/i18n';
 import { RuleEditor } from '@/components/program/RuleEditor';
 
 const base = { sets: 3, repMin: 8, repMax: 12 };
@@ -38,5 +39,22 @@ describe('RuleEditor', () => {
     await render(<RuleEditor rule={{ ...base, sets: 5 }} base={base} custom onChange={jest.fn()} onReset={onReset} />);
     await fireEvent.press(screen.getByRole('button', { name: /Revenir à 3 × 8–12/ }));
     expect(onReset).toHaveBeenCalled();
+  });
+
+  describe('in English', () => {
+    afterEach(() => setLocale('fr'));
+
+    it('labels the buttons and explains the climb', async () => {
+      setLocale('en');
+      const onReset = jest.fn();
+      await render(
+        <RuleEditor rule={{ ...base, sets: 5 }} base={base} custom onChange={jest.fn()} onReset={onReset} />,
+      );
+      expect(screen.getByRole('button', { name: 'Sets: plus one' })).toBeOnTheScreen();
+      expect(screen.getByLabelText('Min reps: 8')).toBeOnTheScreen();
+      expect(screen.getByText(/up to 12, then we add weight and you go back to 8/)).toBeOnTheScreen();
+      await fireEvent.press(screen.getByRole('button', { name: 'Back to 3 × 8–12 (your goal)' }));
+      expect(onReset).toHaveBeenCalled();
+    });
   });
 });

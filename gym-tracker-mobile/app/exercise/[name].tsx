@@ -30,12 +30,13 @@ import { SharedRuleEditor } from '@/components/program/SharedRuleEditor';
 import { ExerciseNote } from '@/components/session/ExerciseNote';
 import { LoadHint } from '@/components/session/LoadHint';
 import { CheckRow } from '@/components/ui/CheckRow';
+import { exerciseName, t } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 
 const STEPS = [1, 2, 2.5, 5];
 
-const EQUIPMENT = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Machine', bodyweight: 'Poids du corps' };
-
 export default function ExerciseScreen() {
+  useLocale();
   const { name } = useLocalSearchParams<{ name: string }>();
   const ctx = useBuildContext();
   const def = findExerciseDef(name ?? '', ctx?.settings.customExercises);
@@ -48,7 +49,7 @@ export default function ExerciseScreen() {
       <Screen>
         <BackButton />
         <Text size={20} style={{ marginTop: 20 }}>
-          Exercice introuvable.
+          {t('exercise.notFound')}
         </Text>
       </Screen>
     );
@@ -61,18 +62,22 @@ export default function ExerciseScreen() {
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
   const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def.equipment, ctx.settings.units));
   const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded });
+  const equipment = t(`program.equipment.${def.equipment}`);
 
   return (
     <Screen scroll>
       <BackButton />
-      <ScreenHeader eyebrow={`${EQUIPMENT[def.equipment]}${def.custom ? ' · ton exercice' : ''}`} title={def.name} />
+      <ScreenHeader
+        eyebrow={def.custom ? t('exercise.ownEyebrow', { equipment }) : equipment}
+        title={exerciseName(def.name)}
+      />
 
       <StickerCard tone="hero">
         <Text size={15} weight="bold">
-          Prochaine cible
+          {t('exercise.nextTarget')}
         </Text>
         <Text size={34} weight="black" style={{ lineHeight: 42 }}>
-          {lift.decision === 'calibrate' ? 'À régler' : targetLoad(lift.targets)}
+          {lift.decision === 'calibrate' ? t('exercise.toCalibrate') : targetLoad(lift.targets)}
         </Text>
         <View
           style={{
@@ -92,7 +97,7 @@ export default function ExerciseScreen() {
         </View>
         {lift.last.length ? (
           <Text size={15} style={{ marginTop: 8 }}>
-            Dernière fois : {lastTimeLabel(lift.last)}
+            {t('exercise.lastTime', { last: lastTimeLabel(lift.last) })}
           </Text>
         ) : null}
         {lift.decision !== 'calibrate' && target && target.weight > 0 ? (
@@ -111,7 +116,7 @@ export default function ExerciseScreen() {
 
       <StickerCard style={{ marginTop: 16, gap: space.sm }}>
         <Text size={17} weight="black">
-          Ta note
+          {t('exercise.note')}
         </Text>
         <ExerciseNote exerciseName={def.name} />
       </StickerCard>
@@ -120,10 +125,10 @@ export default function ExerciseScreen() {
         <StickerCard style={{ marginTop: 16, gap: space.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <Text size={17} weight="black">
-              Ta charge
+              {t('exercise.load')}
             </Text>
             <Text size={14} weight="bold" color={colors.inkMuted}>
-              {formatKg(weights[0]!)} → {formatKg(weights[weights.length - 1]!)} kg
+              {t('exercise.loadRange', { from: formatKg(weights[0]!), to: formatKg(weights[weights.length - 1]!) })}
             </Text>
           </View>
           <Sparkline values={weights} height={72} />
@@ -132,25 +137,23 @@ export default function ExerciseScreen() {
 
       <StickerCard style={{ marginTop: 16 }}>
         <Text size={17} weight="black" style={{ marginBottom: 12 }}>
-          Tes séries et tes reps
+          {t('exercise.rule')}
         </Text>
         <SharedRuleEditor def={def} goal={ctx.profile.goal} base={base} bodyweight={bodyweight} />
         {def.equipment === 'machine' ? (
           <View style={{ marginTop: 14 }}>
             <CheckRow
-              label="Machine à disques"
+              label={t('exercise.plateLoaded.label')}
               checked={lift.plateLoaded}
               onChange={(on) => setPlateLoaded(def, on)}
-              detail={
-                lift.plateLoaded ? 'Le poids se compte de chaque côté.' : 'Le poids se lit sur la pile de la machine.'
-              }
+              detail={t(lift.plateLoaded ? 'exercise.plateLoaded.on' : 'exercise.plateLoaded.off')}
             />
           </View>
         ) : null}
         {!bodyweight ? (
           <>
             <Text size={16} weight="semibold" color={colors.inkMuted} style={{ marginTop: 14 }}>
-              Ajouter à chaque palier
+              {t('exercise.increment.title')}
             </Text>
             <View
               accessibilityRole="radiogroup"
@@ -174,7 +177,7 @@ export default function ExerciseScreen() {
                     onPress={() => setIncrement(def.name, v)}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
-                    accessibilityLabel={`${formatKg(v)} kilos par palier`}
+                    accessibilityLabel={t('exercise.increment.a11y', { kg: formatKg(v) })}
                     containerStyle={{ flex: 1 }}
                     style={{
                       height: 44,
@@ -187,7 +190,7 @@ export default function ExerciseScreen() {
                     }}
                   >
                     <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
-                      +{formatKg(v)} kg
+                      {t('exercise.increment.option', { kg: formatKg(v) })}
                     </Text>
                   </PressableScale>
                 );
@@ -199,26 +202,29 @@ export default function ExerciseScreen() {
 
       <StickerCard style={{ marginTop: 16, gap: 10 }}>
         <Text size={17} weight="black">
-          Ton repos entre les séries
+          {t('exercise.rest.title')}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <RoundButton
             label="−"
-            a11y="Repos : moins 15 secondes"
+            a11y={t('exercise.rest.minus', { seconds: REST_STEP })}
             onPress={() => setRestOverride(def.name, clampRest(lift.restTime - REST_STEP))}
           />
-          <Text size={34} weight="black" accessibilityLabel={`Repos : ${formatRest(lift.restTime)}`}>
+          <Text
+            size={34}
+            weight="black"
+            accessibilityLabel={t('exercise.rest.value', { rest: formatRest(lift.restTime) })}
+          >
             {formatClock(lift.restTime)}
           </Text>
           <RoundButton
             label="+"
-            a11y="Repos : plus 15 secondes"
+            a11y={t('exercise.rest.plus', { seconds: REST_STEP })}
             onPress={() => setRestOverride(def.name, clampRest(lift.restTime + REST_STEP))}
           />
         </View>
         <Text size={14} color={colors.inkMuted} style={{ lineHeight: 19 }}>
-          {lift.restNote ||
-            "Ton repos par défaut. Si tu te reposes plus ou moins longtemps d'habitude, le minuteur s'adaptera."}
+          {lift.restNote || t('exercise.rest.defaultNote')}
         </Text>
         {lift.restSource === 'own' ? (
           <Pressable
@@ -228,7 +234,7 @@ export default function ExerciseScreen() {
             style={{ alignSelf: 'flex-start' }}
           >
             <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
-              Laisser l'app choisir
+              {t('exercise.rest.auto')}
             </Text>
           </Pressable>
         ) : null}
@@ -237,7 +243,7 @@ export default function ExerciseScreen() {
       {history.length ? (
         <>
           <Text size={19} weight="black" style={{ marginTop: 24 }}>
-            Dernières séances
+            {t('exercise.history.title')}
           </Text>
           <View style={{ marginTop: 4 }}>
             {history.map((h, i) => {
@@ -259,7 +265,7 @@ export default function ExerciseScreen() {
                     {formatShortDay(h.date)}
                   </Text>
                   <Text size={18} weight="black">
-                    {w > 0 ? `${formatKg(w)} kg × ` : ''}
+                    {w > 0 ? t('exercise.history.weight', { kg: formatKg(w) }) : ''}
                     {sets.map((s) => s.reps).join(' · ')}
                   </Text>
                 </View>

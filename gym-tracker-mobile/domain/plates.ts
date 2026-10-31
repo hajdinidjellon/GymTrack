@@ -3,6 +3,8 @@
  * Logique pure, testée dans domain/__tests__/plates.test.ts.
  */
 
+import { getLocale, listOf, t } from '@/i18n';
+
 export const DEFAULT_BAR = 20;
 export const DEFAULT_PLATES = [20, 15, 10, 5, 2.5, 1.25];
 export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
@@ -37,22 +39,21 @@ export function loadBar(total: number, bar = DEFAULT_BAR, available = DEFAULT_PL
   return { perSide, missing: round2(total - loaded) };
 }
 
-/** "62,5" — French decimal comma, no trailing zeros. */
+/** "62,5" — French decimal comma, "62.5" in English, no trailing zeros. */
 export function formatKg(n: number): string {
-  return String(round2(n)).replace('.', ',');
+  const text = String(round2(n));
+  return getLocale() === 'fr' ? text.replace('.', ',') : text;
 }
 
 /** "20 + 1,25" or "Barre à vide". */
 export function describeSide(perSide: number[]): string {
-  return perSide.length ? perSide.map(formatKg).join(' + ') : 'Barre à vide';
+  return perSide.length ? perSide.map(formatKg).join(' + ') : t('domain.load.emptyBar');
 }
 
 /** "un disque de 5", "un 10 et un 2,5", or "3 kg" when no plate combination fits. */
 export function platesPhrase(sideWeight: number, available: number[]): string {
   const plates = platesForSide(sideWeight, available);
   if (plates.length === 0) return `${formatKg(sideWeight)} kg`;
-  if (plates.length === 1) return `un disque de ${formatKg(plates[0]!)}`;
-  const list = plates.map((p) => `un ${formatKg(p)}`);
-  const last = list.pop();
-  return `${list.join(', ')} et ${last}`;
+  if (plates.length === 1) return t('domain.load.onePlate', { kg: formatKg(plates[0]!) });
+  return listOf(plates.map((p) => t('domain.load.aPlate', { kg: formatKg(p) })));
 }

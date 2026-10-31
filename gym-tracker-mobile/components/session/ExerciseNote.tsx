@@ -4,6 +4,7 @@ import { border, colors, fonts, radius } from '@/constants/theme';
 import { NOTE_MAX_LENGTH } from '@/domain/notes';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Text } from '@/components/ui/Text';
+import { exerciseName as displayName, t } from '@/i18n';
 
 /**
  * The user's own note on an exercise ("siège cran 4"), shown every time it
@@ -26,9 +27,9 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
         autoFocus
         maxLength={NOTE_MAX_LENGTH}
         returnKeyType="done"
-        placeholder="Siège cran 4, prise serrée…"
+        placeholder={t('session.note.placeholder')}
         placeholderTextColor={colors.inkFaint}
-        accessibilityLabel={`Note sur ${exerciseName}`}
+        accessibilityLabel={t('session.note.inputA11y', { name: displayName(exerciseName) })}
         style={{
           minHeight: 44,
           paddingHorizontal: 12,
@@ -48,7 +49,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
     <Pressable
       onPress={() => setDraft(note ?? '')}
       accessibilityRole="button"
-      accessibilityLabel={note ? `Modifier la note : ${note}` : 'Ajouter une note'}
+      accessibilityLabel={note ? t('session.note.editA11y', { note }) : t('session.note.addA11y')}
       hitSlop={8}
       style={({ pressed }) => ({
         minHeight: 44,
@@ -62,7 +63,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
       })}
     >
       <Text size={15} weight={note ? 'bold' : 'semibold'} color={note ? colors.ink : colors.inkMuted} numberOfLines={2}>
-        {note ?? '+ Une note (réglage, prise…)'}
+        {note ?? t('session.note.add')}
       </Text>
     </Pressable>
   );

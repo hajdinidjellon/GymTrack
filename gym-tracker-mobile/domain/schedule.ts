@@ -1,9 +1,19 @@
 // The user's week: for each day from Monday, the program day done on it, or null for rest.
+import { translatedList } from '@/domain/format';
+import { t } from '@/i18n';
 import type { Workout } from '@/types';
 
 export type Schedule = (string | null)[];
 
-export const WEEKDAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+export const WEEKDAY_NAMES = translatedList([
+  'domain.weekdays.mon',
+  'domain.weekdays.tue',
+  'domain.weekdays.wed',
+  'domain.weekdays.thu',
+  'domain.weekdays.fri',
+  'domain.weekdays.sat',
+  'domain.weekdays.sun',
+]);
 
 // Jours d'exemple, lundi = 0 : on laisse au moins un jour de repos quand c'est possible
 export const TRAINING_DAYS: Record<number, number[]> = {
@@ -53,9 +63,9 @@ export function nextScheduled(schedule: Schedule, now: Date): { name: string; in
 
 /** "demain", "jeudi", "lundi prochain". */
 export function whenLabel(inDays: number, now: Date): string {
-  if (inDays === 1) return 'demain';
+  if (inDays === 1) return t('domain.schedule.tomorrow');
   const name = WEEKDAY_NAMES[(weekdayIndex(now) + inDays) % 7]!;
-  return inDays === 7 ? `${name} prochain` : name;
+  return inDays === 7 ? t('domain.schedule.nextWeek', { day: name }) : name;
 }
 
 export function trainedOn(workouts: Workout[], date: Date): boolean {

@@ -5,6 +5,7 @@ import { EFFORT_LABELS, EFFORTS, effortOf } from '@/domain/effort';
 import { findSet } from '@/domain/session';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
+import { t } from '@/i18n';
 
 /** "Comment c'était ?" in the rest popup: one tap on the set just validated. The next targets listen to it. */
 export function EffortPicker() {
@@ -17,7 +18,7 @@ export function EffortPicker() {
   return (
     <View style={{ gap: 6 }}>
       <Text size={13} weight="semibold">
-        Comment c&apos;était ?
+        {t('session.effort.question')}
       </Text>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8 }}>
         {EFFORTS.map((effort) => {

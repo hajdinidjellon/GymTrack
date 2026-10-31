@@ -1,1 +1,183 @@
-export const session = {};
+/** The session: preview, logger, rest, summary. */
+export const session = {
+  backHome: "Retour à l'accueil",
+  weightMinus: 'Moins {kg} kg',
+  weightPlus: 'Plus {kg} kg',
+
+  logger: {
+    finishTitle: 'Terminer la séance ?',
+    finishLeft: {
+      one: 'Il reste {count} série. Les séries déjà validées sont enregistrées.',
+      other: 'Il reste {count} séries. Les séries déjà validées sont enregistrées.',
+    },
+    finishNoneLeft: 'Les séries validées sont enregistrées.',
+    abandon: 'Abandonner',
+    finish: 'Terminer',
+    exerciseOf: '· exercice {n} sur {total}',
+    setOf: 'Série {n} sur {total}',
+    nextSetOf: 'Prochaine série {n} sur {total}',
+    setDone: 'Série {n} validée',
+  },
+
+  preview: {
+    start: 'Lancer la séance',
+    todayEyebrow: 'Séance du jour · ~{minutes} min',
+    chosenEyebrow: 'Séance choisie · ~{minutes} min',
+    subtitle: 'Charges et reps calculées depuis tes dernières séances. Touche un exercice pour le détail.',
+    otherDay: "Envie d'une autre séance ?",
+    dayA11y: 'Séance {name}',
+    dayTodayA11y: 'Séance {name}, prévue aujourd’hui',
+    liftA11y: '{name}, {target}, {delta}',
+    firstTime: 'première fois',
+    weightToPick: 'Charge à choisir',
+    perSideA11y: 'Par côté : {plates}',
+    calibrate: 'Régler',
+    remove: 'Retirer {name}',
+    equipment: {
+      barbell: 'Barre',
+      dumbbell: 'Haltères',
+      machine: 'Machine',
+      bodyweight: 'PDC',
+    },
+  },
+
+  summary: {
+    perSideIncrease: '+{kg} kg / côté',
+    title: 'Séance validée.',
+    saved: '{name} · enregistrée dans ton historique',
+    newRecord: 'Nouveau record',
+    record: '{name} · {kg} kg',
+    before: 'Avant : {kg} kg',
+    lifted: 'Tu as soulevé',
+    plates: { one: 'soit {n} disque de 20 kg', other: 'soit {n} disques de 20 kg' },
+    duration: 'durée',
+    setsDone: { one: 'série validée', other: 'séries validées' },
+    records: { one: 'record', other: 'records' },
+    nextTime: 'La prochaine fois',
+  },
+
+  add: {
+    a11y: 'Ajouter un exercice à la séance',
+    title: 'Ajouter un exercice',
+    sameMuscle: 'Même muscle',
+    keep: "L'ajouter aussi à mes prochaines séances {day}",
+  },
+
+  swap: {
+    a11y: "Changer d'exercice, à la place de {name}",
+    button: 'Changer',
+    title: "Changer d'exercice",
+    sameMuscle: 'Même muscle · {muscle}',
+    keep: 'Garder ce changement pour mes prochaines séances {day}',
+  },
+
+  picker: {
+    suggestions: 'Suggestions',
+    taken: '{name}, déjà dans la séance',
+    choose: 'Choisir {name}',
+    alias: 'Aussi appelé {alias}',
+    own: 'Ton exercice',
+    newExercise: 'Nouvel exercice',
+    searchPlaceholder: 'Chercher : hack squat, smith, convergent…',
+    searchA11y: 'Chercher un exercice',
+    notFound: 'Pas dans la liste : crée-le, il sera rangé avec son muscle.',
+    createNamedA11y: 'Créer {name}',
+    createA11y: 'Créer un exercice',
+    createNamed: '+ Créer « {name} »',
+    create: '+ Créer mon exercice',
+  },
+
+  calibration: {
+    firstTime: 'Première fois',
+    startBar: "Charge ta barre de départ. Ensuite, on s'occupe de tout.",
+    startOther: "Choisis ta charge de départ. Ensuite, on s'occupe de tout.",
+    inputLabel: 'Charge de départ en kilos',
+    presetA11y: '{kg} kilos',
+    start: 'Commencer à {kg} kg',
+  },
+
+  doLater: {
+    a11y: 'Faire {name} plus tard',
+  },
+
+  effort: {
+    question: "Comment c'était ?",
+  },
+
+  note: {
+    placeholder: 'Siège cran 4, prise serrée…',
+    inputA11y: 'Note sur {name}',
+    editA11y: 'Modifier la note : {note}',
+    addA11y: 'Ajouter une note',
+    add: '+ Une note (réglage, prise…)',
+  },
+
+  missed: {
+    title: 'Combien de reps ?',
+    hint: 'Objectif {target}. Pas grave : la prochaine séance en tient compte.',
+    hintWeight: 'Objectif {target} à {kg} kg. Pas grave : la prochaine séance en tient compte.',
+    option: '{n} reps',
+    optionTarget: '{n} reps (objectif)',
+    save: 'Enregistrer {n} reps',
+  },
+
+  rest: {
+    title: 'Repos',
+    minimize: 'Réduire',
+    minimizeA11y: 'Réduire le minuteur',
+    closeA11y: 'Fermer le repos',
+    timerA11y: { one: 'Repos, {count} seconde restante', other: 'Repos, {count} secondes restantes' },
+    miniA11y: {
+      one: 'Repos, {count} seconde restante. Agrandir le minuteur',
+      other: 'Repos, {count} secondes restantes. Agrandir le minuteur',
+    },
+    expand: 'Agrandir',
+    minus15A11y: 'Retirer 15 secondes',
+    plus15A11y: 'Ajouter 15 secondes',
+    nextExercise: 'Ensuite · {name}',
+    nextExerciseSet: 'Ensuite · {name}, série {n}',
+    nextSet: 'Ensuite · série {n}',
+    weightToSet: 'Charge à régler',
+    skip: 'Passer le repos',
+    undoA11y: 'Annuler la dernière série',
+    undo: '{label} · annuler',
+  },
+
+  running: {
+    title: 'Séance en cours',
+    progress: { one: '{done} / {count} série validée', other: '{done} / {count} séries validées' },
+  },
+
+  progress: {
+    doNow: 'Faire {name} maintenant',
+    finished: '{name}, terminé',
+    current: '{name}, en cours',
+  },
+
+  setRow: {
+    a11y: 'Série {index}, {kg} kilos, {reps} reps, {state}',
+    a11yNoWeight: 'Série {index}, {reps} reps, {state}',
+    done: 'faite',
+    current: 'en cours',
+    upcoming: 'à venir',
+    headerSet: 'SÉRIE',
+    headerKg: 'KG',
+    headerReps: 'REPS',
+    deleteA11y: 'Supprimer la série {n}',
+  },
+
+  setView: {
+    lastTime: 'Dernière fois',
+    why: 'Pourquoi {kg} kg ?',
+    weightInput: 'Charge en kilos',
+    repMinus: 'Moins une rep',
+    repPlus: 'Plus une rep',
+    repsInput: 'Nombre de reps',
+    missed: 'Série ratée ? Note les reps faites',
+    addSetA11y: 'Ajouter une série',
+    addSet: '+ Ajouter une série',
+    swipeHint: 'Glisse une série vers la gauche pour la supprimer',
+    allAsPlanned: { one: 'Tout comme prévu · {count} série', other: 'Tout comme prévu · {count} séries' },
+    validateA11y: 'Valider la série',
+  },
+};

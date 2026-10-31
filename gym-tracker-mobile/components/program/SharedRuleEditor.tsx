@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import type { Goal, RuleOverride } from '@/types';
 import { CheckRow } from '@/components/ui/CheckRow';
 import { RuleEditor } from './RuleEditor';
+import { exerciseName, t } from '@/i18n';
 
 interface Props {
   /** No weight to add: the reps climb with no ceiling. */
@@ -27,7 +28,7 @@ export function SharedRuleEditor({ def, goal, base, bodyweight }: Props) {
   const [similar, setSimilar] = useState(true);
 
   const ctx = { goal, own, overrides };
-  const following = followers(def, ctx).map((e) => e.name);
+  const following = followers(def, ctx).map((e) => exerciseName(e.name));
 
   return (
     <View style={{ gap: 12 }}>
@@ -41,7 +42,7 @@ export function SharedRuleEditor({ def, goal, base, bodyweight }: Props) {
       />
       {following.length ? (
         <CheckRow
-          label="Pareil pour les exercices similaires"
+          label={t('program.rule.similar')}
           detail={followersLabel(following)}
           checked={similar}
           onChange={setSimilar}

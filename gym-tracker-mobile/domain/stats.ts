@@ -7,10 +7,19 @@ import { workingSets } from '@/domain/progression';
 import { EXERCISES, type ExerciseDef } from '@/domain/programs';
 import { exerciseHistory, tonnage, type LoadFactor } from '@/domain/sessionBuilder';
 import { startOfWeek } from '@/domain/week';
+import { translatedList } from '@/domain/format';
 import type { Workout } from '@/types';
 
 const DAY = 24 * 3600 * 1000;
-const LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const LETTERS = translatedList([
+  'domain.weekdayLetters.mon',
+  'domain.weekdayLetters.tue',
+  'domain.weekdayLetters.wed',
+  'domain.weekdayLetters.thu',
+  'domain.weekdayLetters.fri',
+  'domain.weekdayLetters.sat',
+  'domain.weekdayLetters.sun',
+]);
 
 const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();

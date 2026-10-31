@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { border, colors, radius } from '@/constants/theme';
 import { Text } from './Text';
+import { t } from '@/i18n';
 
 interface Props {
   /** No delete action: the row does not swipe. */
@@ -39,7 +40,7 @@ export function SwipeToDelete({ onDelete, deleteLabel, children }: Props) {
           })}
         >
           <Text size={15} weight="black" color={colors.card}>
-            Supprimer
+            {t('common.delete')}
           </Text>
         </Pressable>
       )}

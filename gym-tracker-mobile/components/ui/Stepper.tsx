@@ -4,6 +4,7 @@ import { border, colors, fonts, hardShadow } from '@/constants/theme';
 import { parseAmount } from '@/domain/format';
 import { ChevronLeft, ChevronRight } from './icons';
 import { Text } from './Text';
+import { t } from '@/i18n';
 
 interface Props {
   value: string;
@@ -46,7 +47,7 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
           selectTextOnFocus
           maxLength={6}
           accessibilityLabel={inputLabel}
-          accessibilityHint="Touche pour saisir au clavier"
+          accessibilityHint={t('ui.stepper.typeHint')}
           style={{
             fontFamily: fonts.black,
             fontSize: 60,

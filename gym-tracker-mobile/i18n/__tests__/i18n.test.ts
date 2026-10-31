@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import {
+  dayName,
   exerciseName,
   getLocale,
   listOf,

@@ -1,3 +1,57 @@
 import type { Dictionary } from '@/i18n/fr';
 
-export const home: Dictionary['home'] = {};
+export const home: Dictionary['home'] = {
+  tabs: {
+    today: 'Today',
+    progress: 'Progress',
+    profile: 'Profile',
+  },
+  title: 'Today',
+  resume: 'Resume workout',
+  start: 'Start workout',
+  streak: '{count} wk streak',
+  week: {
+    title: 'This week',
+    reached: 'Weekly goal hit',
+    left: { one: '{count} more workout this week', other: '{count} more workouts this week' },
+  },
+  today: {
+    planned: "Today's workout",
+    chosen: 'Your pick',
+    minutes: '~{n} min',
+    welcomeBack: 'Good to see you back!',
+    comeback: 'After {pause} off, we start a bit lighter. It comes back fast.',
+    firstOnBar: 'First on the bar',
+    kgTimesReps: 'kg × {reps}',
+    perSide: '{plates} per side',
+    emptyBar: 'Empty bar',
+    noExercises: 'No exercises in this workout yet.',
+    addExercises: 'Add exercises',
+    firstSession: 'First workout: you pick your starting weight on each exercise, then we work out the rest.',
+  },
+  lift: {
+    toChoose: 'Weight to pick',
+    a11y: '{name}, {target}',
+    a11yToChoose: '{name}, weight to pick',
+    lastTime: 'Last time: {last}',
+  },
+  last: {
+    title: 'Last workout',
+    meta: '{date} · {sets} · {minutes} min',
+    lifted: 'lifted',
+  },
+  rest: {
+    done: 'Workout done',
+    off: 'Rest day',
+    wellDone: 'Nice work.',
+    recovering: 'Your muscles are recovering, that’s part of the program.',
+    next: 'Next workout: {name}, {when}.',
+    pickAnyway: 'Want to train anyway? Pick your workout',
+  },
+  picker: {
+    label: 'Feel like something else? Pick your workout',
+    a11y: '{name} workout',
+    a11yPlanned: '{name} workout, planned for today',
+    planned: 'planned',
+  },
+};

@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
+import { setLocale } from '@/i18n';
 import { useSessionStore } from '@/stores/sessionStore';
 import { RestMini, RestView } from '@/components/session/RestView';
 import type { ActiveExercise } from '@/types';
@@ -118,5 +119,20 @@ describe('RestView', () => {
     await render(<RestMini restEndsAt={session().restEndsAt!} onExpand={onExpand} />);
     await fireEvent.press(screen.getByRole('button', { name: /Agrandir le minuteur/ }));
     expect(onExpand).toHaveBeenCalled();
+  });
+
+  describe('in English', () => {
+    afterEach(() => setLocale('fr'));
+
+    it('says what comes next and reads the timer', async () => {
+      setLocale('en');
+      const s = session();
+      await render(
+        <RestView next={findCurrent(s.exercises)} restEndsAt={s.restEndsAt!} total={120} doneExerciseId="bench" />,
+      );
+      expect(screen.getByText('Next · Squat, set 2')).toBeOnTheScreen();
+      expect(screen.getByRole('timer').props.accessibilityLabel).toMatch(/^Rest, \d+ seconds left$/);
+      expect(screen.getByText('Skip rest')).toBeOnTheScreen();
+    });
   });
 });

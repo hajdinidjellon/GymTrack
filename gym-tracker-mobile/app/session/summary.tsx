@@ -4,7 +4,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, plateColor } from '@/constants/theme';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useBuildContext } from '@/hooks/useTodayPlan';
-import { countFr, formatThousands } from '@/domain/format';
+import { useLocale } from '@/hooks/useLocale';
+import { dayName, exerciseName, t } from '@/i18n';
+import { formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { findExerciseDef } from '@/domain/programs';
 import { workingSets } from '@/domain/progression';
@@ -21,6 +23,7 @@ import { Sparkle } from '@/components/ui/Sparkle';
 import { StatTile } from '@/components/stats/StatTile';
 
 export default function Summary() {
+  useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const workouts = useWorkoutStore((s) => s.workouts);
   const workout = workouts.find((w) => w.id === id);
@@ -29,7 +32,7 @@ export default function Summary() {
   const own = ctx?.settings.customExercises;
   const records = useMemo(() => (workout ? newRecords(workout, workouts, own) : []), [workout, workouts, own]);
 
-  // Ce que le moteur prévoit maintenant que cette séance est dans l'historique
+  // Ce que le moteur prévoit maintenant que cette séance est dans l'historique (ctx change avec la langue)
   const next = useMemo(() => {
     if (!workout || !ctx) return [];
     return workout.exercises.flatMap((e) => {
@@ -38,7 +41,7 @@ export default function Summary() {
       const lift = planLift(def, ctx);
       const label =
         lift.decision === 'add_weight' && def.equipment === 'barbell'
-          ? `+${formatKg(lift.rule.increment / 2)} kg / côté`
+          ? t('session.summary.perSideIncrease', { kg: formatKg(lift.rule.increment / 2) })
           : deltaLabel(lift);
       return [{ name: def.name, label }];
     });
@@ -56,7 +59,7 @@ export default function Summary() {
   const sets = workout.exercises.reduce((n, e) => n + workingSets(e.sets).length, 0);
 
   return (
-    <Screen scroll footer={<StickerButton label="Retour à l'accueil" onPress={() => router.dismissTo('/(tabs)')} />}>
+    <Screen scroll footer={<StickerButton label={t('session.backHome')} onPress={() => router.dismissTo('/(tabs)')} />}>
       <StickerCard tone="hero" style={{ marginTop: 8, paddingVertical: 20 }}>
         <View style={{ position: 'absolute', top: 14, right: 18 }}>
           <Sparkle size={38} />
@@ -79,28 +82,28 @@ export default function Summary() {
           <Check size={30} />
         </View>
         <Text size={40} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 46 }}>
-          Séance validée.
+          {t('session.summary.title')}
         </Text>
         <Text size={15} style={{ marginTop: 2 }}>
-          {workout.name} · enregistrée dans ton historique
+          {t('session.summary.saved', { name: dayName(workout.name) })}
         </Text>
       </StickerCard>
 
       {records.map((r) => (
         <StickerCard key={r.name} tone="sun" small style={{ marginTop: 14 }}>
           <Text size={14} weight="bold">
-            Nouveau record
+            {t('session.summary.newRecord')}
           </Text>
           <Text size={20} weight="black" style={{ marginTop: 2 }}>
-            {r.name} · {formatKg(r.weight)} kg
+            {t('session.summary.record', { name: exerciseName(r.name), kg: formatKg(r.weight) })}
           </Text>
-          <Text size={15}>Avant : {formatKg(r.previous)} kg</Text>
+          <Text size={15}>{t('session.summary.before', { kg: formatKg(r.previous) })}</Text>
         </StickerCard>
       ))}
 
       <StickerCard style={{ marginTop: 18, paddingVertical: 18 }}>
         <Text size={15} weight="semibold" color={colors.inkMuted}>
-          Tu as soulevé
+          {t('session.summary.lifted')}
         </Text>
         <Text size={44} weight="black" style={{ lineHeight: 50 }}>
           {formatThousands(lifted)} kg
@@ -108,7 +111,7 @@ export default function Summary() {
         {plates > 0 ? (
           <>
             <Text size={15} weight="bold" style={{ marginTop: 2 }}>
-              soit {countFr(plates, 'disque', formatThousands)} de 20 kg
+              {t('session.summary.plates', { count: plates, n: formatThousands(plates) })}
             </Text>
             <PlatePile count={plates} />
           </>
@@ -116,18 +119,18 @@ export default function Summary() {
       </StickerCard>
 
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-        <StatTile value={`${workout.duration ?? 0} min`} label="durée" />
-        <StatTile value={String(sets)} label={sets > 1 ? 'séries validées' : 'série validée'} />
+        <StatTile value={t('common.minutes', { count: workout.duration ?? 0 })} label={t('session.summary.duration')} />
+        <StatTile value={String(sets)} label={t('session.summary.setsDone', { count: sets })} />
         <StatTile
           value={String(records.length)}
-          label={records.length > 1 ? 'records' : 'record'}
+          label={t('session.summary.records', { count: records.length })}
           highlight={records.length > 0}
         />
       </View>
 
       {next.length ? (
         <>
-          <SectionTitle title="La prochaine fois" />
+          <SectionTitle title={t('session.summary.nextTime')} />
           <StickerCard style={{ paddingVertical: 4 }}>
             {next.map((n, i) => (
               <View
@@ -143,7 +146,7 @@ export default function Summary() {
                 }}
               >
                 <Text size={16} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
-                  {n.name}
+                  {exerciseName(n.name)}
                 </Text>
                 <View>
                   <Chip tone={n.label.startsWith('+') ? 'success' : 'neutral'} label={n.label} />

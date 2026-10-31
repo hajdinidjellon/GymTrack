@@ -9,6 +9,8 @@ import { totals } from '@/domain/stats';
 import { insights } from '@/domain/insights';
 import { workoutsToCsv } from '@/domain/exportCsv';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
+import { useLocale } from '@/hooks/useLocale';
+import { localeTag, t, type LanguageSetting } from '@/i18n';
 import { hasSession, signOut } from '@/services/supabase';
 import { speak } from '@/services/speech';
 import { useProfileStore } from '@/stores/profileStore';
@@ -24,12 +26,14 @@ import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { StatTile } from '@/components/stats/StatTile';
 import { Chip } from '@/components/ui/Chip';
+import { Choice } from '@/components/ui/Choice';
 import { Check, ChevronRight } from '@/components/ui/icons';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { InsightsCard } from '@/components/stats/InsightsCard';
 import { logger } from '@/services/logger';
 
 export default function Profile() {
+  useLocale();
   const profile = useProfileStore((s) => s.profile);
   const settings = useSettingsStore((s) => s.settings);
   const { updateSettings, togglePlate } = useSettingsStore.getState();
@@ -55,7 +59,7 @@ export default function Profile() {
   const toggleVoice = () => {
     const voice = !settings.voice;
     updateSettings({ voice });
-    if (voice) speak('Voix activée. Je te dirai quoi charger.');
+    if (voice) speak(t('profile.during.voiceHello'));
   };
 
   const goal = GOALS.find((g) => g.id === profile?.goal);
@@ -64,7 +68,7 @@ export default function Profile() {
   return (
     <Screen tabs scroll>
       <FadeIn>
-        <ScreenHeader title="Profil" subtitle="Ton programme et les réglages de ta salle." />
+        <ScreenHeader title={t('profile.title')} subtitle={t('profile.subtitle')} />
       </FadeIn>
 
       <FadeIn index={1}>
@@ -73,33 +77,41 @@ export default function Profile() {
             <PlateFace kg={20} size={60} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text size={20} weight="black" numberOfLines={1}>
-                {goal?.title ?? 'Ton entraînement'}
+                {goal?.title ?? t('profile.card.fallbackGoal')}
               </Text>
               <Text size={14} color={colors.inkMuted} numberOfLines={1}>
-                {split ? `${split.title} · ${profile?.program.perWeek}×/semaine` : ''}
+                {split ? t('profile.card.split', { split: split.title, n: perWeek }) : ''}
               </Text>
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: space.sm }}>
-            <StatTile value={String(stats.sessions)} label={stats.sessions > 1 ? 'séances' : 'séance'} />
-            <StatTile value={`${formatKg(Math.round(stats.tonnage / 100) / 10)} t`} label="soulevées" />
-            <StatTile value={stats.since ? formatMonth(stats.since) : '—'} label="depuis" />
+            <StatTile value={String(stats.sessions)} label={t('profile.card.sessions', { count: stats.sessions })} />
+            <StatTile
+              value={t('profile.card.tons', { tons: formatKg(Math.round(stats.tonnage / 100) / 10) })}
+              label={t('profile.card.lifted')}
+            />
+            <StatTile value={stats.since ? formatMonth(stats.since) : '—'} label={t('profile.card.since')} />
           </View>
         </StickerCard>
       </FadeIn>
 
       <FadeIn index={2}>
-        <SectionTitle title="Entraînement" />
+        <SectionTitle title={t('profile.training.title')} />
         <Group>
           <Row
-            label="Programme"
-            value={split ? `${split.title} · ${profile?.program.perWeek}×` : ''}
+            label={t('profile.training.program')}
+            value={split ? t('profile.training.programValue', { split: split.title, n: perWeek }) : ''}
             onPress={() => router.push({ pathname: '/program', params: { edit: '1' } })}
             chevron
           />
-          <Row label="Mes séances" value="Exercices et ordre" onPress={() => router.push('/days')} chevron />
           <Row
-            label="Objectif"
+            label={t('profile.training.days')}
+            value={t('profile.training.daysValue')}
+            onPress={() => router.push('/days')}
+            chevron
+          />
+          <Row
+            label={t('profile.training.goal')}
             value={goal?.title ?? ''}
             onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })}
             chevron
@@ -107,28 +119,31 @@ export default function Profile() {
           />
         </Group>
 
-        <SectionTitle title="Pendant la séance" />
+        <SectionTitle title={t('profile.during.title')} />
         <Group>
           <Row
-            label="Repos par défaut"
-            value={`${settings.defaultRestTime} s`}
+            label={t('profile.during.rest')}
+            value={t('profile.during.restValue', { seconds: settings.defaultRestTime })}
             onPress={nextRest}
-            hint="Touche pour changer"
+            hint={t('profile.during.tapToChange')}
           />
           <Row
-            label="Voix"
-            value={settings.voice ? 'Activée' : 'Coupée'}
+            label={t('profile.during.voice')}
+            value={settings.voice ? t('profile.during.voiceOn') : t('profile.during.voiceOff')}
             onPress={toggleVoice}
-            hint="Touche pour changer"
+            hint={t('profile.during.tapToChange')}
             last
           />
         </Group>
+
+        <SectionTitle title={t('profile.language.title')} />
+        <LanguagePicker value={settings.language} onChange={(language) => updateSettings({ language })} />
       </FadeIn>
 
       <FadeIn index={3}>
-        <SectionTitle title="Disques de ta salle" right={<Chip tone="sun" label="Touche pour choisir" />} />
+        <SectionTitle title={t('profile.plates.title')} right={<Chip tone="sun" label={t('profile.plates.chip')} />} />
         <Text size={14} color={colors.inkMuted} style={{ marginBottom: space.md, lineHeight: 19 }}>
-          On s'en sert pour te dire quoi mettre de chaque côté de la barre.
+          {t('profile.plates.text')}
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {ALL_PLATES.map((kg) => {
@@ -140,7 +155,7 @@ export default function Profile() {
                 onPress={() => togglePlate(kg)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
-                accessibilityLabel={`Disque de ${formatKg(kg)} kg`}
+                accessibilityLabel={t('profile.plates.a11y', { kg: formatKg(kg) })}
                 style={{
                   width: 78,
                   paddingTop: 10,
@@ -190,37 +205,35 @@ export default function Profile() {
           <InsightsCard insights={learned} sessions={workouts.length} />
         </View>
 
-        <SectionTitle title="Tes données" />
+        <SectionTitle title={t('profile.data.title')} />
         <Group>
           <Row
-            label="Total soulevé"
-            value={settings.countBothSides ? 'Les 2 côtés' : 'Comme noté'}
+            label={t('profile.data.total')}
+            value={settings.countBothSides ? t('profile.data.bothSides') : t('profile.data.asLogged')}
             onPress={() => updateSettings({ countBothSides: !settings.countBothSides })}
-            hint={
-              settings.countBothSides
-                ? 'Machines à disques et haltères comptent double. Touche pour changer.'
-                : 'Un côté, une haltère, comme tu le notes. Touche pour changer.'
-            }
+            hint={settings.countBothSides ? t('profile.data.bothSidesHint') : t('profile.data.asLoggedHint')}
           />
           <Row
-            label="Exporter mes séances"
-            value={workouts.length ? `${workouts.length} · CSV` : 'Rien encore'}
+            label={t('profile.data.export')}
+            value={
+              workouts.length
+                ? t('profile.data.exportValue', { count: workouts.length })
+                : t('profile.data.exportNothing')
+            }
             onPress={() => void exportWorkouts(workouts)}
-            hint="Ouvre le partage : mail, Fichiers, Drive…"
+            hint={t('profile.data.exportHint')}
             chevron
             last
           />
         </Group>
 
-        <SectionTitle title="Compte" />
+        <SectionTitle title={t('profile.account.title')} />
         <StickerCard style={{ gap: space.md }}>
           <Text size={15} color={colors.inkMuted} style={{ lineHeight: 21 }}>
-            {signedIn
-              ? 'Connecté : tes séances sont sauvegardées dans ton compte.'
-              : 'Sans compte : tes séances restent sur ce téléphone.'}
+            {signedIn ? t('profile.account.signedIn') : t('profile.account.local')}
           </Text>
           <StickerButton
-            label={signedIn ? 'Se déconnecter' : 'Créer un compte ou se connecter'}
+            label={signedIn ? t('profile.account.signOut') : t('profile.account.signIn')}
             variant="secondary"
             size="small"
             onPress={() => confirmLogout(signedIn)}
@@ -234,21 +247,21 @@ export default function Profile() {
 /** Every set in a CSV, through the share sheet: a copy the user keeps wherever they want. */
 async function exportWorkouts(workouts: Parameters<typeof workoutsToCsv>[0]) {
   if (workouts.length === 0) {
-    Alert.alert('Rien à exporter', 'Fais ta première séance : elle apparaîtra dans le fichier.');
+    Alert.alert(t('profile.data.emptyTitle'), t('profile.data.emptyText'));
     return;
   }
   try {
-    await Share.share({ title: 'GymTrack · mes séances', message: workoutsToCsv(workouts) });
+    await Share.share({ title: t('profile.data.shareTitle'), message: workoutsToCsv(workouts) });
   } catch (error) {
     logger.warn('export failed', error);
-    Alert.alert('Export impossible', 'Réessaie dans un instant.');
+    Alert.alert(t('profile.data.failTitle'), t('profile.data.failText'));
   }
 }
 
 /** "oct. 26" */
 function formatMonth(iso: string): string {
   const d = new Date(iso);
-  return `${d.toLocaleDateString('fr-FR', { month: 'short' })} ${String(d.getFullYear()).slice(2)}`;
+  return `${d.toLocaleDateString(localeTag(), { month: 'short' })} ${String(d.getFullYear()).slice(2)}`;
 }
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -279,10 +292,10 @@ function toLogin() {
 function confirmLogout(signedIn: boolean) {
   // Sans compte, rien à quitter : on va droit à la connexion
   if (!signedIn) return toLogin();
-  Alert.alert('Se déconnecter ?', 'Tes séances sont sauvegardées dans ton compte.', [
-    { text: 'Annuler', style: 'cancel' },
+  Alert.alert(t('profile.account.confirmTitle'), t('profile.account.confirmText'), [
+    { text: t('common.cancel'), style: 'cancel' },
     {
-      text: 'Se déconnecter',
+      text: t('profile.account.signOut'),
       style: 'destructive',
       onPress: async () => {
         await signOut().catch(() => null);
@@ -290,6 +303,42 @@ function confirmLogout(signedIn: boolean) {
       },
     },
   ]);
+}
+
+/** Language names are written in their own language, whatever the app speaks. */
+const LANGUAGES: { id: LanguageSetting; label: () => string }[] = [
+  { id: 'auto', label: () => t('profile.language.auto') },
+  { id: 'fr', label: () => 'Français' },
+  { id: 'en', label: () => 'English' },
+];
+
+/** Automatique / Français / English. The screen switches at once. */
+function LanguagePicker({ value, onChange }: { value: LanguageSetting; onChange: (l: LanguageSetting) => void }) {
+  return (
+    <View style={{ gap: space.sm }}>
+      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 10 }}>
+        {LANGUAGES.map(({ id, label }) => (
+          <Choice
+            key={id}
+            selected={value === id}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => null);
+              onChange(id);
+            }}
+            accessibilityLabel={label()}
+            style={{ flex: 1, height: 56, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text size={16} weight="black" numberOfLines={1} adjustsFontSizeToFit>
+              {label()}
+            </Text>
+          </Choice>
+        ))}
+      </View>
+      <Text size={14} color={colors.inkMuted} style={{ lineHeight: 19 }}>
+        {t('profile.language.autoHint')}
+      </Text>
+    </View>
+  );
 }
 
 interface RowProps {
@@ -309,7 +358,7 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
         onPress();
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${label} : ${value}`}
+      accessibilityLabel={t('profile.row', { label, value })}
       accessibilityHint={hint}
       style={({ pressed }) => ({
         height: 56,
