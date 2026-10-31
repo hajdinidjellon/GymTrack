@@ -5,7 +5,7 @@ const prettier = require('eslint-config-prettier/flat');
 
 /**
  * Couches, de la plus pure à la plus concrète :
- *   types, domain → services → stores → hooks, components → app
+ *   types, i18n, domain → services → stores → hooks, components → app
  * Une couche n'importe jamais une couche au-dessus d'elle.
  */
 module.exports = defineConfig([
@@ -21,6 +21,12 @@ module.exports = defineConfig([
         'error',
         {
           zones: [
+            { target: './i18n', from: './domain', message: 'i18n/ only holds texts.' },
+            { target: './i18n', from: './services', message: 'i18n/ is pure: no I/O.' },
+            { target: './i18n', from: './stores', message: 'i18n/ is pure: no state.' },
+            { target: './i18n', from: './components', message: 'i18n/ is pure: no UI.' },
+            { target: './i18n', from: './hooks', message: 'i18n/ is pure: no React.' },
+            { target: './i18n', from: './app', message: 'i18n/ is pure: no routes.' },
             { target: './domain', from: './services', message: 'domain/ is pure: no I/O.' },
             { target: './domain', from: './stores', message: 'domain/ is pure: no state.' },
             { target: './domain', from: './components', message: 'domain/ is pure: no UI.' },
@@ -56,7 +62,7 @@ module.exports = defineConfig([
   },
   {
     // Le domaine ne connaît ni React Native ni Expo : il tourne tel quel sous Node
-    files: ['domain/**/*.ts'],
+    files: ['domain/**/*.ts', 'i18n/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

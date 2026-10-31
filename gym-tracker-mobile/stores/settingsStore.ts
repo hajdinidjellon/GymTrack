@@ -9,6 +9,8 @@ import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
 import type { ExerciseDef } from '@/domain/programs';
 import { applyRule } from '@/domain/ruleSync';
 import { settingsPatchSchema } from '@/domain/schemas';
+import { resolveLocale, setLocale } from '@/i18n';
+import { deviceLocaleTag } from '@/services/locale';
 import { logger } from '@/services/logger';
 import type { AppSettings, CustomExercise, Goal, RuleOverride } from '@/types';
 
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   plateLoaded: {},
   countBothSides: false,
   signedOut: false,
+  language: 'auto',
 };
 
 export const REST_CHOICES = [60, 90, 120, 180];
@@ -69,6 +72,11 @@ async function persistSettings(settings: AppSettings): Promise<void> {
   }
 }
 
+/** Sets the language every t() reads, before the tree re-renders. */
+function applyLanguage(settings: AppSettings): void {
+  setLocale(resolveLocale(settings.language, deviceLocaleTag()));
+}
+
 interface SettingsStore {
   settings: AppSettings;
   isLoaded: boolean;
@@ -98,12 +106,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   loadSettings: async () => {
     const settings = await loadSettings();
+    applyLanguage(settings);
     set({ settings, isLoaded: true });
   },
 
   updateSettings: (patch) => {
     set((s) => {
       const updated = { ...s.settings, ...patch };
+      applyLanguage(updated);
       void persistSettings(updated);
       return { settings: updated };
     });

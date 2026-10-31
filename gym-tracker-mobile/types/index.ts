@@ -162,6 +162,8 @@ export interface AppSettings {
   countBothSides: boolean;
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
+  /** Language of the texts and the voice. `auto` follows the phone. */
+  language: 'auto' | 'fr' | 'en';
 }
 
 // ============================================================

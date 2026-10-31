@@ -11,7 +11,7 @@ module.exports = {
     {
       displayName: 'domain',
       testEnvironment: 'node',
-      roots: ['<rootDir>/domain'],
+      roots: ['<rootDir>/domain', '<rootDir>/i18n'],
       testMatch: ['**/__tests__/**/*.test.ts'],
       moduleNameMapper: alias,
     },
@@ -26,6 +26,7 @@ module.exports = {
   ],
   collectCoverageFrom: [
     'domain/**/*.ts',
+    'i18n/**/*.ts',
     'services/**/*.ts',
     'stores/**/*.ts',
     'components/**/*.tsx',
@@ -36,6 +37,7 @@ module.exports = {
   coverageThreshold: {
     // La logique métier doit être couverte presque entièrement
     './domain/': { statements: 95, branches: 90, functions: 95, lines: 95 },
+    './i18n/': { statements: 95, branches: 90, functions: 95, lines: 95 },
     './stores/': { statements: 80, branches: 70, functions: 80, lines: 85 },
     './services/': { statements: 80, branches: 60, functions: 80, lines: 85 },
   },
