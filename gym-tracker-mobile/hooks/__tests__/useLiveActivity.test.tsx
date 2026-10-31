@@ -93,6 +93,16 @@ describe('useLiveActivity', () => {
     );
   });
 
+  it('speaks the language chosen in Profile, at once', async () => {
+    await renderHook(() => useLiveActivity());
+    store().startSession('Push', [exercise('bench', 2)]);
+    useSettingsStore.getState().updateSettings({ language: 'en' });
+    expect(mockNative.instances[0]!.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ setLabel: 'Set 1/2', labels: expect.objectContaining({ validate: 'Done' }) }),
+    );
+    useSettingsStore.getState().updateSettings({ language: 'fr' });
+  });
+
   it('ignores other buttons, and a set whose weight is still to pick', async () => {
     await renderHook(() => useLiveActivity());
     store().startSession('Push', [exercise('bench', 1, { needsWeight: true })]);

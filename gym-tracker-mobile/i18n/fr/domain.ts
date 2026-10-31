@@ -111,6 +111,9 @@ export const domain = {
     setLabel: 'Série {n}/{total}',
     pickWeight: "Choisis ta charge dans l'app",
     perSide: '{plates} par côté',
+    perSideShort: 'par côté',
+    rest: 'Repos',
+    upNext: 'Ensuite',
   },
 
   onboarding: {

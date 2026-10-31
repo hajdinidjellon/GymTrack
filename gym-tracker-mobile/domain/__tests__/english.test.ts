@@ -254,7 +254,10 @@ describe('voice, lock screen and notification in English', () => {
       setLabel: 'Set 1/1',
       target: '80 kg × 8',
       plates: '20 + 10 per side',
+      labels: { validate: 'Done', rest: 'Rest', upNext: 'Up next', perSide: 'per side' },
     });
+    const small = session([active('Développé couché', [{ weight: 22.5, reps: 8 }])]);
+    expect(lockScreenProps(small, gym, 0).plateList).toEqual([{ kg: 1.25, label: '1.25' }]);
     const curl = session([active('Curl haltères', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' })]);
     expect(lockScreenProps(curl, gym, 0).target).toBe('12 kg each dumbbell × 10');
     const dips = session([active('Dips', [{ weight: 0, reps: 10 }], { equipment: 'bodyweight' })]);
