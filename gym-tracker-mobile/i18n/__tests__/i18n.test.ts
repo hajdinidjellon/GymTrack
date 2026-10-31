@@ -128,3 +128,12 @@ describe('exerciseName', () => {
     expect(exerciseName('Mon exercice à moi')).toBe('Mon exercice à moi');
   });
 });
+
+describe('dayName', () => {
+  it('translates the program days only in English', () => {
+    expect(dayName('Haut')).toBe('Haut');
+    setLocale('en');
+    expect(dayName('Haut')).toBe('Upper');
+    expect(dayName('Push')).toBe('Push');
+  });
+});

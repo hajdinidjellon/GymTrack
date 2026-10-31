@@ -5,7 +5,7 @@
  */
 
 import { en } from '@/i18n/en';
-import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
+import { DAY_NAMES_EN, EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
 import { fr, type Dictionary } from '@/i18n/fr';
 
 export type Locale = 'fr' | 'en';
@@ -98,4 +98,9 @@ export function listOf(items: string[]): string {
  */
 export function exerciseName(name: string): string {
   return current === 'fr' ? name : (EXERCISE_NAMES_EN[name] ?? name);
+}
+
+/** The name of a program day ("Haut", "Push"), stored in French like the exercises. */
+export function dayName(name: string): string {
+  return current === 'fr' ? name : (DAY_NAMES_EN[name] ?? name);
 }
