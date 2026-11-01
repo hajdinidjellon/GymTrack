@@ -39,6 +39,8 @@ app/
   session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state
   session/summary.tsx      ← tonnage, next targets
   exercise/[name].tsx      ← next target, own sets/reps (RuleEditor), plate-loaded or stack, increment picker, history
+  history/index.tsx        ← "Historique": every past session, newest first (home → Dernière séance → Historique)
+  history/[id].tsx         ← one past session: each exercise, set by set (weight × reps, effort), records
   days/index.tsx           ← "Mes séances": every day of the program (Profil → Mes séances)
   days/[name].tsx          ← one day: add, remove, drag to reorder its exercises
 ```

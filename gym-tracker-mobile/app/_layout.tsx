@@ -77,6 +77,8 @@ export default function RootLayout() {
             <Stack.Screen name="exercise/[name]" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="days/index" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="days/[name]" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="history/index" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="history/[id]" options={{ animation: 'slide_from_right' }} />
           </Stack>
         ) : (
           <View style={{ flex: 1, backgroundColor: colors.paper }} />

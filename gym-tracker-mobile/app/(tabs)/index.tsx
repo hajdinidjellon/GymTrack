@@ -345,31 +345,49 @@ function LastWorkout() {
   const factor = useLoadFactor();
   if (!last) return null;
   const sets = last.exercises.reduce((n, e) => n + e.sets.filter((s) => s.completed).length, 0);
+  const date = formatShortDay(last.date);
   return (
     <>
-      <SectionTitle title={t('home.last.title')} />
-      <StickerCard style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View>
-          <Text size={17} weight="black">
-            {dayName(last.name)}
-          </Text>
-          <Text size={13} color={colors.inkMuted}>
-            {t('home.last.meta', {
-              date: formatShortDay(last.date),
-              sets: t('common.sets', { count: sets }),
-              minutes: last.duration ?? 0,
-            })}
-          </Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text size={17} weight="black">
-            {formatThousands(tonnage(last, factor))} {t('common.kg')}
-          </Text>
-          <Text size={13} color={colors.inkMuted}>
-            {t('home.last.lifted')}
-          </Text>
-        </View>
-      </StickerCard>
+      <SectionTitle
+        title={t('home.last.title')}
+        right={
+          <Pressable onPress={() => router.push('/history')} accessibilityRole="button" hitSlop={8}>
+            <Text size={14} weight="black" style={{ textDecorationLine: 'underline' }}>
+              {t('history.homeLink')}
+            </Text>
+          </Pressable>
+        }
+      />
+      <PressableScale
+        haptic="selection"
+        onPress={() => router.push({ pathname: '/history/[id]', params: { id: last.id } })}
+        accessibilityRole="button"
+        accessibilityLabel={t('history.homeA11y', { name: dayName(last.name), date })}
+      >
+        <StickerCard style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text size={17} weight="black">
+              {dayName(last.name)}
+            </Text>
+            <Text size={13} color={colors.inkMuted}>
+              {t('home.last.meta', {
+                date,
+                sets: t('common.sets', { count: sets }),
+                minutes: last.duration ?? 0,
+              })}
+            </Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text size={17} weight="black">
+              {formatThousands(tonnage(last, factor))} {t('common.kg')}
+            </Text>
+            <Text size={13} color={colors.inkMuted}>
+              {t('home.last.lifted')}
+            </Text>
+          </View>
+          <ChevronRight size={20} />
+        </StickerCard>
+      </PressableScale>
     </>
   );
 }
