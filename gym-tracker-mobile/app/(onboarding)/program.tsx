@@ -20,13 +20,17 @@ const PER_WEEK = [2, 3, 4, 5, 6];
 
 export default function ProgramScreen() {
   useLocale();
-  const { goal, edit } = useLocalSearchParams<{ goal?: Goal; edit?: string }>();
+  // `split`: the program the home offers to switch to, already picked
+  const params = useLocalSearchParams<{ goal?: Goal; edit?: string; split?: string }>();
+  const { goal, edit } = params;
   const profile = useProfileStore((s) => s.profile);
-  const [split, setSplit] = useState<SplitId>(profile?.program.split ?? 'ppl');
+  const offered = SPLITS.find((s) => s.id === params.split)?.id;
+  const [split, setSplit] = useState<SplitId>(offered ?? profile?.program.split ?? 'ppl');
   const [perWeek, setPerWeek] = useState(profile?.program.perWeek ?? 3);
   const names = getSplit(split).days.map((d) => d.name);
   const saved = validSchedule(profile?.program.schedule, names);
-  const [fixed, setFixed] = useState(!!saved);
+  // Une semaine fixe le reste avec le nouveau programme
+  const [fixed, setFixed] = useState(!!saved || (!!offered && !!profile?.program.schedule));
   const [schedule, setSchedule] = useState<Schedule>(saved ?? defaultSchedule(names, perWeek));
   const days = trainingCount(schedule);
 

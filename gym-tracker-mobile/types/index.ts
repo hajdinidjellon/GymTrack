@@ -164,6 +164,8 @@ export interface AppSettings {
   countBothSides: boolean;
   /** Logged out: the app opens on the welcome screen, local data is kept. */
   signedOut: boolean;
+  /** Date of the newest session when the user kept their program: "switch program?" waits for newer ones. */
+  programSwitchDismissed: string | null;
   /** Language of the texts and the voice. `auto` follows the phone. */
   language: 'auto' | 'fr' | 'en';
 }

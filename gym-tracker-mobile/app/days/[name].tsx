@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, space } from '@/constants/theme';
-import { programDays, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
+import { choosableDays, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -26,8 +26,8 @@ export default function DayScreen() {
   const [dragging, setDragging] = useState(false);
   if (!profile) return null;
 
-  const split = profile.program.split;
-  const day = programDays(split, customDays, own).find((d) => d.name === name);
+  // Une séance hors programme se règle aussi, sous son propre programme
+  const day = choosableDays(profile.program.split, customDays, own).find((d) => d.name === name);
   if (!day) {
     return (
       <Screen>
@@ -44,7 +44,7 @@ export default function DayScreen() {
       <BackButton />
       <ScreenHeader eyebrow={t('program.days.title')} title={dayName(day.name)} subtitle={t('program.day.subtitle')} />
       <DayExercisesEditor
-        split={split}
+        split={day.split}
         day={day}
         items={day.exercises}
         keyOf={(def) => def.name}

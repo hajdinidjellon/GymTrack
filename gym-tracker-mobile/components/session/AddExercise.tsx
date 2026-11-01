@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable } from 'react-native';
 import { colors } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
-import { alternativesFor, dayKey, findExerciseDef, programDays, type ExerciseDef } from '@/domain/programs';
+import { alternativesFor, dayKey, findExerciseDef, choosableDays, type ExerciseDef } from '@/domain/programs';
 import { planLift, toActiveExercise } from '@/domain/sessionBuilder';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -22,7 +22,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
 
   const own = ctx.settings.customExercises;
   const split = ctx.profile.program.split;
-  const day = programDays(split, ctx.settings.customDays, own).find((d) => d.name === sessionName);
+  const day = choosableDays(split, ctx.settings.customDays, own).find((d) => d.name === sessionName);
   const def = findExerciseDef(current.name, own);
   const taken = exercises.map((e) => e.name);
 
@@ -31,7 +31,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
     if (keep && day) {
       const names = day.exercises.map((e) => e.name);
       if (!names.includes(next.name)) {
-        useSettingsStore.getState().setDayExercises(dayKey(split, day.name), [...names, next.name]);
+        useSettingsStore.getState().setDayExercises(dayKey(day.split, day.name), [...names, next.name]);
       }
     }
     setOpen(false);

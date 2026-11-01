@@ -7,7 +7,7 @@ import {
   dayKey,
   findExerciseDef,
   MUSCLE_LABELS,
-  programDays,
+  choosableDays,
   type ExerciseDef,
 } from '@/domain/programs';
 import { planLift, toActiveExercise } from '@/domain/sessionBuilder';
@@ -30,7 +30,7 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
   const own = ctx.settings.customExercises;
   const def = findExerciseDef(exercise.name, own);
   const split = ctx.profile.program.split;
-  const day = programDays(split, ctx.settings.customDays, own).find((d) => d.name === sessionName);
+  const day = choosableDays(split, ctx.settings.customDays, own).find((d) => d.name === sessionName);
   const muscle = exercise.muscleGroups[0];
 
   const pick = (next: ExerciseDef) => {
@@ -42,7 +42,7 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
       const at = names.indexOf(exercise.name);
       if (at >= 0) names.splice(at, 1, next.name);
       else names.push(next.name);
-      useSettingsStore.getState().setDayExercises(dayKey(split, day.name), names);
+      useSettingsStore.getState().setDayExercises(dayKey(day.split, day.name), names);
     }
     setOpen(false);
     setKeep(false);
