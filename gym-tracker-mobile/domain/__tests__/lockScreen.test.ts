@@ -20,6 +20,14 @@ describe('lockScreenProps', () => {
       setLabel: 'Série 2/2',
       target: '80 kg × 8',
       plates: '20 + 10 par côté',
+      plateList: [
+        { kg: 20, label: '20' },
+        { kg: 10, label: '10' },
+      ],
+      setShort: '2/2',
+      setsDone: 1,
+      setsTotal: 2,
+      labels: { validate: 'Valider', rest: 'Repos', upNext: 'Ensuite', perSide: 'par côté' },
       restStart: null,
       restEnd: null,
       canValidate: true,
@@ -53,6 +61,11 @@ describe('lockScreenProps', () => {
     expect(lockScreenProps(s, gym, NOW)).toMatchObject({ target, plates });
   });
 
+  it('writes small plates the French way', () => {
+    const s = session([active('Développé couché', [{ weight: 22.5, reps: 8 }])]);
+    expect(lockScreenProps(s, gym, NOW).plateList).toEqual([{ kg: 1.25, label: '1,25' }]);
+  });
+
   it('sends to the app when the start weight is still to pick', () => {
     const s = session([active('a', [{ weight: 0, reps: 10 }], { needsWeight: true })]);
     expect(lockScreenProps(s, gym, NOW)).toMatchObject({
@@ -64,6 +77,13 @@ describe('lockScreenProps', () => {
 
   it('says the session is over once every set is done', () => {
     const s = session([active('a', [{ weight: 80, reps: 8, completed: true }])]);
-    expect(lockScreenProps(s, gym, NOW)).toMatchObject({ exercise: 'Séance terminée', done: true, canValidate: false });
+    expect(lockScreenProps(s, gym, NOW)).toMatchObject({
+      exercise: 'Séance terminée',
+      done: true,
+      canValidate: false,
+      plateList: [],
+      setsDone: 1,
+      setsTotal: 1,
+    });
   });
 });

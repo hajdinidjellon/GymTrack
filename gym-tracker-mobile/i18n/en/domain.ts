@@ -112,6 +112,9 @@ export const domain: Dictionary['domain'] = {
     setLabel: 'Set {n}/{total}',
     pickWeight: 'Pick your weight in the app',
     perSide: '{plates} per side',
+    perSideShort: 'per side',
+    rest: 'Rest',
+    upNext: 'Up next',
   },
 
   onboarding: {

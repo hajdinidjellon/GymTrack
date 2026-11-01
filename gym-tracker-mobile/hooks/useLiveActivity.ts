@@ -72,6 +72,11 @@ export function useLiveActivity(): void {
       if (state.activeSession !== previous.activeSession) sync(state.activeSession);
     });
 
+    // Les mots de l'écran verrouillé suivent la langue choisie dans Profil
+    const unsubscribeLanguage = useSettingsStore.subscribe((state, previous) => {
+      if (state.settings.language !== previous.settings.language) sync(useSessionStore.getState().activeSession);
+    });
+
     const interactions = widgets.addUserInteractionListener((event) => {
       if (event.source !== 'WorkoutActivity' || event.target !== validate) return;
       const { activeSession, completeSet } = useSessionStore.getState();
@@ -81,6 +86,7 @@ export function useLiveActivity(): void {
 
     return () => {
       unsubscribe();
+      unsubscribeLanguage();
       interactions.remove();
     };
   }, []);

@@ -19,6 +19,15 @@ export interface LockScreenProps {
   target: string;
   /** "25 + 5 par côté", empty when there is nothing to load */
   plates: string;
+  /** The same plates, one disc each, heaviest first: drawn in their IWF colour. */
+  plateList: { kg: number; label: string }[];
+  /** "2/4" for the Dynamic Island. */
+  setShort: string;
+  /** Sets done / sets in the session, for the progress bar. */
+  setsDone: number;
+  setsTotal: number;
+  /** The widget cannot read the dictionary: every word it shows comes with the props. */
+  labels: { validate: string; rest: string; upNext: string; perSide: string };
   /** Rest window in ms since epoch, both null when not resting. */
   restStart: number | null;
   restEnd: number | null;
@@ -34,6 +43,17 @@ export function lockScreenProps(
   now: number,
 ): LockScreenProps {
   const cursor = findCurrent(session.exercises);
+  const sets = session.exercises.flatMap((e) => e.sets);
+  const common = {
+    setsDone: sets.filter((x) => x.completed).length,
+    setsTotal: sets.length,
+    labels: {
+      validate: t('common.validate'),
+      rest: t('domain.lockScreen.rest'),
+      upNext: t('domain.lockScreen.upNext'),
+      perSide: t('domain.lockScreen.perSideShort'),
+    },
+  };
   const resting = session.restEndsAt !== null && session.restEndsAt > now && session.restDuration !== null;
   const rest = resting
     ? { restStart: session.restEndsAt! - session.restDuration! * 1000, restEnd: session.restEndsAt }
@@ -46,6 +66,9 @@ export function lockScreenProps(
       setLabel: '',
       target: t('domain.lockScreen.openToSave'),
       plates: '',
+      plateList: [],
+      setShort: '',
+      ...common,
       ...rest,
       canValidate: false,
       done: true,
@@ -70,6 +93,9 @@ export function lockScreenProps(
     setLabel: t('domain.lockScreen.setLabel', { n: setIndex + 1, total: exercise.sets.length }),
     target: exercise.needsWeight ? t('domain.lockScreen.pickWeight') : load,
     plates: perSide.length > 0 ? t('domain.lockScreen.perSide', { plates: perSide.map(formatKg).join(' + ') }) : '',
+    plateList: perSide.map((p) => ({ kg: p, label: formatKg(p) })),
+    setShort: `${setIndex + 1}/${exercise.sets.length}`,
+    ...common,
     ...rest,
     canValidate: !exercise.needsWeight,
     done: false,
