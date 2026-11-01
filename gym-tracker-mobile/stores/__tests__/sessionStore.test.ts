@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as Speech from 'expo-speech';
 import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from '@/services/notifications';
+import { playRestBell } from '@/services/sound';
 import { useSessionStore } from '@/stores/sessionStore';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import type { ActiveExercise } from '@/types';
@@ -44,7 +45,7 @@ describe('sets', () => {
     store().completeSet('bench', 0);
     expect(session().exercises[0]!.sets[0]!.completed).toBe(true);
     expect(session().restDuration).toBe(120);
-    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(120, 'bench · 60 kg × 10');
+    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(120, 'bench · 60 kg × 10', true);
   });
 
   it('ignores a set validated twice', () => {
@@ -108,10 +109,23 @@ describe('adding and removing sets', () => {
 });
 
 describe('rest timer', () => {
-  it('ends by itself and says the next set', () => {
+  it('ends by itself, rings, then says the next set', () => {
     store().completeSet('bench', 0);
     jest.advanceTimersByTime(120_000);
     expect(session().restEndsAt).toBeNull();
+    expect(playRestBell).toHaveBeenCalledTimes(1);
+    // La voix attend la fin de la cloche
+    expect(Speech.speak).not.toHaveBeenCalledWith(expect.stringContaining("C'est reparti"), expect.anything());
+    jest.advanceTimersByTime(900);
+    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Série 2. 60 kilos, 10 reps.", expect.anything());
+  });
+
+  it('stays silent with the bell off, and the notification too', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, restBell: false } });
+    store().completeSet('bench', 0);
+    expect(scheduleRestCompleteNotification).toHaveBeenLastCalledWith(120, 'bench · 60 kg × 10', false);
+    jest.advanceTimersByTime(120_000);
+    expect(playRestBell).not.toHaveBeenCalled();
     expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Série 2. 60 kilos, 10 reps.", expect.anything());
   });
 
@@ -176,7 +190,7 @@ describe('swapping an exercise', () => {
     jest.advanceTimersByTime(20_000);
     jest.clearAllMocks();
     store().replaceExercise('bench', exercise('dips', 1));
-    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(100, 'dips · 60 kg × 10');
+    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(100, 'dips · 60 kg × 10', true);
   });
 
   it('leaves the rest notification alone when the next exercise stays the same', () => {
@@ -212,7 +226,7 @@ describe('changing the order', () => {
     store().completeSet('bench', 0);
     jest.clearAllMocks();
     store().doNow('ohp');
-    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(120, 'ohp · 60 kg × 10');
+    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(120, 'ohp · 60 kg × 10', true);
     expect(Speech.speak).not.toHaveBeenCalled();
   });
 

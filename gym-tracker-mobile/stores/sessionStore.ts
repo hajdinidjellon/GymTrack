@@ -22,6 +22,7 @@ import { findCurrent } from '@/domain/sessionCursor';
 import { nextExerciseLine, restOverLine, setLine } from '@/domain/voiceLines';
 import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from '@/services/notifications';
 import { speak } from '@/services/speech';
+import { playRestBell, REST_BELL_MS } from '@/services/sound';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
@@ -72,9 +73,13 @@ const settings = () => useSettingsStore.getState().settings;
 // Hors du state : un timeout n'a rien à faire dans un état sérialisable
 let restEndTimeout: ReturnType<typeof setTimeout> | null = null;
 
+let restBellVoice: ReturnType<typeof setTimeout> | null = null;
+
 function clearRestEndTimeout() {
   if (restEndTimeout) clearTimeout(restEndTimeout);
+  if (restBellVoice) clearTimeout(restBellVoice);
   restEndTimeout = null;
+  restBellVoice = null;
 }
 
 function armRestEnd(ms: number) {
@@ -84,9 +89,16 @@ function armRestEnd(ms: number) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
     useSessionStore.setState((s) => ({ activeSession: s.activeSession && Session.endRest(s.activeSession) }));
 
+    const { restBell, voice } = settings();
+    if (restBell) playRestBell();
+
     const session = useSessionStore.getState().activeSession;
     const next = session && findCurrent(session.exercises);
-    if (next && !next.exercise.needsWeight && settings().voice) speak(restOverLine(next));
+    if (!next || next.exercise.needsWeight || !voice) return;
+    const line = restOverLine(next);
+    // La voix attend la fin des coups de cloche
+    if (restBell) restBellVoice = setTimeout(() => speak(line), REST_BELL_MS);
+    else speak(line);
   }, ms);
 }
 
@@ -113,7 +125,8 @@ function afterCurrentChanged(previousExerciseId: string | undefined) {
   const next = session && findCurrent(session.exercises);
   if (!session || !next || next.exercise.id === previousExerciseId) return;
   const left = Session.restLeft(session, Date.now());
-  if (left > 0) void scheduleRestCompleteNotification(left, Session.nextSetSummary(session, formatKg));
+  if (left > 0)
+    void scheduleRestCompleteNotification(left, Session.nextSetSummary(session, formatKg), settings().restBell);
   else if (settings().voice) speak(nextExerciseLine(next, settings()));
 }
 
@@ -245,7 +258,11 @@ export const useSessionStore = create<SessionStore>()(
           apply((s) => Session.startRest(s, seconds, Date.now()));
           const session = get().activeSession!;
           // Notification gérée par l'OS : elle sonne même app en arrière-plan
-          void scheduleRestCompleteNotification(session.restDuration!, Session.nextSetSummary(session, formatKg));
+          void scheduleRestCompleteNotification(
+            session.restDuration!,
+            Session.nextSetSummary(session, formatKg),
+            settings().restBell,
+          );
           armRestEnd(session.restDuration! * 1000);
         },
 

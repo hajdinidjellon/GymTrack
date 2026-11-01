@@ -13,6 +13,7 @@ import { useLocale } from '@/hooks/useLocale';
 import { localeTag, t, type LanguageSetting } from '@/i18n';
 import { hasSession, signOut } from '@/services/supabase';
 import { speak } from '@/services/speech';
+import { playRestBell } from '@/services/sound';
 import { useProfileStore } from '@/stores/profileStore';
 import { REST_CHOICES, useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -60,6 +61,12 @@ export default function Profile() {
     const voice = !settings.voice;
     updateSettings({ voice });
     if (voice) speak(t('profile.during.voiceHello'));
+  };
+
+  const toggleBell = () => {
+    const restBell = !settings.restBell;
+    updateSettings({ restBell });
+    if (restBell) playRestBell();
   };
 
   const goal = GOALS.find((g) => g.id === profile?.goal);
@@ -131,6 +138,12 @@ export default function Profile() {
             label={t('profile.during.voice')}
             value={settings.voice ? t('profile.during.voiceOn') : t('profile.during.voiceOff')}
             onPress={toggleVoice}
+            hint={t('profile.during.tapToChange')}
+          />
+          <Row
+            label={t('profile.during.bell')}
+            value={settings.restBell ? t('profile.during.bellOn') : t('profile.during.bellOff')}
+            onPress={toggleBell}
             hint={t('profile.during.tapToChange')}
             last
           />

@@ -27,6 +27,9 @@ export const profile: Dictionary['profile'] = {
     voiceOn: 'On',
     voiceOff: 'Off',
     voiceHello: 'Voice on. I’ll tell you what to load.',
+    bell: 'End-of-rest bell',
+    bellOn: 'On',
+    bellOff: 'Off',
     tapToChange: 'Tap to change',
   },
   language: {

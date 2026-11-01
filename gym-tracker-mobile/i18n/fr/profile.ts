@@ -26,6 +26,9 @@ export const profile = {
     voiceOn: 'Activée',
     voiceOff: 'Coupée',
     voiceHello: 'Voix activée. Je te dirai quoi charger.',
+    bell: 'Sonnerie fin du repos',
+    bellOn: 'Activée',
+    bellOff: 'Coupée',
     tapToChange: 'Touche pour changer',
   },
   language: {

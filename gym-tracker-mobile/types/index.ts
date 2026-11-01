@@ -141,6 +141,8 @@ export interface AppSettings {
   notifications: boolean;
   /** Spoken cues during the session (next set, plates to load). */
   voice: boolean;
+  /** A bell when the rest is over, even with the phone on silent. */
+  restBell: boolean;
   barWeight: number;
   /** Plates the user's gym has, heaviest first. */
   plates: number[];

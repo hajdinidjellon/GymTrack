@@ -31,7 +31,8 @@
       [
         "expo-notifications",
         {
-          "color": "#F7F5F0"
+          "color": "#F7F5F0",
+          "sounds": ["./assets/sounds/rest-bell.wav"]
         }
       ],
       [
@@ -45,6 +46,14 @@
         "expo-widgets",
         {
           "groupIdentifier": "group.com.hajdinidjellon.gymtrack"
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
         }
       ]
     ],

@@ -244,5 +244,6 @@ export const domain = {
 
   notifications: {
     restOverTitle: 'Repos terminé',
+    restChannel: 'Fin du repos',
   },
 };
