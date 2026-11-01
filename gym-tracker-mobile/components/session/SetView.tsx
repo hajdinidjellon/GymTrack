@@ -16,6 +16,7 @@ import { ExerciseNote } from './ExerciseNote';
 import { LoadHint } from './LoadHint';
 import { MissedRepsSheet } from './MissedRepsSheet';
 import { SetsTable } from './SetRow';
+import { t } from '@/i18n';
 
 interface Props {
   cursor: Cursor;
@@ -53,7 +54,7 @@ export function SetView({ cursor, footer }: Props) {
         {exercise.lastTime ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text size={14} weight="semibold" color={colors.inkMuted}>
-              Dernière fois
+              {t('session.setView.lastTime')}
             </Text>
             <Text size={14} weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>
               {exercise.lastTime}
@@ -77,7 +78,7 @@ export function SetView({ cursor, footer }: Props) {
           >
             {set.weight > 0 ? (
               <Text size={14} weight="black">
-                Pourquoi {formatKg(set.target?.weight ?? set.weight)} kg ?
+                {t('session.setView.why', { kg: formatKg(set.target?.weight ?? set.weight) })}
               </Text>
             ) : null}
             <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
@@ -94,10 +95,10 @@ export function SetView({ cursor, footer }: Props) {
                 unit="kg"
                 onMinus={() => nudgeSet(exercise.id, setIndex, 'weight', -step)}
                 onPlus={() => nudgeSet(exercise.id, setIndex, 'weight', step)}
-                minusLabel={`Moins ${formatKg(step)} kg`}
-                plusLabel={`Plus ${formatKg(step)} kg`}
+                minusLabel={t('session.weightMinus', { kg: formatKg(step) })}
+                plusLabel={t('session.weightPlus', { kg: formatKg(step) })}
                 onChange={(weight) => updateSet(exercise.id, setIndex, { weight })}
-                inputLabel="Charge en kilos"
+                inputLabel={t('session.setView.weightInput')}
               />
               {loading === 'bar' ? (
                 <View style={{ height: 96, justifyContent: 'center' }}>
@@ -118,14 +119,14 @@ export function SetView({ cursor, footer }: Props) {
           ) : null}
           <Stepper
             value={String(set.reps)}
-            unit="reps"
+            unit={t('common.reps')}
             onMinus={() => nudgeSet(exercise.id, setIndex, 'reps', -1)}
             onPlus={() => nudgeSet(exercise.id, setIndex, 'reps', 1)}
-            minusLabel="Moins une rep"
-            plusLabel="Plus une rep"
+            minusLabel={t('session.setView.repMinus')}
+            plusLabel={t('session.setView.repPlus')}
             onChange={(reps) => updateSet(exercise.id, setIndex, { reps })}
             integer
-            inputLabel="Nombre de reps"
+            inputLabel={t('session.setView.repsInput')}
           />
         </StickerCard>
         <Pressable
@@ -135,7 +136,7 @@ export function SetView({ cursor, footer }: Props) {
           style={{ marginTop: space.md, alignSelf: 'center' }}
         >
           <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
-            Série ratée ? Note les reps faites
+            {t('session.setView.missed')}
           </Text>
         </Pressable>
 
@@ -144,7 +145,7 @@ export function SetView({ cursor, footer }: Props) {
           <Pressable
             onPress={() => addSet(exercise.id)}
             accessibilityRole="button"
-            accessibilityLabel="Ajouter une série"
+            accessibilityLabel={t('session.setView.addSetA11y')}
             style={({ pressed }) => ({
               marginTop: 8,
               height: 48,
@@ -157,12 +158,12 @@ export function SetView({ cursor, footer }: Props) {
             })}
           >
             <Text size={15} weight="bold" color={colors.inkMuted}>
-              + Ajouter une série
+              {t('session.setView.addSet')}
             </Text>
           </Pressable>
           {exercise.sets.length > 1 ? (
             <Text size={13} color={colors.inkFaint} align="center" style={{ marginTop: 6 }}>
-              Glisse une série vers la gauche pour la supprimer
+              {t('session.setView.swipeHint')}
             </Text>
           ) : null}
         </View>
@@ -173,7 +174,7 @@ export function SetView({ cursor, footer }: Props) {
           <>
             {remaining > 1 ? (
               <StickerButton
-                label={`Tout comme prévu · ${remaining} séries`}
+                label={t('session.setView.allAsPlanned', { count: remaining })}
                 variant="secondary"
                 size="small"
                 onPress={() => {
@@ -183,10 +184,10 @@ export function SetView({ cursor, footer }: Props) {
               />
             ) : null}
             <StickerButton
-              label="Valider"
+              label={t('common.validate')}
               size="xl"
               icon={<Check size={28} />}
-              accessibilityLabel="Valider la série"
+              accessibilityLabel={t('session.setView.validateA11y')}
               testID="validate-set"
               onPress={() => {
                 Keyboard.dismiss();

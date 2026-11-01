@@ -5,6 +5,7 @@ import { border, colors, radius } from '@/constants/theme';
 import { formatKg } from '@/domain/plates';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
+import { t } from '@/i18n';
 
 interface Props {
   visible: boolean;
@@ -31,7 +32,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
       onShow={() => setPicked(Math.max(0, target - 2))}
     >
       <View style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Fermer" />
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View
           style={{
             borderTopLeftRadius: 36,
@@ -47,11 +48,12 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
         >
           <View style={{ alignSelf: 'center', width: 48, height: 6, borderRadius: 3, backgroundColor: colors.line }} />
           <Text size={32} weight="black" style={{ marginTop: 22 }}>
-            Combien de reps ?
+            {t('session.missed.title')}
           </Text>
           <Text size={17} color={colors.inkMuted} style={{ marginTop: 6, lineHeight: 23 }}>
-            Objectif {target}
-            {weight > 0 ? ` à ${formatKg(weight)} kg` : ''}. Pas grave : la prochaine séance en tient compte.
+            {weight > 0
+              ? t('session.missed.hintWeight', { target, kg: formatKg(weight) })
+              : t('session.missed.hint', { target })}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
             {options.map((n) => {
@@ -63,7 +65,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
                   onPress={() => setPicked(n)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: on }}
-                  accessibilityLabel={`${n} reps${isTarget ? ' (objectif)' : ''}`}
+                  accessibilityLabel={t(isTarget ? 'session.missed.optionTarget' : 'session.missed.option', { n })}
                   style={{
                     width: '31.5%',
                     height: 72,
@@ -84,11 +86,17 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
             })}
           </View>
           <StickerButton
-            label={`Enregistrer ${picked} reps`}
+            label={t('session.missed.save', { n: picked })}
             onPress={() => onSave(picked)}
             style={{ marginTop: 24 }}
           />
-          <StickerButton label="Annuler" variant="ghost" size="small" onPress={onClose} style={{ marginTop: 6 }} />
+          <StickerButton
+            label={t('common.cancel')}
+            variant="ghost"
+            size="small"
+            onPress={onClose}
+            style={{ marginTop: 6 }}
+          />
         </View>
       </View>
     </Modal>

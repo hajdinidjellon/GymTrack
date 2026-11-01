@@ -3,14 +3,22 @@
  * set) so the history stays readable by any other tool.
  */
 
+import { t } from '@/i18n';
+
 export type Effort = 'easy' | 'good' | 'max';
 
 export const EFFORTS: readonly Effort[] = ['easy', 'good', 'max'];
 
 export const EFFORT_LABELS: Record<Effort, string> = {
-  easy: 'Facile',
-  good: 'Juste bien',
-  max: 'À fond',
+  get easy() {
+    return t('domain.effort.easy');
+  },
+  get good() {
+    return t('domain.effort.good');
+  },
+  get max() {
+    return t('domain.effort.max');
+  },
 };
 
 /** Easy: 4 reps or more left. Good: about 2 left. Max: nothing left. */

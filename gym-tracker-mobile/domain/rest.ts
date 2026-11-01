@@ -10,6 +10,7 @@
 
 import { formatRest } from '@/domain/format';
 import { restFor, type ExerciseDef } from '@/domain/programs';
+import { t } from '@/i18n';
 import type { ProgressionRule, WorkoutSet } from '@/types';
 
 /** Rough time to do a set, taken off the gap between two validations. */
@@ -74,8 +75,7 @@ export function planRest(
   own?: number,
 ): PlannedRest {
   const base = restFor(rule, defaultRest, def);
-  if (own != null)
-    return { seconds: clampRest(own), source: 'own', note: 'Le repos que tu as choisi pour cet exercice.' };
+  if (own != null) return { seconds: clampRest(own), source: 'own', note: t('domain.rest.own') };
 
   const usual = usualRest(history);
   // Seulement plus long : le repos du type d'exercice est un minimum
@@ -83,7 +83,7 @@ export function planRest(
     return {
       seconds: usual,
       source: 'learned',
-      note: `Sur cet exercice, tu prends ton temps : ${formatRest(usual)} d'habitude.`,
+      note: t('domain.rest.learned', { rest: formatRest(usual) }),
     };
   }
   return { seconds: base, source: 'kind', note: kindNote(def, rule, base, defaultRest) };
@@ -91,7 +91,7 @@ export function planRest(
 
 function kindNote(def: ExerciseDef, rule: ProgressionRule, base: number, defaultRest: number): string {
   if (base <= defaultRest && rule.repMax > 5) return '';
-  if (rule.repMax <= 5) return `Séries très lourdes : ${formatRest(base)} pour bien récupérer.`;
-  if (def.category === 'compound') return `Gros mouvement : ${formatRest(base)} pour récupérer.`;
-  return `Un seul muscle travaillé : ${formatRest(base)} de repos.`;
+  if (rule.repMax <= 5) return t('domain.rest.heavy', { rest: formatRest(base) });
+  if (def.category === 'compound') return t('domain.rest.compound', { rest: formatRest(base) });
+  return t('domain.rest.isolation', { rest: formatRest(base) });
 }

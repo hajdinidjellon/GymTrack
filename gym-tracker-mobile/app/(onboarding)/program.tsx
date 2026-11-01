@@ -4,6 +4,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, hardShadow } from '@/constants/theme';
 import { getSplit, SPLITS } from '@/domain/programs';
 import { defaultSchedule, trainingCount, validSchedule, WEEKDAY_NAMES, type Schedule } from '@/domain/schedule';
+import { dayName, t } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -17,6 +19,7 @@ import { resetTo } from '@/components/navigation/resetTo';
 const PER_WEEK = [2, 3, 4, 5, 6];
 
 export default function ProgramScreen() {
+  useLocale();
   const { goal, edit } = useLocalSearchParams<{ goal?: Goal; edit?: string }>();
   const profile = useProfileStore((s) => s.profile);
   const [split, setSplit] = useState<SplitId>(profile?.program.split ?? 'ppl');
@@ -63,15 +66,19 @@ export default function ProgramScreen() {
     <Screen
       scroll
       footer={
-        <StickerButton label={edit ? 'Enregistrer' : "C'est parti"} onPress={save} disabled={fixed && days === 0} />
+        <StickerButton
+          label={edit ? t('common.save') : t('onboarding.program.start')}
+          onPress={save}
+          disabled={fixed && days === 0}
+        />
       }
     >
       <StepHeader step={edit ? undefined : 2} total={edit ? undefined : 2} />
       <Text size={48} weight="black" style={{ marginTop: 26, lineHeight: 54 }}>
-        Ton programme
+        {t('onboarding.program.title')}
       </Text>
       <Text size={18} color={colors.inkMuted} style={{ marginTop: 10 }}>
-        Tu pourras le changer quand tu veux.
+        {t('onboarding.program.subtitle')}
       </Text>
 
       <View accessibilityRole="radiogroup" style={{ gap: 10, marginTop: 24 }}>
@@ -100,36 +107,36 @@ export default function ProgramScreen() {
       </View>
 
       <Text size={19} weight="black" style={{ marginTop: 28 }}>
-        Tes jours
+        {t('onboarding.program.days')}
       </Text>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
         <Choice
           selected={fixed}
           onPress={() => setFixed(true)}
-          accessibilityLabel="Jours fixes"
+          accessibilityLabel={t('onboarding.program.fixed')}
           style={{ flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' }}
         >
           <Text size={17} weight="black">
-            Jours fixes
+            {t('onboarding.program.fixed')}
           </Text>
         </Choice>
         <Choice
           selected={!fixed}
           onPress={() => setFixed(false)}
-          accessibilityLabel="Quand je peux"
+          accessibilityLabel={t('onboarding.program.flexible')}
           style={{ flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' }}
         >
           <Text size={17} weight="black">
-            Quand je peux
+            {t('onboarding.program.flexible')}
           </Text>
         </Choice>
       </View>
       <Text size={15} color={colors.inkMuted} style={{ marginTop: 12, lineHeight: 21 }}>
         {fixed
           ? days === 0
-            ? 'Choisis au moins un jour de séance.'
-            : `${days} séance${days > 1 ? 's' : ''} par semaine. Un jour de repos, tu peux quand même t'entraîner.`
-          : "Tu viens quand tu veux : les séances s'enchaînent dans l'ordre."}
+            ? t('onboarding.program.pickOne')
+            : t('onboarding.program.fixedHint', { count: days })
+          : t('onboarding.program.flexibleHint')}
       </Text>
 
       {fixed ? (
@@ -177,7 +184,10 @@ function DayRow({
               onPress={() => onChange(name)}
               accessibilityRole="radio"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`${weekday} : ${name ?? 'repos'}`}
+              accessibilityLabel={t('onboarding.program.dayLabel', {
+                weekday,
+                name: name ? dayName(name) : t('onboarding.program.restLabel'),
+              })}
               style={{
                 minHeight: 40,
                 paddingHorizontal: 14,
@@ -192,7 +202,7 @@ function DayRow({
               }}
             >
               <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
-                {name ?? 'Repos'}
+                {name ? dayName(name) : t('onboarding.program.rest')}
               </Text>
             </Pressable>
           );
@@ -216,7 +226,7 @@ function PerWeekPicker({ perWeek, onChange }: { perWeek: number; onChange: (n: n
             onPress={() => onChange(n)}
             accessibilityRole="radio"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={`${n} séances par semaine`}
+            accessibilityLabel={t('onboarding.program.perWeek', { n })}
             style={{
               width: 62,
               height: 62,

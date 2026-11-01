@@ -6,6 +6,7 @@
 import { LOADING_SUFFIX, loadingOf, sidePlates } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
+import { dayName, exerciseName, t } from '@/i18n';
 import type { ActiveSession, AppSettings } from '@/types';
 
 /** Plain JSON: it crosses to the widget extension. */
@@ -40,10 +41,10 @@ export function lockScreenProps(
 
   if (!cursor) {
     return {
-      session: session.name,
-      exercise: 'Séance terminée',
+      session: dayName(session.name),
+      exercise: t('domain.lockScreen.done'),
       setLabel: '',
-      target: "Ouvre l'app pour l'enregistrer",
+      target: t('domain.lockScreen.openToSave'),
       plates: '',
       ...rest,
       canValidate: false,
@@ -54,15 +55,21 @@ export function lockScreenProps(
   const { exercise, set, setIndex } = cursor;
   const loading = loadingOf(exercise);
   const suffix = LOADING_SUFFIX[loading];
-  const load = set.weight > 0 ? `${formatKg(set.weight)} kg${suffix ? ` ${suffix}` : ''} × ` : '';
+  const kg = formatKg(set.weight);
+  const load =
+    set.weight <= 0
+      ? t('domain.load.reps', { reps: set.reps })
+      : suffix
+        ? t('domain.load.kgSuffixTimes', { kg, suffix, reps: set.reps })
+        : t('domain.load.kgTimes', { kg, reps: set.reps });
   const perSide = exercise.needsWeight ? [] : sidePlates(loading, set.weight, settings);
 
   return {
-    session: session.name,
-    exercise: exercise.name,
-    setLabel: `Série ${setIndex + 1}/${exercise.sets.length}`,
-    target: exercise.needsWeight ? "Choisis ta charge dans l'app" : `${load}${set.reps}${load ? '' : ' reps'}`,
-    plates: perSide.length > 0 ? `${perSide.map(formatKg).join(' + ')} par côté` : '',
+    session: dayName(session.name),
+    exercise: exerciseName(exercise.name),
+    setLabel: t('domain.lockScreen.setLabel', { n: setIndex + 1, total: exercise.sets.length }),
+    target: exercise.needsWeight ? t('domain.lockScreen.pickWeight') : load,
+    plates: perSide.length > 0 ? t('domain.lockScreen.perSide', { plates: perSide.map(formatKg).join(' + ') }) : '',
     ...rest,
     canValidate: !exercise.needsWeight,
     done: false,

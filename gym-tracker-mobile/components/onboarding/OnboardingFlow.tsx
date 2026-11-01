@@ -18,6 +18,7 @@ import {
   type OnboardingAnswers,
 } from '@/domain/onboarding';
 import { formatKg } from '@/domain/plates';
+import { dayName, exerciseName, t } from '@/i18n';
 import { planDay } from '@/domain/sessionBuilder';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -65,7 +66,7 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
       scroll
       footer={
         <StickerButton
-          label={step === QUESTIONS - 1 ? 'Voir mon programme' : 'Continuer'}
+          label={step === QUESTIONS - 1 ? t('onboarding.flow.seeProgram') : t('common.continue')}
           haptic="light"
           onPress={next}
         />
@@ -90,10 +91,7 @@ interface StepProps {
 function GoalStep({ answers, set }: StepProps) {
   return (
     <>
-      <Question
-        title="Tu viens pour quoi ?"
-        subtitle="Ça règle tes séries et tes reps. Tu pourras changer plus tard."
-      />
+      <Question title={t('onboarding.flow.goal.title')} subtitle={t('onboarding.flow.goal.subtitle')} />
       <View accessibilityRole="radiogroup" style={{ gap: 14 }}>
         {GOALS.map((g) => {
           const on = answers.goal === g.id;
@@ -142,10 +140,7 @@ function RhythmStep({ answers, set }: StepProps) {
   const week = weekPlan(answers.perWeek);
   return (
     <>
-      <Question
-        title="Combien de séances par semaine ?"
-        subtitle="Sois réaliste : mieux vaut 3 séances tenues que 5 ratées."
-      />
+      <Question title={t('onboarding.flow.rhythm.title')} subtitle={t('onboarding.flow.rhythm.subtitle')} />
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 10 }}>
         {PER_WEEK_CHOICES.map((n) => {
           const on = answers.perWeek === n;
@@ -154,7 +149,7 @@ function RhythmStep({ answers, set }: StepProps) {
               key={n}
               selected={on}
               onPress={() => set({ perWeek: n })}
-              accessibilityLabel={`${n} séances par semaine`}
+              accessibilityLabel={t('onboarding.flow.rhythm.perWeek', { n })}
               style={{ flex: 1, height: 72, alignItems: 'center', justifyContent: 'center' }}
             >
               <Text size={on ? 32 : 28} weight="black">
@@ -168,7 +163,7 @@ function RhythmStep({ answers, set }: StepProps) {
       <StickerCard style={{ marginTop: 22, gap: 14 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <Text size={19} weight="titleMedium">
-            Ta semaine type
+            {t('onboarding.flow.rhythm.week')}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
             {getSplit(splitFor(answers.perWeek)).title}
@@ -176,7 +171,9 @@ function RhythmStep({ answers, set }: StepProps) {
         </View>
         <View
           accessible
-          accessibilityLabel={`Exemple : séances le ${WEEKDAYS.filter((_, i) => week[i]).join(', ')}`}
+          accessibilityLabel={t('onboarding.flow.rhythm.weekLabel', {
+            days: WEEKDAYS.filter((_, i) => week[i]).join(', '),
+          })}
           style={{ flexDirection: 'row', justifyContent: 'space-between' }}
         >
           {WEEKDAYS.map((d, i) => {
@@ -210,7 +207,7 @@ function RhythmStep({ answers, set }: StepProps) {
           })}
         </View>
         <Text size={14} color={colors.inkMuted} style={{ lineHeight: 20 }}>
-          {weekLegend(answers.perWeek)}. Les jours sont un exemple : tu choisiras les tiens dans Profil, Programme.
+          {t('onboarding.flow.rhythm.legend', { legend: weekLegend(answers.perWeek) })}
         </Text>
       </StickerCard>
       <Tip tip={rhythmTip(answers.perWeek)} />
@@ -221,10 +218,7 @@ function RhythmStep({ answers, set }: StepProps) {
 function ExperienceStep({ answers, set }: StepProps) {
   return (
     <>
-      <Question
-        title="Tu soulèves depuis quand ?"
-        subtitle="Pas de piège : ça sert juste à choisir tes premières charges."
-      />
+      <Question title={t('onboarding.flow.experience.title')} subtitle={t('onboarding.flow.experience.subtitle')} />
       <View accessibilityRole="radiogroup" style={{ gap: 14 }}>
         {EXPERIENCES.map((e) => {
           const on = answers.experience === e.id;
@@ -298,9 +292,9 @@ function GymStep({ answers, set }: StepProps) {
   };
   return (
     <>
-      <Question title="Il y a quoi dans ta salle ?" subtitle="Pour te dire quels disques mettre de chaque côté." />
+      <Question title={t('onboarding.flow.gym.title')} subtitle={t('onboarding.flow.gym.subtitle')} />
       <Text size={19} weight="titleMedium" style={{ marginBottom: 10 }}>
-        La barre
+        {t('onboarding.flow.gym.bar')}
       </Text>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 12 }}>
         {BAR_CHOICES.map((b) => (
@@ -308,7 +302,7 @@ function GymStep({ answers, set }: StepProps) {
             key={b.kg}
             selected={answers.barWeight === b.kg}
             onPress={() => set({ barWeight: b.kg })}
-            accessibilityLabel={`Barre de ${b.kg} kilos, ${b.label}`}
+            accessibilityLabel={t('onboarding.flow.gym.barLabel', { kg: b.kg, label: b.label })}
             style={{
               flex: 1,
               height: 60,
@@ -319,7 +313,7 @@ function GymStep({ answers, set }: StepProps) {
             }}
           >
             <Text size={20} weight="titleMedium">
-              {b.kg} kg
+              {b.kg} {t('common.kg')}
             </Text>
             <Text size={14} weight="semibold" color={colors.inkMuted}>
               {b.label}
@@ -338,10 +332,10 @@ function GymStep({ answers, set }: StepProps) {
         }}
       >
         <Text size={19} weight="titleMedium">
-          Les disques
+          {t('onboarding.flow.gym.plates')}
         </Text>
         <Text size={14} weight="semibold" color={colors.inkMuted}>
-          {answers.plates.length} sur {GYM_PLATES.length}
+          {t('onboarding.flow.gym.platesCount', { n: answers.plates.length, total: GYM_PLATES.length })}
         </Text>
       </View>
       <StickerCard style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 }}>
@@ -353,7 +347,7 @@ function GymStep({ answers, set }: StepProps) {
               onPress={() => toggle(kg)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: on }}
-              accessibilityLabel={`${formatKg(kg)} kilos`}
+              accessibilityLabel={t('onboarding.flow.gym.plateLabel', { kg: formatKg(kg) })}
               style={({ pressed }) => ({ width: '25%', alignItems: 'center', gap: 4, opacity: pressed ? 0.7 : 1 })}
             >
               <PlateFace kg={kg} size={62} off={!on} />
@@ -364,9 +358,7 @@ function GymStep({ answers, set }: StepProps) {
           );
         })}
       </StickerCard>
-      <Tip
-        tip={['Touche un disque', "pour l'ajouter ou l'enlever. On ne te demandera jamais un disque que tu n'as pas."]}
-      />
+      <Tip tip={[t('onboarding.flow.gym.tipLead'), t('onboarding.flow.gym.tip')]} />
     </>
   );
 }
@@ -398,9 +390,13 @@ function Recap({
       scroll
       footer={
         <>
-          <StickerButton label="Voir ma première séance" haptic="medium" onPress={() => onFinish('session')} />
           <StickerButton
-            label="Plus tard, voir l'accueil"
+            label={t('onboarding.flow.recap.firstSession')}
+            haptic="medium"
+            onPress={() => onFinish('session')}
+          />
+          <StickerButton
+            label={t('onboarding.flow.recap.later')}
             variant="ghost"
             size="small"
             onPress={() => onFinish('home')}
@@ -418,10 +414,10 @@ function Recap({
             <Sparkle size={22} />
           </View>
           <Text size={32} weight="black" accessibilityRole="header" style={{ lineHeight: 36 }}>
-            Ton programme{'\n'}est prêt
+            {t('onboarding.flow.recap.ready')}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[split.title, `${answers.perWeek} × par semaine`, goal.sub].map((label) => (
+            {[split.title, t('onboarding.flow.recap.perWeek', { n: answers.perWeek }), goal.sub].map((label) => (
               <View
                 key={label}
                 style={{
@@ -448,10 +444,10 @@ function Recap({
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}
           >
             <Text size={19} weight="titleMedium">
-              Séance 1 · {plan.name}
+              {t('onboarding.flow.recap.session', { name: dayName(plan.name) })}
             </Text>
             <Text size={14} weight="semibold" color={colors.inkMuted}>
-              ~{plan.minutes} min
+              {t('onboarding.flow.recap.minutes', { n: plan.minutes })}
             </Text>
           </View>
           {plan.lifts.map((lift, i) => (
@@ -468,7 +464,7 @@ function Recap({
             >
               <IndexBadge value={i + 1} />
               <Text size={16} weight="bold" style={{ flex: 1 }}>
-                {lift.def.name}
+                {exerciseName(lift.def.name)}
               </Text>
               <Text size={15} weight="titleMedium" color={colors.inkMuted}>
                 {lift.rule.sets} × {lift.rule.repMin}–{lift.rule.repMax}
@@ -479,12 +475,7 @@ function Recap({
       </FadeIn>
 
       <FadeIn index={2}>
-        <Tip
-          tip={[
-            'Première fois ?',
-            'Tu choisis ta charge sur chaque exercice. Ensuite, toutes tes charges sont calculées.',
-          ]}
-        />
+        <Tip tip={[t('onboarding.flow.recap.tipLead'), t('onboarding.flow.recap.tip')]} />
       </FadeIn>
     </Screen>
   );

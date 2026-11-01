@@ -3,6 +3,7 @@ import { Redirect, router } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { colors } from '@/constants/theme';
 import { TabBar } from '@/components/navigation/TabBar';
+import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -11,6 +12,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 let resumeChecked = false;
 
 export default function TabsLayout() {
+  useLocale();
   const hasProfile = useProfileStore((s) => !!s.profile);
   const signedOut = useSettingsStore((s) => s.settings.signedOut);
 

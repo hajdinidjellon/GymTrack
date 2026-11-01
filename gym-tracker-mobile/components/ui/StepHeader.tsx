@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { colors } from '@/constants/theme';
 import { BackButton } from './BackButton';
+import { t } from '@/i18n';
 
 /** Back arrow and the onboarding progress, or just the arrow when editing from the profile. */
 export function StepHeader({ step, total }: { step?: number; total?: number }) {
@@ -11,7 +12,7 @@ export function StepHeader({ step, total }: { step?: number; total?: number }) {
       {step != null && total != null ? (
         <View
           accessible
-          accessibilityLabel={`Étape ${step} sur ${total}`}
+          accessibilityLabel={t('ui.step', { step, total })}
           style={{ flex: 1, flexDirection: 'row', gap: 8 }}
         >
           {Array.from({ length: total }, (_, i) => (

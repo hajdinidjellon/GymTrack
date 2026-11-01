@@ -16,6 +16,9 @@ jest.mock('expo-haptics', () => ({
 
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));
 
+// Les tests lisent les textes français, quelle que soit la langue de la machine
+jest.mock('@/services/locale', () => ({ deviceLocaleTag: () => 'fr-FR' }));
+
 jest.mock('expo-sqlite/kv-store', () => {
   const memory = new Map<string, string>();
   return {

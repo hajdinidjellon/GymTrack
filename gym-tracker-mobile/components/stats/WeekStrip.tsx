@@ -4,16 +4,30 @@ import { border, colors, plateColor } from '@/constants/theme';
 import type { WeekDay } from '@/domain/stats';
 import { Text } from '@/components/ui/Text';
 import { Check } from '@/components/ui/icons';
+import { t, type TKey } from '@/i18n';
 
-const DAY_NAMES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const DAY_KEYS: TKey[] = [
+  'progress.stats.week.monday',
+  'progress.stats.week.tuesday',
+  'progress.stats.week.wednesday',
+  'progress.stats.week.thursday',
+  'progress.stats.week.friday',
+  'progress.stats.week.saturday',
+  'progress.stats.week.sunday',
+];
 
 /** Monday to Sunday. A trained day is a blue 20 kg plate, today is circled in coral, days ahead are dashed. */
 export function WeekStrip({ days }: { days: WeekDay[] }) {
-  const done = days.filter((d) => d.done).map((d) => DAY_NAMES[days.indexOf(d)]);
+  const done = days.flatMap((d, i) => {
+    const key = DAY_KEYS[i];
+    return d.done && key ? [t(key)] : [];
+  });
   return (
     <View
       accessible
-      accessibilityLabel={done.length ? `Entraîné ${done.join(', ')}` : 'Pas encore de séance cette semaine'}
+      accessibilityLabel={
+        done.length ? t('progress.stats.week.trained', { days: done.join(', ') }) : t('progress.stats.week.none')
+      }
       style={{ flexDirection: 'row', justifyContent: 'space-between' }}
     >
       {days.map((d, i) => (

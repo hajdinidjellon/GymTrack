@@ -3,10 +3,16 @@
  * Excel ou Numbers (séparateur « ; » et virgule décimale, à la française).
  */
 
-import { formatKg } from '@/domain/plates';
+import { t } from '@/i18n';
 import type { Workout } from '@/types';
 
-const HEADER = ['date', 'heure', 'séance', 'exercice', 'série', 'charge (kg)', 'reps', 'échauffement', 'repos (s)'];
+const header = () =>
+  (['date', 'time', 'session', 'exercise', 'set', 'weight', 'reps', 'warmup', 'rest'] as const).map((k) =>
+    t(`domain.csv.${k}`),
+  );
+
+/** Same values in every language: decimal comma, as the « ; » separator expects. */
+const kg = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
 
 function cell(value: string): string {
   return /[;"\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -31,12 +37,12 @@ export function workoutsToCsv(workouts: Workout[]): string {
             w.name,
             e.name,
             String(i + 1),
-            formatKg(s.weight),
+            kg(s.weight),
             String(s.reps),
-            s.setType === 'warmup' ? 'oui' : 'non',
+            s.setType === 'warmup' ? t('domain.csv.yes') : t('domain.csv.no'),
             s.restTaken != null ? String(s.restTaken) : '',
           ]),
       );
     });
-  return [HEADER, ...rows].map((r) => r.map(cell).join(';')).join('\n');
+  return [header(), ...rows].map((r) => r.map(cell).join(';')).join('\n');
 }

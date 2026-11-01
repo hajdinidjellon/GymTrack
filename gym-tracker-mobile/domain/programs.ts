@@ -2,6 +2,7 @@
  * PROGRAMMES — les séances prêtes à l'emploi et les règles par objectif.
  */
 
+import { exerciseName, t } from '@/i18n';
 import type {
   CustomExercise,
   Equipment,
@@ -178,8 +179,12 @@ const E = EXERCISES;
 export const SPLITS: Split[] = [
   {
     id: 'ppl',
-    title: 'Push · Pull · Legs',
-    meta: '3–6 j',
+    get title() {
+      return t('domain.programs.splitPpl');
+    },
+    get meta() {
+      return t('domain.programs.metaPpl');
+    },
     days: [
       { name: 'Push', exercises: [E.bench, E.ohp, E.incline, E.lateral, E.dips] },
       { name: 'Pull', exercises: [E.pullup, E.row, E.pulldown, E.facepull, E.curl] },
@@ -188,8 +193,12 @@ export const SPLITS: Split[] = [
   },
   {
     id: 'ul',
-    title: 'Haut · Bas',
-    meta: '4 j',
+    get title() {
+      return t('domain.programs.splitUl');
+    },
+    get meta() {
+      return t('domain.programs.metaUl');
+    },
     days: [
       { name: 'Haut', exercises: [E.bench, E.row, E.ohp, E.pulldown, E.curl] },
       { name: 'Bas', exercises: [E.squat, E.rdl, E.legpress, E.legcurl, E.calves] },
@@ -197,8 +206,12 @@ export const SPLITS: Split[] = [
   },
   {
     id: 'fb',
-    title: 'Full body',
-    meta: '2–3 j',
+    get title() {
+      return t('domain.programs.splitFb');
+    },
+    get meta() {
+      return t('domain.programs.metaFb');
+    },
     days: [
       { name: 'Full body A', exercises: [E.squat, E.bench, E.row, E.ohp, E.curl] },
       { name: 'Full body B', exercises: [E.deadlift, E.incline, E.pullup, E.lunge, E.dips] },
@@ -239,16 +252,36 @@ export function findDay(split: Split, name: string): ProgramDay | undefined {
 }
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
-  chest: 'Pectoraux',
-  back: 'Dos',
-  shoulders: 'Épaules',
-  biceps: 'Biceps',
-  triceps: 'Triceps',
-  arms: 'Bras',
-  legs: 'Jambes',
-  glutes: 'Fessiers',
-  calves: 'Mollets',
-  core: 'Abdos',
+  get chest() {
+    return t('domain.programs.muscles.chest');
+  },
+  get back() {
+    return t('domain.programs.muscles.back');
+  },
+  get shoulders() {
+    return t('domain.programs.muscles.shoulders');
+  },
+  get biceps() {
+    return t('domain.programs.muscles.biceps');
+  },
+  get triceps() {
+    return t('domain.programs.muscles.triceps');
+  },
+  get arms() {
+    return t('domain.programs.muscles.arms');
+  },
+  get legs() {
+    return t('domain.programs.muscles.legs');
+  },
+  get glutes() {
+    return t('domain.programs.muscles.glutes');
+  },
+  get calves() {
+    return t('domain.programs.muscles.calves');
+  },
+  get core() {
+    return t('domain.programs.muscles.core');
+  },
 };
 
 /** Where an exercise can be filed. "Bras" stays for old data, biceps and triceps replace it. */
@@ -283,12 +316,15 @@ export function searchKey(text: string): string {
     .trim();
 }
 
-/** Exercises whose name (or old name) contains every typed word. */
+/**
+ * Exercises whose name (or old name) contains every typed word. In English,
+ * the English name counts too: the French one stays findable.
+ */
 export function searchExercises(query: string, own: CustomExercise[] = []): ExerciseDef[] {
   const words = searchKey(query).split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
   return allExercises(own).filter((e) => {
-    const names = [e.name, ...(e.aliases ?? [])].map(searchKey).join(' ');
+    const names = [exerciseName(e.name), e.name, ...(e.aliases ?? [])].map(searchKey).join(' ');
     return words.every((w) => names.includes(w));
   });
 }
@@ -297,12 +333,15 @@ const hasWords = (text: string, words: string[]) => words.every((w) => searchKey
 
 /**
  * The other name the search found the exercise under: "Lat pulldown"
- * finds "Tirage vertical". Nothing when its own name matches.
+ * finds "Tirage vertical". Nothing when the name shown matches. In English,
+ * the French name is one of the other names.
  */
 export function aliasMatch(def: ExerciseDef, query: string): string | undefined {
   const words = searchKey(query).split(/\s+/).filter(Boolean);
-  if (words.length === 0 || hasWords(def.name, words)) return undefined;
-  return def.aliases?.find((a) => hasWords(a, words));
+  const shown = exerciseName(def.name);
+  if (words.length === 0 || hasWords(shown, words)) return undefined;
+  const others = shown === def.name ? (def.aliases ?? []) : [def.name, ...(def.aliases ?? [])];
+  return others.find((a) => hasWords(a, words));
 }
 
 /** Other exercises for the same main muscle, to swap when the machine is taken. */
@@ -330,12 +369,16 @@ export function makeCustomExercise(
   own: CustomExercise[] = [],
 ): CustomExercise | { error: string } {
   const name = input.name.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
-  if (!name) return { error: 'Donne un nom à ton exercice.' };
-  const existing = findExerciseDef(name, own);
+  if (!name) return { error: t('domain.programs.nameEmpty') };
+  const lower = name.toLowerCase();
+  // The name shown in the current language counts too: "Bench press" is taken in English
+  const existing =
+    findExerciseDef(name, own) ?? allExercises(own).find((e) => exerciseName(e.name).toLowerCase() === lower);
   if (existing) {
-    return existing.name.toLowerCase() === name.toLowerCase()
-      ? { error: 'Cet exercice existe déjà.' }
-      : { error: `Il existe déjà sous le nom « ${existing.name} ».` };
+    const shown = exerciseName(existing.name);
+    return shown.toLowerCase() === lower
+      ? { error: t('domain.programs.nameTaken') }
+      : { error: t('domain.programs.nameTakenAs', { name: shown }) };
   }
   return { name, equipment: input.equipment, category: input.category, muscleGroups: [input.muscle] };
 }
@@ -348,11 +391,18 @@ export interface GoalDef {
   plates: number[];
 }
 
-export const GOALS: GoalDef[] = [
-  { id: 'muscle', title: 'Prendre du muscle', sub: '3 × 8–12 reps', plates: [10, 5] },
-  { id: 'force', title: 'Devenir plus fort', sub: '5 × 3–5 reps, lourd', plates: [20, 20] },
-  { id: 'forme', title: 'Rester en forme', sub: '3 × 10–15 reps, court', plates: [5] },
-];
+const goalDef = (id: Goal, plates: number[]): GoalDef => ({
+  id,
+  plates,
+  get title() {
+    return t(`domain.programs.goals.${id}Title`);
+  },
+  get sub() {
+    return t(`domain.programs.goals.${id}Sub`);
+  },
+});
+
+export const GOALS: GoalDef[] = [goalDef('muscle', [10, 5]), goalDef('force', [20, 20]), goalDef('forme', [5])];
 
 /**
  * Default weight step per equipment. Stack machines move by a full stack plate,

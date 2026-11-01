@@ -25,6 +25,7 @@ import {
   type ExerciseDef,
   type ProgramDay,
 } from '@/domain/programs';
+import { t } from '@/i18n';
 import type {
   ActiveExercise,
   AppSettings,
@@ -197,22 +198,22 @@ export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
 export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string {
   switch (lift.decision) {
     case 'add_reps':
-      return '+1 rep';
+      return t('domain.plan.deltaOneRep');
     case 'add_two_reps':
-      return '+2 reps';
+      return t('domain.plan.deltaTwoReps');
     case 'add_weight':
-      return `+${formatKg(lift.rule.increment)} kg`;
+      return t('domain.plan.deltaWeight', { kg: formatKg(lift.rule.increment) });
     case 'hold':
     case 'repeat':
-      return 'même cible';
+      return t('domain.plan.deltaSame');
     case 'deload':
-      return 'allégé';
+      return t('domain.plan.deltaDeload');
     case 'comeback':
-      return 'reprise';
+      return t('domain.plan.deltaComeback');
     case 'start':
-      return 'départ';
+      return t('domain.plan.deltaStart');
     case 'calibrate':
-      return 'à régler';
+      return t('domain.plan.deltaCalibrate');
   }
 }
 
@@ -220,7 +221,7 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
 export function lastTimeLabel(sets: SetTarget[]): string {
   const reps = sets.map((s) => s.reps).join(' · ');
   const weight = referenceWeight(sets.map((s) => ({ ...s, setType: 'normal' as const })));
-  return weight > 0 ? `${formatKg(weight)} kg × ${reps}` : `${reps} reps`;
+  return weight > 0 ? t('domain.load.kgTimes', { kg: formatKg(weight), reps }) : t('domain.load.reps', { reps });
 }
 
 /** Why today's target is what it is, in one sentence. */
@@ -229,35 +230,32 @@ export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targe
   const bodyweight = (lift.targets[0]?.weight ?? 0) === 0;
   switch (lift.decision) {
     case 'add_weight':
-      return `Toutes tes séries ont atteint ${rule.repMax} reps : on ajoute ${formatKg(rule.increment)} kg.`;
+      return t('domain.plan.reasonAddWeight', { reps: rule.repMax, kg: formatKg(rule.increment) });
     case 'add_reps':
       return bodyweight
-        ? 'Une rep de plus par série que la dernière fois.'
-        : `Une rep de plus par série. À ${rule.repMax} reps partout, on ajoute du poids.`;
+        ? t('domain.plan.reasonAddRepsBodyweight')
+        : t('domain.plan.reasonAddReps', { reps: rule.repMax });
     case 'add_two_reps':
-      return 'Ta dernière série était facile : deux reps de plus par série.';
+      return t('domain.plan.reasonAddTwoReps');
     case 'hold':
-      return 'Ta dernière série était à fond : on garde la même cible pour consolider.';
+      return t('domain.plan.reasonHold');
     case 'repeat':
-      return `Une série est passée sous ${rule.repMin} reps : on garde la même cible.`;
+      return t('domain.plan.reasonRepeat', { reps: rule.repMin });
     case 'deload':
-      return 'Deux séances difficiles de suite : on allège de 10 % pour mieux repartir.';
+      return t('domain.plan.reasonDeload');
     case 'comeback':
-      return `${breakLabel(lift.daysOff ?? 14)} sans cet exercice : on reprend un peu plus léger pour retrouver tes marques.`;
+      return t('domain.plan.reasonComeback', { break: breakLabel(lift.daysOff ?? 14) });
     case 'start':
-      return bodyweight
-        ? 'Première séance : vise le bas de la fourchette.'
-        : 'Charge de départ calculée à 70 % de ton record.';
+      return bodyweight ? t('domain.plan.reasonStartBodyweight') : t('domain.plan.reasonStart');
     case 'calibrate':
-      return 'Première fois : choisis ta charge, ensuite on calcule tout.';
+      return t('domain.plan.reasonCalibrate');
   }
 }
 
 /** "2 semaines", "1 mois", "3 mois". */
 export function breakLabel(days: number): string {
-  if (days < 30) return `${Math.max(1, Math.floor(days / 7))} semaine${days >= 14 ? 's' : ''}`;
-  const months = Math.floor(days / 30);
-  return `${months} mois`;
+  if (days < 30) return t('domain.plan.weeks', { count: Math.max(1, Math.floor(days / 7)) });
+  return t('domain.plan.months', { count: Math.floor(days / 30) });
 }
 
 /** "3 × 10 · 62,5 kg", or "3 × 13" at bodyweight. Uneven reps show the lowest. */
@@ -274,7 +272,9 @@ export function targetLoad(targets: SetTarget[]): string {
   const first = targets[0];
   if (!first) return '';
   const reps = Math.min(...targets.map((t) => t.reps));
-  return first.weight > 0 ? `${formatKg(first.weight)} kg × ${reps}` : `${reps} reps`;
+  return first.weight > 0
+    ? t('domain.load.kgTimes', { kg: formatKg(first.weight), reps })
+    : t('domain.load.reps', { reps });
 }
 
 /** How many times the logged weight counts in the total: 2 for both sides or both dumbbells. */

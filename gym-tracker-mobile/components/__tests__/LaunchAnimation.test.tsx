@@ -1,16 +1,27 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { act, render, screen } from '@testing-library/react-native';
+import { setLocale } from '@/i18n';
 import { LaunchAnimation } from '@/components/brand/LaunchAnimation';
 
 beforeEach(() => {
   jest.useFakeTimers();
 });
 
+afterEach(() => setLocale('fr'));
+
 describe('LaunchAnimation', () => {
   it('shows the name while the app loads', async () => {
     await render(<LaunchAnimation ready={false} onDone={jest.fn()} />);
     expect(screen.getByText('GymTrack')).toBeOnTheScreen();
+    expect(screen.getByLabelText('GymTrack, chargement')).toBeOnTheScreen();
+  });
+
+  it('keeps the brand name and says it is loading in English', async () => {
+    setLocale('en');
+    await render(<LaunchAnimation ready={false} onDone={jest.fn()} />);
+    expect(screen.getByText('GymTrack')).toBeOnTheScreen();
+    expect(screen.getByLabelText('GymTrack, loading')).toBeOnTheScreen();
   });
 
   it('waits for the data, however long the animation took', async () => {

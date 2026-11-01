@@ -4,11 +4,12 @@
  * il se repose sur chaque exercice, où il progresse le plus. Logique pure.
  */
 
-import { countFr, formatRest, listFr } from '@/domain/format';
+import { formatRest, translatedList } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { allExercises } from '@/domain/programs';
 import { usualRest } from '@/domain/rest';
 import { exerciseHistory, weightHistory } from '@/domain/sessionBuilder';
+import { exerciseName, listOf, t } from '@/i18n';
 import type { CustomExercise, Workout } from '@/types';
 
 export interface Insight {
@@ -21,24 +22,39 @@ export interface Insight {
 export const INSIGHTS_AFTER = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+// Sunday first, like Date.getDay()
+const WEEKDAYS = translatedList([
+  'domain.weekdays.sun',
+  'domain.weekdays.mon',
+  'domain.weekdays.tue',
+  'domain.weekdays.wed',
+  'domain.weekdays.thu',
+  'domain.weekdays.fri',
+  'domain.weekdays.sat',
+]);
 
-function partOfDay(hour: number): string {
-  if (hour < 12) return 'le matin';
-  if (hour < 14) return 'le midi';
-  if (hour < 18) return "l'après-midi";
-  return 'le soir';
+type PartOfDay = 'morning' | 'midday' | 'afternoon' | 'evening';
+
+function partOfDay(hour: number): PartOfDay {
+  if (hour < 12) return 'morning';
+  if (hour < 14) return 'midday';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
 }
 
 function trainingTime(workouts: Workout[]): Insight | null {
-  const counts = new Map<string, number>();
+  const counts = new Map<PartOfDay, number>();
   for (const w of workouts) {
     const part = partOfDay(new Date(w.date).getHours());
     counts.set(part, (counts.get(part) ?? 0) + 1);
   }
-  const [part, count] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? ['', 0];
+  const [part, count] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? ['morning', 0];
   if (count / workouts.length < 0.5) return null;
-  return { id: 'time', title: 'Ton moment', text: `Tu t'entraînes surtout ${part}.` };
+  return {
+    id: 'time',
+    title: t('domain.insights.timeTitle'),
+    text: t('domain.insights.timeText', { part: t(`domain.insights.${part}`) }),
+  };
 }
 
 function usualDays(workouts: Workout[], perWeek: number, now: Date): Insight | null {
@@ -54,8 +70,8 @@ function usualDays(workouts: Workout[], perWeek: number, now: Date): Insight | n
   if (days.length === 0) return null;
   return {
     id: 'days',
-    title: 'Tes jours',
-    text: `Tu viens le plus souvent le ${listFr(days.map((d) => WEEKDAYS[d]!))}.`,
+    title: t('domain.insights.daysTitle'),
+    text: t('domain.insights.daysText', { days: listOf(days.map((d) => WEEKDAYS[d]!)) }),
   };
 }
 
@@ -66,7 +82,11 @@ function duration(workouts: Workout[]): Insight | null {
     .filter((m) => m >= 10);
   if (minutes.length < INSIGHTS_AFTER) return null;
   const mean = Math.round(minutes.reduce((a, b) => a + b, 0) / minutes.length / 5) * 5;
-  return { id: 'duration', title: 'Ta séance type', text: `Tes séances durent environ ${mean} min.` };
+  return {
+    id: 'duration',
+    title: t('domain.insights.durationTitle'),
+    text: t('domain.insights.durationText', { minutes: mean }),
+  };
 }
 
 function rhythm(workouts: Workout[], perWeek: number, now: Date): Insight | null {
@@ -77,9 +97,9 @@ function rhythm(workouts: Workout[], perWeek: number, now: Date): Insight | null
   const planned = weeks * perWeek;
   const text =
     done >= planned
-      ? `${countFr(done, 'séance')} en ${weeks} semaines : tu tiens ton rythme de ${perWeek} par semaine.`
-      : `${countFr(done, 'séance')} sur ${planned} prévues ces ${weeks} dernières semaines.`;
-  return { id: 'rhythm', title: 'Ton rythme', text };
+      ? t('domain.insights.rhythmKept', { count: done, weeks, perWeek })
+      : t('domain.insights.rhythmBehind', { count: done, planned, weeks });
+  return { id: 'rhythm', title: t('domain.insights.rhythmTitle'), text };
 }
 
 function rests(workouts: Workout[], own: CustomExercise[]): Insight | null {
@@ -91,8 +111,10 @@ function rests(workouts: Workout[], own: CustomExercise[]): Insight | null {
   const longest = [...found].sort((a, b) => b.usual - a.usual).slice(0, 3);
   return {
     id: 'rest',
-    title: 'Tes repos',
-    text: `${longest.map((r) => `${r.name} ${formatRest(r.usual)}`).join(' · ')}, en moyenne entre deux séries.`,
+    title: t('domain.insights.restTitle'),
+    text: t('domain.insights.restText', {
+      list: longest.map((r) => `${exerciseName(r.name)} ${formatRest(r.usual)}`).join(' · '),
+    }),
   };
 }
 
@@ -107,7 +129,11 @@ function strongest(workouts: Workout[], own: CustomExercise[]): Insight | null {
     })
     .sort((a, b) => b.ratio - a.ratio)[0];
   if (!best) return null;
-  return { id: 'strong', title: 'Ton point fort', text: `${best.name} : +${formatKg(best.gain)} kg depuis le début.` };
+  return {
+    id: 'strong',
+    title: t('domain.insights.strongTitle'),
+    text: t('domain.insights.strongText', { name: exerciseName(best.name), gain: formatKg(best.gain) }),
+  };
 }
 
 /** What the history says about the user. Empty until there are a few sessions. */

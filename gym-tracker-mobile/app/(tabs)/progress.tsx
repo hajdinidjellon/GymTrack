@@ -8,6 +8,8 @@ import { allExercises } from '@/domain/programs';
 import { weightHistory } from '@/domain/sessionBuilder';
 import { personalBests, weeklyVolume, weekTrend } from '@/domain/stats';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
+import { useLocale } from '@/hooks/useLocale';
+import { exerciseName, getLocale, t } from '@/i18n';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
@@ -34,6 +36,7 @@ interface LiftProgress {
 }
 
 export default function Progress() {
+  useLocale();
   const workouts = useWorkoutStore((s) => s.workouts);
   const bar = useSettingsStore((s) => s.settings.barWeight);
   const available = useSettingsStore((s) => s.settings.plates);
@@ -57,15 +60,15 @@ export default function Progress() {
 
   if (workouts.length === 0) {
     return (
-      <Screen tabs footer={<StickerButton label="Voir la séance du jour" onPress={() => router.navigate('/')} />}>
-        <ScreenHeader title="Progrès" subtitle="Ce que tu as gagné depuis le début, en disques." />
+      <Screen tabs footer={<StickerButton label={t('progress.empty.cta')} onPress={() => router.navigate('/')} />}>
+        <ScreenHeader title={t('progress.title')} subtitle={t('progress.subtitle')} />
         <StickerCard style={{ marginTop: space.sm, alignItems: 'center', paddingVertical: space.xxl, gap: space.md }}>
           <Barbell perSide={[]} scale={0.8} barWidth={80} />
           <Text size={20} weight="black" align="center">
-            Ta barre est encore vide
+            {t('progress.empty.title')}
           </Text>
           <Text size={15} color={colors.inkMuted} align="center" style={{ lineHeight: 21, maxWidth: 280 }}>
-            Fais ta première séance : tes courbes, ton volume et tes records s'afficheront ici.
+            {t('progress.empty.text')}
           </Text>
         </StickerCard>
       </Screen>
@@ -85,18 +88,22 @@ export default function Progress() {
   return (
     <Screen tabs scroll>
       <FadeIn>
-        <ScreenHeader title="Progrès" subtitle="Ce que tu as gagné depuis le début, en disques." />
+        <ScreenHeader title={t('progress.title')} subtitle={t('progress.subtitle')} />
       </FadeIn>
 
       <FadeIn index={1} style={{ flexDirection: 'row', gap: space.sm }}>
-        <StatTile value={String(workouts.length)} label={workouts.length > 1 ? 'séances' : 'séance'} />
-        <StatTile value={`+${formatKg(gained)} kg`} label="gagnés au total" highlight={gained > 0} />
-        <StatTile value={String(allRecords.length)} label={allRecords.length > 1 ? 'records' : 'record'} />
+        <StatTile value={String(workouts.length)} label={t('progress.tiles.sessions', { count: workouts.length })} />
+        <StatTile
+          value={t('progress.tiles.gainedValue', { kg: formatKg(gained) })}
+          label={t('progress.tiles.gained')}
+          highlight={gained > 0}
+        />
+        <StatTile value={String(allRecords.length)} label={t('progress.tiles.records', { count: allRecords.length })} />
       </FadeIn>
 
       <FadeIn index={2}>
         <SectionTitle
-          title="Volume par semaine"
+          title={t('progress.volume.title')}
           right={
             trend != null ? (
               <Chip tone={trend >= 0 ? 'sun' : 'neutral'} label={`${trend >= 0 ? '+' : ''}${trend} %`} />
@@ -109,7 +116,7 @@ export default function Progress() {
               {formatThousands(thisWeek.tonnage)}
             </Text>
             <Text size={14} weight="bold" color={colors.inkMuted}>
-              kg cette semaine
+              {t('progress.volume.thisWeek')}
             </Text>
           </View>
           <VolumeChart weeks={weeks} />
@@ -118,13 +125,15 @@ export default function Progress() {
 
       {hero ? (
         <FadeIn index={3}>
-          <SectionTitle title="Ta plus belle progression" />
+          <SectionTitle title={t('progress.hero.title')} />
           <StickerCard tone="hero" style={{ gap: space.md }}>
             <Text size={14} weight="semibold">
-              {hero.name} · depuis le {formatShortDay(hero.first.date).toLowerCase()}
+              {t('progress.hero.since', { name: exerciseName(hero.name), date: sinceDate(hero.first.date) })}
             </Text>
             <Text size={22} weight="black" style={{ lineHeight: 27 }}>
-              Tu as gagné {platesPhrase((hero.last.weight - hero.first.weight) / 2, available)} de chaque côté.
+              {t('progress.hero.gained', {
+                plates: platesPhrase((hero.last.weight - hero.first.weight) / 2, available),
+              })}
             </Text>
             {[hero.first, hero.last].map((point, i) => {
               const before = loadOf(hero.first.weight);
@@ -137,10 +146,10 @@ export default function Progress() {
                 <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <View style={{ width: 92 }}>
                     <Text size={13} weight="semibold">
-                      {i === 0 ? 'Au début' : 'Maintenant'}
+                      {i === 0 ? t('progress.hero.start') : t('progress.hero.now')}
                     </Text>
                     <Text size={20} weight="black">
-                      {formatKg(point.weight)} kg
+                      {formatKg(point.weight)} {t('common.kg')}
                     </Text>
                   </View>
                   <View style={{ flex: 1, height: 80, justifyContent: 'center' }}>
@@ -155,7 +164,7 @@ export default function Progress() {
 
       {records.length ? (
         <FadeIn index={4}>
-          <SectionTitle title="Tes records" />
+          <SectionTitle title={t('progress.records.title')} />
           <StickerCard style={{ paddingVertical: 4 }}>
             {records.map((r, i) => (
               <View
@@ -172,14 +181,14 @@ export default function Progress() {
               >
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text size={16} weight="bold" numberOfLines={1}>
-                    {r.name}
+                    {exerciseName(r.name)}
                   </Text>
                   <Text size={13} color={colors.inkMuted}>
-                    {formatShortDay(r.date)} · {r.reps} reps
+                    {t('progress.records.meta', { date: formatShortDay(r.date), reps: r.reps })}
                   </Text>
                 </View>
                 <View>
-                  <Chip tone="sun" label={`${formatKg(r.weight)} kg`} />
+                  <Chip tone="sun" label={`${formatKg(r.weight)} ${t('common.kg')}`} />
                 </View>
               </View>
             ))}
@@ -188,26 +197,36 @@ export default function Progress() {
       ) : null}
 
       <FadeIn index={5}>
-        <SectionTitle title="Tous tes exercices" />
+        <SectionTitle title={t('progress.lifts.title')} />
         <View style={{ gap: space.md }}>
           {lifts.map((l) => {
             const diff = l.last.weight - l.first.weight;
+            const name = exerciseName(l.name);
+            const kg = formatKg(l.last.weight);
             return (
               <PressableScale
                 key={l.name}
                 haptic="selection"
                 onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: l.name } })}
                 accessibilityRole="button"
-                accessibilityLabel={`${l.name}, ${formatKg(l.last.weight)} kilos${diff > 0 ? `, plus ${formatKg(diff)} depuis le début` : ''}`}
+                accessibilityLabel={
+                  diff > 0
+                    ? t('progress.lifts.a11yGain', { name, kg, diff: formatKg(diff) })
+                    : t('progress.lifts.a11y', { name, kg })
+                }
               >
                 <StickerCard small style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text size={16} weight="bold" numberOfLines={1}>
-                      {l.name}
+                      {name}
                     </Text>
                     <Text size={13} color={colors.inkMuted}>
-                      {formatKg(l.last.weight)} kg ·{' '}
-                      {diff > 0 ? `+${formatKg(diff)} kg` : diff < 0 ? `−${formatKg(-diff)} kg` : 'stable'}
+                      {kg} kg ·{' '}
+                      {diff > 0
+                        ? `+${formatKg(diff)} kg`
+                        : diff < 0
+                          ? `−${formatKg(-diff)} kg`
+                          : t('progress.lifts.stable')}
                     </Text>
                   </View>
                   <View style={{ width: 72 }}>
@@ -222,4 +241,10 @@ export default function Progress() {
       </FadeIn>
     </Screen>
   );
+}
+
+/** "mar. 14 oct." after "depuis le" in French; the date as is in English. */
+function sinceDate(iso: string): string {
+  const day = formatShortDay(iso);
+  return getLocale() === 'fr' ? day.toLowerCase() : day;
 }

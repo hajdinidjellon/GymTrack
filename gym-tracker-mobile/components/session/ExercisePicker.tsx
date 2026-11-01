@@ -16,6 +16,7 @@ import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { buzz } from '@/components/ui/PressableScale';
 import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
+import { exerciseName, t } from '@/i18n';
 
 interface Props {
   visible: boolean;
@@ -44,9 +45,9 @@ export function ExercisePicker({
   taken,
   onPick,
   onClose,
-  title = 'Ajouter un exercice',
+  title = t('session.add.title'),
   suggested,
-  suggestedTitle = 'Suggestions',
+  suggestedTitle = t('session.picker.suggestions'),
   muscle,
   footer,
 }: Props) {
@@ -58,7 +59,7 @@ export function ExercisePicker({
   const groups = catalogByMuscle(own);
   const tabs: Tab[] = [...(suggested?.length ? ['suggested' as const] : []), ...groups.map((g) => g.muscle)];
   // Ouverte sur les suggestions, sinon sur le muscle de l'exercice, sinon le premier
-  const defaultTab = tabs.find((t) => t === 'suggested') ?? tabs.find((t) => t === muscle) ?? tabs[0];
+  const defaultTab = tabs.find((x) => x === 'suggested') ?? tabs.find((x) => x === muscle) ?? tabs[0];
   const tab = chosenTab && tabs.includes(chosenTab) ? chosenTab : defaultTab;
   const shown = tab === 'suggested' ? (suggested ?? []) : (groups.find((g) => g.muscle === tab)?.exercises ?? []);
   const found = searchExercises(query, own);
@@ -89,7 +90,11 @@ export function ExercisePicker({
         disabled={added}
         onPress={() => pick(def)}
         accessibilityRole="button"
-        accessibilityLabel={added ? `${def.name}, déjà dans la séance` : `Choisir ${def.name}`}
+        accessibilityLabel={
+          added
+            ? t('session.picker.taken', { name: exerciseName(def.name) })
+            : t('session.picker.choose', { name: exerciseName(def.name) })
+        }
         style={({ pressed }) => ({
           minHeight: 52,
           paddingHorizontal: 16,
@@ -106,15 +111,15 @@ export function ExercisePicker({
       >
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text size={16} weight="bold" color={added ? colors.inkFaint : colors.ink} numberOfLines={1}>
-            {def.name}
+            {exerciseName(def.name)}
           </Text>
           {alias ? (
             <Text size={12} weight="semibold" color={colors.inkMuted}>
-              Aussi appelé {alias}
+              {t('session.picker.alias', { alias })}
             </Text>
           ) : def.custom ? (
             <Text size={12} weight="semibold" color={colors.inkMuted}>
-              Ton exercice
+              {t('session.picker.own')}
             </Text>
           ) : null}
         </View>
@@ -131,7 +136,7 @@ export function ExercisePicker({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}
       >
-        <Pressable style={{ flex: 1, minHeight: 80 }} onPress={close} accessibilityLabel="Fermer" />
+        <Pressable style={{ flex: 1, minHeight: 80 }} onPress={close} accessibilityLabel={t('common.close')} />
         <View
           style={{
             maxHeight: '88%',
@@ -147,7 +152,7 @@ export function ExercisePicker({
         >
           <View style={{ alignSelf: 'center', width: 48, height: 6, borderRadius: 3, backgroundColor: colors.line }} />
           <Text size={28} weight="black" style={{ marginTop: 18, paddingHorizontal: 24 }} accessibilityRole="header">
-            {creating ? 'Nouvel exercice' : title}
+            {creating ? t('session.picker.newExercise') : title}
           </Text>
           {!creating ? (
             <View style={{ paddingHorizontal: 24 }}>
@@ -156,11 +161,11 @@ export function ExercisePicker({
                 <TextInput
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Chercher : hack squat, smith, convergent…"
+                  placeholder={t('session.picker.searchPlaceholder')}
                   placeholderTextColor={colors.inkFaint}
                   returnKeyType="search"
                   autoCorrect={false}
-                  accessibilityLabel="Chercher un exercice"
+                  accessibilityLabel={t('session.picker.searchA11y')}
                   style={{
                     height: 52,
                     paddingHorizontal: 16,
@@ -180,12 +185,12 @@ export function ExercisePicker({
                   accessibilityRole="tablist"
                   style={{ marginTop: space.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
                 >
-                  {tabs.map((t) => (
+                  {tabs.map((item) => (
                     <MuscleTab
-                      key={t}
-                      label={t === 'suggested' ? suggestedTitle : MUSCLE_LABELS[t]}
-                      selected={t === tab}
-                      onPress={() => setTab(t)}
+                      key={item}
+                      label={item === 'suggested' ? suggestedTitle : MUSCLE_LABELS[item]}
+                      selected={item === tab}
+                      onPress={() => setTab(item)}
                     />
                   ))}
                 </View>
@@ -208,9 +213,7 @@ export function ExercisePicker({
                 {query.trim() ? (
                   <View style={{ marginTop: space.md, gap: 8 }}>
                     <Text size={14} weight="bold" color={colors.inkMuted}>
-                      {found.length
-                        ? `${found.length} exercice${found.length > 1 ? 's' : ''}`
-                        : 'Pas dans la liste : crée-le, il sera rangé avec son muscle.'}
+                      {found.length ? t('common.exercises', { count: found.length }) : t('session.picker.notFound')}
                     </Text>
                     {found.map(row)}
                   </View>
@@ -220,7 +223,11 @@ export function ExercisePicker({
                 <Pressable
                   onPress={() => setCreating(true)}
                   accessibilityRole="button"
-                  accessibilityLabel={query.trim() && !exact ? `Créer ${query.trim()}` : 'Créer un exercice'}
+                  accessibilityLabel={
+                    query.trim() && !exact
+                      ? t('session.picker.createNamedA11y', { name: query.trim() })
+                      : t('session.picker.createA11y')
+                  }
                   style={({ pressed }) => ({
                     marginTop: space.sm,
                     minHeight: 52,
@@ -234,7 +241,9 @@ export function ExercisePicker({
                   })}
                 >
                   <Text size={16} weight="bold" color={colors.inkMuted} numberOfLines={1}>
-                    {query.trim() && !exact ? `+ Créer « ${query.trim()} »` : '+ Créer mon exercice'}
+                    {query.trim() && !exact
+                      ? t('session.picker.createNamed', { name: query.trim() })
+                      : t('session.picker.create')}
                   </Text>
                 </Pressable>
               </>
@@ -242,7 +251,7 @@ export function ExercisePicker({
           </ScrollView>
           <View style={{ paddingHorizontal: 24, gap: space.sm }}>
             {!creating ? footer : null}
-            <StickerButton label="Fermer" variant="secondary" size="small" onPress={close} />
+            <StickerButton label={t('common.close')} variant="secondary" size="small" onPress={close} />
           </View>
         </View>
       </KeyboardAvoidingView>

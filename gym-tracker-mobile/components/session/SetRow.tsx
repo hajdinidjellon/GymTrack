@@ -6,6 +6,7 @@ import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { SwipeToDelete } from '@/components/ui/SwipeToDelete';
 import { Check } from '@/components/ui/icons';
+import { t } from '@/i18n';
 
 type State = 'done' | 'current' | 'upcoming';
 
@@ -23,9 +24,10 @@ export function SetRow({ index, kg, reps, state, noWeight }: Props) {
   const current = state === 'current';
   const done = state === 'done';
   const color = done ? colors.successText : state === 'upcoming' ? colors.inkMuted : colors.ink;
-  const label = `Série ${index}, ${noWeight ? '' : `${formatKg(kg)} kilos, `}${reps} reps, ${
-    done ? 'faite' : current ? 'en cours' : 'à venir'
-  }`;
+  const stateLabel = t(done ? 'session.setRow.done' : current ? 'session.setRow.current' : 'session.setRow.upcoming');
+  const label = noWeight
+    ? t('session.setRow.a11yNoWeight', { index, reps, state: stateLabel })
+    : t('session.setRow.a11y', { index, kg: formatKg(kg), reps, state: stateLabel });
 
   return (
     <View
@@ -119,16 +121,16 @@ export function SetsTable({ exercise, current, onRemove }: TableProps) {
   return (
     <View>
       <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 4 }}>
-        <Header label="SÉRIE" style={{ width: 52 }} />
-        {noWeight ? null : <Header label="KG" center />}
-        <Header label="REPS" center />
+        <Header label={t('session.setRow.headerSet')} style={{ width: 52 }} />
+        {noWeight ? null : <Header label={t('session.setRow.headerKg')} center />}
+        <Header label={t('session.setRow.headerReps')} center />
         <View style={{ width: 44 }} />
       </View>
       <View style={{ gap: 4 }}>
         {exercise.sets.map((s, i) => (
           <SwipeToDelete
             key={`${i}-${exercise.sets.length}`}
-            deleteLabel={`Supprimer la série ${i + 1}`}
+            deleteLabel={t('session.setRow.deleteA11y', { n: i + 1 })}
             onDelete={canRemove && !s.completed ? () => onRemove(i) : undefined}
           >
             <SetRow

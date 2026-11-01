@@ -1,7 +1,8 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { TabBar } from '@/components/navigation/TabBar';
+import { setLocale } from '@/i18n';
 
 async function setup(index: number) {
   const navigation = { emitter: { emit: jest.fn(() => ({ defaultPrevented: false })) }, navigateToTab: jest.fn() };
@@ -33,5 +34,17 @@ describe('TabBar', () => {
     const navigation = await setup(0);
     await fireEvent.press(screen.getByRole('tab', { name: "Aujourd'hui" }));
     expect(navigation.navigateToTab).not.toHaveBeenCalled();
+  });
+});
+
+describe('TabBar in English', () => {
+  afterEach(() => setLocale('fr'));
+
+  it('shows the English labels', async () => {
+    setLocale('en');
+    await setup(0);
+    expect(screen.getByRole('tab', { name: 'Today' })).toBeSelected();
+    expect(screen.getByText('Progress')).toBeOnTheScreen();
+    expect(screen.getByText('Profile')).toBeOnTheScreen();
   });
 });

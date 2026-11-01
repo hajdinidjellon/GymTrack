@@ -8,6 +8,7 @@ import { moveItem } from '@/domain/reorder';
 import { EFFORT_RPE, effortOf, type Effort } from '@/domain/effort';
 import { withRestTaken } from '@/domain/rest';
 import { findCurrent } from '@/domain/sessionCursor';
+import { exerciseName, t } from '@/i18n';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
 export function createSession(id: string, name: string, exercises: ActiveExercise[], now: Date): ActiveSession {
@@ -265,8 +266,9 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
 /** Body of the "rest over" notification: what to do next. */
 export function nextSetSummary(session: ActiveSession, formatKg: (n: number) => string): string {
   const next = findCurrent(session.exercises);
-  if (!next) return 'Lance ta prochaine série.';
-  const load =
-    next.set.weight > 0 ? ` · ${formatKg(next.set.weight)} kg × ${next.set.reps}` : ` · ${next.set.reps} reps`;
-  return `${next.exercise.name}${load}`;
+  if (!next) return t('domain.session.startNext');
+  const name = exerciseName(next.exercise.name);
+  return next.set.weight > 0
+    ? t('domain.session.nextLoad', { name, kg: formatKg(next.set.weight), reps: next.set.reps })
+    : t('domain.session.nextReps', { name, reps: next.set.reps });
 }

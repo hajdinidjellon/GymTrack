@@ -47,6 +47,7 @@ app/
 
 ```
 types/      shared types, no imports
+i18n/       every text in French (source) and English, t() with typed keys; pure like domain/
 domain/     pure TypeScript, no React / RN / Expo / I/O. Runs under Node in tests.
 services/   side effects: SQLite, Supabase, notifications, speech, encrypted storage, logger
 stores/     Zustand state; applies domain transitions, then triggers services
@@ -110,6 +111,7 @@ Base components in `components/ui/` (`StickerButton`, `StickerCard`, `Chip`, `Ch
 ## Key conventions
 
 - Path alias `@/` maps to `gym-tracker-mobile/`.
+- No user-visible text in code: `t('ns.key', params)` from `@/i18n`, French in `i18n/fr/<ns>.ts`, English in `i18n/en/<ns>.ts` (same keys, a test checks). Exercise and program day names are stored in French: show them through `exerciseName()` / `dayName()`. Every route calls `useLocale()`. Language: `settings.language` (`auto` follows the phone).
 - TypeScript strict with `noUncheckedIndexedAccess`.
 - Code in English; comments short, in plain French or English, only where they help.
 - Supabase is optional at runtime — `isSupabaseConfigured()` guards cloud calls. Data isolation relies on RLS.

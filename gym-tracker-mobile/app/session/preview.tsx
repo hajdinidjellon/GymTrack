@@ -3,6 +3,8 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
+import { useLocale } from '@/hooks/useLocale';
+import { dayName, exerciseName, t } from '@/i18n';
 import { describeSide, loadBar } from '@/domain/plates';
 import { programDays } from '@/domain/programs';
 import {
@@ -28,19 +30,18 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { MiniPlates } from '@/components/disc/Barbell';
 import { DayExercisesEditor } from '@/components/program/DayExercisesEditor';
 
-const EQUIPMENT_LABEL = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Machine', bodyweight: 'PDC' };
-
 export default function Preview() {
+  useLocale();
   const ctx = useBuildContext();
   const customDays = useSettingsStore((s) => s.settings.customDays);
   const own = useSettingsStore((s) => s.settings.customExercises);
-  const [dayName, setDayName] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
   const splitId = ctx?.profile.program.split;
   const days = splitId ? programDays(splitId, customDays, own) : [];
   const today = ctx ? nextDay(ctx) : null;
-  const day = days.find((d) => d.name === dayName) ?? today;
+  const day = days.find((d) => d.name === picked) ?? today;
   const plan = ctx && day ? planDay(day, ctx) : null;
   if (!plan || !splitId || !today || !day) return null;
 
@@ -54,18 +55,25 @@ export default function Preview() {
       scroll
       scrollEnabled={!dragging}
       footer={
-        <StickerButton label="Lancer la séance" haptic="medium" disabled={plan.lifts.length === 0} onPress={start} />
+        <StickerButton
+          label={t('session.preview.start')}
+          haptic="medium"
+          disabled={plan.lifts.length === 0}
+          onPress={start}
+        />
       }
     >
-      <BackButton label="Retour à l'accueil" />
+      <BackButton label={t('session.backHome')} />
       <ScreenHeader
-        eyebrow={`${plan.name === today.name ? 'Séance du jour' : 'Séance choisie'} · ~${plan.minutes} min`}
-        title={plan.name}
-        subtitle="Charges et reps calculées depuis tes dernières séances. Touche un exercice pour le détail."
+        eyebrow={t(plan.name === today.name ? 'session.preview.todayEyebrow' : 'session.preview.chosenEyebrow', {
+          minutes: plan.minutes,
+        })}
+        title={dayName(plan.name)}
+        subtitle={t('session.preview.subtitle')}
       />
 
       <Text size={14} weight="bold" color={colors.inkMuted}>
-        Envie d'une autre séance ?
+        {t('session.preview.otherDay')}
       </Text>
       <ScrollView
         horizontal
@@ -78,10 +86,15 @@ export default function Preview() {
           return (
             <Pressable
               key={d.name}
-              onPress={() => setDayName(d.name)}
+              onPress={() => setPicked(d.name)}
               accessibilityRole="radio"
               accessibilityState={{ selected: on }}
-              accessibilityLabel={`Séance ${d.name}${d.name === today.name ? ', prévue aujourd’hui' : ''}`}
+              accessibilityLabel={t(
+                d.name === today.name ? 'session.preview.dayTodayA11y' : 'session.preview.dayA11y',
+                {
+                  name: dayName(d.name),
+                },
+              )}
               style={{
                 height: 44,
                 paddingHorizontal: 18,
@@ -93,7 +106,7 @@ export default function Preview() {
               }}
             >
               <Text size={16} weight={on ? 'black' : 'titleMedium'}>
-                {d.name}
+                {dayName(d.name)}
               </Text>
             </Pressable>
           );
@@ -130,35 +143,41 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
       haptic="selection"
       onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: lift.def.name } })}
       accessibilityRole="button"
-      accessibilityLabel={`${lift.def.name}, ${calibrate ? 'première fois' : targetLabel(lift.targets)}, ${deltaLabel(lift)}`}
+      accessibilityLabel={t('session.preview.liftA11y', {
+        name: exerciseName(lift.def.name),
+        target: calibrate ? t('session.preview.firstTime') : targetLabel(lift.targets),
+        delta: deltaLabel(lift),
+      })}
     >
       <StickerCard small style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <IndexBadge value={index + 1} />
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
           <Text size={16} weight="black" numberOfLines={1}>
-            {lift.def.name}
+            {exerciseName(lift.def.name)}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1} style={{ flexShrink: 1 }}>
-              {calibrate ? 'Charge à choisir' : targetLabel(lift.targets)}
+              {calibrate ? t('session.preview.weightToPick') : targetLabel(lift.targets)}
             </Text>
             {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
           </View>
         </View>
         {showPlates ? (
-          <View accessible accessibilityLabel={`Par côté : ${describeSide(perSide)}`}>
+          <View accessible accessibilityLabel={t('session.preview.perSideA11y', { plates: describeSide(perSide) })}>
             <MiniPlates perSide={perSide} />
           </View>
         ) : (
           // Chip sticks to the top of a row on its own: the wrapper centres it
           <View>
-            <Chip label={calibrate ? 'Régler' : EQUIPMENT_LABEL[lift.def.equipment]} />
+            <Chip
+              label={calibrate ? t('session.preview.calibrate') : t(`session.preview.equipment.${lift.def.equipment}`)}
+            />
           </View>
         )}
         <Pressable
           onPress={onRemove}
           accessibilityRole="button"
-          accessibilityLabel={`Retirer ${lift.def.name}`}
+          accessibilityLabel={t('session.preview.remove', { name: exerciseName(lift.def.name) })}
           hitSlop={8}
           style={({ pressed }) => ({
             width: 32,

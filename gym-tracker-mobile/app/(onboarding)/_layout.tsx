@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
 import { colors } from '@/constants/theme';
+import { useLocale } from '@/hooks/useLocale';
 
 export default function OnboardingLayout() {
+  useLocale();
   return (
     <Stack
       screenOptions={{

@@ -153,6 +153,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     plateLoaded: z.record(z.string().max(100), z.boolean()),
     countBothSides: z.boolean(),
     signedOut: z.boolean(),
+    language: z.enum(['auto', 'fr', 'en']),
   })
   .partial();
 

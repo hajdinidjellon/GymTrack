@@ -17,6 +17,7 @@ import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { CheckRow } from '@/components/ui/CheckRow';
 import { ExercisePicker } from './ExercisePicker';
+import { dayName, exerciseName, t } from '@/i18n';
 
 /** "Changer" next to the exercise name: machine taken, sore shoulder… another exercise, computed the same way. */
 export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExercise; sessionName: string }) {
@@ -52,7 +53,7 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
-        accessibilityLabel={`Changer d'exercice, à la place de ${exercise.name}`}
+        accessibilityLabel={t('session.swap.a11y', { name: exerciseName(exercise.name) })}
         hitSlop={8}
         style={({ pressed }) => ({
           height: 36,
@@ -65,25 +66,23 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
         })}
       >
         <Text size={14} weight="titleMedium">
-          Changer
+          {t('session.swap.button')}
         </Text>
       </Pressable>
       <ExercisePicker
         visible={open}
-        title="Changer d'exercice"
+        title={t('session.swap.title')}
         taken={exercises.map((e) => e.name)}
         suggested={def ? alternativesFor(def, own) : []}
-        suggestedTitle={muscle ? `Même muscle · ${MUSCLE_LABELS[muscle]}` : 'Suggestions'}
+        suggestedTitle={
+          muscle ? t('session.swap.sameMuscle', { muscle: MUSCLE_LABELS[muscle] }) : t('session.picker.suggestions')
+        }
         muscle={muscle}
         onPick={pick}
         onClose={() => setOpen(false)}
         footer={
           day ? (
-            <CheckRow
-              label={`Garder ce changement pour mes prochaines séances ${day.name}`}
-              checked={keep}
-              onChange={setKeep}
-            />
+            <CheckRow label={t('session.swap.keep', { day: dayName(day.name) })} checked={keep} onChange={setKeep} />
           ) : null
         }
       />

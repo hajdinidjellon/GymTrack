@@ -2,8 +2,9 @@ import React from 'react';
 import { Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronLeft } from './icons';
+import { t } from '@/i18n';
 
-export function BackButton({ onPress, label = 'Retour' }: { onPress?: () => void; label?: string }) {
+export function BackButton({ onPress, label = t('common.back') }: { onPress?: () => void; label?: string }) {
   return (
     <Pressable
       onPress={onPress ?? (() => router.back())}

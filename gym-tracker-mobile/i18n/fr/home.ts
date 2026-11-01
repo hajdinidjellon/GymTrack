@@ -1,0 +1,56 @@
+/** The "Aujourd'hui" tab and the tab bar. */
+export const home = {
+  tabs: {
+    today: "Aujourd'hui",
+    progress: 'Progrès',
+    profile: 'Profil',
+  },
+  title: "Aujourd'hui",
+  resume: 'Reprendre la séance',
+  start: 'Lancer la séance',
+  streak: "{count} sem. d'affilée",
+  week: {
+    title: 'Cette semaine',
+    reached: 'Objectif de la semaine atteint',
+    left: { one: 'Encore {count} séance cette semaine', other: 'Encore {count} séances cette semaine' },
+  },
+  today: {
+    planned: 'Séance du jour',
+    chosen: 'Séance choisie',
+    minutes: '~{n} min',
+    welcomeBack: 'Content de te revoir !',
+    comeback: 'Après {pause} de pause, on reprend un peu plus léger. Ça remonte vite.',
+    firstOnBar: 'Sur la barre en premier',
+    kgTimesReps: 'kg × {reps}',
+    perSide: '{plates} de chaque côté',
+    emptyBar: 'Barre à vide',
+    noExercises: "Aucun exercice dans cette séance pour l'instant.",
+    addExercises: 'Ajouter des exercices',
+    firstSession: 'Première séance : tu choisiras ta charge de départ sur chaque exercice, ensuite on calcule tout.',
+  },
+  lift: {
+    toChoose: 'Charge à choisir',
+    a11y: '{name}, {target}',
+    a11yToChoose: '{name}, charge à choisir',
+    lastTime: 'Dernière fois : {last}',
+  },
+  last: {
+    title: 'Dernière séance',
+    meta: '{date} · {sets} · {minutes} min',
+    lifted: 'soulevés',
+  },
+  rest: {
+    done: 'Séance faite',
+    off: "Repos aujourd'hui",
+    wellDone: 'Bien joué.',
+    recovering: 'Tes muscles récupèrent, ça fait partie du programme.',
+    next: 'Prochaine séance : {name}, {when}.',
+    pickAnyway: "Envie de t'entraîner quand même ? Choisis ta séance",
+  },
+  picker: {
+    label: "Envie d'autre chose ? Choisis ta séance",
+    a11y: 'Séance {name}',
+    a11yPlanned: 'Séance {name}, prévue aujourd’hui',
+    planned: 'prévue',
+  },
+};

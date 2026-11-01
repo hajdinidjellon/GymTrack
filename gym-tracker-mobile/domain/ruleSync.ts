@@ -4,8 +4,8 @@
  * differently on purpose keep their own.
  */
 
-import { listFr } from '@/domain/format';
 import { clampRule, ruleFor, similarExercises, type ExerciseDef } from '@/domain/programs';
+import { listOf, t } from '@/i18n';
 import type { CustomExercise, Goal, RuleOverride } from '@/types';
 
 export interface RuleContext {
@@ -55,9 +55,8 @@ export function applyRule(
   return overrides;
 }
 
-/** "Développé couché, Smith et Dips", or the first three and "+ 4 autres". */
+/** "Développé couché, Smith et Dips", or the first three and "+ 4 autres". Names come already as shown. */
 export function followersLabel(names: string[], shown = 3): string {
-  if (names.length <= shown) return listFr(names);
-  const more = names.length - shown;
-  return `${names.slice(0, shown).join(', ')} + ${more} autre${more > 1 ? 's' : ''}`;
+  if (names.length <= shown) return listOf(names);
+  return t('domain.ruleSync.more', { list: names.slice(0, shown).join(', '), count: names.length - shown });
 }

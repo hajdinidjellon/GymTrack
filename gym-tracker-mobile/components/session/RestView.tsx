@@ -13,6 +13,7 @@ import { StickerCard } from '@/components/ui/StickerCard';
 import { MiniPlates } from '@/components/disc/Barbell';
 import { useSidePlates } from '@/components/disc/LoadedBar';
 import { EffortPicker } from './EffortPicker';
+import { exerciseName, t } from '@/i18n';
 
 interface Props {
   next: Cursor | null;
@@ -43,11 +44,13 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note,
     <StickerCard tone="sun" style={{ paddingVertical: 14, gap: space.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <Text size={18} weight="black">
-          Repos
+          {t('session.rest.title')}
         </Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {onMinimize ? <Nudge label="Réduire" a11y="Réduire le minuteur" onPress={onMinimize} /> : null}
-          <Nudge label="✕" a11y="Fermer le repos" onPress={stopRestTimer} />
+          {onMinimize ? (
+            <Nudge label={t('session.rest.minimize')} a11y={t('session.rest.minimizeA11y')} onPress={onMinimize} />
+          ) : null}
+          <Nudge label="✕" a11y={t('session.rest.closeA11y')} onPress={stopRestTimer} />
         </View>
       </View>
 
@@ -62,7 +65,7 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note,
       <View
         accessible
         accessibilityRole="timer"
-        accessibilityLabel={`Repos, ${left} secondes restantes`}
+        accessibilityLabel={t('session.rest.timerA11y', { count: left })}
         style={{ alignItems: 'center' }}
       >
         <Text size={88} weight="black" style={{ lineHeight: 96 }}>
@@ -85,22 +88,24 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note,
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12 }}>
-        <Nudge label="−15 s" a11y="Retirer 15 secondes" onPress={() => addRestTime(-15)} />
-        <Nudge label="+15 s" a11y="Ajouter 15 secondes" onPress={() => addRestTime(15)} />
+        <Nudge label="−15 s" a11y={t('session.rest.minus15A11y')} onPress={() => addRestTime(-15)} />
+        <Nudge label="+15 s" a11y={t('session.rest.plus15A11y')} onPress={() => addRestTime(15)} />
       </View>
 
       {next ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md }}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text size={13} weight="semibold" numberOfLines={1}>
-              Ensuite ·{' '}
               {next.setIndex === 0 || (doneExerciseId && next.exercise.id !== doneExerciseId)
-                ? `${next.exercise.name}${next.setIndex > 0 ? `, série ${next.setIndex + 1}` : ''}`
-                : `série ${next.setIndex + 1}`}
+                ? t(next.setIndex > 0 ? 'session.rest.nextExerciseSet' : 'session.rest.nextExercise', {
+                    name: exerciseName(next.exercise.name),
+                    n: next.setIndex + 1,
+                  })
+                : t('session.rest.nextSet', { n: next.setIndex + 1 })}
             </Text>
             <Text size={22} weight="black" numberOfLines={1}>
               {next.exercise.needsWeight
-                ? 'Charge à régler'
+                ? t('session.rest.weightToSet')
                 : next.set.weight > 0
                   ? `${formatKg(next.set.weight)} kg × ${next.set.reps}`
                   : `${next.set.reps} reps`}
@@ -110,17 +115,17 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note,
         </View>
       ) : null}
 
-      <StickerButton label="Passer le repos" variant="secondary" haptic="medium" onPress={stopRestTimer} />
+      <StickerButton label={t('session.rest.skip')} variant="secondary" haptic="medium" onPress={stopRestTimer} />
       {doneLabel ? (
         <Pressable
           onPress={undoLastSet}
           accessibilityRole="button"
-          accessibilityLabel="Annuler la dernière série"
+          accessibilityLabel={t('session.rest.undoA11y')}
           hitSlop={8}
           style={{ alignSelf: 'center' }}
         >
           <Text size={13} weight="bold" style={{ textDecorationLine: 'underline' }} numberOfLines={1}>
-            {doneLabel} · annuler
+            {t('session.rest.undo', { label: doneLabel })}
           </Text>
         </Pressable>
       ) : null}
@@ -161,7 +166,7 @@ export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpan
     <Pressable
       onPress={onExpand}
       accessibilityRole="button"
-      accessibilityLabel={`Repos, ${left} secondes restantes. Agrandir le minuteur`}
+      accessibilityLabel={t('session.rest.miniA11y', { count: left })}
       style={({ pressed }) => ({
         height: 60,
         paddingHorizontal: 18,
@@ -175,13 +180,13 @@ export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpan
       })}
     >
       <Text size={16} weight="titleMedium">
-        Repos
+        {t('session.rest.title')}
       </Text>
       <Text size={28} weight="black">
         {clock}
       </Text>
       <Text size={14} weight="bold" style={{ textDecorationLine: 'underline' }}>
-        Agrandir
+        {t('session.rest.expand')}
       </Text>
     </Pressable>
   );

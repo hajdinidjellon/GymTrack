@@ -4,6 +4,7 @@ import { border, colors } from '@/constants/theme';
 import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { Check } from '@/components/ui/icons';
+import { exerciseName, t } from '@/i18n';
 
 interface Props {
   exercises: ActiveExercise[];
@@ -64,7 +65,11 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
               hitSlop={8}
               accessibilityRole={waiting ? 'button' : 'text'}
               accessibilityLabel={
-                waiting ? `Faire ${e.name} maintenant` : `${e.name}, ${finished ? 'terminé' : 'en cours'}`
+                waiting
+                  ? t('session.progress.doNow', { name: exerciseName(e.name) })
+                  : t(finished ? 'session.progress.finished' : 'session.progress.current', {
+                      name: exerciseName(e.name),
+                    })
               }
               style={({ pressed }) => pillStyle(finished ? 'finished' : now ? 'current' : 'waiting', pressed)}
             >

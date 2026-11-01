@@ -10,6 +10,7 @@ import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { CheckRow } from '@/components/ui/CheckRow';
 import { ExercisePicker } from './ExercisePicker';
+import { dayName, t } from '@/i18n';
 
 /** "+" after the exercise pills: one more exercise, done last, computed like the others. */
 export function AddExercise({ current, sessionName }: { current: ActiveExercise; sessionName: string }) {
@@ -42,7 +43,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
-        accessibilityLabel="Ajouter un exercice à la séance"
+        accessibilityLabel={t('session.add.a11y')}
         hitSlop={8}
         style={({ pressed }) => ({
           width: 28,
@@ -62,20 +63,16 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
       </Pressable>
       <ExercisePicker
         visible={open}
-        title="Ajouter un exercice"
+        title={t('session.add.title')}
         taken={taken}
         suggested={def ? alternativesFor(def, own).filter((e) => !taken.includes(e.name)) : []}
-        suggestedTitle="Même muscle"
+        suggestedTitle={t('session.add.sameMuscle')}
         muscle={current.muscleGroups[0]}
         onPick={pick}
         onClose={() => setOpen(false)}
         footer={
           day ? (
-            <CheckRow
-              label={`L'ajouter aussi à mes prochaines séances ${day.name}`}
-              checked={keep}
-              onChange={setKeep}
-            />
+            <CheckRow label={t('session.add.keep', { day: dayName(day.name) })} checked={keep} onChange={setKeep} />
           ) : null
         }
       />

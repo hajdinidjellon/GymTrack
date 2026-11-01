@@ -13,11 +13,12 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { IndexBadge } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { DayExercisesEditor } from '@/components/program/DayExercisesEditor';
-
-const EQUIPMENT = { barbell: 'Barre', dumbbell: 'Haltères', machine: 'Machine', bodyweight: 'Poids du corps' };
+import { dayName, exerciseName, t } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 
 /** One session of the program: its exercises, their order, sets and reps. */
 export default function DayScreen() {
+  useLocale();
   const { name } = useLocalSearchParams<{ name: string }>();
   const profile = useProfileStore((s) => s.profile);
   const customDays = useSettingsStore((s) => s.settings.customDays);
@@ -32,7 +33,7 @@ export default function DayScreen() {
       <Screen>
         <BackButton />
         <Text size={20} style={{ marginTop: 20 }}>
-          Séance introuvable.
+          {t('program.day.notFound')}
         </Text>
       </Screen>
     );
@@ -41,11 +42,7 @@ export default function DayScreen() {
   return (
     <Screen scroll scrollEnabled={!dragging}>
       <BackButton />
-      <ScreenHeader
-        eyebrow="Mes séances"
-        title={day.name}
-        subtitle="Touche un exercice pour régler ses séries, ses reps et la charge ajoutée à chaque palier."
-      />
+      <ScreenHeader eyebrow={t('program.days.title')} title={dayName(day.name)} subtitle={t('program.day.subtitle')} />
       <DayExercisesEditor
         split={split}
         day={day}
@@ -71,29 +68,40 @@ function ExerciseRow({
 }) {
   const override = useSettingsStore((s) => s.settings.ruleOverrides[def.name]);
   const rule = withOverride(ruleFor(goal, def, 0), override);
+  const label = exerciseName(def.name);
 
   return (
     <PressableScale
       haptic="selection"
       onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: def.name } })}
       accessibilityRole="button"
-      accessibilityLabel={`${def.name}, ${rule.sets} séries de ${rule.repMin} à ${rule.repMax} reps`}
+      accessibilityLabel={t('program.day.rowA11y', {
+        name: label,
+        sets: t('common.sets', { count: rule.sets }),
+        min: rule.repMin,
+        max: rule.repMax,
+      })}
     >
       <StickerCard small style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <IndexBadge value={index + 1} />
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           <Text size={16} weight="black" numberOfLines={1}>
-            {def.name}
+            {label}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1}>
-            {EQUIPMENT[def.equipment]} · {rule.sets} × {rule.repMin}–{rule.repMax}
-            {override ? ' · perso' : ''}
+            {t('program.day.rowDetail', {
+              equipment: t(`program.equipment.${def.equipment}`),
+              sets: rule.sets,
+              min: rule.repMin,
+              max: rule.repMax,
+            })}
+            {override ? t('program.day.custom') : ''}
           </Text>
         </View>
         <Pressable
           onPress={onRemove}
           accessibilityRole="button"
-          accessibilityLabel={`Retirer ${def.name}`}
+          accessibilityLabel={t('program.day.remove', { name: label })}
           hitSlop={8}
           style={({ pressed }) => ({
             width: 32,

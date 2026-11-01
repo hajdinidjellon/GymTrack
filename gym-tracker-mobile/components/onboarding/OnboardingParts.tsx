@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { border, colors, hardShadow, radius } from '@/constants/theme';
+import { t } from '@/i18n';
 import { Text } from '@/components/ui/Text';
 import { BulbIcon, Check, ChevronLeft } from '@/components/ui/icons';
 
@@ -22,7 +23,7 @@ export function OnboardingHeader({
       <Pressable
         onPress={onBack}
         accessibilityRole="button"
-        accessibilityLabel="Retour"
+        accessibilityLabel={t('onboarding.header.back')}
         hitSlop={4}
         style={({ pressed }) => ({
           width: 44,
@@ -42,7 +43,7 @@ export function OnboardingHeader({
       {step != null ? (
         <View
           accessible
-          accessibilityLabel={`Question ${step + 1} sur ${total}`}
+          accessibilityLabel={t('onboarding.header.progress', { n: step + 1, total })}
           style={{ flex: 1, flexDirection: 'row', gap: 6 }}
         >
           {Array.from({ length: total }, (_, i) => (
@@ -66,7 +67,7 @@ export function OnboardingHeader({
       {onSkip ? (
         <Pressable onPress={onSkip} accessibilityRole="button" hitSlop={10}>
           <Text size={15} weight="bold" color={colors.inkMuted}>
-            Passer
+            {t('onboarding.header.skip')}
           </Text>
         </Pressable>
       ) : null}

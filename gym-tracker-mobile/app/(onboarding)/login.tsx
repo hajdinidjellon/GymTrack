@@ -3,6 +3,8 @@ import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, fonts, hardShadow, radius } from '@/constants/theme';
 import { contactEmailError, loginEmail, normalizeUsername, passwordError, usernameError } from '@/domain/account';
+import { t } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 import { isSupabaseConfigured, signInWithEmail, signUp } from '@/services/supabase';
 import { initialSync } from '@/services/sync';
 import { useProfileStore } from '@/stores/profileStore';
@@ -16,13 +18,10 @@ import { resetTo } from '@/components/navigation/resetTo';
 
 type Mode = 'signin' | 'signup';
 
-const SIGNUP_ERRORS = {
-  taken: 'Ce pseudo est déjà pris.',
-  confirm: 'Le compte attend une confirmation par mail : désactive « Confirm email » dans Supabase.',
-  other: 'Impossible de créer le compte. Vérifie ta connexion et réessaie.',
-} as const;
+const signupError = (reason: 'taken' | 'confirm' | 'other') => t(`onboarding.login.errors.${reason}`);
 
 export default function Login() {
+  useLocale();
   const [mode, setMode] = useState<Mode>('signin');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -50,7 +49,7 @@ export default function Login() {
 
   const submit = async () => {
     if (!isSupabaseConfigured()) {
-      setError("La synchro cloud n'est pas configurée sur cette version.");
+      setError(t('onboarding.login.notConfigured'));
       return;
     }
     if (signingUp) {
@@ -69,14 +68,14 @@ export default function Login() {
       });
       if (!result.ok) {
         setBusy(false);
-        setError(SIGNUP_ERRORS[result.reason]);
+        setError(signupError(result.reason));
         return;
       }
     } else {
       const { ok } = await signInWithEmail(loginEmail(identifier), password);
       if (!ok) {
         setBusy(false);
-        setError('Pseudo ou mot de passe incorrect.');
+        setError(t('onboarding.login.wrongCredentials'));
         return;
       }
     }
@@ -94,34 +93,36 @@ export default function Login() {
         footer={
           <>
             <StickerButton
-              label={busy ? (signingUp ? 'Création…' : 'Connexion…') : signingUp ? 'Créer mon compte' : 'Se connecter'}
+              label={
+                busy
+                  ? t(signingUp ? 'onboarding.login.creating' : 'onboarding.login.signingIn')
+                  : t(signingUp ? 'onboarding.login.createAccount' : 'onboarding.login.signIn')
+              }
               onPress={submit}
               disabled={busy || !identifier.trim() || !password}
             />
-            <StickerButton label="Continuer sans compte" variant="ghost" size="small" onPress={goOn} />
+            <StickerButton label={t('onboarding.login.noAccount')} variant="ghost" size="small" onPress={goOn} />
           </>
         }
       >
         <BackButton />
         <Text size={52} weight="black" style={{ marginTop: 20, lineHeight: 58 }}>
-          {signingUp ? 'Ton compte.' : 'Re-bonjour.'}
+          {t(signingUp ? 'onboarding.login.signupTitle' : 'onboarding.login.signinTitle')}
         </Text>
         <Text size={19} color={colors.inkMuted} style={{ marginTop: 12 }}>
-          {signingUp
-            ? 'Tes séances sauvegardées, et retrouvées sur un autre téléphone.'
-            : "Ta barre est restée chargée là où tu l'as laissée."}
+          {t(signingUp ? 'onboarding.login.signupSubtitle' : 'onboarding.login.signinSubtitle')}
         </Text>
 
         <View style={{ gap: 18, marginTop: 34 }}>
           <Field
-            label="Pseudo"
+            label={t('onboarding.login.username')}
             value={identifier}
             onChangeText={setIdentifier}
             placeholder="poseidon"
             kind="username"
           />
           <Field
-            label="Mot de passe"
+            label={t('onboarding.login.password')}
             value={password}
             onChangeText={setPassword}
             placeholder="••••••••"
@@ -129,10 +130,10 @@ export default function Login() {
           />
           {signingUp ? (
             <Field
-              label="Email (facultatif)"
+              label={t('onboarding.login.email')}
               value={contactEmail}
               onChangeText={setContactEmail}
-              placeholder="toi@exemple.com"
+              placeholder={t('onboarding.login.emailPlaceholder')}
               kind="email"
             />
           ) : null}
@@ -142,7 +143,7 @@ export default function Login() {
             </Text>
           ) : null}
           <StickerButton
-            label={signingUp ? "J'ai déjà un compte" : 'Pas de compte ? Créer un compte'}
+            label={t(signingUp ? 'onboarding.login.haveAccount' : 'onboarding.login.toSignup')}
             variant="ghost"
             size="small"
             onPress={switchMode}

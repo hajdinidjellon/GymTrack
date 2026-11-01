@@ -14,9 +14,12 @@ import { Chip } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { Text } from '@/components/ui/Text';
 import { ChevronRight } from '@/components/ui/icons';
+import { dayName, exerciseName, t } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 
 /** Every session of the program, to set up its exercises ahead of time. */
 export default function DaysScreen() {
+  useLocale();
   const split = useProfileStore((s) => s.profile?.program.split);
   const customDays = useSettingsStore((s) => s.settings.customDays);
   const own = useSettingsStore((s) => s.settings.customExercises);
@@ -28,8 +31,8 @@ export default function DaysScreen() {
       <BackButton />
       <ScreenHeader
         eyebrow={getSplit(split).title}
-        title="Mes séances"
-        subtitle="Choisis les exercices de chaque séance et leur ordre. Le reste, on le calcule."
+        title={t('program.days.title')}
+        subtitle={t('program.days.subtitle')}
       />
       <View style={{ gap: 12 }}>
         {days.map((day, i) => {
@@ -40,20 +43,23 @@ export default function DaysScreen() {
                 haptic="selection"
                 onPress={() => router.push({ pathname: '/days/[name]', params: { name: day.name } })}
                 accessibilityRole="button"
-                accessibilityLabel={`Modifier la séance ${day.name}, ${day.exercises.length} exercices`}
+                accessibilityLabel={t('program.days.editA11y', {
+                  day: dayName(day.name),
+                  exercises: t('common.exercises', { count: day.exercises.length }),
+                })}
               >
                 <StickerCard small style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text size={20} weight="black">
-                        {day.name}
+                        {dayName(day.name)}
                       </Text>
-                      {custom ? <Chip tone="sun" label="Perso" /> : null}
+                      {custom ? <Chip tone="sun" label={t('program.days.custom')} /> : null}
                     </View>
                     <Text size={14} color={colors.inkMuted} numberOfLines={2} style={{ lineHeight: 19 }}>
                       {day.exercises.length
-                        ? day.exercises.map((e) => e.name).join(' · ')
-                        : 'Aucun exercice pour l’instant'}
+                        ? day.exercises.map((e) => exerciseName(e.name)).join(' · ')
+                        : t('program.days.empty')}
                     </Text>
                   </View>
                   <ChevronRight size={20} />
@@ -64,7 +70,7 @@ export default function DaysScreen() {
         })}
       </View>
       <Text size={13} color={colors.inkFaint} align="center" style={{ marginTop: space.lg }}>
-        Pour changer de programme (Push · Pull · Legs, Haut · Bas…), va dans Profil → Programme.
+        {t('program.days.changeProgram')}
       </Text>
     </Screen>
   );
