@@ -245,5 +245,6 @@ export const domain: Dictionary['domain'] = {
 
   notifications: {
     restOverTitle: 'Rest over',
+    restChannel: 'End of rest',
   },
 };

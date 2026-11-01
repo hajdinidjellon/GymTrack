@@ -24,7 +24,7 @@ Branches, commits and PRs: see `CONTRIBUTING.md`.
 
 ## Product
 
-"Tu charges. On calcule." — an autopilot logger. The app picks today's session from the program, computes every target with the progression engine, shows the plates to load per side, and the user mostly just taps "Valider". Voice cues (expo-speech) announce the next exercise, the plates and the end of rest.
+"Tu charges. On calcule." — an autopilot logger. The app picks today's session from the program, computes every target with the progression engine, shows the plates to load per side, and the user mostly just taps "Valider". Voice cues (expo-speech) announce the next exercise, the plates and the end of rest. A bell (`services/sound.ts`, expo-audio, rings on silent) marks the end of rest in the app; in the background the rest notification plays the same `assets/sounds/rest-bell.wav`. `settings.restBell` turns both off.
 
 ## Architecture
 
