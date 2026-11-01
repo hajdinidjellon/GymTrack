@@ -6,7 +6,7 @@ import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
 import { describeSide, loadBar } from '@/domain/plates';
-import { programDays } from '@/domain/programs';
+import { choosableDays, type ChoosableDay } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -39,9 +39,12 @@ export default function Preview() {
   const [dragging, setDragging] = useState(false);
 
   const splitId = ctx?.profile.program.split;
-  const days = splitId ? programDays(splitId, customDays, own) : [];
+  // Le programme, puis les séances des autres programmes, pour une fois
+  const days = splitId ? choosableDays(splitId, customDays, own) : [];
   const today = ctx ? nextDay(ctx) : null;
-  const day = days.find((d) => d.name === picked) ?? today;
+  const day: ChoosableDay | undefined =
+    days.find((d) => d.name === (picked ?? today?.name)) ??
+    (today && splitId ? { ...today, split: splitId, extra: false } : undefined);
   const plan = ctx && day ? planDay(day, ctx) : null;
   if (!plan || !splitId || !today || !day) return null;
 
@@ -65,11 +68,16 @@ export default function Preview() {
     >
       <BackButton label={t('session.backHome')} />
       <ScreenHeader
-        eyebrow={t(plan.name === today.name ? 'session.preview.todayEyebrow' : 'session.preview.chosenEyebrow', {
-          minutes: plan.minutes,
-        })}
+        eyebrow={t(
+          day.extra
+            ? 'session.preview.extraEyebrow'
+            : plan.name === today.name
+              ? 'session.preview.todayEyebrow'
+              : 'session.preview.chosenEyebrow',
+          { minutes: plan.minutes },
+        )}
         title={dayName(plan.name)}
-        subtitle={t('session.preview.subtitle')}
+        subtitle={t(day.extra ? 'session.preview.extraSubtitle' : 'session.preview.subtitle')}
       />
 
       <Text size={14} weight="bold" color={colors.inkMuted}>
@@ -90,17 +98,21 @@ export default function Preview() {
               accessibilityRole="radio"
               accessibilityState={{ selected: on }}
               accessibilityLabel={t(
-                d.name === today.name ? 'session.preview.dayTodayA11y' : 'session.preview.dayA11y',
-                {
-                  name: dayName(d.name),
-                },
+                d.extra
+                  ? 'session.preview.dayExtraA11y'
+                  : d.name === today.name
+                    ? 'session.preview.dayTodayA11y'
+                    : 'session.preview.dayA11y',
+                { name: dayName(d.name) },
               )}
               style={{
                 height: 44,
                 paddingHorizontal: 18,
                 borderRadius: radius.pill,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: colors.ink,
+                // Hors programme : en pointillés tant qu'on ne l'a pas choisie
+                borderStyle: d.extra && !on ? 'dashed' : 'solid',
+                borderColor: d.extra && !on ? colors.inkFaint : colors.ink,
                 backgroundColor: on ? colors.coralSoft : colors.card,
                 justifyContent: 'center',
               }}
@@ -114,7 +126,7 @@ export default function Preview() {
       </ScrollView>
 
       <DayExercisesEditor
-        split={splitId}
+        split={day.split}
         day={day}
         items={plan.lifts}
         keyOf={(lift) => lift.def.name}

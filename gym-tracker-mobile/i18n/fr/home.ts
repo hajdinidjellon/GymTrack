@@ -52,5 +52,13 @@ export const home = {
     a11y: 'Séance {name}',
     a11yPlanned: 'Séance {name}, prévue aujourd’hui',
     planned: 'prévue',
+    extraLabel: 'Ou, pour une fois, hors programme',
+    a11yExtra: 'Séance {name}, hors programme',
+  },
+  switch: {
+    title: 'Tu as changé de programme ?',
+    body: 'Tes {count} dernières séances étaient en {split}. Ton programme peut suivre : je te proposerai ces séances-là.',
+    yes: 'Passer en {split}',
+    no: 'Garder {split}',
   },
 };

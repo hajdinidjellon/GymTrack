@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   plateLoaded: {},
   countBothSides: false,
   signedOut: false,
+  programSwitchDismissed: null,
   language: 'auto',
 };
 

@@ -246,6 +246,39 @@ export function programDays(
   });
 }
 
+/** A day the user can pick: from their program, or from another one for a one-off session. */
+export interface ChoosableDay extends ProgramDay {
+  split: SplitId;
+  /** Not in the user's program: done once, it does not move the program along. */
+  extra: boolean;
+}
+
+/**
+ * The user's program days, then the days of the other programs (Haut, Bas,
+ * Full body…) for the day the plan does not fit. Each keeps the exercises the
+ * user chose for it, saved under its own program ("ul/Haut").
+ */
+export function choosableDays(
+  split: SplitId,
+  customDays: Record<string, string[]> | undefined,
+  own: CustomExercise[] | undefined,
+): ChoosableDay[] {
+  const out: ChoosableDay[] = programDays(split, customDays, own).map((d) => ({ ...d, split, extra: false }));
+  for (const other of SPLITS) {
+    if (other.id === split) continue;
+    for (const day of programDays(other.id, customDays, own)) {
+      if (!out.some((d) => d.name === day.name)) out.push({ ...day, split: other.id, extra: true });
+    }
+  }
+  return out;
+}
+
+/** The program a day belongs to, the user's own first. */
+export function splitOfDay(name: string, current: SplitId): SplitId | undefined {
+  if (getSplit(current).days.some((d) => d.name === name)) return current;
+  return SPLITS.find((s) => s.days.some((d) => d.name === name))?.id;
+}
+
 /** A day of the program by name, if it exists. */
 export function findDay(split: Split, name: string): ProgramDay | undefined {
   return split.days.find((d) => d.name === name);

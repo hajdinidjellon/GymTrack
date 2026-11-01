@@ -27,6 +27,10 @@ export const session = {
     otherDay: "Envie d'une autre séance ?",
     dayA11y: 'Séance {name}',
     dayTodayA11y: 'Séance {name}, prévue aujourd’hui',
+    dayExtraA11y: 'Séance {name}, hors programme, pour une fois',
+    extraEyebrow: 'Hors programme · ~{minutes} min',
+    extraSubtitle:
+      'Pour une fois : chaque exercice reprend où tu en es. Ton programme reprendra ensuite là où tu l’as laissé.',
     liftA11y: '{name}, {target}, {delta}',
     firstTime: 'première fois',
     weightToPick: 'Charge à choisir',
