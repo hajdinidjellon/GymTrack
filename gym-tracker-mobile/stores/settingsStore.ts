@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'auto',
   warmups: true,
   warmupOverrides: {},
+  supersets: {},
 };
 
 export const REST_CHOICES = [60, 90, 120, 180];
@@ -104,6 +105,8 @@ interface SettingsStore {
   setPlateLoaded: (def: ExerciseDef, on: boolean) => void;
   /** Warm-ups on or off for one exercise. Same as the global choice: nothing is stored. */
   setWarmups: (exerciseName: string, on: boolean) => void;
+  /** Chains an exercise of a program day with the next one (superset), or unchains it. */
+  toggleSuperset: (key: string, exerciseName: string) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -163,6 +166,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const { warmupOverrides, warmups } = get().settings;
     const { [exerciseName]: _old, ...others } = warmupOverrides;
     get().updateSettings({ warmupOverrides: on === warmups ? others : { ...others, [exerciseName]: on } });
+  },
+
+  toggleSuperset: (key, exerciseName) => {
+    const { [key]: current = [], ...others } = get().settings.supersets;
+    const next = current.includes(exerciseName)
+      ? current.filter((n) => n !== exerciseName)
+      : [...current, exerciseName];
+    get().updateSettings({ supersets: next.length ? { ...others, [key]: next } : others });
   },
 
   togglePlate: (plate) => {

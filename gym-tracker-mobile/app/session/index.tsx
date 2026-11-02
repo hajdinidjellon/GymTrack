@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '@/constants/theme';
 import { useLocale } from '@/hooks/useLocale';
-import { dayName, exerciseName, t } from '@/i18n';
+import { dayName, exerciseName, listOf, t } from '@/i18n';
 import { findCurrent } from '@/domain/sessionCursor';
 import { setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -89,6 +89,13 @@ export default function SessionScreen() {
   const doneExercise = last && session.exercises.find((e) => e.id === last.exerciseId);
   const left = session.exercises.reduce((n, e) => n + workingCount(e.sets, 'left'), 0);
   const now = setNumber(exercise.sets, setIndex);
+  const partners = exercise.superset
+    ? listOf(
+        session.exercises
+          .filter((e) => e.superset === exercise.superset && e.id !== exercise.id)
+          .map((e) => exerciseName(e.name)),
+      )
+    : null;
   const lastDone = doneExercise ? setNumber(doneExercise.sets, last.setIndex) : null;
 
   // Pendant le repos, le bas de l'écran garde le minuteur en petit ; en grand, il s'ouvre au milieu
@@ -127,6 +134,11 @@ export default function SessionScreen() {
         </Text>
         <SwapExercise exercise={exercise} sessionName={session.name} />
       </View>
+      {partners ? (
+        <Text size={14} weight="bold" color={colors.inkMuted} style={{ marginTop: 4 }}>
+          {t('session.logger.superset', { name: partners })}
+        </Text>
+      ) : null}
       <View
         style={{ marginTop: space.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
       >
@@ -141,9 +153,11 @@ export default function SessionScreen() {
           }}
         >
           <Text size={14} weight="black">
-            {now.warmup
-              ? t(resting ? 'session.logger.nextWarmupOf' : 'session.logger.warmupOf', { n: now.n, total: now.total })
-              : t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', { n: now.n, total: now.total })}
+            {now.drop
+              ? t(resting ? 'session.logger.nextDropSet' : 'session.logger.dropSet')
+              : now.warmup
+                ? t(resting ? 'session.logger.nextWarmupOf' : 'session.logger.warmupOf', { n: now.n, total: now.total })
+                : t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', { n: now.n, total: now.total })}
           </Text>
         </View>
         <DoLater exercise={exercise} />
@@ -175,7 +189,9 @@ export default function SessionScreen() {
                 lastDone
                   ? lastDone.warmup
                     ? t('session.logger.warmupDone')
-                    : t('session.logger.setDone', { n: lastDone.n })
+                    : lastDone.drop
+                      ? t('session.logger.dropDone')
+                      : t('session.logger.setDone', { n: lastDone.n })
                   : undefined
               }
               rateable={!!lastDone && !lastDone.warmup}

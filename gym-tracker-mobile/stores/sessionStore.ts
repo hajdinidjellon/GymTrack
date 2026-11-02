@@ -64,6 +64,10 @@ interface SessionStore {
   doLater: (exerciseId: string) => void;
   /** Drops the warm-ups left on this exercise. */
   skipWarmups: (exerciseId: string) => void;
+  /** A lighter set right after this one, no rest in between. */
+  addDropSet: (exerciseId: string, setIndex: number) => void;
+  /** "Jusqu'à l'échec" on a working set, or back to normal. */
+  toggleFailure: (exerciseId: string, setIndex: number) => void;
   /** A held set just started (after the countdown): a tap in the hand, "C'est parti". */
   holdStarted: () => void;
   /** A held set is over: logs the seconds held and validates it. The bell when the target was reached. */
@@ -162,6 +166,12 @@ export const useSessionStore = create<SessionStore>()(
       const applyWarm = (fn: (s: ActiveSession) => ActiveSession) =>
         apply((s) => Session.refreshWarmups(fn(s), settings()));
       const currentId = () => findCurrent(get().activeSession?.exercises ?? [])?.exercise.id;
+      /** The rest after a set: none when a superset partner goes next. */
+      const restAfter = (exerciseId: string, planned: number | undefined) => {
+        const session = get().activeSession;
+        if (session && Session.supersetHandoff(session, exerciseId)) return 0;
+        return planned ?? settings().defaultRestTime;
+      };
       /** Applies a new order; a no-op stays silent. */
       const reorder = (fn: (s: ActiveSession) => ActiveSession) => {
         const before = get().activeSession;
@@ -231,7 +241,7 @@ export const useSessionStore = create<SessionStore>()(
           const target = session && Session.findSet(session, exerciseId, setIndex);
           if (!target || target.completed) return;
           apply((s) => Session.completeSet(s, exerciseId, setIndex, Date.now()));
-          afterSet(exerciseId, target.restTime ?? settings().defaultRestTime);
+          afterSet(exerciseId, restAfter(exerciseId, target.restTime));
         },
 
         completeRemaining: (exerciseId) => {
@@ -239,7 +249,7 @@ export const useSessionStore = create<SessionStore>()(
           const last = exercise ? Session.remainingSets(exercise).pop() : undefined;
           if (!exercise || last === undefined) return;
           apply((s) => Session.completeRemaining(s, exerciseId, Date.now()));
-          afterSet(exerciseId, exercise.sets[last]?.restTime ?? settings().defaultRestTime);
+          afterSet(exerciseId, restAfter(exerciseId, exercise.sets[last]?.restTime));
         },
 
         rateLastSet: (effort) => {
@@ -279,6 +289,16 @@ export const useSessionStore = create<SessionStore>()(
           if (reached && settings().restBell) playRestBell();
           get().updateSet(exerciseId, setIndex, { reps: seconds });
           get().completeSet(exerciseId, setIndex);
+        },
+
+        addDropSet: (exerciseId, setIndex) => {
+          apply((s) => Session.addDropSet(s, exerciseId, setIndex));
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
+        },
+
+        toggleFailure: (exerciseId, setIndex) => {
+          apply((s) => Session.toggleFailure(s, exerciseId, setIndex));
+          Haptics.selectionAsync().catch(() => null);
         },
 
         skipWarmups: (exerciseId) => {

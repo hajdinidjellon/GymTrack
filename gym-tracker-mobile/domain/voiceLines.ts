@@ -26,12 +26,18 @@ export function platesLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeigh
 /** "Série 2. 62,5 kilos, 10 reps.", "Série 1. 12 kilos par haltère, 10 reps." or "Échauffement 1. 20 kilos, 10 reps." */
 export function setLine(cursor: Cursor): string {
   const { set, setIndex } = cursor;
-  const { warmup, n } = setNumber(cursor.exercise.sets, setIndex);
+  const { warmup, drop, n } = setNumber(cursor.exercise.sets, setIndex);
   const suffix = LOADING_SUFFIX[loadingOf(cursor.exercise)];
   const timed = !!cursor.exercise.timed;
   if (set.weight <= 0) return t(timed ? 'domain.voice.setSeconds' : 'domain.voice.setReps', { n, reps: set.reps });
   const load = `${kilos(set.weight)}${suffix ? ` ${suffix}` : ''}`;
-  const key = warmup ? 'domain.voice.warmupLoad' : timed ? 'domain.voice.setLoadSeconds' : 'domain.voice.setLoad';
+  const key = warmup
+    ? 'domain.voice.warmupLoad'
+    : drop
+      ? 'domain.voice.dropLoad'
+      : timed
+        ? 'domain.voice.setLoadSeconds'
+        : 'domain.voice.setLoad';
   return t(key, { n, load, reps: set.reps });
 }
 

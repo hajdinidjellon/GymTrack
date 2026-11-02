@@ -115,6 +115,26 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.plateLoaded).toEqual({ 'Pec deck': true });
   });
 
+  it('stores warm-ups per exercise only when they differ from the global choice', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { setWarmups } = useSettingsStore.getState();
+    setWarmups('Squat', false);
+    expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({ Squat: false });
+    setWarmups('Squat', true);
+    expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({});
+  });
+
+  it('chains and unchains exercises of a day', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { toggleSuperset } = useSettingsStore.getState();
+    toggleSuperset('ppl/Push', 'Développé couché');
+    toggleSuperset('ppl/Push', 'Dips');
+    expect(useSettingsStore.getState().settings.supersets).toEqual({ 'ppl/Push': ['Développé couché', 'Dips'] });
+    toggleSuperset('ppl/Push', 'Développé couché');
+    toggleSuperset('ppl/Push', 'Dips');
+    expect(useSettingsStore.getState().settings.supersets).toEqual({});
+  });
+
   it('loads what was saved', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();

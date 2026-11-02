@@ -58,10 +58,14 @@ export const program: Dictionary['program'] = {
   },
   day: {
     notFound: 'Session not found.',
-    subtitle: 'Tap an exercise to set its sets, reps and the weight added at each step.',
+    subtitle:
+      'Tap an exercise to set its sets, reps and the weight added at each step. “+ superset” chains it with the next one, no rest in between.',
     rowA11y: '{name}, {sets} of {min} to {max} reps',
     rowDetail: '{equipment} · {sets} × {min}–{max}',
     custom: ' · custom',
     remove: 'Remove {name}',
+    link: '+ superset',
+    linked: 'superset ↓',
+    linkA11y: 'Chain {name} with {next}, no rest in between',
   },
 };

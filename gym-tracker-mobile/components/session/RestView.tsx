@@ -51,7 +51,9 @@ export function RestView({
   const perSide = useSidePlates(loading, next?.set.weight ?? 0);
   const ratio = Math.max(0, Math.min(1, left / Math.max(total, left, 1)));
   const clock = formatClock(left);
-  const nextNumber = next ? setNumber(next.exercise.sets, next.setIndex) : { warmup: false, n: 1, total: 1 };
+  const nextNumber = next
+    ? setNumber(next.exercise.sets, next.setIndex)
+    : { warmup: false, drop: false, n: 1, total: 1 };
 
   return (
     <StickerCard tone="sun" style={{ paddingVertical: 14, gap: space.md }}>
@@ -114,7 +116,14 @@ export function RestView({
                     name: exerciseName(next.exercise.name),
                     n: nextNumber.n,
                   })
-                : t(nextNumber.warmup ? 'session.rest.nextWarmup' : 'session.rest.nextSet', { n: nextNumber.n })}
+                : t(
+                    nextNumber.drop
+                      ? 'session.rest.nextDrop'
+                      : nextNumber.warmup
+                        ? 'session.rest.nextWarmup'
+                        : 'session.rest.nextSet',
+                    { n: nextNumber.n },
+                  )}
             </Text>
             <Text size={22} weight="black" numberOfLines={1}>
               {next.exercise.needsWeight

@@ -92,10 +92,12 @@ export function lockScreenProps(
   return {
     session: dayName(session.name),
     exercise: exerciseName(exercise.name),
-    setLabel: t(number.warmup ? 'domain.lockScreen.warmupLabel' : 'domain.lockScreen.setLabel', {
-      n: number.n,
-      total: number.total,
-    }),
+    setLabel: number.drop
+      ? t('domain.lockScreen.dropLabel')
+      : t(number.warmup ? 'domain.lockScreen.warmupLabel' : 'domain.lockScreen.setLabel', {
+          n: number.n,
+          total: number.total,
+        }),
     target: exercise.needsWeight ? t('domain.lockScreen.pickWeight') : load,
     plates: perSide.length > 0 ? t('domain.lockScreen.perSide', { plates: perSide.map(formatKg).join(' + ') }) : '',
     plateList: perSide.map((p) => ({ kg: p, label: formatKg(p) })),

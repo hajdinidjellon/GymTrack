@@ -178,6 +178,8 @@ export interface AppSettings {
   warmups: boolean;
   /** Warm-ups on or off for one exercise, over the global choice. */
   warmupOverrides: Record<string, boolean>;
+  /** Per program day ("ppl/Push"): the exercises chained with the one after them, as a superset. */
+  supersets: Record<string, string[]>;
 }
 
 // ============================================================
@@ -201,6 +203,8 @@ export interface ActiveExercise extends Exercise {
   restNote?: string;
   /** The user skipped or removed warm-ups: they are not computed again this session. */
   keepWarmups?: boolean;
+  /** Superset: the exercises with the same group take turns, no rest in between. */
+  superset?: string;
 }
 
 export interface ActiveSession {

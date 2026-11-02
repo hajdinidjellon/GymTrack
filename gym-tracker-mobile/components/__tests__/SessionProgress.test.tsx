@@ -44,3 +44,16 @@ describe('SessionProgress', () => {
     expect(onPick).not.toHaveBeenCalled();
   });
 });
+
+describe('SessionProgress with a superset', () => {
+  it('joins the partners with a "+"', async () => {
+    const pair = [
+      { ...exercise('Développé couché', [false]), superset: 'a' },
+      { ...exercise('Rowing barre', [false]), superset: 'a' },
+      exercise('Curl', [false]),
+    ];
+    await render(<SessionProgress exercises={pair} current={0} onPick={onPick} />);
+    expect(screen.getAllByText('+')).toHaveLength(1);
+    expect(screen.getByLabelText('enchaîné avec')).toBeOnTheScreen();
+  });
+});

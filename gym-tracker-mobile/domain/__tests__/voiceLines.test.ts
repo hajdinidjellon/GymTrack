@@ -83,3 +83,11 @@ describe('timed voice lines', () => {
     expect(setLine(cursor(weighted))).toBe('Série 1. 10 kilos, 45 secondes.');
   });
 });
+
+describe('drop set voice line', () => {
+  it('names the drop set instead of numbering it', () => {
+    const press = active('Squat', [{ weight: 100, reps: 5, completed: true }]);
+    press.sets.push({ weight: 80, reps: 5, setType: 'drop' });
+    expect(setLine(cursor(press))).toBe('Dégressive. 80 kilos, 5 reps.');
+  });
+});

@@ -323,3 +323,13 @@ describe('timed (seconds)', () => {
     expect(reps(easy)).toEqual([70, 70, 70]);
   });
 });
+
+describe('drop sets', () => {
+  it('never hold the weight back nor count as missed', () => {
+    const drop: Partial<WorkoutSet> = { setType: 'drop' };
+    const done = nextTargets([session(60, [12, 12, 12, 6], [{}, {}, {}, { ...drop, weight: 45 }])], rule);
+    expect(done.decision).toBe('add_weight');
+    const short = nextTargets([session(60, [10, 9, 8, 4], [{}, {}, {}, drop])], rule);
+    expect(short.decision).toBe('add_reps');
+  });
+});

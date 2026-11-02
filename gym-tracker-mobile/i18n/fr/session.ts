@@ -20,6 +20,10 @@ export const session = {
     warmupOf: 'Échauffement {n} sur {total}',
     nextWarmupOf: 'Prochain échauffement {n} sur {total}',
     warmupDone: 'Échauffement validé',
+    dropSet: 'Série dégressive',
+    nextDropSet: 'Ensuite : série dégressive',
+    dropDone: 'Dégressive validée',
+    superset: 'En superset avec {name} · sans repos entre les deux',
   },
 
   preview: {
@@ -145,6 +149,7 @@ export const session = {
     nextExerciseSet: 'Ensuite · {name}, série {n}',
     nextSet: 'Ensuite · série {n}',
     nextWarmup: 'Ensuite · échauffement {n}',
+    nextDrop: 'Ensuite · dégressive',
     weightToSet: 'Charge à régler',
     skip: 'Passer le repos',
     undoA11y: 'Annuler la dernière série',
@@ -157,6 +162,7 @@ export const session = {
   },
 
   progress: {
+    supersetA11y: 'enchaîné avec',
     doNow: 'Faire {name} maintenant',
     finished: '{name}, terminé',
     current: '{name}, en cours',
@@ -176,7 +182,13 @@ export const session = {
     a11yWarmup: 'Échauffement, {kg} kilos, {reps} reps, {state}',
     a11ySeconds: 'Série {index}, {reps} secondes, {state}',
     headerSeconds: 'SEC',
+    dropShort: 'Dégr.',
+    failureShort: 'Échec',
+    a11yDrop: 'Dégressive, {kg} kilos, {reps} reps, {state}',
+    a11yFailure: 'Série {index} jusqu’à l’échec, {kg} kilos, {reps} reps, {state}',
+    menuHint: 'Appui long : dégressive ou échec',
     deleteWarmupA11y: 'Supprimer cet échauffement',
+    deleteDropA11y: 'Supprimer cette dégressive',
   },
 
   setView: {
@@ -189,7 +201,7 @@ export const session = {
     missed: 'Série ratée ? Note les reps faites',
     addSetA11y: 'Ajouter une série',
     addSet: '+ Ajouter une série',
-    swipeHint: 'Glisse une série vers la gauche pour la supprimer',
+    swipeHint: 'Glisse une série à gauche pour la supprimer, appui long pour une dégressive',
     allAsPlanned: { one: 'Tout comme prévu · {count} série', other: 'Tout comme prévu · {count} séries' },
     validateA11y: 'Valider la série',
     warmupHint: 'Échauffement · ne compte pas dans tes stats',
@@ -198,6 +210,14 @@ export const session = {
     secondsInput: 'Durée en secondes',
     secondsMinus: 'Moins 5 secondes',
     secondsPlus: 'Plus 5 secondes',
+  },
+
+  setMenu: {
+    title: 'Série {n}',
+    titleDrop: 'Série dégressive',
+    addDrop: 'Ajouter une dégressive après',
+    failure: 'Jusqu’à l’échec',
+    normal: 'Série normale',
   },
 
   hold: {

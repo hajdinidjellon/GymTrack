@@ -10,6 +10,7 @@ import {
   todayStatus,
   planLift,
   reasonLabel,
+  supersetGroups,
   targetLabel,
   targetLoad,
   tonnage,
@@ -386,5 +387,23 @@ describe('timed exercises', () => {
     expect(plank.targets.map((x) => x.reps)).toEqual([30, 30, 30]);
     expect(toActiveExercise(plank).timed).toBe(true);
     expect(toActiveExercise(planLift(EXERCISES.squat, ctx())).timed).toBeUndefined();
+  });
+});
+
+describe('supersets', () => {
+  it('groups each exercise chained with the next, three in a row included', () => {
+    expect(supersetGroups(['a', 'b', 'c', 'd'], ['a'])).toEqual(['a', 'a', undefined, undefined]);
+    expect(supersetGroups(['a', 'b', 'c', 'd'], ['a', 'b'])).toEqual(['a', 'a', 'a', undefined]);
+    expect(supersetGroups(['a', 'b'], ['b'])).toEqual([undefined, undefined]);
+    expect(supersetGroups(['a', 'b'])).toEqual([undefined, undefined]);
+  });
+
+  it("reads the day's links and starts the session with them", () => {
+    const day = { name: 'Push', exercises: [EXERCISES.bench, EXERCISES.ohp, EXERCISES.dips] };
+    const c = ctx();
+    const plan = planDay(day, { ...c, settings: { ...c.settings, supersets: { 'ppl/Push': ['Développé couché'] } } });
+    expect(plan.links).toEqual(['Développé couché']);
+    expect(toActiveExercises(plan).map((e) => e.superset)).toEqual(['Développé couché', 'Développé couché', undefined]);
+    expect(planDay(day, c).links).toBeUndefined();
   });
 });

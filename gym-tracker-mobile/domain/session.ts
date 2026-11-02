@@ -8,13 +8,7 @@ import { moveItem } from '@/domain/reorder';
 import { EFFORT_RPE, effortOf, type Effort } from '@/domain/effort';
 import { withRestTaken } from '@/domain/rest';
 import { findCurrent } from '@/domain/sessionCursor';
-import {
-  isWarmup,
-  skipWarmups as withoutWarmups,
-  withWarmups,
-  workingCount,
-  type WarmupSettings,
-} from '@/domain/warmup';
+import { isExtra, isWarmup, skipWarmups as withoutWarmups, withWarmups, type WarmupSettings } from '@/domain/warmup';
 import { exerciseName, t } from '@/i18n';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
@@ -86,19 +80,20 @@ export function setStartWeight(session: ActiveSession, exerciseId: string, weigh
  * A missed set (fewer reps than its target) passes on its weight only:
  * the next sets still aim for their own reps.
  * `now` dates the validation: the gaps tell how long the user really rests.
- * A warm-up passes nothing on: the working sets keep their own targets.
+ * A warm-up or a drop set passes nothing on, and a drop set takes nothing:
+ * it stays lighter on purpose.
  */
 export function completeSet(session: ActiveSession, exerciseId: string, setIndex: number, now?: number): ActiveSession {
   return {
     ...mapExercise(session, exerciseId, (e) => {
       const done = e.sets[setIndex];
       if (!done) return e;
-      const passOn = !isWarmup(done);
+      const passOn = !isWarmup(done) && done.setType !== 'drop';
       return {
         ...e,
         sets: e.sets.map((set, i) => {
           if (i === setIndex) return { ...set, completed: true, doneAt: now };
-          if (passOn && i > setIndex && !set.completed && !isWarmup(set)) {
+          if (passOn && i > setIndex && !set.completed && !isWarmup(set) && set.setType !== 'drop') {
             const missed = done.target != null && done.reps < done.target.reps;
             return { ...set, weight: done.weight, reps: missed ? set.reps : done.reps };
           }
@@ -153,7 +148,7 @@ export function removeSet(session: ActiveSession, exerciseId: string, setIndex: 
   const set = exercise?.sets[setIndex];
   if (!exercise || !set || set.completed) return session;
   const warmup = isWarmup(set);
-  if (!warmup && workingCount(exercise.sets) <= 1) return session;
+  if (!isExtra(set) && exercise.sets.filter((s) => !isExtra(s)).length <= 1) return session;
   const last = session.lastCompleted;
   const shifted =
     last && last.exerciseId === exerciseId && last.setIndex > setIndex
@@ -176,6 +171,86 @@ export function removeSet(session: ActiveSession, exerciseId: string, setIndex: 
 export function refreshWarmups(session: ActiveSession, settings: WarmupSettings): ActiveSession {
   const exercises = withWarmups(session.exercises, settings);
   return exercises.every((e, i) => e === session.exercises[i]) ? session : { ...session, exercises };
+}
+
+/** A drop set takes about 20 % off, rounded down to the exercise's step. */
+export const DROP_FACTOR = 0.8;
+
+/**
+ * A drop set right after this one: lighter, same reps, no rest in between.
+ * The rest planned after the set moves after the drop.
+ */
+export function addDropSet(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
+  const exercise = session.exercises.find((e) => e.id === exerciseId);
+  const source = exercise?.sets[setIndex];
+  if (!exercise || !source || isWarmup(source) || source.weight <= 0) return session;
+  const step = exercise.rule?.increment ?? 2.5;
+  const weight = Math.max(step, Math.floor((source.weight * DROP_FACTOR) / step + 1e-6) * step);
+  const drop: WorkoutSet = {
+    weight: Math.round(weight * 100) / 100,
+    reps: source.reps,
+    setType: 'drop',
+    restTime: source.restTime,
+    completed: false,
+    target: { weight: Math.round(weight * 100) / 100, reps: source.reps },
+  };
+  const last = session.lastCompleted;
+  const shifted =
+    last && last.exerciseId === exerciseId && last.setIndex > setIndex
+      ? { ...last, setIndex: last.setIndex + 1 }
+      : last;
+  return {
+    ...mapExercise(session, exerciseId, (e) => {
+      const sets = [...e.sets];
+      // Not done yet: straight from the set to its drop
+      if (!source.completed) sets[setIndex] = { ...source, restTime: 0 };
+      sets.splice(setIndex + 1, 0, drop);
+      return { ...e, sets };
+    }),
+    lastCompleted: shifted,
+  };
+}
+
+/** Marks a working set "jusqu'à l'échec", or back to a normal set. */
+export function toggleFailure(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
+  const set = findSet(session, exerciseId, setIndex);
+  if (!set || isWarmup(set) || set.setType === 'drop') return session;
+  return updateSet(session, exerciseId, setIndex, { setType: set.setType === 'failure' ? 'normal' : 'failure' });
+}
+
+/**
+ * Out of its superset (the machine is taken, it is done now or replaced).
+ * A partner left alone is out too.
+ */
+export function leaveSuperset(session: ActiveSession, exerciseId: string): ActiveSession {
+  const group = session.exercises.find((e) => e.id === exerciseId)?.superset;
+  if (!group) return session;
+  const left = session.exercises.filter((e) => e.superset === group && e.id !== exerciseId);
+  const alone = left.length < 2;
+  return {
+    ...session,
+    exercises: session.exercises.map((e) =>
+      e.superset === group && (e.id === exerciseId || alone) ? { ...e, superset: undefined } : e,
+    ),
+  };
+}
+
+const workDone = (e: ActiveExercise) => e.sets.filter((s) => s.completed && !isWarmup(s)).length;
+
+/**
+ * The next set is a superset partner's in the same round: no rest, straight
+ * to it. The round is over (every partner did as many sets): the rest comes.
+ */
+export function supersetHandoff(session: ActiveSession, exerciseId: string): boolean {
+  const done = session.exercises.find((e) => e.id === exerciseId);
+  const next = findCurrent(session.exercises);
+  return (
+    !!done?.superset &&
+    !!next &&
+    next.exercise.superset === done.superset &&
+    next.exercise.id !== exerciseId &&
+    workDone(next.exercise) < workDone(done)
+  );
 }
 
 /** "Passer l'échauffement": the warm-ups left on this exercise go. */
@@ -226,6 +301,7 @@ export function restLeft(session: ActiveSession, now: number): number {
  * left are dropped and the new exercise comes right after.
  */
 export function replaceExercise(session: ActiveSession, exerciseId: string, next: ActiveExercise): ActiveSession {
+  session = leaveSuperset(session, exerciseId);
   const index = session.exercises.findIndex((e) => e.id === exerciseId);
   const current = session.exercises[index];
   if (!current) return session;
@@ -254,7 +330,8 @@ export function doNow(session: ActiveSession, exerciseId: string): ActiveSession
   const target = session.exercises[from];
   const current = findCurrent(session.exercises);
   if (!target || !current || isFinished(target) || current.exercise.id === exerciseId) return session;
-  return { ...session, exercises: moveItem(session.exercises, from, current.exerciseIndex) };
+  const moved = { ...session, exercises: moveItem(session.exercises, from, current.exerciseIndex) };
+  return leaveSuperset(moved, exerciseId);
 }
 
 /**
@@ -266,7 +343,8 @@ export function doLater(session: ActiveSession, exerciseId: string): ActiveSessi
   const target = session.exercises[from];
   const waitingAfter = session.exercises.slice(from + 1).some((e) => !isFinished(e));
   if (!target || isFinished(target) || !waitingAfter) return session;
-  return { ...session, exercises: moveItem(session.exercises, from, session.exercises.length - 1) };
+  const moved = { ...session, exercises: moveItem(session.exercises, from, session.exercises.length - 1) };
+  return leaveSuperset(moved, exerciseId);
 }
 
 /** What goes into the history: only exercises with at least one validated set. */
@@ -287,6 +365,7 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
           reason: _r,
           restNote: _rn,
           keepWarmups: _k,
+          superset: _s,
           ...exercise
         }) => ({
           ...exercise,

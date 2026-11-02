@@ -49,7 +49,12 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
         const waiting = !finished && !now;
         return (
           <React.Fragment key={e.id}>
-            {i > 0 ? (
+            {i > 0 && e.superset && exercises[i - 1]?.superset === e.superset ? (
+              // Superset: the two pills are joined by a "+", not a line
+              <Text size={15} weight="black" color={colors.ink} accessibilityLabel={t('session.progress.supersetA11y')}>
+                +
+              </Text>
+            ) : i > 0 ? (
               <View
                 style={{
                   flex: 1,

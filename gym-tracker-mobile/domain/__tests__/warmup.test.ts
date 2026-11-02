@@ -195,9 +195,9 @@ describe('numbering', () => {
   ];
 
   it('numbers warm-ups and working sets apart', () => {
-    expect(setNumber(sets, 1)).toEqual({ warmup: true, n: 2, total: 2 });
-    expect(setNumber(sets, 3)).toEqual({ warmup: false, n: 2, total: 3 });
-    expect(setNumber(sets, 9)).toEqual({ warmup: false, n: 3, total: 3 });
+    expect(setNumber(sets, 1)).toEqual({ warmup: true, drop: false, n: 2, total: 2 });
+    expect(setNumber(sets, 3)).toEqual({ warmup: false, drop: false, n: 2, total: 3 });
+    expect(setNumber(sets, 9)).toEqual({ warmup: false, drop: false, n: 3, total: 3 });
   });
 
   it('counts the working sets, all, done or left', () => {

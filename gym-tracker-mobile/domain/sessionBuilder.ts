@@ -8,6 +8,7 @@ import {
   referenceWeight,
   startWeightFromOneRepMax,
   workingSets,
+  mainSets,
   type ExerciseSession,
   type ProgressionDecision,
 } from '@/domain/progression';
@@ -15,6 +16,7 @@ import { formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
 import { trainedOn, validSchedule, weekdayIndex } from '@/domain/schedule';
 import {
+  dayKey,
   defaultIncrementFor,
   isPlateLoaded,
   findExerciseDef,
@@ -33,6 +35,7 @@ import type {
   PersonalRecord,
   ProgressionRule,
   SetTarget,
+  SplitId,
   UserProfile,
   Workout,
   WorkoutSet,
@@ -41,7 +44,12 @@ import type {
 export interface BuildContext {
   profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
   settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> &
-    Partial<Pick<AppSettings, 'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded'>>;
+    Partial<
+      Pick<
+        AppSettings,
+        'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded' | 'supersets'
+      >
+    >;
   workouts: Workout[];
   /** Today. Without it, breaks are not looked at. */
   now?: Date;
@@ -68,6 +76,8 @@ export interface PlannedDay {
   name: string;
   lifts: PlannedLift[];
   minutes: number;
+  /** Exercises chained with the one after them (superset). */
+  links?: string[];
 }
 
 function matches(def: ExerciseDef, name: string): boolean {
@@ -140,8 +150,8 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   }
 
   const { decision, targets, daysOff } = nextTargets(history, rule, { startWeight, now: ctx.now });
-  const lastSession = history.find((h) => workingSets(h.sets).length > 0);
-  const last = lastSession ? workingSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
+  const lastSession = history.find((h) => mainSets(h.sets).length > 0);
+  const last = lastSession ? mainSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
   const rest = planRest(def, rule, ctx.settings.defaultRestTime, history, ctx.settings.restOverrides?.[def.name]);
   return {
     def,
@@ -157,15 +167,39 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   };
 }
 
-export function planDay(day: ProgramDay, ctx: BuildContext): PlannedDay {
+export function planDay(day: ProgramDay & { split?: SplitId }, ctx: BuildContext): PlannedDay {
   const lifts = day.exercises.map((def) => planLift(def, ctx));
   // ~40 s par série plus le repos
   const seconds = lifts.reduce((sum, l) => sum + l.targets.length * (40 + l.restTime), 0);
-  return { name: day.name, lifts, minutes: Math.round(seconds / 300) * 5 };
+  const links = ctx.settings.supersets?.[dayKey(day.split ?? ctx.profile.program.split, day.name)];
+  return { name: day.name, lifts, minutes: Math.round(seconds / 300) * 5, ...(links?.length ? { links } : {}) };
+}
+
+/**
+ * The superset group of each lift: a lift chained with the next one shares
+ * its group. A chain of three makes a tri-set. Alone: no group.
+ */
+export function supersetGroups(names: string[], links: string[] = []): (string | undefined)[] {
+  const groups: (string | undefined)[] = names.map(() => undefined);
+  for (let i = 0; i < names.length - 1; i++) {
+    if (!links.includes(names[i]!)) continue;
+    const group = groups[i] ?? names[i]!;
+    groups[i] = group;
+    groups[i + 1] = group;
+  }
+  return groups;
 }
 
 export function toActiveExercises(day: PlannedDay): ActiveExercise[] {
-  return day.lifts.map(toActiveExercise);
+  const groups = supersetGroups(
+    day.lifts.map((l) => l.def.name),
+    day.links,
+  );
+  return day.lifts.map((lift, i) => {
+    const exercise = toActiveExercise(lift, i);
+    const group = groups[i];
+    return group ? { ...exercise, superset: group } : exercise;
+  });
 }
 
 export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
@@ -326,7 +360,7 @@ export function newRecords(workout: Workout, history: Workout[], own: CustomExer
 /** Reference weight of each past session, oldest first. Ignores bodyweight sessions. */
 export function weightHistory(def: ExerciseDef, workouts: Workout[]): { date: string; weight: number }[] {
   return exerciseHistory(def, workouts)
-    .map((h) => ({ date: h.date, weight: referenceWeight(workingSets(h.sets)) }))
+    .map((h) => ({ date: h.date, weight: referenceWeight(mainSets(h.sets)) }))
     .filter((h) => h.weight > 0)
     .reverse();
 }

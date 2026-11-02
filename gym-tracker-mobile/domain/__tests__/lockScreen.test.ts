@@ -100,3 +100,11 @@ describe('lockScreenProps on a hold', () => {
     expect(lockScreenProps(session([plank]), gym, NOW).target).toBe('45 s');
   });
 });
+
+describe('lockScreenProps on a drop set', () => {
+  it('names it', () => {
+    const press = active('Squat', [{ weight: 100, reps: 5, completed: true }]);
+    press.sets.push({ weight: 80, reps: 5, setType: 'drop' });
+    expect(lockScreenProps(session([press]), gym, NOW).setLabel).toBe('Dégressive');
+  });
+});

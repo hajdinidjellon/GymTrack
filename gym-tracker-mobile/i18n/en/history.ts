@@ -10,6 +10,8 @@ export const history: Dictionary['history'] = {
     lifted: '{kg} kg lifted',
     record: 'Record · {name} {kg} kg',
     warmup: 'warm-up',
+    drop: 'drop',
+    failure: 'failure',
     exerciseA11y: 'See {name}',
     all: 'Full history',
     notFound: 'This workout no longer exists.',

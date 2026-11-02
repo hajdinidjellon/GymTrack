@@ -57,10 +57,14 @@ export const program = {
   },
   day: {
     notFound: 'Séance introuvable.',
-    subtitle: 'Touche un exercice pour régler ses séries, ses reps et la charge ajoutée à chaque palier.',
+    subtitle:
+      'Touche un exercice pour régler ses séries, ses reps et la charge ajoutée à chaque palier. « + superset » l’enchaîne avec le suivant, sans repos entre les deux.',
     rowA11y: '{name}, {sets} de {min} à {max} reps',
     rowDetail: '{equipment} · {sets} × {min}–{max}',
     custom: ' · perso',
     remove: 'Retirer {name}',
+    link: '+ superset',
+    linked: 'superset ↓',
+    linkA11y: 'Enchaîner {name} avec {next}, sans repos entre les deux',
   },
 };

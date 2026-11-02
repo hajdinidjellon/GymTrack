@@ -409,3 +409,143 @@ describe('nextSetSummary on a hold', () => {
     expect(Session.nextSetSummary(session([plank]), formatKg)).toBe('Gainage · 45 s');
   });
 });
+
+describe('drop sets and sets to failure', () => {
+  const press = () =>
+    session([
+      active(
+        'press',
+        [
+          { weight: 50, reps: 10 },
+          { weight: 50, reps: 10 },
+        ],
+        { rule: { kind: 'double', sets: 2, repMin: 8, repMax: 12, increment: 2.5 } },
+      ),
+    ]);
+  const sets = (s: ReturnType<typeof press>) => s.exercises[0]!.sets;
+
+  it('adds a lighter drop right after, with no rest in between', () => {
+    const s = Session.addDropSet(press(), 'press', 1);
+    expect(sets(s)[2]).toMatchObject({ weight: 40, reps: 10, setType: 'drop', restTime: 90, completed: false });
+    expect(sets(s)[1]!.restTime).toBe(0);
+  });
+
+  it('keeps the rest of a set already done, and the last validated set in place', () => {
+    let s = Session.completeSet(press(), 'press', 1);
+    s = Session.addDropSet(Session.completeSet(s, 'press', 0), 'press', 0);
+    expect(sets(s)[0]!.restTime).toBe(90);
+    expect(sets(s)[1]!.setType).toBe('drop');
+    expect(s.lastCompleted).toEqual({ exerciseId: 'press', setIndex: 0 });
+    const later = Session.addDropSet(Session.completeSet(press(), 'press', 1), 'press', 0);
+    expect(later.lastCompleted).toEqual({ exerciseId: 'press', setIndex: 2 });
+  });
+
+  it('never goes under one step, and refuses warm-ups and bodyweight', () => {
+    const light = session([
+      active('curl', [{ weight: 2, reps: 10 }], {
+        rule: { kind: 'double', sets: 1, repMin: 8, repMax: 12, increment: 2 },
+      }),
+    ]);
+    expect(Session.addDropSet(light, 'curl', 0).exercises[0]!.sets[1]!.weight).toBe(2);
+    const dips = session([active('dips', [{ weight: 0, reps: 10 }])]);
+    expect(Session.addDropSet(dips, 'dips', 0)).toBe(dips);
+    const warm = press();
+    warm.exercises[0]!.sets[0] = { ...warm.exercises[0]!.sets[0]!, setType: 'warmup' };
+    expect(Session.addDropSet(warm, 'press', 0)).toBe(warm);
+    expect(Session.addDropSet(warm, 'press', 9)).toBe(warm);
+  });
+
+  it('does not pass the working weight on to a drop set', () => {
+    let s = Session.addDropSet(press(), 'press', 1);
+    s = Session.updateSet(s, 'press', 0, { weight: 55 });
+    s = Session.completeSet(s, 'press', 0);
+    expect(sets(s).map((x) => x.weight)).toEqual([55, 55, 40]);
+    s = Session.completeSet(Session.completeSet(s, 'press', 1), 'press', 2);
+    expect(sets(s)[2]!.weight).toBe(40);
+  });
+
+  it('lets a drop set go, but keeps the last working set', () => {
+    const s = Session.addDropSet(session([active('press', [{ weight: 50, reps: 10 }])]), 'press', 0);
+    expect(Session.removeSet(s, 'press', 0)).toBe(s);
+    expect(Session.removeSet(s, 'press', 1).exercises[0]!.sets).toHaveLength(1);
+  });
+
+  it('marks a set to failure and back', () => {
+    const s = Session.toggleFailure(press(), 'press', 0);
+    expect(sets(s)[0]!.setType).toBe('failure');
+    expect(sets(Session.toggleFailure(s, 'press', 0))[0]!.setType).toBe('normal');
+    const dropped = Session.addDropSet(press(), 'press', 0);
+    expect(Session.toggleFailure(dropped, 'press', 1)).toBe(dropped);
+    expect(Session.toggleFailure(press(), 'press', 7).exercises).toEqual(press().exercises);
+  });
+});
+
+describe('supersets', () => {
+  const pair = () =>
+    session([
+      active(
+        'bench',
+        [
+          { weight: 80, reps: 8 },
+          { weight: 80, reps: 8 },
+        ],
+        { superset: 'bench' },
+      ),
+      active(
+        'row',
+        [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+        { superset: 'bench', muscleGroups: ['back'] },
+      ),
+      active('curl', [{ weight: 14, reps: 12 }], { muscleGroups: ['biceps'] }),
+    ]);
+  const cursorName = (s: ReturnType<typeof pair>) => findCurrent(s.exercises)!.exercise.id;
+
+  it('takes turns between partners, then moves on', () => {
+    let s = pair();
+    const order: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const c = findCurrent(s.exercises)!;
+      order.push(c.exercise.id);
+      s = Session.completeSet(s, c.exercise.id, c.setIndex);
+    }
+    expect(order).toEqual(['bench', 'row', 'bench', 'row', 'curl']);
+  });
+
+  it('hands over to the partner with no rest, but rests after the round', () => {
+    let s = Session.completeSet(pair(), 'bench', 0);
+    expect(Session.supersetHandoff(s, 'bench')).toBe(true);
+    s = Session.completeSet(s, 'row', 0);
+    expect(Session.supersetHandoff(s, 'row')).toBe(false);
+    expect(Session.supersetHandoff(s, 'curl')).toBe(false);
+  });
+
+  it('breaks the superset when an exercise is moved or replaced', () => {
+    expect(Session.doLater(pair(), 'bench').exercises.map((e) => e.superset)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    const s = Session.doNow(Session.completeSet(pair(), 'bench', 0), 'curl');
+    expect(s.exercises.find((e) => e.id === 'curl')!.superset).toBeUndefined();
+    expect(s.exercises.find((e) => e.id === 'bench')!.superset).toBe('bench');
+    const replaced = Session.replaceExercise(pair(), 'row', active('cable', [{ weight: 40, reps: 10 }]));
+    expect(replaced.exercises.map((e) => e.superset)).toEqual([undefined, undefined, undefined]);
+    expect(cursorName(replaced)).toBe('bench');
+  });
+
+  it('keeps the others together when one of three leaves', () => {
+    const tri = pair();
+    tri.exercises[2] = { ...tri.exercises[2]!, superset: 'bench' };
+    const s = Session.leaveSuperset(tri, 'row');
+    expect(s.exercises.map((e) => e.superset)).toEqual(['bench', undefined, 'bench']);
+    expect(Session.leaveSuperset(s, 'row')).toBe(s);
+  });
+
+  it('saves the session without the superset group', () => {
+    const w = Session.toWorkout(Session.completeSet(pair(), 'bench', 0), new Date('2026-10-20T19:00:00Z'));
+    expect(w.exercises[0]).not.toHaveProperty('superset');
+  });
+});

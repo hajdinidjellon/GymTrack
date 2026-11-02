@@ -330,3 +330,28 @@ describe('held sets', () => {
     expect(playRestBell).not.toHaveBeenCalled();
   });
 });
+
+describe('supersets and drop sets', () => {
+  beforeEach(() => {
+    store().discardSession();
+    store().startSession('Push', [
+      exercise('bench', 2, { superset: 'bench' }),
+      exercise('row', 2, { superset: 'bench', muscleGroups: ['back'] }),
+    ]);
+  });
+
+  it('goes to the partner without resting, then rests after the round', () => {
+    store().completeSet('bench', 0);
+    expect(session().restEndsAt).toBeNull();
+    expect(Speech.speak).toHaveBeenCalledWith(expect.stringContaining('Prochain exercice : row'), expect.anything());
+    store().completeSet('row', 0);
+    expect(session().restDuration).toBe(120);
+  });
+
+  it('adds a drop set and marks a set to failure', () => {
+    store().addDropSet('bench', 0);
+    expect(session().exercises[0]!.sets[1]).toMatchObject({ setType: 'drop', weight: 47.5 });
+    store().toggleFailure('bench', 0);
+    expect(session().exercises[0]!.sets[0]!.setType).toBe('failure');
+  });
+});

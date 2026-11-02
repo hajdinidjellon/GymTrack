@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
-import { Text } from 'react-native';
+import { Alert, Text, type AlertButton } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -198,5 +198,44 @@ describe('SetView on a held set', () => {
     await renderCurrentSet();
     await fireEvent.press(screen.getByRole('button', { name: 'Valider sans chrono' }));
     expect(sets()[0]).toMatchObject({ reps: 45, completed: true });
+  });
+});
+
+describe('SetView set menu', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
+    useSessionStore.getState().startSession('Push', [bench]);
+  });
+
+  it('adds a drop set or marks a set to failure from a long press', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    await fireEvent(screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, à venir'), 'longPress');
+    const [title, , buttons] = alert.mock.calls.at(-1)!;
+    expect(title).toBe('Série 2');
+    expect((buttons as AlertButton[]).map((b) => b.text)).toEqual([
+      'Ajouter une dégressive après',
+      'Jusqu’à l’échec',
+      'Annuler',
+    ]);
+    await act(() => (buttons as AlertButton[])[0]!.onPress!());
+    expect(sets()[2]).toMatchObject({ setType: 'drop', weight: 50 });
+    await act(() => (buttons as AlertButton[])[1]!.onPress!());
+    expect(sets()[1]!.setType).toBe('failure');
+    alert.mockRestore();
+  });
+
+  it('shows the drop set by name in the table and offers no failure on it', async () => {
+    useSessionStore.getState().addDropSet('bench', 1);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    expect(screen.getByText('Dégr.')).toBeOnTheScreen();
+    await fireEvent(screen.getByLabelText('Dégressive, 50 kilos, 10 reps, à venir'), 'longPress');
+    expect(alert.mock.calls.at(-1)![0]).toBe('Série dégressive');
+    expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).toEqual([
+      'Ajouter une dégressive après',
+      'Annuler',
+    ]);
+    alert.mockRestore();
   });
 });

@@ -9,6 +9,8 @@ export interface LoggedSet {
   weight: number;
   reps: number;
   warmup: boolean;
+  /** A drop set or a set to failure, when it was one. */
+  kind?: 'drop' | 'failure';
   effort?: Effort;
 }
 
@@ -27,7 +29,13 @@ export function loggedExercises(workout: Workout): LoggedExercise[] {
       timed: e.timed,
       sets: e.sets
         .filter((s) => s.completed !== false)
-        .map((s) => ({ weight: s.weight, reps: s.reps, warmup: s.setType === 'warmup', effort: effortOf(s.rpe) })),
+        .map((s) => ({
+          weight: s.weight,
+          reps: s.reps,
+          warmup: s.setType === 'warmup',
+          ...(s.setType === 'drop' || s.setType === 'failure' ? { kind: s.setType } : {}),
+          effort: effortOf(s.rpe),
+        })),
     }))
     .filter((e) => e.sets.length > 0);
 }

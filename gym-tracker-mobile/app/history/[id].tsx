@@ -107,7 +107,11 @@ function SetLines({ sets, timed }: { sets: LoggedSet[]; timed?: boolean }) {
   return (
     <View>
       {sets.map((s, i) => {
-        const label = s.warmup ? t('history.detail.warmup') : String(++n);
+        const label = s.warmup
+          ? t('history.detail.warmup')
+          : s.kind === 'drop'
+            ? t('history.detail.drop')
+            : String(++n);
         return (
           <View
             key={i}
@@ -126,9 +130,9 @@ function SetLines({ sets, timed }: { sets: LoggedSet[]; timed?: boolean }) {
             <Text size={16} weight="black" color={s.warmup ? colors.inkMuted : colors.ink} style={{ flex: 1 }}>
               {loadLabel(s.weight, s.reps, timed)}
             </Text>
-            {s.effort ? (
+            {s.effort || s.kind === 'failure' ? (
               <Text size={13} weight="semibold" color={colors.inkMuted}>
-                {EFFORT_LABELS[s.effort]}
+                {s.effort ? EFFORT_LABELS[s.effort] : t('history.detail.failure')}
               </Text>
             ) : null}
           </View>

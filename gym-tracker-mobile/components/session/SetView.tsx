@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Keyboard, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Keyboard, Pressable, ScrollView, View, type AlertButton } from 'react-native';
 import { border, colors, radius, space } from '@/constants/theme';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
-import { isWarmup, workingCount } from '@/domain/warmup';
+import { isWarmup, setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
@@ -36,6 +36,28 @@ export function SetView({ cursor, footer }: Props) {
   const addSet = useSessionStore((s) => s.addSet);
   const removeSet = useSessionStore((s) => s.removeSet);
   const skipWarmups = useSessionStore((s) => s.skipWarmups);
+  const addDropSet = useSessionStore((s) => s.addDropSet);
+  const toggleFailure = useSessionStore((s) => s.toggleFailure);
+
+  /** Long press on a set: a drop set after it, or "jusqu'à l'échec". */
+  const openSetMenu = (i: number) => {
+    const target = exercise.sets[i];
+    if (!target) return;
+    const { drop, n } = setNumber(exercise.sets, i);
+    const buttons: AlertButton[] = [];
+    if (target.weight > 0)
+      buttons.push({ text: t('session.setMenu.addDrop'), onPress: () => addDropSet(exercise.id, i) });
+    if (!drop) {
+      const failure = target.setType === 'failure';
+      buttons.push({
+        text: t(failure ? 'session.setMenu.normal' : 'session.setMenu.failure'),
+        onPress: () => toggleFailure(exercise.id, i),
+      });
+    }
+    if (buttons.length === 0) return;
+    buttons.push({ text: t('common.cancel'), style: 'cancel' });
+    Alert.alert(drop ? t('session.setMenu.titleDrop') : t('session.setMenu.title', { n }), undefined, buttons);
+  };
   const [missed, setMissed] = useState(false);
 
   const step = exercise.rule?.increment ?? 2.5;
@@ -157,7 +179,12 @@ export function SetView({ cursor, footer }: Props) {
         )}
 
         <View style={{ marginTop: space.lg }}>
-          <SetsTable exercise={exercise} current={setIndex} onRemove={(i) => removeSet(exercise.id, i)} />
+          <SetsTable
+            exercise={exercise}
+            current={setIndex}
+            onRemove={(i) => removeSet(exercise.id, i)}
+            onLongPress={openSetMenu}
+          />
           <Pressable
             onPress={() => addSet(exercise.id)}
             accessibilityRole="button"

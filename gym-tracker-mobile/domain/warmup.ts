@@ -137,19 +137,28 @@ export function skipWarmups(exercise: ActiveExercise): ActiveExercise {
 
 export interface SetNumber {
   warmup: boolean;
+  /** A drop set: named, not numbered. */
+  drop: boolean;
   /** 1-based, counted among the sets of the same kind. */
   n: number;
   /** How many sets of that kind. */
   total: number;
 }
 
-/** "Échauffement 2 sur 3" or "Série 1 sur 4": warm-ups and working sets are numbered apart. */
+type Kind = 'warmup' | 'drop' | 'work';
+const kindOf = (s: Pick<WorkoutSet, 'setType'>): Kind =>
+  isWarmup(s) ? 'warmup' : s.setType === 'drop' ? 'drop' : 'work';
+
+/** "Échauffement 2 sur 3" or "Série 1 sur 4": warm-ups, drop sets and working sets are numbered apart. */
 export function setNumber(sets: Pick<WorkoutSet, 'setType'>[], index: number): SetNumber {
-  const warmup = !!sets[index] && isWarmup(sets[index]);
-  const same = sets.filter((s) => isWarmup(s) === warmup);
-  const n = sets.slice(0, index + 1).filter((s) => isWarmup(s) === warmup).length;
-  return { warmup, n, total: same.length };
+  const kind = sets[index] ? kindOf(sets[index]) : 'work';
+  const same = sets.filter((s) => kindOf(s) === kind);
+  const n = sets.slice(0, index + 1).filter((s) => kindOf(s) === kind).length;
+  return { warmup: kind === 'warmup', drop: kind === 'drop', n, total: same.length };
 }
+
+/** A set that can go at any time: a warm-up or a drop set. The last of the others stays. */
+export const isExtra = (set: Pick<WorkoutSet, 'setType'>): boolean => isWarmup(set) || set.setType === 'drop';
 
 /** Working sets only, what "3 séries" means to the user: all of them, the ones done or the ones left. */
 export function workingCount(sets: Pick<WorkoutSet, 'setType' | 'completed'>[], state?: 'done' | 'left'): number {
