@@ -4,6 +4,7 @@
  * listens and `voiceInputAvailable()` says so.
  */
 
+import { requireOptionalNativeModule } from 'expo';
 import { logger } from '@/services/logger';
 // Types only: the module itself is loaded when it exists (see load)
 import type * as RecognitionModule from 'expo-speech-recognition';
@@ -11,6 +12,8 @@ import type * as RecognitionModule from 'expo-speech-recognition';
 type Recognition = (typeof RecognitionModule)['ExpoSpeechRecognitionModule'];
 
 function load(): Recognition | null {
+  // Checked first: requiring a missing module throws, and in development Metro shows it as an error
+  if (!requireOptionalNativeModule('ExpoSpeechRecognition')) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const module = require('expo-speech-recognition') as typeof RecognitionModule;

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
+import { requireOptionalNativeModule } from 'expo';
 import { lockScreenProps, type LockScreenProps } from '@/domain/lockScreen';
 import { findCurrent } from '@/domain/sessionCursor';
 import { logger } from '@/services/logger';
@@ -17,6 +18,8 @@ type Activity = ReturnType<Factory['start']>;
 // Absent d'Expo Go, d'Android et des tests : sans module natif, pas d'écran verrouillé
 function loadNative(): { widgets: Widgets; factory: Factory; validate: string } | null {
   if (Platform.OS !== 'ios') return null;
+  // Checked first: requiring a missing module throws, and in development Metro shows it as an error
+  if (!requireOptionalNativeModule('ExpoWidgets')) return null;
   try {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const widgets = require('expo-widgets') as Widgets;

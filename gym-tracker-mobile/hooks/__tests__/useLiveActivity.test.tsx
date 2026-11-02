@@ -14,6 +14,11 @@ const mockNative = {
   start: jest.fn(),
 };
 
+// The native module is there, like in a development build
+jest.mock('expo', () => ({
+  ...(jest.requireActual('expo') as object),
+  requireOptionalNativeModule: () => ({}),
+}));
 jest.mock('expo-widgets', () => ({
   addUserInteractionListener: (listener: Listener) => {
     mockNative.listener = listener;

@@ -13,6 +13,11 @@ const mockRecognition = {
     return { remove: jest.fn() };
   }),
 };
+// The native module is there, like in a development build
+jest.mock('expo', () => ({
+  ...(jest.requireActual('expo') as object),
+  requireOptionalNativeModule: () => ({}),
+}));
 jest.mock('expo-speech-recognition', () => ({ ExpoSpeechRecognitionModule: mockRecognition }));
 
 // eslint-disable-next-line import/first
