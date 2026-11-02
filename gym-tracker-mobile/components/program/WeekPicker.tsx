@@ -25,6 +25,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
 
   return (
     <View style={{ gap: 14 }}>
+      {/* 7 colonnes de largeur fixe : tient dans la carte même sur un petit iPhone (7 × 40 < 290) */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {WEEKDAYS.map((d, i) => {
           const name = week[i] ?? null;
@@ -40,23 +41,35 @@ export function WeekPicker({ week, names, onChange }: Props) {
                 name: name ? dayName(name) : t('onboarding.flow.rhythm.rest'),
               })}
               hitSlop={4}
-              style={({ pressed }) => ({ alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}
+              // Le jour ouvert : toute sa colonne passe en couleur d'action, impossible à rater
+              style={({ pressed }) => ({
+                width: 40,
+                alignItems: 'center',
+                gap: 6,
+                paddingTop: 8,
+                paddingBottom: 8,
+                borderRadius: 26,
+                borderWidth: border.base,
+                borderColor: on ? colors.outline : 'transparent',
+                backgroundColor: on ? colors.coral : 'transparent',
+                opacity: pressed && !on ? 0.7 : 1,
+                ...(on ? hardShadow(2) : {}),
+              })}
             >
-              <Text size={13} weight="bold" color={on ? colors.ink : colors.inkFaint}>
+              <Text size={13} weight="black" color={on ? colors.onCoral : colors.inkFaint}>
                 {d}
               </Text>
               <View
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  borderWidth: on ? border.strong : border.base,
-                  borderColor: name || on ? colors.outlineStrong : colors.line,
-                  borderStyle: name || on ? 'solid' : 'dashed',
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  borderWidth: border.base,
+                  borderColor: name ? colors.outlineStrong : on ? colors.onCoral : colors.line,
+                  borderStyle: name ? 'solid' : 'dashed',
                   backgroundColor: name ? colors.coralSoft : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  ...(on ? hardShadow(2) : {}),
                 }}
               >
                 {name ? (
@@ -65,15 +78,6 @@ export function WeekPicker({ week, names, onChange }: Props) {
                   </Text>
                 ) : null}
               </View>
-              {/* Le jour ouvert : un point sous son rond */}
-              <View
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: on ? colors.coral : 'transparent',
-                }}
-              />
             </Pressable>
           );
         })}
