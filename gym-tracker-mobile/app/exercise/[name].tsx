@@ -23,6 +23,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
+import { Minus, Plus } from '@/components/ui/icons';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
@@ -308,7 +309,7 @@ export default function ExerciseScreen() {
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <RoundButton
-            label="−"
+            icon={<Minus size={24} />}
             a11y={t('exercise.rest.minus', { seconds: REST_STEP })}
             onPress={() => setRestOverride(def.name, clampRest(lift.restTime - REST_STEP))}
           />
@@ -320,7 +321,7 @@ export default function ExerciseScreen() {
             {formatClock(lift.restTime)}
           </Text>
           <RoundButton
-            label="+"
+            icon={<Plus size={24} />}
             a11y={t('exercise.rest.plus', { seconds: REST_STEP })}
             onPress={() => setRestOverride(def.name, clampRest(lift.restTime + REST_STEP))}
           />
@@ -399,7 +400,7 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
-function RoundButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+function RoundButton({ icon, a11y, onPress }: { icon: React.ReactNode; a11y: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={() => {
@@ -419,9 +420,7 @@ function RoundButton({ label, a11y, onPress }: { label: string; a11y: string; on
         justifyContent: 'center',
       })}
     >
-      <Text size={26} weight="black">
-        {label}
-      </Text>
+      {icon}
     </Pressable>
   );
 }

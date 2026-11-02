@@ -58,6 +58,39 @@ export function Check({ size = 36, color = colors.ink }: IconProps) {
   );
 }
 
+/** Drawn, not typed: a "+" or "−" from the font never sits in the middle of its circle. */
+export function Plus({ size = 20, color = colors.ink }: IconProps) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={3.2}
+      strokeLinecap="round"
+    >
+      <Path d="M12 5v14M5 12h14" />
+    </Svg>
+  );
+}
+
+export function Minus({ size = 20, color = colors.ink }: IconProps) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={3.2}
+      strokeLinecap="round"
+    >
+      <Path d="M5 12h14" />
+    </Svg>
+  );
+}
+
 /** A loaded bar: today's session. */
 export function BarIcon({ size = 22, color = colors.ink }: IconProps) {
   return (

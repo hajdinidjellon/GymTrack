@@ -4,6 +4,7 @@ import { border, colors, radius } from '@/constants/theme';
 import { clampRule } from '@/domain/programs';
 import type { RuleOverride } from '@/types';
 import { Text } from '@/components/ui/Text';
+import { Minus, Plus } from '@/components/ui/icons';
 import { buzz } from '@/components/ui/PressableScale';
 import { t } from '@/i18n';
 
@@ -79,7 +80,11 @@ function Line({
         {label}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <Small label="−" a11y={t('program.rule.minus', { label, n: step })} onPress={() => onChange(value - step)} />
+        <Small
+          icon={<Minus />}
+          a11y={t('program.rule.minus', { label, n: step })}
+          onPress={() => onChange(value - step)}
+        />
         <Text
           size={22}
           weight="black"
@@ -89,13 +94,17 @@ function Line({
         >
           {value}
         </Text>
-        <Small label="+" a11y={t('program.rule.plus', { label, n: step })} onPress={() => onChange(value + step)} />
+        <Small
+          icon={<Plus />}
+          a11y={t('program.rule.plus', { label, n: step })}
+          onPress={() => onChange(value + step)}
+        />
       </View>
     </View>
   );
 }
 
-function Small({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+function Small({ icon, a11y, onPress }: { icon: React.ReactNode; a11y: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
@@ -113,9 +122,7 @@ function Small({ label, a11y, onPress }: { label: string; a11y: string; onPress:
         justifyContent: 'center',
       })}
     >
-      <Text size={20} weight="black">
-        {label}
-      </Text>
+      {icon}
     </Pressable>
   );
 }
