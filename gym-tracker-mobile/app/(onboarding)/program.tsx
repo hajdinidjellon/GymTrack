@@ -201,11 +201,12 @@ function DayRow({
                 borderWidth: on ? border.strong : border.base,
                 borderColor: on ? colors.outlineStrong : colors.line,
                 borderStyle: name === null && !on ? 'dashed' : 'solid',
-                backgroundColor: on ? (name ? colors.coralSoft : colors.paper) : colors.card,
+                // Choisi : la teinte de sélection, repos compris. Le reste s'efface sur le fond
+                backgroundColor: on ? colors.coralSoft : 'transparent',
                 ...(on ? hardShadow(2) : {}),
               }}
             >
-              <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
+              <Text size={15} weight="black" color={on ? colors.ink : colors.inkFaint}>
                 {name ? dayName(name) : t('onboarding.program.rest')}
               </Text>
             </Pressable>
