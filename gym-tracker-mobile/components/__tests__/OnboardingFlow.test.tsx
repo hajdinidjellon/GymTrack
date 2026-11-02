@@ -77,11 +77,15 @@ describe('OnboardingFlow', () => {
     const { onFinish } = await setup();
     await tap('Continuer');
     await fireEvent.press(screen.getByRole('radio', { name: '4 séances par semaine' }));
-    // Lundi : Haut → Bas, mercredi : repos → Haut
-    await tap(/^lundi : Haut/);
-    expect(screen.getByRole('button', { name: /^lundi : Bas/ })).toBeOnTheScreen();
-    await tap(/^mercredi : repos/);
-    expect(screen.getByRole('button', { name: /^mercredi : Haut/ })).toBeOnTheScreen();
+    // Monday is open from the start: its sessions are right there
+    expect(screen.getByText('Le lundi, tu fais :')).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: 'Haut' })).toBeSelected();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Bas' }));
+    expect(screen.getByRole('button', { name: 'lundi : Bas' })).toBeOnTheScreen();
+    await tap('mercredi : repos');
+    expect(screen.getByText('Le mercredi, tu fais :')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Haut' }));
+    expect(screen.getByRole('button', { name: 'mercredi : Haut' })).toBeOnTheScreen();
     expect(screen.getByText('5 séances,')).toBeOnTheScreen();
     await tap('Passer');
     await tap("Plus tard, voir l'accueil");
@@ -108,10 +112,9 @@ describe('OnboardingFlow', () => {
     await setup();
     await tap('Continuer');
     await fireEvent.press(screen.getByRole('radio', { name: '2 séances par semaine' }));
-    // Lundi A → B → repos, jeudi B → repos
-    await tap(/^lundi/);
-    await tap(/^lundi/);
+    await fireEvent.press(screen.getByRole('radio', { name: 'Repos' }));
     await tap(/^jeudi/);
+    await fireEvent.press(screen.getByRole('radio', { name: 'Repos' }));
     expect(screen.getByText(/Choisis au moins un jour/)).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Continuer' })).toBeDisabled();
   });

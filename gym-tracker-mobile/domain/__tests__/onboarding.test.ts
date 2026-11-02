@@ -2,7 +2,6 @@ import { describe, expect, it } from '@jest/globals';
 import {
   answersWeek,
   calibrationPreset,
-  cycleDay,
   experienceTip,
   firstSession,
   goalTip,
@@ -38,23 +37,6 @@ describe('answersWeek', () => {
     ]);
     const picked = [null, 'Haut', null, 'Bas', null, null, null];
     expect(answersWeek({ perWeek: 4, schedule: picked })).toBe(picked);
-  });
-});
-
-describe('cycleDay', () => {
-  const names = sessionNames(4);
-  const week = [null, null, null, null, null, null, null];
-
-  it('goes rest → A → B → rest on the day tapped only', () => {
-    const a = cycleDay(week, 2, names);
-    expect(a).toEqual([null, null, 'Haut', null, null, null, null]);
-    const b = cycleDay(a, 2, names);
-    expect(b[2]).toBe('Bas');
-    expect(cycleDay(b, 2, names)[2]).toBeNull();
-  });
-
-  it('starts over from A on a session the program does not have', () => {
-    expect(cycleDay(['Push', ...week.slice(1)], 0, names)[0]).toBe('Haut');
   });
 });
 

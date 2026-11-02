@@ -88,15 +88,6 @@ export function answersWeek(answers: Pick<OnboardingAnswers, 'perWeek' | 'schedu
   return answers.schedule ?? defaultSchedule(sessionNames(answers.perWeek), answers.perWeek);
 }
 
-/** A tap on a day: rest → A → B (→ C) → rest. */
-export function cycleDay(week: Schedule, index: number, names: string[]): Schedule {
-  return week.map((name, i) => {
-    if (i !== index) return name;
-    const at = name === null ? -1 : names.indexOf(name);
-    return at + 1 < names.length ? names[at + 1]! : null;
-  });
-}
-
 /** "A", "B", "C": the letter of a session in its program's order. */
 export function sessionLetter(name: string, names: string[]): string {
   return String.fromCharCode(65 + Math.max(0, names.indexOf(name)));
@@ -107,13 +98,17 @@ export function firstSession(week: Schedule | null, names: string[], now = new D
   return week?.[weekdayIndex(now)] ?? names[0]!;
 }
 
-/** "A Haut · B Bas" under the example week. */
-export function weekLegend(perWeek: number): string {
-  const split = splitFor(perWeek);
+/** "A Haut · B Bas": what each letter of the week stands for. */
+export function splitLegend(split: SplitId): string {
   if (split === 'fb') return t('domain.onboarding.legendFullBody');
   return getSplit(split)
     .days.map((d, i) => `${String.fromCharCode(65 + i)} ${dayName(d.name)}`)
     .join(' · ');
+}
+
+/** The legend under the example week of a rhythm. */
+export function weekLegend(perWeek: number): string {
+  return splitLegend(splitFor(perWeek));
 }
 
 /** The short reaction under each question: a bold lead and one sentence. */

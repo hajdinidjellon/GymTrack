@@ -8,20 +8,17 @@ import {
   EXPERIENCES,
   GYM_PLATES,
   PER_WEEK_CHOICES,
-  WEEKDAYS,
   answersWeek,
-  cycleDay,
   experienceTip,
   firstSession,
   goalTip,
   rhythmTip,
-  sessionLetter,
   sessionNames,
   splitFor,
   weekLegend,
   type OnboardingAnswers,
 } from '@/domain/onboarding';
-import { defaultSchedule, trainingCount, WEEKDAY_NAMES } from '@/domain/schedule';
+import { defaultSchedule, trainingCount } from '@/domain/schedule';
 import { formatKg } from '@/domain/plates';
 import { dayName, exerciseName, t } from '@/i18n';
 import { planDay } from '@/domain/sessionBuilder';
@@ -37,6 +34,7 @@ import { FadeIn } from '@/components/ui/FadeIn';
 import { buzz } from '@/components/ui/PressableScale';
 import { Barbell } from '@/components/disc/Barbell';
 import { PlateFace } from '@/components/disc/PlateFace';
+import { WeekPicker } from '@/components/program/WeekPicker';
 import { OnboardingHeader, PickMark, Question, Tip } from './OnboardingParts';
 
 const QUESTIONS = 4;
@@ -184,47 +182,7 @@ function RhythmStep({ answers, set }: StepProps) {
             {getSplit(splitFor(answers.perWeek)).title}
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          {WEEKDAYS.map((d, i) => {
-            const name = week[i] ?? null;
-            return (
-              <Pressable
-                key={d}
-                onPress={() => set({ schedule: cycleDay(week, i, names) })}
-                accessibilityRole="button"
-                accessibilityLabel={t('onboarding.flow.rhythm.dayLabel', {
-                  weekday: WEEKDAY_NAMES[i]!,
-                  name: name ? dayName(name) : t('onboarding.flow.rhythm.rest'),
-                })}
-                hitSlop={4}
-                style={({ pressed }) => ({ alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}
-              >
-                <Text size={13} weight="bold" color={colors.inkMuted}>
-                  {d}
-                </Text>
-                <View
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 19,
-                    borderWidth: border.base,
-                    borderColor: name ? colors.outlineStrong : colors.line,
-                    borderStyle: name ? 'solid' : 'dashed',
-                    backgroundColor: name ? colors.coralSoft : 'transparent',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {name ? (
-                    <Text size={15} weight="titleMedium">
-                      {sessionLetter(name, names)}
-                    </Text>
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+        <WeekPicker week={week} names={names} onChange={(schedule) => set({ schedule })} />
         <Text size={14} color={count === 0 ? colors.danger : colors.inkMuted} style={{ lineHeight: 20 }}>
           {count === 0
             ? t('onboarding.flow.rhythm.pickOne')
