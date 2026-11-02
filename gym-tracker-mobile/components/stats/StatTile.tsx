@@ -12,7 +12,7 @@ export function StatTile({ value, label, highlight }: { value: string; label: st
         minWidth: 0,
         borderRadius: radius.row,
         borderCurve: 'continuous',
-        backgroundColor: highlight ? colors.sunPanel : colors.card,
+        backgroundColor: highlight ? colors.sunPanel : colors.inset,
         borderWidth: border.base,
         borderColor: colors.frame,
         paddingVertical: 12,

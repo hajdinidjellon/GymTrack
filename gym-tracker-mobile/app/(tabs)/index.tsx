@@ -238,7 +238,7 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
               borderCurve: 'continuous',
               borderWidth: border.base,
               borderColor: colors.frame,
-              backgroundColor: colors.card,
+              backgroundColor: colors.inset,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

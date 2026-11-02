@@ -7,7 +7,7 @@ type Tone = 'neutral' | 'sun' | 'success';
 
 // A function: the colours follow light or dark mode at each render
 const tones = (): Record<Tone, { bg: string; fg: string }> => ({
-  neutral: { bg: colors.card, fg: colors.ink },
+  neutral: { bg: colors.inset, fg: colors.ink },
   sun: { bg: colors.sun, fg: colors.onSun },
   success: { bg: colors.successSoft, fg: colors.successText },
 });

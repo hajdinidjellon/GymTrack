@@ -13,6 +13,8 @@ export interface Palette {
   paper: string;
   /** Cards, inputs, secondary buttons. */
   card: string;
+  /** What sits inside a card (tiles, badges, a nested block): a step lighter at night so it shows without an outline. */
+  inset: string;
   /** Main text. */
   ink: string;
   inkMuted: string;
@@ -66,6 +68,7 @@ export interface Palette {
 export const lightPalette: Palette = {
   paper: '#FFF6EC',
   card: '#FFFFFF',
+  inset: '#FFFFFF',
   ink: '#1F1A17',
   inkMuted: '#6B5F57',
   inkFaint: '#8C8078',
@@ -105,9 +108,10 @@ export const lightPalette: Palette = {
 export const darkPalette: Palette = {
   paper: '#06141B',
   card: '#112637',
+  inset: '#1A3A52',
   ink: '#DCE6EA',
   inkMuted: '#9FB6C2',
-  inkFaint: '#8AA3B0',
+  inkFaint: '#8FA8B5',
   outline: '#4FA3CC',
   outlineStrong: '#5BC8F5',
   frame: 'transparent',
