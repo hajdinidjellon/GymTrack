@@ -14,6 +14,11 @@ export const exercise = {
     on: 'Le poids se compte de chaque côté.',
     off: 'Le poids se lit sur la pile de la machine.',
   },
+  warmups: {
+    label: "Séries d'échauffement",
+    on: 'Calculées avant tes séries, avec les disques. Hors stats.',
+    off: 'Tu attaques directement tes séries.',
+  },
   increment: {
     title: 'Ajouter à chaque palier',
     a11y: '{kg} kilos par palier',

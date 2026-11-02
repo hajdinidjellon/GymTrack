@@ -15,6 +15,11 @@ export const exercise: Dictionary['exercise'] = {
     on: 'The weight counts on each side.',
     off: 'The weight is read on the machine stack.',
   },
+  warmups: {
+    label: 'Warm-up sets',
+    on: 'Computed before your sets, plates included. Not in your stats.',
+    off: 'You go straight to your sets.',
+  },
   increment: {
     title: 'Add at each step',
     a11y: '{kg} kilos per step',

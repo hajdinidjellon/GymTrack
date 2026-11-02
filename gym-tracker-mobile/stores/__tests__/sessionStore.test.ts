@@ -25,13 +25,16 @@ function exercise(id: string, sets: number, patch: Partial<ActiveExercise> = {})
   };
 }
 
+// Warm-ups have their own tests below: off here, so set indexes stay simple
+const BASE = { ...DEFAULT_SETTINGS, warmups: false };
+
 const store = () => useSessionStore.getState();
 const session = () => store().activeSession!;
 
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
-  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+  useSettingsStore.setState({ settings: { ...BASE } });
   store().startSession('Push', [exercise('bench', 2), exercise('ohp', 1)]);
 });
 
@@ -56,7 +59,7 @@ describe('sets', () => {
   });
 
   it('does not rest when the timer is turned off', () => {
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, restTimerEnabled: false } });
+    useSettingsStore.setState({ settings: { ...BASE, restTimerEnabled: false } });
     store().completeSet('bench', 0);
     expect(session().restEndsAt).toBeNull();
   });
@@ -73,7 +76,7 @@ describe('sets', () => {
   });
 
   it('stays quiet when the voice is off', () => {
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, voice: false } });
+    useSettingsStore.setState({ settings: { ...BASE, voice: false } });
     store().completeRemaining('bench');
     expect(Speech.speak).not.toHaveBeenCalled();
   });
@@ -90,7 +93,7 @@ describe('sets', () => {
     store().setStartWeight('row', 40);
     expect(session().exercises[0]).toMatchObject({ needsWeight: false });
     expect(session().exercises[0]!.sets[1]).toMatchObject({ weight: 40, target: { weight: 40, reps: 10 } });
-    expect(Speech.speak).toHaveBeenCalledWith('Série 1. 40 kilos, 10 reps.', expect.anything());
+    expect(Speech.speak).toHaveBeenCalledWith('Mets 10 de chaque côté. Série 1. 40 kilos, 10 reps.', expect.anything());
   });
 });
 
@@ -121,7 +124,7 @@ describe('rest timer', () => {
   });
 
   it('stays silent with the bell off, and the notification too', () => {
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, restBell: false } });
+    useSettingsStore.setState({ settings: { ...BASE, restBell: false } });
     store().completeSet('bench', 0);
     expect(scheduleRestCompleteNotification).toHaveBeenLastCalledWith(120, 'bench · 60 kg × 10', false);
     jest.advanceTimersByTime(120_000);
@@ -255,5 +258,50 @@ describe('rating a set', () => {
     store().completeSet('bench', 0);
     store().rateLastSet('max');
     expect(store().finishSession()!.exercises[0]!.sets[0]!.rpe).toBe(10);
+  });
+});
+
+describe('warm-ups', () => {
+  beforeEach(() => {
+    store().discardSession();
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    store().startSession('Push', [
+      exercise('bench', 2, { sets: exercise('x', 2).sets.map((x) => ({ ...x, weight: 100 })) }),
+    ]);
+  });
+
+  it('starts the session with the warm-ups first', () => {
+    expect(session().exercises[0]!.sets.map((x) => x.weight)).toEqual([20, 40, 60, 80, 100, 100]);
+  });
+
+  it('goes straight to the next warm-up and says what to load', () => {
+    store().completeSet('bench', 0);
+    expect(session().restEndsAt).toBeNull();
+    expect(Speech.speak).toHaveBeenCalledWith(
+      'Mets 10 de chaque côté. Échauffement 2. 40 kilos, 5 reps.',
+      expect.anything(),
+    );
+  });
+
+  it('rests before the working sets', () => {
+    for (let i = 0; i < 4; i++) store().completeSet('bench', i);
+    expect(session().restDuration).toBe(90);
+  });
+
+  it('skips the warm-ups left and announces the first working set', () => {
+    store().skipWarmups('bench');
+    expect(session().exercises[0]!.sets.map((x) => x.weight)).toEqual([100, 100]);
+    expect(Speech.speak).toHaveBeenLastCalledWith(
+      'Mets 20 et 20 de chaque côté. Série 1. 100 kilos, 10 reps.',
+      expect.anything(),
+    );
+  });
+
+  it('computes them once the start weight is picked', () => {
+    store().discardSession();
+    store().startSession('Push', [exercise('row', 1, { needsWeight: true })]);
+    expect(session().exercises[0]!.sets).toHaveLength(1);
+    store().setStartWeight('row', 80);
+    expect(session().exercises[0]!.sets.map((x) => x.weight)).toEqual([20, 30, 47.5, 62.5, 80]);
   });
 });

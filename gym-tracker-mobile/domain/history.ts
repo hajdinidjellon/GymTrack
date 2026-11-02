@@ -29,9 +29,9 @@ export function loggedExercises(workout: Workout): LoggedExercise[] {
     .filter((e) => e.sets.length > 0);
 }
 
-/** Sets done in the session, warm-ups included. */
+/** Working sets done in the session: warm-ups are not counted, like on the summary. */
 export function setsDone(workout: Workout): number {
-  return loggedExercises(workout).reduce((n, e) => n + e.sets.length, 0);
+  return loggedExercises(workout).reduce((n, e) => n + e.sets.filter((s) => !s.warmup).length, 0);
 }
 
 /** Newest first. */

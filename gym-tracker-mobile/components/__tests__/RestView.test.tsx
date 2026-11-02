@@ -4,6 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { setLocale } from '@/i18n';
 import { useSessionStore } from '@/stores/sessionStore';
+import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { RestMini, RestView } from '@/components/session/RestView';
 import type { ActiveExercise } from '@/types';
 
@@ -42,6 +43,8 @@ async function renderRest() {
 }
 
 beforeEach(() => {
+  // Warm-ups off: these tests are about the working sets
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
   jest.useFakeTimers();
   useSessionStore.getState().startSession('Jambes', [squat]);
   useSessionStore.getState().completeSet('squat', 0);
@@ -85,6 +88,21 @@ describe('RestView', () => {
     const s = session();
     await render(<RestView next={findCurrent(s.exercises)} restEndsAt={s.restEndsAt!} total={120} />);
     expect(screen.queryByText("Comment c'était ?")).toBeNull();
+  });
+
+  it('does not ask how a warm-up felt', async () => {
+    const s = session();
+    await render(
+      <RestView
+        next={findCurrent(s.exercises)}
+        restEndsAt={s.restEndsAt!}
+        total={120}
+        doneLabel="Échauffement validé"
+        rateable={false}
+      />,
+    );
+    expect(screen.queryByText("Comment c'était ?")).toBeNull();
+    expect(screen.getByText('Échauffement validé · annuler')).toBeOnTheScreen();
   });
 
   it('skips the rest', async () => {

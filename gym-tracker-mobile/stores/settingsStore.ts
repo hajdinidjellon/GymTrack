@@ -36,6 +36,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   signedOut: false,
   programSwitchDismissed: null,
   language: 'auto',
+  warmups: true,
+  warmupOverrides: {},
 };
 
 export const REST_CHOICES = [60, 90, 120, 180];
@@ -100,6 +102,8 @@ interface SettingsStore {
   setExerciseNote: (exerciseName: string, text: string) => void;
   /** Plates on each side or a weight stack. The catalog's answer is not stored. */
   setPlateLoaded: (def: ExerciseDef, on: boolean) => void;
+  /** Warm-ups on or off for one exercise. Same as the global choice: nothing is stored. */
+  setWarmups: (exerciseName: string, on: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -153,6 +157,12 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setPlateLoaded: (def, on) => {
     const { [def.name]: _old, ...others } = get().settings.plateLoaded;
     get().updateSettings({ plateLoaded: on === !!def.plateLoaded ? others : { ...others, [def.name]: on } });
+  },
+
+  setWarmups: (exerciseName, on) => {
+    const { warmupOverrides, warmups } = get().settings;
+    const { [exerciseName]: _old, ...others } = warmupOverrides;
+    get().updateSettings({ warmupOverrides: on === warmups ? others : { ...others, [exerciseName]: on } });
   },
 
   togglePlate: (plate) => {

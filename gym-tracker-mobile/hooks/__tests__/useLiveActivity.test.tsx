@@ -66,7 +66,7 @@ beforeEach(() => {
   jest.useFakeTimers();
   mockNative.instances = [];
   mockNative.start.mockClear();
-  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
 });
 
 afterEach(() => {

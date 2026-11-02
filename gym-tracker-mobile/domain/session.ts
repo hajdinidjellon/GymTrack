@@ -8,6 +8,13 @@ import { moveItem } from '@/domain/reorder';
 import { EFFORT_RPE, effortOf, type Effort } from '@/domain/effort';
 import { withRestTaken } from '@/domain/rest';
 import { findCurrent } from '@/domain/sessionCursor';
+import {
+  isWarmup,
+  skipWarmups as withoutWarmups,
+  withWarmups,
+  workingCount,
+  type WarmupSettings,
+} from '@/domain/warmup';
 import { exerciseName, t } from '@/i18n';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
@@ -43,13 +50,18 @@ export function findSet(session: ActiveSession, exerciseId: string, setIndex: nu
   return session.exercises.find((e) => e.id === exerciseId)?.sets[setIndex];
 }
 
+/** A warm-up changed by hand is kept as the user set it: not computed again. */
 export function updateSet(
   session: ActiveSession,
   exerciseId: string,
   setIndex: number,
   patch: Partial<WorkoutSet>,
 ): ActiveSession {
-  return mapExercise(session, exerciseId, (e) => patchSet(e, setIndex, patch));
+  return mapExercise(session, exerciseId, (e) => {
+    const patched = patchSet(e, setIndex, patch);
+    const warmup = e.sets[setIndex] && isWarmup(e.sets[setIndex]) && !('completed' in patch);
+    return warmup ? { ...patched, keepWarmups: true } : patched;
+  });
 }
 
 /** Rounded to the hundredth so steps of 2.5 never drift to 52.4999. Never below zero. */
@@ -74,17 +86,19 @@ export function setStartWeight(session: ActiveSession, exerciseId: string, weigh
  * A missed set (fewer reps than its target) passes on its weight only:
  * the next sets still aim for their own reps.
  * `now` dates the validation: the gaps tell how long the user really rests.
+ * A warm-up passes nothing on: the working sets keep their own targets.
  */
 export function completeSet(session: ActiveSession, exerciseId: string, setIndex: number, now?: number): ActiveSession {
   return {
     ...mapExercise(session, exerciseId, (e) => {
       const done = e.sets[setIndex];
       if (!done) return e;
+      const passOn = !isWarmup(done);
       return {
         ...e,
         sets: e.sets.map((set, i) => {
           if (i === setIndex) return { ...set, completed: true, doneAt: now };
-          if (i > setIndex && !set.completed) {
+          if (passOn && i > setIndex && !set.completed && !isWarmup(set)) {
             const missed = done.target != null && done.reps < done.target.reps;
             return { ...set, weight: done.weight, reps: missed ? set.reps : done.reps };
           }
@@ -131,21 +145,42 @@ export function rateLastSet(session: ActiveSession, effort: Effort): ActiveSessi
 
 /**
  * Removes a set still to do. A validated set stays (undo it first), and an
- * exercise always keeps one set.
+ * exercise always keeps one working set. A warm-up removed by hand is not
+ * computed again.
  */
 export function removeSet(session: ActiveSession, exerciseId: string, setIndex: number): ActiveSession {
   const exercise = session.exercises.find((e) => e.id === exerciseId);
   const set = exercise?.sets[setIndex];
-  if (!exercise || !set || set.completed || exercise.sets.length <= 1) return session;
+  if (!exercise || !set || set.completed) return session;
+  const warmup = isWarmup(set);
+  if (!warmup && workingCount(exercise.sets) <= 1) return session;
   const last = session.lastCompleted;
   const shifted =
     last && last.exerciseId === exerciseId && last.setIndex > setIndex
       ? { ...last, setIndex: last.setIndex - 1 }
       : last;
   return {
-    ...mapExercise(session, exerciseId, (e) => ({ ...e, sets: e.sets.filter((_, i) => i !== setIndex) })),
+    ...mapExercise(session, exerciseId, (e) => ({
+      ...e,
+      sets: e.sets.filter((_, i) => i !== setIndex),
+      ...(warmup ? { keepWarmups: true } : {}),
+    })),
     lastCompleted: shifted,
   };
+}
+
+/**
+ * Warm-ups computed again for the exercises not started yet: after the
+ * session starts, a reorder, a swap. Nothing changed: the same session.
+ */
+export function refreshWarmups(session: ActiveSession, settings: WarmupSettings): ActiveSession {
+  const exercises = withWarmups(session.exercises, settings);
+  return exercises.every((e, i) => e === session.exercises[i]) ? session : { ...session, exercises };
+}
+
+/** "Passer l'échauffement": the warm-ups left on this exercise go. */
+export function skipWarmups(session: ActiveSession, exerciseId: string): ActiveSession {
+  return mapExercise(session, exerciseId, withoutWarmups);
 }
 
 /** Indexes of the sets still to do on this exercise. */
@@ -251,6 +286,7 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
           lastTime: _l,
           reason: _r,
           restNote: _rn,
+          keepWarmups: _k,
           ...exercise
         }) => ({
           ...exercise,

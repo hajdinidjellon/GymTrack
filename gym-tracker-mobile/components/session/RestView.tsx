@@ -6,6 +6,7 @@ import { formatClock } from '@/domain/format';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
+import { setNumber } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
@@ -21,6 +22,8 @@ interface Props {
   total: number;
   /** "Développé couché · série 2 validée", with an undo next to it. */
   doneLabel?: string;
+  /** The set just done can get its "Comment c'était ?" (not a warm-up). */
+  rateable?: boolean;
   /** Shrinks the popup to a small bar at the bottom. */
   onMinimize?: () => void;
   /** Why this rest lasts what it lasts: "Gros mouvement à la barre…". */
@@ -30,7 +33,16 @@ interface Props {
 }
 
 /** The rest, in a popup in the middle of the screen: the timer, and what comes next so the bar can be loaded now. */
-export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note, doneExerciseId }: Props) {
+export function RestView({
+  next,
+  restEndsAt,
+  total,
+  doneLabel,
+  rateable = true,
+  onMinimize,
+  note,
+  doneExerciseId,
+}: Props) {
   const left = useRestSecondsLeft(restEndsAt) ?? 0;
   const addRestTime = useSessionStore((s) => s.addRestTime);
   const stopRestTimer = useSessionStore((s) => s.stopRestTimer);
@@ -39,6 +51,7 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note,
   const perSide = useSidePlates(loading, next?.set.weight ?? 0);
   const ratio = Math.max(0, Math.min(1, left / Math.max(total, left, 1)));
   const clock = formatClock(left);
+  const nextNumber = next ? setNumber(next.exercise.sets, next.setIndex) : { warmup: false, n: 1, total: 1 };
 
   return (
     <StickerCard tone="sun" style={{ paddingVertical: 14, gap: space.md }}>
@@ -60,7 +73,7 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note,
         </Text>
       ) : null}
 
-      {doneLabel ? <EffortPicker /> : null}
+      {doneLabel && rateable ? <EffortPicker /> : null}
 
       <View
         accessible
@@ -99,9 +112,9 @@ export function RestView({ next, restEndsAt, total, doneLabel, onMinimize, note,
               {next.setIndex === 0 || (doneExerciseId && next.exercise.id !== doneExerciseId)
                 ? t(next.setIndex > 0 ? 'session.rest.nextExerciseSet' : 'session.rest.nextExercise', {
                     name: exerciseName(next.exercise.name),
-                    n: next.setIndex + 1,
+                    n: nextNumber.n,
                   })
-                : t('session.rest.nextSet', { n: next.setIndex + 1 })}
+                : t(nextNumber.warmup ? 'session.rest.nextWarmup' : 'session.rest.nextSet', { n: nextNumber.n })}
             </Text>
             <Text size={22} weight="black" numberOfLines={1}>
               {next.exercise.needsWeight

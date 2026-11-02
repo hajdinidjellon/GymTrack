@@ -6,6 +6,7 @@
 import { LOADING_SUFFIX, loadingOf, sidePlates } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
+import { setNumber } from '@/domain/warmup';
 import { dayName, exerciseName, t } from '@/i18n';
 import type { ActiveSession, AppSettings } from '@/types';
 
@@ -86,15 +87,19 @@ export function lockScreenProps(
         ? t('domain.load.kgSuffixTimes', { kg, suffix, reps: set.reps })
         : t('domain.load.kgTimes', { kg, reps: set.reps });
   const perSide = exercise.needsWeight ? [] : sidePlates(loading, set.weight, settings);
+  const number = setNumber(exercise.sets, setIndex);
 
   return {
     session: dayName(session.name),
     exercise: exerciseName(exercise.name),
-    setLabel: t('domain.lockScreen.setLabel', { n: setIndex + 1, total: exercise.sets.length }),
+    setLabel: t(number.warmup ? 'domain.lockScreen.warmupLabel' : 'domain.lockScreen.setLabel', {
+      n: number.n,
+      total: number.total,
+    }),
     target: exercise.needsWeight ? t('domain.lockScreen.pickWeight') : load,
     plates: perSide.length > 0 ? t('domain.lockScreen.perSide', { plates: perSide.map(formatKg).join(' + ') }) : '',
     plateList: perSide.map((p) => ({ kg: p, label: formatKg(p) })),
-    setShort: `${setIndex + 1}/${exercise.sets.length}`,
+    setShort: `${number.n}/${number.total}`,
     ...common,
     ...rest,
     canValidate: !exercise.needsWeight,

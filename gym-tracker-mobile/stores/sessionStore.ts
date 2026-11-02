@@ -19,7 +19,7 @@ import type { Effort } from '@/domain/effort';
 import * as Session from '@/domain/session';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
-import { nextExerciseLine, restOverLine, setLine } from '@/domain/voiceLines';
+import { nextExerciseLine, nextSetLine, restOverLine } from '@/domain/voiceLines';
 import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from '@/services/notifications';
 import { speak } from '@/services/speech';
 import { playRestBell, REST_BELL_MS } from '@/services/sound';
@@ -61,6 +61,8 @@ interface SessionStore {
   doNow: (exerciseId: string) => void;
   /** This exercise at the end of the session (its machine is taken). */
   doLater: (exerciseId: string) => void;
+  /** Drops the warm-ups left on this exercise. */
+  skipWarmups: (exerciseId: string) => void;
 
   startRestTimer: (seconds: number) => void;
   addRestTime: (seconds: number) => void;
@@ -102,17 +104,23 @@ function armRestEnd(ms: number) {
   }, ms);
 }
 
-/** After a set: announce a new exercise early, so the bar can be loaded during the rest. */
+/**
+ * After a set: announce a new exercise early, so the bar can be loaded during
+ * the rest. No rest (from one warm-up to the next): the next load right away.
+ */
 function afterSet(previousExerciseId: string, restSeconds: number) {
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
   const session = useSessionStore.getState().activeSession;
   if (!session || Session.isDone(session)) return;
 
   const { restTimerEnabled, voice } = settings();
-  if (restTimerEnabled) useSessionStore.getState().startRestTimer(restSeconds);
+  const rests = restSeconds > 0;
+  if (restTimerEnabled && rests) useSessionStore.getState().startRestTimer(restSeconds);
 
   const next = findCurrent(session.exercises);
-  if (next && voice && next.exercise.id !== previousExerciseId) speak(nextExerciseLine(next, settings()));
+  if (!next || !voice) return;
+  if (next.exercise.id !== previousExerciseId) speak(nextExerciseLine(next, settings()));
+  else if (!rests) speak(nextSetLine(next, settings()));
 }
 
 /**
@@ -145,12 +153,15 @@ export const useSessionStore = create<SessionStore>()(
       /** Applies a pure transition to the running session, if any. */
       const apply = (fn: (s: ActiveSession) => ActiveSession) =>
         set((state) => (state.activeSession ? { activeSession: fn(state.activeSession) } : state));
+      /** Same, then the warm-ups follow the new order or the new exercises. */
+      const applyWarm = (fn: (s: ActiveSession) => ActiveSession) =>
+        apply((s) => Session.refreshWarmups(fn(s), settings()));
       const currentId = () => findCurrent(get().activeSession?.exercises ?? [])?.exercise.id;
       /** Applies a new order; a no-op stays silent. */
       const reorder = (fn: (s: ActiveSession) => ActiveSession) => {
         const before = get().activeSession;
         const previous = currentId();
-        apply(fn);
+        applyWarm(fn);
         if (get().activeSession === before) return;
         Haptics.selectionAsync().catch(() => null);
         afterCurrentChanged(previous);
@@ -161,7 +172,8 @@ export const useSessionStore = create<SessionStore>()(
 
         startSession: (name, exercises) => {
           clearRestEndTimeout();
-          set({ activeSession: Session.createSession(newId(), name, exercises, new Date()) });
+          const session = Session.createSession(newId(), name, exercises, new Date());
+          set({ activeSession: Session.refreshWarmups(session, settings()) });
         },
 
         finishSession: () => {
@@ -203,10 +215,10 @@ export const useSessionStore = create<SessionStore>()(
         },
 
         setStartWeight: (exerciseId, weight) => {
-          apply((s) => Session.setStartWeight(s, exerciseId, weight));
+          applyWarm((s) => Session.setStartWeight(s, exerciseId, weight));
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
           const next = findCurrent(get().activeSession?.exercises ?? []);
-          if (next && settings().voice) speak(setLine(next));
+          if (next && settings().voice) speak(nextSetLine(next, settings()));
         },
 
         completeSet: (exerciseId, setIndex) => {
@@ -239,19 +251,26 @@ export const useSessionStore = create<SessionStore>()(
 
         replaceExercise: (exerciseId, next) => {
           const previous = currentId();
-          apply((s) => Session.replaceExercise(s, exerciseId, next));
+          applyWarm((s) => Session.replaceExercise(s, exerciseId, next));
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
           afterCurrentChanged(previous);
         },
 
         addExercise: (next) => {
-          apply((s) => Session.addExercise(s, next));
+          applyWarm((s) => Session.addExercise(s, next));
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
         },
 
         doNow: (exerciseId) => reorder((s) => Session.doNow(s, exerciseId)),
 
         doLater: (exerciseId) => reorder((s) => Session.doLater(s, exerciseId)),
+
+        skipWarmups: (exerciseId) => {
+          apply((s) => Session.skipWarmups(s, exerciseId));
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => null);
+          const next = findCurrent(get().activeSession?.exercises ?? []);
+          if (next && settings().voice) speak(nextSetLine(next, settings()));
+        },
 
         startRestTimer: (seconds) => {
           if (!get().activeSession) return;

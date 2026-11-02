@@ -18,6 +18,9 @@ export const session: Dictionary['session'] = {
     setOf: 'Set {n} of {total}',
     nextSetOf: 'Next set {n} of {total}',
     setDone: 'Set {n} done',
+    warmupOf: 'Warm-up {n} of {total}',
+    nextWarmupOf: 'Next warm-up {n} of {total}',
+    warmupDone: 'Warm-up done',
   },
 
   preview: {
@@ -141,6 +144,7 @@ export const session: Dictionary['session'] = {
     nextExercise: 'Next · {name}',
     nextExerciseSet: 'Next · {name}, set {n}',
     nextSet: 'Next · set {n}',
+    nextWarmup: 'Next · warm-up {n}',
     weightToSet: 'Weight to set',
     skip: 'Skip rest',
     undoA11y: 'Undo the last set',
@@ -168,6 +172,9 @@ export const session: Dictionary['session'] = {
     headerKg: 'KG',
     headerReps: 'REPS',
     deleteA11y: 'Delete set {n}',
+    warmupShort: 'Warm',
+    a11yWarmup: 'Warm-up, {kg} kilos, {reps} reps, {state}',
+    deleteWarmupA11y: 'Delete this warm-up',
   },
 
   setView: {
@@ -183,5 +190,7 @@ export const session: Dictionary['session'] = {
     swipeHint: 'Swipe a set left to delete it',
     allAsPlanned: { one: 'All as planned · {count} set', other: 'All as planned · {count} sets' },
     validateA11y: 'Log the set',
+    warmupHint: "Warm-up · doesn't count in your stats",
+    skipWarmup: 'Skip the warm-up',
   },
 };

@@ -7,6 +7,7 @@ import { formatClock, formatRest, formatShortDay } from '@/domain/format';
 import { clampRest, REST_STEP } from '@/domain/rest';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
+import { warmupsOn } from '@/domain/warmup';
 import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
 import {
@@ -43,6 +44,8 @@ export default function ExerciseScreen() {
   const setIncrement = useSettingsStore((s) => s.setIncrement);
   const setRestOverride = useSettingsStore((s) => s.setRestOverride);
   const setPlateLoaded = useSettingsStore((s) => s.setPlateLoaded);
+  const setWarmups = useSettingsStore((s) => s.setWarmups);
+  const warmupChoice = useSettingsStore((s) => s.settings);
 
   if (!def || !ctx) {
     return (
@@ -63,6 +66,7 @@ export default function ExerciseScreen() {
   const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def.equipment, ctx.settings.units));
   const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded });
   const equipment = t(`program.equipment.${def.equipment}`);
+  const warmups = warmupsOn(def.name, warmupChoice);
 
   return (
     <Screen scroll>
@@ -237,6 +241,14 @@ export default function ExerciseScreen() {
               {t('exercise.rest.auto')}
             </Text>
           </Pressable>
+        ) : null}
+        {!bodyweight ? (
+          <CheckRow
+            label={t('exercise.warmups.label')}
+            checked={warmups}
+            onChange={(on) => setWarmups(def.name, on)}
+            detail={t(warmups ? 'exercise.warmups.on' : 'exercise.warmups.off')}
+          />
         ) : null}
       </StickerCard>
 

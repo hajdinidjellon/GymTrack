@@ -333,3 +333,72 @@ describe('undoLastSet', () => {
     expect(Session.undoLastSet(fresh)).toBe(fresh);
   });
 });
+
+describe('warm-ups in the session', () => {
+  const gym = { barWeight: 20, plates: [20, 15, 10, 5, 2.5, 1.25], warmups: true, warmupOverrides: {} };
+  const warmed = () =>
+    Session.refreshWarmups(
+      session([
+        active('bench', [
+          { weight: 100, reps: 8 },
+          { weight: 100, reps: 8 },
+        ]),
+      ]),
+      gym,
+    );
+
+  it('puts the warm-ups first, and gives back the same session when nothing changes', () => {
+    const s = warmed();
+    expect(s.exercises[0]!.sets.map((set) => set.setType)).toEqual([
+      'warmup',
+      'warmup',
+      'warmup',
+      'warmup',
+      'normal',
+      'normal',
+    ]);
+    expect(Session.refreshWarmups(s, gym)).toBe(s);
+  });
+
+  it('passes nothing on from a warm-up to the working sets', () => {
+    const s = Session.completeSet(warmed(), 'bench', 0);
+    expect(s.exercises[0]!.sets.slice(4).map((set) => set.weight)).toEqual([100, 100]);
+    expect(s.exercises[0]!.sets[1]!.weight).toBe(40);
+  });
+
+  it('a working set passes its weight to the working sets after it only', () => {
+    let s = warmed();
+    s = Session.updateSet(s, 'bench', 4, { weight: 105 });
+    s = Session.completeSet(s, 'bench', 4);
+    expect(s.exercises[0]!.sets[5]!.weight).toBe(105);
+  });
+
+  it('removes a warm-up by hand for good, but keeps the last working set', () => {
+    const one = Session.refreshWarmups(session([active('bench', [{ weight: 100, reps: 8 }])]), gym);
+    const removed = Session.removeSet(one, 'bench', 0);
+    expect(removed.exercises[0]!.keepWarmups).toBe(true);
+    expect(removed.exercises[0]!.sets).toHaveLength(4);
+    expect(Session.removeSet(removed, 'bench', 3)).toBe(removed);
+  });
+
+  it('keeps a warm-up changed by hand', () => {
+    const s = Session.updateSet(warmed(), 'bench', 1, { weight: 45 });
+    expect(s.exercises[0]!.keepWarmups).toBe(true);
+    expect(Session.refreshWarmups(s, gym)).toBe(s);
+    expect(Session.updateSet(warmed(), 'bench', 4, { weight: 105 }).exercises[0]!.keepWarmups).toBeUndefined();
+  });
+
+  it('skips the warm-ups left', () => {
+    const s = Session.skipWarmups(warmed(), 'bench');
+    expect(s.exercises[0]!.sets.map((set) => set.setType)).toEqual(['normal', 'normal']);
+    expect(Session.refreshWarmups(s, gym)).toBe(s);
+  });
+
+  it('saves the warm-ups done in the history, without the session-only flag', () => {
+    let s = Session.skipWarmups(Session.completeSet(warmed(), 'bench', 0), 'bench');
+    s = Session.completeSet(s, 'bench', 1);
+    const w = Session.toWorkout(s, new Date('2026-10-20T19:00:00Z'));
+    expect(w.exercises[0]).not.toHaveProperty('keepWarmups');
+    expect(w.exercises[0]!.sets.map((set) => set.setType)).toEqual(['warmup', 'normal', 'normal']);
+  });
+});

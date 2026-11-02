@@ -6,6 +6,7 @@ import { colors, radius, space } from '@/constants/theme';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
 import { findCurrent } from '@/domain/sessionCursor';
+import { setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
@@ -86,7 +87,9 @@ export default function SessionScreen() {
   const { exercise, exerciseIndex, setIndex } = cursor;
   const last = session.lastCompleted;
   const doneExercise = last && session.exercises.find((e) => e.id === last.exerciseId);
-  const left = session.exercises.reduce((n, e) => n + e.sets.filter((set) => !set.completed).length, 0);
+  const left = session.exercises.reduce((n, e) => n + workingCount(e.sets, 'left'), 0);
+  const now = setNumber(exercise.sets, setIndex);
+  const lastDone = doneExercise ? setNumber(doneExercise.sets, last.setIndex) : null;
 
   // Pendant le repos, le bas de l'écran garde le minuteur en petit ; en grand, il s'ouvre au milieu
   const rest = resting ? <RestMini restEndsAt={session.restEndsAt!} onExpand={() => setMinimized(false)} /> : null;
@@ -138,10 +141,9 @@ export default function SessionScreen() {
           }}
         >
           <Text size={14} weight="black">
-            {t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', {
-              n: setIndex + 1,
-              total: exercise.sets.length,
-            })}
+            {now.warmup
+              ? t(resting ? 'session.logger.nextWarmupOf' : 'session.logger.warmupOf', { n: now.n, total: now.total })
+              : t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', { n: now.n, total: now.total })}
           </Text>
         </View>
         <DoLater exercise={exercise} />
@@ -169,7 +171,14 @@ export default function SessionScreen() {
               next={cursor}
               restEndsAt={session.restEndsAt!}
               total={session.restDuration ?? 90}
-              doneLabel={doneExercise ? t('session.logger.setDone', { n: last.setIndex + 1 }) : undefined}
+              doneLabel={
+                lastDone
+                  ? lastDone.warmup
+                    ? t('session.logger.warmupDone')
+                    : t('session.logger.setDone', { n: lastDone.n })
+                  : undefined
+              }
+              rateable={!!lastDone && !lastDone.warmup}
               note={doneExercise?.restNote}
               doneExerciseId={last?.exerciseId}
               onMinimize={() => setMinimized(true)}

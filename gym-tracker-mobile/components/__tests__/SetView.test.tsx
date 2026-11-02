@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
+import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { SetView } from '@/components/session/SetView';
 import type { ActiveExercise } from '@/types';
 
@@ -35,6 +36,8 @@ function renderCurrentSet() {
 const sets = () => useSessionStore.getState().activeSession!.exercises[0]!.sets;
 
 beforeEach(() => {
+  // Warm-ups off: these tests are about the working sets
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
   jest.useFakeTimers();
   useSessionStore.getState().startSession('Push', [bench]);
 });
@@ -117,5 +120,29 @@ describe('SetView', () => {
     useSessionStore.getState().startSession('Push', [press]);
     await renderCurrentSet();
     expect(screen.getByText('De chaque côté : 20 + 20 + 20 + 2,5')).toBeTruthy();
+  });
+});
+
+describe('SetView with warm-ups', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    useSessionStore.getState().startSession('Push', [bench]);
+  });
+
+  it('says it is a warm-up, explains the working weight, and offers to skip', async () => {
+    await renderCurrentSet();
+    expect(screen.getByText('Échauffement · ne compte pas dans tes stats')).toBeOnTheScreen();
+    expect(screen.getByText('Pourquoi 62,5 kg ?')).toBeOnTheScreen();
+    expect(screen.getAllByText('Éch.').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Série ratée ? Note les reps faites')).toBeNull();
+    expect(screen.queryByText(/Tout comme prévu/)).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: "Passer l'échauffement" }));
+    expect(sets().every((s) => s.setType === 'normal')).toBe(true);
+  });
+
+  it('numbers the working sets from 1, after the warm-ups', async () => {
+    await renderCurrentSet();
+    expect(screen.getByLabelText('Série 1, 62,5 kilos, 10 reps, à venir')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Échauffement, 20 kilos, 10 reps, en cours')).toBeOnTheScreen();
   });
 });

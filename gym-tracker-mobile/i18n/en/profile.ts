@@ -30,6 +30,9 @@ export const profile: Dictionary['profile'] = {
     bell: 'End-of-rest bell',
     bellOn: 'On',
     bellOff: 'Off',
+    warmups: 'Warm-up',
+    warmupsOn: 'Computed',
+    warmupsOff: 'Off',
     tapToChange: 'Tap to change',
   },
   language: {

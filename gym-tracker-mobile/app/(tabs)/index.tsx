@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
+import { setsDone } from '@/domain/history';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
   breakLabel,
@@ -344,7 +345,7 @@ function LastWorkout() {
   const last = useWorkoutStore((s) => s.workouts[0]);
   const factor = useLoadFactor();
   if (!last) return null;
-  const sets = last.exercises.reduce((n, e) => n + e.sets.filter((s) => s.completed).length, 0);
+  const sets = setsDone(last);
   const date = formatShortDay(last.date);
   return (
     <>

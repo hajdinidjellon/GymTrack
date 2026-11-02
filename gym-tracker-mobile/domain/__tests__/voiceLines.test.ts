@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { findCurrent } from '@/domain/sessionCursor';
-import { nextExerciseLine, platesLine, restOverLine, setLine } from '@/domain/voiceLines';
+import { nextExerciseLine, nextSetLine, platesLine, restOverLine, setLine } from '@/domain/voiceLines';
 import { active } from './fixtures';
 
 const gym = { barWeight: 20, plates: [20, 15, 10, 5, 2.5, 1.25] };
@@ -36,6 +36,18 @@ describe('voice lines', () => {
       'Série 1. 12 reps.',
     );
     expect(restOverLine(cursor())).toBe("C'est reparti. Série 1. 62,5 kilos, 10 reps.");
+  });
+
+  it('announces a warm-up apart from the working sets, plates first when there is no rest', () => {
+    const squat = active('Squat', [{ weight: 100, reps: 5 }]);
+    squat.sets.unshift(
+      { weight: 20, reps: 10, setType: 'warmup', completed: true },
+      { weight: 40, reps: 5, setType: 'warmup' },
+    );
+    expect(setLine(cursor(squat))).toBe('Échauffement 2. 40 kilos, 5 reps.');
+    expect(nextSetLine(cursor(squat), gym)).toBe('Mets 10 de chaque côté. Échauffement 2. 40 kilos, 5 reps.');
+    const curl = active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' });
+    expect(nextSetLine(cursor(curl), gym)).toBe('Série 1. 12 kilos par haltère, 10 reps.');
   });
 
   it('says when the weight is per dumbbell or per side', () => {

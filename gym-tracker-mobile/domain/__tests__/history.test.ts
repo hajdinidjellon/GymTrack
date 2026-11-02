@@ -22,7 +22,7 @@ describe('loggedExercises', () => {
       },
       { name: 'Curl haltères', sets: [{ weight: 14, reps: 12, warmup: false, effort: undefined }] },
     ]);
-    expect(setsDone(w)).toBe(3);
+    expect(setsDone(w)).toBe(2);
   });
 });
 

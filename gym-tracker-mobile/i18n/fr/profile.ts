@@ -29,6 +29,9 @@ export const profile = {
     bell: 'Sonnerie fin du repos',
     bellOn: 'Activée',
     bellOff: 'Coupée',
+    warmups: 'Échauffement',
+    warmupsOn: 'Calculé',
+    warmupsOff: 'Coupé',
     tapToChange: 'Touche pour changer',
   },
   language: {

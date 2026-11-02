@@ -17,6 +17,9 @@ export const session = {
     setOf: 'Série {n} sur {total}',
     nextSetOf: 'Prochaine série {n} sur {total}',
     setDone: 'Série {n} validée',
+    warmupOf: 'Échauffement {n} sur {total}',
+    nextWarmupOf: 'Prochain échauffement {n} sur {total}',
+    warmupDone: 'Échauffement validé',
   },
 
   preview: {
@@ -141,6 +144,7 @@ export const session = {
     nextExercise: 'Ensuite · {name}',
     nextExerciseSet: 'Ensuite · {name}, série {n}',
     nextSet: 'Ensuite · série {n}',
+    nextWarmup: 'Ensuite · échauffement {n}',
     weightToSet: 'Charge à régler',
     skip: 'Passer le repos',
     undoA11y: 'Annuler la dernière série',
@@ -168,6 +172,9 @@ export const session = {
     headerKg: 'KG',
     headerReps: 'REPS',
     deleteA11y: 'Supprimer la série {n}',
+    warmupShort: 'Éch.',
+    a11yWarmup: 'Échauffement, {kg} kilos, {reps} reps, {state}',
+    deleteWarmupA11y: 'Supprimer cet échauffement',
   },
 
   setView: {
@@ -183,5 +190,7 @@ export const session = {
     swipeHint: 'Glisse une série vers la gauche pour la supprimer',
     allAsPlanned: { one: 'Tout comme prévu · {count} série', other: 'Tout comme prévu · {count} séries' },
     validateA11y: 'Valider la série',
+    warmupHint: 'Échauffement · ne compte pas dans tes stats',
+    skipWarmup: "Passer l'échauffement",
   },
 };

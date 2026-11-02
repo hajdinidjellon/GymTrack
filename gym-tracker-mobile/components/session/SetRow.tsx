@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { border, colors, radius } from '@/constants/theme';
 import { formatKg } from '@/domain/plates';
+import { isWarmup, setNumber, workingCount } from '@/domain/warmup';
 import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { SwipeToDelete } from '@/components/ui/SwipeToDelete';
@@ -17,17 +18,21 @@ interface Props {
   state: State;
   /** Bodyweight: no kg column. */
   noWeight?: boolean;
+  /** A warm-up: "Éch." instead of its number. */
+  warmup?: boolean;
 }
 
 /** One line of the sets table: Série | kg | reps | mark. The current one is circled. */
-export function SetRow({ index, kg, reps, state, noWeight }: Props) {
+export function SetRow({ index, kg, reps, state, noWeight, warmup }: Props) {
   const current = state === 'current';
   const done = state === 'done';
   const color = done ? colors.successText : state === 'upcoming' ? colors.inkMuted : colors.ink;
   const stateLabel = t(done ? 'session.setRow.done' : current ? 'session.setRow.current' : 'session.setRow.upcoming');
-  const label = noWeight
-    ? t('session.setRow.a11yNoWeight', { index, reps, state: stateLabel })
-    : t('session.setRow.a11y', { index, kg: formatKg(kg), reps, state: stateLabel });
+  const label = warmup
+    ? t('session.setRow.a11yWarmup', { kg: formatKg(kg), reps, state: stateLabel })
+    : noWeight
+      ? t('session.setRow.a11yNoWeight', { index, reps, state: stateLabel })
+      : t('session.setRow.a11y', { index, kg: formatKg(kg), reps, state: stateLabel });
 
   return (
     <View
@@ -44,8 +49,8 @@ export function SetRow({ index, kg, reps, state, noWeight }: Props) {
         backgroundColor: done ? colors.successSoft : current ? colors.coralSoft : colors.paper,
       }}
     >
-      <Text size={16} weight="bold" color={color} style={{ width: 52 }}>
-        {index}
+      <Text size={warmup ? 14 : 16} weight="bold" color={warmup ? colors.inkMuted : color} style={{ width: 52 }}>
+        {warmup ? t('session.setRow.warmupShort') : index}
       </Text>
       {noWeight ? null : <Cell value={formatKg(kg)} color={color} big={current} />}
       <Cell value={String(reps)} color={color} big={current} />
@@ -117,7 +122,8 @@ interface TableProps {
 /** Every set of the exercise. Column headers are the only capitals of the app. */
 export function SetsTable({ exercise, current, onRemove }: TableProps) {
   const noWeight = exercise.equipment === 'bodyweight';
-  const canRemove = !!onRemove && exercise.sets.length > 1;
+  // A warm-up can always go; the last working set stays
+  const canRemove = (i: number) => !!onRemove && (isWarmup(exercise.sets[i]!) || workingCount(exercise.sets) > 1);
   return (
     <View>
       <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 4 }}>
@@ -127,21 +133,25 @@ export function SetsTable({ exercise, current, onRemove }: TableProps) {
         <View style={{ width: 44 }} />
       </View>
       <View style={{ gap: 4 }}>
-        {exercise.sets.map((s, i) => (
-          <SwipeToDelete
-            key={`${i}-${exercise.sets.length}`}
-            deleteLabel={t('session.setRow.deleteA11y', { n: i + 1 })}
-            onDelete={canRemove && !s.completed ? () => onRemove(i) : undefined}
-          >
-            <SetRow
-              index={i + 1}
-              kg={s.weight}
-              reps={s.reps}
-              noWeight={noWeight}
-              state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
-            />
-          </SwipeToDelete>
-        ))}
+        {exercise.sets.map((s, i) => {
+          const { warmup, n } = setNumber(exercise.sets, i);
+          return (
+            <SwipeToDelete
+              key={`${i}-${exercise.sets.length}`}
+              deleteLabel={warmup ? t('session.setRow.deleteWarmupA11y') : t('session.setRow.deleteA11y', { n })}
+              onDelete={canRemove(i) && !s.completed ? () => onRemove!(i) : undefined}
+            >
+              <SetRow
+                index={n}
+                kg={s.weight}
+                reps={s.reps}
+                noWeight={noWeight}
+                warmup={warmup}
+                state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
+              />
+            </SwipeToDelete>
+          );
+        })}
       </View>
     </View>
   );

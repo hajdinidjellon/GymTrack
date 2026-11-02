@@ -145,6 +145,12 @@ export default function Profile() {
             value={settings.restBell ? t('profile.during.bellOn') : t('profile.during.bellOff')}
             onPress={toggleBell}
             hint={t('profile.during.tapToChange')}
+          />
+          <Row
+            label={t('profile.during.warmups')}
+            value={settings.warmups ? t('profile.during.warmupsOn') : t('profile.during.warmupsOff')}
+            onPress={() => updateSettings({ warmups: !settings.warmups })}
+            hint={t('profile.during.tapToChange')}
             last
           />
         </Group>

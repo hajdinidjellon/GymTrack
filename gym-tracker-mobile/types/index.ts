@@ -168,6 +168,10 @@ export interface AppSettings {
   programSwitchDismissed: string | null;
   /** Language of the texts and the voice. `auto` follows the phone. */
   language: 'auto' | 'fr' | 'en';
+  /** Warm-up sets computed before the working sets. */
+  warmups: boolean;
+  /** Warm-ups on or off for one exercise, over the global choice. */
+  warmupOverrides: Record<string, boolean>;
 }
 
 // ============================================================
@@ -189,6 +193,8 @@ export interface ActiveExercise extends Exercise {
   reason?: string;
   /** Why the rest lasts what it lasts, when it is not the default. */
   restNote?: string;
+  /** The user skipped or removed warm-ups: they are not computed again this session. */
+  keepWarmups?: boolean;
 }
 
 export interface ActiveSession {

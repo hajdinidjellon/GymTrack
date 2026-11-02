@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useSessionStore } from '@/stores/sessionStore';
+import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { DoLater } from '@/components/session/DoLater';
 import type { ActiveExercise } from '@/types';
 
@@ -21,6 +22,8 @@ const store = () => useSessionStore.getState();
 const order = () => store().activeSession!.exercises.map((e) => e.id);
 
 beforeEach(() => {
+  // Warm-ups off: these tests are about the working sets
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
   jest.useFakeTimers();
   store().startSession('Legs', [exercise('Squat'), exercise('Presse')]);
 });

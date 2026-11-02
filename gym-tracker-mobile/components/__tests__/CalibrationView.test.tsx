@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useSessionStore } from '@/stores/sessionStore';
+import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { CalibrationView } from '@/components/session/CalibrationView';
 import type { ActiveExercise } from '@/types';
 
@@ -28,6 +29,8 @@ async function show(exercise: ActiveExercise) {
 const sets = () => useSessionStore.getState().activeSession!.exercises[0]!.sets;
 
 beforeEach(() => {
+  // Warm-ups off: these tests are about the working sets
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
   jest.useFakeTimers();
 });
 
