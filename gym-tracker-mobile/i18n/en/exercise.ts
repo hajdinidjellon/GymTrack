@@ -19,6 +19,13 @@ export const exercise: Dictionary['exercise'] = {
     recordA11y: '{reps}: {kg} kilos, {date}',
   },
   rule: 'Your sets and reps',
+  own: {
+    edit: 'Edit',
+    remove: 'Delete',
+    removeTitle: 'Delete {name}?',
+    removeText: 'It leaves your sessions. The sessions already done stay in your history.',
+    removeConfirm: 'Delete',
+  },
   plateLoaded: {
     label: 'Plate-loaded machine',
     on: 'The weight counts on each side.',

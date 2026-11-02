@@ -5,6 +5,8 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cleanNote } from '@/domain/notes';
+import { addOwnDay, removeOwnDay, renameOwnDay } from '@/domain/ownDays';
+import { removeOwnExercise, updateOwnExercise } from '@/domain/ownExercises';
 import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
 import type { ExerciseDef } from '@/domain/programs';
 import { applyRule } from '@/domain/ruleSync';
@@ -12,7 +14,7 @@ import { settingsPatchSchema } from '@/domain/schemas';
 import { resolveLocale, setLocale } from '@/i18n';
 import { deviceLocaleTag } from '@/services/locale';
 import { logger } from '@/services/logger';
-import type { AppSettings, CustomExercise, Goal, RuleOverride } from '@/types';
+import type { AppSettings, CustomExercise, Goal, RuleOverride, SplitId } from '@/types';
 
 const SETTINGS_KEY = '@gymtrack/settings';
 
@@ -40,6 +42,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   warmups: true,
   warmupOverrides: {},
   supersets: {},
+  ownDays: {},
 };
 
 export const REST_CHOICES = [60, 90, 120, 180];
@@ -106,6 +109,14 @@ interface SettingsStore {
   setPlateLoaded: (def: ExerciseDef, on: boolean) => void;
   /** Warm-ups on or off for one exercise. Same as the global choice: nothing is stored. */
   setWarmups: (exerciseName: string, on: boolean) => void;
+  /** An exercise the user created, changed (renamed: everything under its name follows). */
+  updateCustomExercise: (from: string, next: CustomExercise) => void;
+  /** An exercise the user created, removed from the list and from every day. */
+  removeCustomExercise: (name: string) => void;
+  /** A day added to the program, renamed, or removed. */
+  addOwnDay: (split: SplitId, name: string) => void;
+  renameOwnDay: (split: SplitId, from: string, to: string) => void;
+  removeOwnDay: (split: SplitId, name: string) => void;
   /** Chains an exercise of a program day with the next one (superset), or unchains it. */
   toggleSuperset: (key: string, exerciseName: string) => void;
 }
@@ -168,6 +179,18 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const { [exerciseName]: _old, ...others } = warmupOverrides;
     get().updateSettings({ warmupOverrides: on === warmups ? others : { ...others, [exerciseName]: on } });
   },
+
+  updateCustomExercise: (from, next) => {
+    get().updateSettings(updateOwnExercise(get().settings, from, next));
+  },
+
+  removeCustomExercise: (name) => {
+    get().updateSettings(removeOwnExercise(get().settings, name));
+  },
+
+  addOwnDay: (split, name) => get().updateSettings(addOwnDay(get().settings, split, name)),
+  renameOwnDay: (split, from, to) => get().updateSettings(renameOwnDay(get().settings, split, from, to)),
+  removeOwnDay: (split, name) => get().updateSettings(removeOwnDay(get().settings, split, name)),
 
   toggleSuperset: (key, exerciseName) => {
     const { [key]: current = [], ...others } = get().settings.supersets;

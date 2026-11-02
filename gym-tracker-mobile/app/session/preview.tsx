@@ -6,7 +6,7 @@ import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
 import { describeSide, loadBar } from '@/domain/plates';
-import { choosableDays, type ChoosableDay } from '@/domain/programs';
+import { choosableDays, type ChoosableDay, hasExercises } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -35,12 +35,13 @@ export default function Preview() {
   const ctx = useBuildContext();
   const customDays = useSettingsStore((s) => s.settings.customDays);
   const own = useSettingsStore((s) => s.settings.customExercises);
+  const ownDays = useSettingsStore((s) => s.settings.ownDays);
   const [picked, setPicked] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
   const splitId = ctx?.profile.program.split;
   // Le programme, puis les séances des autres programmes, pour une fois
-  const days = splitId ? choosableDays(splitId, customDays, own) : [];
+  const days = splitId ? choosableDays(splitId, customDays, own, ownDays).filter(hasExercises) : [];
   const today = ctx ? nextDay(ctx) : null;
   const day: ChoosableDay | undefined =
     days.find((d) => d.name === (picked ?? today?.name)) ??

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
+import { Text } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { EXERCISES, type ExerciseDef } from '@/domain/programs';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
@@ -57,5 +58,27 @@ describe('ExercisePicker', () => {
     expect(screen.getByText(EXERCISES.pulldown.name)).toBeOnTheScreen();
     expect(screen.getByText('Aussi appelé Lat pulldown')).toBeOnTheScreen();
     expect(screen.queryByText('+ Créer « Lat pulldown »')).toBeNull();
+  });
+});
+
+describe('ExercisePicker for several exercises', () => {
+  it('stays open on the same tab after a pick, with the options on top', async () => {
+    const onClose = jest.fn();
+    await render(
+      <ExercisePicker
+        visible
+        taken={[]}
+        muscle="back"
+        stayOpen
+        options={<Text>Option lue avant</Text>}
+        onPick={onPick}
+        onClose={onClose}
+      />,
+    );
+    expect(screen.getByText('Option lue avant')).toBeOnTheScreen();
+    await fireEvent.press(screen.getAllByRole('button', { name: /Tractions/ })[0]!);
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(tab('Dos')).toBeSelected();
   });
 });

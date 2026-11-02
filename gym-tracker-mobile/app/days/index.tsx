@@ -1,7 +1,9 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { colors, space } from '@/constants/theme';
+import { border, colors, radius, space } from '@/constants/theme';
+import { checkDayName } from '@/domain/ownDays';
+import { DayNameForm } from '@/components/program/DayNameForm';
 import { dayKey, getSplit, programDays } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -23,8 +25,11 @@ export default function DaysScreen() {
   const split = useProfileStore((s) => s.profile?.program.split);
   const customDays = useSettingsStore((s) => s.settings.customDays);
   const own = useSettingsStore((s) => s.settings.customExercises);
+  const ownDays = useSettingsStore((s) => s.settings.ownDays);
+  const addOwnDay = useSettingsStore((s) => s.addOwnDay);
+  const [adding, setAdding] = useState(false);
   if (!split) return null;
-  const days = programDays(split, customDays, own);
+  const days = programDays(split, customDays, own, ownDays);
 
   return (
     <Screen scroll>
@@ -68,6 +73,40 @@ export default function DaysScreen() {
             </FadeIn>
           );
         })}
+      </View>
+      <View style={{ marginTop: space.md }}>
+        {adding ? (
+          <DayNameForm
+            submitLabel={t('program.days.create')}
+            onCancel={() => setAdding(false)}
+            onSubmit={(typed) => {
+              const checked = checkDayName(typed, split, useSettingsStore.getState().settings);
+              if (typeof checked !== 'string') return checked.error;
+              addOwnDay(split, checked);
+              setAdding(false);
+              router.push({ pathname: '/days/[name]', params: { name: checked } });
+              return null;
+            }}
+          />
+        ) : (
+          <Pressable
+            onPress={() => setAdding(true)}
+            accessibilityRole="button"
+            style={({ pressed }) => ({
+              height: 56,
+              borderRadius: radius.row,
+              borderWidth: border.base,
+              borderStyle: 'dashed',
+              borderColor: pressed ? colors.ink : colors.line,
+              alignItems: 'center',
+              justifyContent: 'center',
+            })}
+          >
+            <Text size={16} weight="bold" color={colors.inkMuted}>
+              {t('program.days.add')}
+            </Text>
+          </Pressable>
+        )}
       </View>
       <Text size={13} color={colors.inkFaint} align="center" style={{ marginTop: space.lg }}>
         {t('program.days.changeProgram')}

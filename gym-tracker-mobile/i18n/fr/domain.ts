@@ -240,6 +240,11 @@ export const domain = {
     months: { one: '{count} mois', other: '{count} mois' },
   },
 
+  ownDays: {
+    nameEmpty: 'Donne un nom à ta séance.',
+    nameTaken: 'Une séance porte déjà ce nom.',
+  },
+
   voice: {
     kilos: '{kg} kilos',
     emptyBar: 'Barre à vide.',

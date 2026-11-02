@@ -22,7 +22,7 @@ import {
 import { isProgress } from '@/domain/progression';
 import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
-import { choosableDays, getSplit, type ChoosableDay } from '@/domain/programs';
+import { type ChoosableDay, choosableDays, getSplit, hasExercises } from '@/domain/programs';
 import { latestWorkoutDate, suggestedSplit, SWITCH_AFTER } from '@/domain/programSwitch';
 import { nextScheduled, validSchedule, whenLabel } from '@/domain/schedule';
 import { useBuildContext } from '@/hooks/useTodayPlan';
@@ -63,7 +63,12 @@ export default function Today() {
   const picked = choice?.after === workouts.length ? choice.name : null;
   const { days, today, plan, off } = useMemo(() => {
     if (!ctx) return { days: [], today: null, plan: null, off: null };
-    const list = choosableDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
+    const list = choosableDays(
+      ctx.profile.program.split,
+      ctx.settings.customDays,
+      ctx.settings.customExercises,
+      ctx.settings.ownDays,
+    ).filter(hasExercises);
     const next = nextDay(ctx);
     const day = list.find((d) => d.name === picked) ?? next;
     const status = todayStatus(ctx);

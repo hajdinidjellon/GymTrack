@@ -1,6 +1,6 @@
-import React from 'react';
-import { Pressable, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Modal, Pressable, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatClock, formatRest, formatShortDay } from '@/domain/format';
@@ -32,6 +32,7 @@ import { SharedRuleEditor } from '@/components/program/SharedRuleEditor';
 import { ExerciseNote } from '@/components/session/ExerciseNote';
 import { LoadHint } from '@/components/session/LoadHint';
 import { CheckRow } from '@/components/ui/CheckRow';
+import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 import { exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 
@@ -46,6 +47,8 @@ export default function ExerciseScreen() {
   const setRestOverride = useSettingsStore((s) => s.setRestOverride);
   const setPlateLoaded = useSettingsStore((s) => s.setPlateLoaded);
   const setWarmups = useSettingsStore((s) => s.setWarmups);
+  const removeCustomExercise = useSettingsStore((s) => s.removeCustomExercise);
+  const [editing, setEditing] = useState(false);
   const warmupChoice = useSettingsStore((s) => s.settings);
 
   if (!def || !ctx) {
@@ -59,6 +62,20 @@ export default function ExerciseScreen() {
     );
   }
 
+  // Created by the user: it can be changed or removed
+  const own = def.custom ? ctx.settings.customExercises?.find((e) => e.name === def.name) : undefined;
+  const confirmRemove = (name: string) =>
+    Alert.alert(t('exercise.own.removeTitle', { name: exerciseName(name) }), t('exercise.own.removeText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('exercise.own.removeConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          removeCustomExercise(name);
+          router.back();
+        },
+      },
+    ]);
   const lift = planLift(def, ctx);
   const target = lift.targets[0];
   const fullHistory = exerciseHistory(def, ctx.workouts);
@@ -79,6 +96,26 @@ export default function ExerciseScreen() {
         eyebrow={def.custom ? t('exercise.ownEyebrow', { equipment }) : equipment}
         title={exerciseName(def.name)}
       />
+      {own ? (
+        <View style={{ flexDirection: 'row', gap: space.lg, marginTop: -space.sm, marginBottom: space.md }}>
+          <Link label={t('exercise.own.edit')} onPress={() => setEditing(true)} />
+          <Link label={t('exercise.own.remove')} onPress={() => confirmRemove(own.name)} />
+        </View>
+      ) : null}
+      <Modal visible={editing} animationType="slide" onRequestClose={() => setEditing(false)}>
+        <Screen scroll>
+          {own ? (
+            <CreateExerciseForm
+              editing={own}
+              onCreated={(next) => {
+                setEditing(false);
+                if (next.name !== own.name) router.setParams({ name: next.name });
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : null}
+        </Screen>
+      </Modal>
 
       <StickerCard tone="hero">
         <Text size={15} weight="bold">
@@ -349,6 +386,16 @@ export default function ExerciseScreen() {
         </>
       ) : null}
     </Screen>
+  );
+}
+
+function Link({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8}>
+      <Text size={15} weight="bold" style={{ textDecorationLine: 'underline' }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

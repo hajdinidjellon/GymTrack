@@ -65,6 +65,7 @@ const customExerciseSchema: z.ZodType<CustomExercise> = z.object({
   category,
   muscleGroups: z.array(muscleGroup).min(1).max(10),
   timed: z.boolean().optional(),
+  aliases: z.array(z.string().max(100)).max(20).optional(),
 });
 
 const exerciseSchema: z.ZodType<Exercise> = z.object({
@@ -164,6 +165,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     warmups: z.boolean(),
     warmupOverrides: z.record(z.string().max(100), z.boolean()),
     supersets: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),
+    ownDays: z.record(z.string().max(10), z.array(z.string().max(100)).max(14)),
   })
   .partial();
 

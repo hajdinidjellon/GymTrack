@@ -132,6 +132,8 @@ export interface CustomExercise {
   muscleGroups: MuscleGroup[];
   /** Held for a time: counted in seconds, not reps. */
   timed?: boolean;
+  /** Its old names, after a rename: the saved sessions still match it. */
+  aliases?: string[];
 }
 
 export interface RuleOverride {
@@ -180,6 +182,8 @@ export interface AppSettings {
   warmups: boolean;
   /** Warm-ups on or off for one exercise, over the global choice. */
   warmupOverrides: Record<string, boolean>;
+  /** Days the user added to a program, per program ("ppl": ["Épaules"]). Their exercises are in `customDays`. */
+  ownDays: Record<string, string[]>;
   /** Per program day ("ppl/Push"): the exercises chained with the one after them, as a superset. */
   supersets: Record<string, string[]>;
 }

@@ -22,6 +22,7 @@ export const program = {
     countedSeconds: 'Secondes (gainage…)',
     hint: 'Le matériel décide du pas de charge et des disques, le type de mouvement du temps de repos.',
     submit: "Créer l'exercice",
+    save: 'Enregistrer',
     back: 'Retour à la liste',
   },
   editor: {
@@ -48,6 +49,15 @@ export const program = {
     similar: 'Pareil pour les exercices similaires',
   },
   days: {
+    add: '+ Nouvelle séance',
+    create: 'Créer la séance',
+    namePlaceholder: 'Ex. Épaules, Haut B…',
+    nameA11y: 'Nom de la séance',
+    rename: 'Renommer',
+    remove: 'Supprimer la séance',
+    removeTitle: 'Supprimer « {name} » ?',
+    removeText: 'Elle sort de ton programme. Les séances déjà faites restent dans ton historique.',
+    removeConfirm: 'Supprimer',
     title: 'Mes séances',
     subtitle: 'Choisis les exercices de chaque séance et leur ordre. Le reste, on le calcule.',
     editA11y: 'Modifier la séance {day}, {exercises}',

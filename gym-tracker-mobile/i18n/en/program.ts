@@ -23,6 +23,7 @@ export const program: Dictionary['program'] = {
     countedSeconds: 'Seconds (plank…)',
     hint: 'The equipment sets the weight step and the plates, the type of movement sets the rest time.',
     submit: 'Create the exercise',
+    save: 'Save',
     back: 'Back to the list',
   },
   editor: {
@@ -49,6 +50,15 @@ export const program: Dictionary['program'] = {
     similar: 'Same for similar exercises',
   },
   days: {
+    add: '+ New session',
+    create: 'Create the session',
+    namePlaceholder: 'E.g. Shoulders, Upper B…',
+    nameA11y: 'Session name',
+    rename: 'Rename',
+    remove: 'Delete the session',
+    removeTitle: 'Delete “{name}”?',
+    removeText: 'It leaves your program. The sessions already done stay in your history.',
+    removeConfirm: 'Delete',
     title: 'My sessions',
     subtitle: 'Pick the exercises of each session and their order. We work out the rest.',
     editA11y: 'Edit the {day} session, {exercises}',

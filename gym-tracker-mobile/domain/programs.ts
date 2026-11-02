@@ -170,6 +170,8 @@ export const EXERCISES = {
 export interface ProgramDay {
   name: string;
   exercises: ExerciseDef[];
+  /** Added by the user: it can be renamed or removed. */
+  own?: boolean;
 }
 
 export interface Split {
@@ -242,14 +244,31 @@ export function programDays(
   split: SplitId,
   customDays: Record<string, string[]> | undefined,
   own: CustomExercise[] | undefined,
+  ownDays?: Record<string, string[]>,
 ): ProgramDay[] {
-  return getSplit(split).days.map((day) => {
-    const names = customDays?.[dayKey(split, day.name)];
-    if (!names) return day;
-    const exercises = names.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
-    return { name: day.name, exercises };
+  const exercisesOf = (name: string) =>
+    customDays?.[dayKey(split, name)]?.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
+  const days = getSplit(split).days.map((day) => {
+    const exercises = exercisesOf(day.name);
+    return exercises ? { name: day.name, exercises } : day;
   });
+  // The days the user added, after the program's, with what they put in them
+  const added = (ownDays?.[split] ?? []).map((name) => ({ name, exercises: exercisesOf(name) ?? [], own: true }));
+  return [...days, ...added];
 }
+
+/** The muscle most of the day works: where the list opens. */
+export function mainMuscle(exercises: ExerciseDef[]): MuscleGroup | undefined {
+  const counts = new Map<MuscleGroup, number>();
+  for (const e of exercises) {
+    const m = e.muscleGroups[0];
+    if (m) counts.set(m, (counts.get(m) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+
+/** A day with exercises: the only kind offered as a session. */
+export const hasExercises = (day: ProgramDay): boolean => day.exercises.length > 0;
 
 /** A day the user can pick: from their program, or from another one for a one-off session. */
 export interface ChoosableDay extends ProgramDay {
@@ -267,11 +286,12 @@ export function choosableDays(
   split: SplitId,
   customDays: Record<string, string[]> | undefined,
   own: CustomExercise[] | undefined,
+  ownDays?: Record<string, string[]>,
 ): ChoosableDay[] {
-  const out: ChoosableDay[] = programDays(split, customDays, own).map((d) => ({ ...d, split, extra: false }));
+  const out: ChoosableDay[] = programDays(split, customDays, own, ownDays).map((d) => ({ ...d, split, extra: false }));
   for (const other of SPLITS) {
     if (other.id === split) continue;
-    for (const day of programDays(other.id, customDays, own)) {
+    for (const day of programDays(other.id, customDays, own, ownDays)) {
       if (!out.some((d) => d.name === day.name)) out.push({ ...day, split: other.id, extra: true });
     }
   }

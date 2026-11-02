@@ -30,7 +30,9 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
   const own = ctx.settings.customExercises;
   const def = findExerciseDef(exercise.name, own);
   const split = ctx.profile.program.split;
-  const day = choosableDays(split, ctx.settings.customDays, own).find((d) => d.name === sessionName);
+  const day = choosableDays(split, ctx.settings.customDays, own, ctx.settings.ownDays).find(
+    (d) => d.name === sessionName,
+  );
   const muscle = exercise.muscleGroups[0];
 
   const pick = (next: ExerciseDef) => {
@@ -80,7 +82,7 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
         muscle={muscle}
         onPick={pick}
         onClose={() => setOpen(false)}
-        footer={
+        options={
           day ? (
             <CheckRow label={t('session.swap.keep', { day: dayName(day.name) })} checked={keep} onChange={setKeep} />
           ) : null

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, space } from '@/constants/theme';
 import { choosableDays, dayKey, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
@@ -13,6 +13,8 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { IndexBadge } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { DayExercisesEditor } from '@/components/program/DayExercisesEditor';
+import { DayNameForm } from '@/components/program/DayNameForm';
+import { checkDayName } from '@/domain/ownDays';
 import { dayName, exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 
@@ -23,13 +25,17 @@ export default function DayScreen() {
   const profile = useProfileStore((s) => s.profile);
   const customDays = useSettingsStore((s) => s.settings.customDays);
   const own = useSettingsStore((s) => s.settings.customExercises);
+  const ownDays = useSettingsStore((s) => s.settings.ownDays);
   const supersets = useSettingsStore((s) => s.settings.supersets);
   const toggleSuperset = useSettingsStore((s) => s.toggleSuperset);
   const [dragging, setDragging] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const renameOwnDay = useSettingsStore((s) => s.renameOwnDay);
+  const removeOwnDay = useSettingsStore((s) => s.removeOwnDay);
   if (!profile) return null;
 
   // Une séance hors programme se règle aussi, sous son propre programme
-  const day = choosableDays(profile.program.split, customDays, own).find((d) => d.name === name);
+  const day = choosableDays(profile.program.split, customDays, own, ownDays).find((d) => d.name === name);
   if (!day) {
     return (
       <Screen>
@@ -45,6 +51,43 @@ export default function DayScreen() {
     <Screen scroll scrollEnabled={!dragging}>
       <BackButton />
       <ScreenHeader eyebrow={t('program.days.title')} title={dayName(day.name)} subtitle={t('program.day.subtitle')} />
+      {day.own && renaming ? (
+        <View style={{ marginBottom: space.md }}>
+          <DayNameForm
+            initial={day.name}
+            submitLabel={t('program.create.save')}
+            onCancel={() => setRenaming(false)}
+            onSubmit={(typed) => {
+              const checked = checkDayName(typed, day.split, useSettingsStore.getState().settings, day.name);
+              if (typeof checked !== 'string') return checked.error;
+              renameOwnDay(day.split, day.name, checked);
+              setRenaming(false);
+              router.setParams({ name: checked });
+              return null;
+            }}
+          />
+        </View>
+      ) : day.own ? (
+        <View style={{ flexDirection: 'row', gap: space.lg, marginBottom: space.md }}>
+          <Link label={t('program.days.rename')} onPress={() => setRenaming(true)} />
+          <Link
+            label={t('program.days.remove')}
+            onPress={() =>
+              Alert.alert(t('program.days.removeTitle', { name: day.name }), t('program.days.removeText'), [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('program.days.removeConfirm'),
+                  style: 'destructive',
+                  onPress: () => {
+                    removeOwnDay(day.split, day.name);
+                    router.back();
+                  },
+                },
+              ])
+            }
+          />
+        </View>
+      ) : null}
       <DayExercisesEditor
         split={day.split}
         day={day}
@@ -68,6 +111,16 @@ export default function DayScreen() {
         }}
       />
     </Screen>
+  );
+}
+
+function Link({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8}>
+      <Text size={15} weight="bold" style={{ textDecorationLine: 'underline' }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

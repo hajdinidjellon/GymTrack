@@ -18,6 +18,13 @@ export const exercise = {
     recordA11y: '{reps} : {kg} kilos, {date}',
   },
   rule: 'Tes séries et tes reps',
+  own: {
+    edit: 'Modifier',
+    remove: 'Supprimer',
+    removeTitle: 'Supprimer {name} ?',
+    removeText: 'Il sort de tes séances. Les séances déjà faites restent dans ton historique.',
+    removeConfirm: 'Supprimer',
+  },
   plateLoaded: {
     label: 'Machine à disques',
     on: 'Le poids se compte de chaque côté.',

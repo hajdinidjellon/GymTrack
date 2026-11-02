@@ -241,6 +241,11 @@ export const domain: Dictionary['domain'] = {
     months: { one: '{count} month', other: '{count} months' },
   },
 
+  ownDays: {
+    nameEmpty: 'Give your session a name.',
+    nameTaken: 'A session already has this name.',
+  },
+
   voice: {
     kilos: '{kg} kilos',
     emptyBar: 'Empty bar.',

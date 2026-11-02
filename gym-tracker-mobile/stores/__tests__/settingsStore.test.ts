@@ -135,6 +135,33 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.supersets).toEqual({});
   });
 
+  it('changes, renames and removes an own exercise', () => {
+    const press = {
+      name: 'Presse A',
+      equipment: 'machine' as const,
+      category: 'compound' as const,
+      muscleGroups: ['legs' as const],
+    };
+    useSettingsStore.setState({
+      settings: { ...DEFAULT_SETTINGS, customExercises: [press], customDays: { 'ppl/Legs': ['Presse A'] } },
+    });
+    const { updateCustomExercise, removeCustomExercise } = useSettingsStore.getState();
+    updateCustomExercise('Presse A', { ...press, name: 'Presse B' });
+    expect(useSettingsStore.getState().settings.customDays).toEqual({ 'ppl/Legs': ['Presse B'] });
+    removeCustomExercise('Presse B');
+    expect(useSettingsStore.getState().settings.customExercises).toEqual([]);
+  });
+
+  it('adds, renames and removes an own day', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { addOwnDay, renameOwnDay, removeOwnDay } = useSettingsStore.getState();
+    addOwnDay('ppl', 'Épaules');
+    renameOwnDay('ppl', 'Épaules', 'Delts');
+    expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: ['Delts'] });
+    removeOwnDay('ppl', 'Delts');
+    expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: [] });
+  });
+
   it('loads what was saved', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();

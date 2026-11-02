@@ -21,6 +21,7 @@ import {
   isPlateLoaded,
   findExerciseDef,
   getSplit,
+  hasExercises,
   programDays,
   ruleFor,
   withOverride,
@@ -47,7 +48,7 @@ export interface BuildContext {
     Partial<
       Pick<
         AppSettings,
-        'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded' | 'supersets'
+        'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded' | 'supersets' | 'ownDays'
       >
     >;
   workouts: Workout[];
@@ -118,7 +119,15 @@ export function todayStatus(ctx: BuildContext): TodayStatus {
 
 /** Today's session from the week, else the day after the last one done, in program order. */
 export function nextDay(ctx: BuildContext): ProgramDay {
-  const days = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
+  const all = programDays(
+    ctx.profile.program.split,
+    ctx.settings.customDays,
+    ctx.settings.customExercises,
+    ctx.settings.ownDays,
+  );
+  // An empty day (just created) is never the next session
+  const filled = all.filter(hasExercises);
+  const days = filled.length ? filled : all;
   const status = todayStatus(ctx);
   const planned = status.kind === 'train' ? days.find((d) => d.name === status.name) : undefined;
   if (planned) return planned;
