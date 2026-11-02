@@ -48,9 +48,9 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
         accessibilityLabel={t('session.add.a11y')}
         hitSlop={8}
         style={({ pressed }) => ({
-          width: 28,
-          height: 28,
-          borderRadius: 14,
+          width: 38,
+          height: 38,
+          borderRadius: 19,
           borderWidth: 2,
           borderColor: colors.ink,
           backgroundColor: pressed ? colors.coralSoft : 'transparent',
@@ -58,7 +58,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
           justifyContent: 'center',
         })}
       >
-        <Text size={16} weight="black" style={{ lineHeight: 18 }}>
+        <Text size={24} weight="black" style={{ lineHeight: 26 }}>
           +
         </Text>
       </Pressable>

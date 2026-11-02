@@ -199,8 +199,9 @@ export default function Profile() {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: on }}
                 accessibilityLabel={t('profile.plates.barA11y', { kg: formatKg(kg) })}
+                // On the outer view: the three bars share the whole width
+                containerStyle={{ flex: 1 }}
                 style={{
-                  flex: 1,
                   height: 48,
                   borderRadius: radius.pill,
                   borderWidth: on ? border.strong : border.base,
