@@ -53,7 +53,7 @@ export const session: Dictionary['session'] = {
       barbell: 'Barbell',
       dumbbell: 'Dumbbells',
       machine: 'Machine',
-      bodyweight: 'BW',
+      bodyweight: 'Bodyweight',
     },
   },
 

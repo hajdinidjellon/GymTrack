@@ -53,7 +53,7 @@ export const session = {
       barbell: 'Barre',
       dumbbell: 'Haltères',
       machine: 'Machine',
-      bodyweight: 'PDC',
+      bodyweight: 'Poids du corps',
     },
   },
 

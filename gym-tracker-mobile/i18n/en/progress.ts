@@ -1,6 +1,7 @@
 import type { Dictionary } from '@/i18n/fr';
 
 export const progress: Dictionary['progress'] = {
+  history: 'All your sessions',
   title: 'Progress',
   subtitle: 'What you’ve gained since day one, in plates.',
   empty: {

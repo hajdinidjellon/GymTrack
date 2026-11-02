@@ -32,6 +32,9 @@ import { Check, ChevronRight } from '@/components/ui/icons';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { InsightsCard } from '@/components/stats/InsightsCard';
 
+/** Bars found in gyms: the classic one, the shorter (women's) one, a light training bar. */
+const BAR_WEIGHTS = [20, 15, 10];
+
 export default function Profile() {
   useLocale();
   const profile = useProfileStore((s) => s.profile);
@@ -115,6 +118,12 @@ export default function Profile() {
         <SectionTitle title={t('profile.training.title')} />
         <Group>
           <Row
+            label={t('profile.training.goal')}
+            value={goal?.title ?? ''}
+            onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })}
+            chevron
+          />
+          <Row
             label={t('profile.training.program')}
             value={split ? t('profile.training.programValue', { split: split.title, n: perWeek }) : ''}
             onPress={() => router.push({ pathname: '/program', params: { edit: '1' } })}
@@ -124,12 +133,6 @@ export default function Profile() {
             label={t('profile.training.days')}
             value={t('profile.training.daysValue')}
             onPress={() => router.push('/days')}
-            chevron
-          />
-          <Row
-            label={t('profile.training.goal')}
-            value={goal?.title ?? ''}
-            onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })}
             chevron
             last
           />
@@ -141,17 +144,19 @@ export default function Profile() {
             label={t('profile.during.rest')}
             value={t('profile.during.restValue', { seconds: settings.defaultRestTime })}
             onPress={nextRest}
-            hint={t('profile.during.tapToChange')}
+            hint={t('profile.during.restHint')}
           />
           <Row
             label={t('profile.during.voice')}
             value={settings.voice ? t('profile.during.voiceOn') : t('profile.during.voiceOff')}
+            on={settings.voice}
             onPress={toggleVoice}
             hint={t('profile.during.tapToChange')}
           />
           <Row
             label={t('profile.during.bell')}
             value={settings.restBell ? t('profile.during.bellOn') : t('profile.during.bellOff')}
+            on={settings.restBell}
             onPress={toggleBell}
             hint={t('profile.during.tapToChange')}
           />
@@ -159,6 +164,7 @@ export default function Profile() {
             <Row
               label={t('profile.during.commands')}
               value={settings.voiceCommands ? t('profile.during.commandsOn') : t('profile.during.commandsOff')}
+              on={settings.voiceCommands}
               onPress={() => void toggleVoiceCommands()}
               hint={t('profile.during.commandsHint')}
             />
@@ -166,6 +172,7 @@ export default function Profile() {
           <Row
             label={t('profile.during.warmups')}
             value={settings.warmups ? t('profile.during.warmupsOn') : t('profile.during.warmupsOff')}
+            on={settings.warmups}
             onPress={() => updateSettings({ warmups: !settings.warmups })}
             hint={t('profile.during.tapToChange')}
             last
@@ -181,6 +188,35 @@ export default function Profile() {
         <Text size={14} color={colors.inkMuted} style={{ marginBottom: space.md, lineHeight: 19 }}>
           {t('profile.plates.text')}
         </Text>
+        <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8, marginBottom: space.md }}>
+          {BAR_WEIGHTS.map((kg) => {
+            const on = settings.barWeight === kg;
+            return (
+              <PressableScale
+                key={kg}
+                haptic="selection"
+                onPress={() => updateSettings({ barWeight: kg })}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={t('profile.plates.barA11y', { kg: formatKg(kg) })}
+                style={{
+                  flex: 1,
+                  height: 48,
+                  borderRadius: radius.pill,
+                  borderWidth: on ? border.strong : border.base,
+                  borderColor: on ? colors.ink : colors.line,
+                  backgroundColor: on ? colors.coralSoft : colors.card,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
+                  {t('profile.plates.bar', { kg: formatKg(kg) })}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {ALL_PLATES.map((kg) => {
             const on = settings.plates.includes(kg);
@@ -246,6 +282,7 @@ export default function Profile() {
           <Row
             label={t('profile.data.total')}
             value={settings.countBothSides ? t('profile.data.bothSides') : t('profile.data.asLogged')}
+            on={settings.countBothSides}
             onPress={() => updateSettings({ countBothSides: !settings.countBothSides })}
             hint={settings.countBothSides ? t('profile.data.bothSidesHint') : t('profile.data.asLoggedHint')}
           />
@@ -280,6 +317,36 @@ export default function Profile() {
 function formatMonth(iso: string): string {
   const d = new Date(iso);
   return `${d.toLocaleDateString(localeTag(), { month: 'short' })} ${String(d.getFullYear()).slice(2)}`;
+}
+
+/** A sticker switch: the knob on the right and green when on. */
+function Switch({ on }: { on: boolean }) {
+  return (
+    <View
+      style={{
+        width: 50,
+        height: 30,
+        borderRadius: 15,
+        borderWidth: border.base,
+        borderColor: colors.ink,
+        backgroundColor: on ? colors.success : colors.paper,
+        padding: 2,
+        alignItems: on ? 'flex-end' : 'flex-start',
+        justifyContent: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: 21,
+          height: 21,
+          borderRadius: 11,
+          borderWidth: 2,
+          borderColor: colors.ink,
+          backgroundColor: colors.card,
+        }}
+      />
+    </View>
+  );
 }
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -366,17 +433,21 @@ interface RowProps {
   chevron?: boolean;
   last?: boolean;
   hint?: string;
+  /** An on/off setting: drawn as a switch, so it reads as something to change. */
+  on?: boolean;
 }
 
-function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
+function Row({ label, value, onPress, chevron, last, hint, on }: RowProps) {
+  const toggle = on !== undefined;
   return (
     <Pressable
       onPress={() => {
         Haptics.selectionAsync().catch(() => null);
         onPress();
       }}
-      accessibilityRole="button"
-      accessibilityLabel={t('profile.row', { label, value })}
+      accessibilityRole={toggle ? 'switch' : 'button'}
+      accessibilityState={toggle ? { checked: on } : undefined}
+      accessibilityLabel={toggle ? label : t('profile.row', { label, value })}
       accessibilityHint={hint}
       style={({ pressed }) => ({
         height: 56,
@@ -394,15 +465,19 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
         {label}
       </Text>
       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
-        <Text
-          size={chevron ? 14 : 16}
-          weight={chevron ? 'semibold' : 'black'}
-          color={chevron ? colors.inkMuted : colors.ink}
-          numberOfLines={1}
-          style={{ flexShrink: 1 }}
-        >
-          {value}
-        </Text>
+        {toggle ? (
+          <Switch on={on} />
+        ) : (
+          <Text
+            size={chevron ? 14 : 16}
+            weight={chevron ? 'semibold' : 'black'}
+            color={chevron ? colors.inkMuted : colors.ink}
+            numberOfLines={1}
+            style={{ flexShrink: 1 }}
+          >
+            {value}
+          </Text>
+        )}
         {chevron ? <ChevronRight size={18} /> : null}
       </View>
     </Pressable>

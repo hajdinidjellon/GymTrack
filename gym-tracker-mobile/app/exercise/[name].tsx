@@ -35,7 +35,7 @@ import { CheckRow } from '@/components/ui/CheckRow';
 import { exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 
-const STEPS = [1, 2, 2.5, 5];
+const STEPS = [1, 1.25, 2, 2.5, 5];
 
 export default function ExerciseScreen() {
   useLocale();
