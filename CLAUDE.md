@@ -36,12 +36,12 @@ app/
   (onboarding)/            ← welcome, setup (the 4 first-launch questions + recap), login; goal/program edit from Profile (?edit=1)
   (tabs)/                  ← index (Aujourd'hui), progress, profile; _layout gates on profile and resumes a running session
   session/preview.tsx      ← today's session, "Lancer la séance"
-  session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state
+  session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state; the last set opens SessionDone (effort, undo, one more set, then save)
   session/summary.tsx      ← tonnage, next targets
   exercise/[name].tsx      ← next target, own sets/reps (RuleEditor), plate-loaded or stack, increment picker, history
   history/index.tsx        ← "Historique": every past session, newest first (home → Dernière séance → Historique)
   history/[id].tsx         ← one past session: each exercise, set by set (weight × reps, effort), records
-  days/index.tsx           ← "Mes séances": every day of the program (Profil → Mes séances)
+  days/index.tsx           ← "Mes séances": every day of the program, "+ Nouvelle séance" adds one's own (Profil → Mes séances)
   days/[name].tsx          ← one day: add, remove, drag to reorder its exercises, "+ superset" chains one with the next
   data/index.tsx           ← "Tes données": backup, restore, import from Strong or Hevy, CSV export (Profil → Sauvegarde, import)
 ```
@@ -81,6 +81,8 @@ A layer never imports a layer above it. Always import with `@/`.
 - `strength.ts` — estimated 1RM (Epley, ≤ 12 reps) and records per number of reps, for the exercise page.
 - `backup.ts` — the backup file (JSON, validated on restore), merging sessions by id.
 - `importWorkouts.ts` — Strong and Hevy CSV exports to sessions; names matched to the catalog only when movement and equipment agree.
+- `ownDays.ts` — days the user adds to a program (`settings.ownDays`): named, renamed, removed; an empty one is never the next session (`hasExercises`).
+- `ownExercises.ts` — editing or deleting an own exercise; a rename moves every setting under the name and keeps the old name as an alias.
 - `voiceCommands.ts` — what a few spoken words mean ("fait", "8", "plus tard"…); more than 4 words is never a command.
 - Drop sets (`setType: 'drop'`) never steer progression (`mainSets`). Supersets: exercises with the same `superset` group take turns (`sessionCursor`), no rest inside a round (`supersetHandoff`).
 - `profile.ts`, `week.ts`, `plates.ts`, `sessionCursor.ts`, `voiceLines.ts`, `format.ts`.
