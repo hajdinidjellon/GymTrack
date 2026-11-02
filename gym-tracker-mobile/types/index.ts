@@ -178,6 +178,8 @@ export interface AppSettings {
   programSwitchDismissed: string | null;
   /** Language of the texts and the voice. `auto` follows the phone. */
   language: 'auto' | 'fr' | 'en';
+  /** Light or dark mode. `auto` follows the phone. */
+  theme: 'auto' | 'light' | 'dark';
   /** Warm-up sets computed before the working sets. */
   warmups: boolean;
   /** Warm-ups on or off for one exercise, over the global choice. */

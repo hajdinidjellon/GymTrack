@@ -9,18 +9,19 @@ type Props = ViewProps & {
   small?: boolean;
 };
 
-const backgrounds = {
+// A function: the colours follow light or dark mode at each render
+const backgrounds = () => ({
   default: colors.card,
   hero: colors.coralSoft,
   sun: colors.sun,
-};
+});
 
 export function StickerCard({ tone = 'default', small, style, children, ...rest }: Props) {
   return (
     <View
       style={[
         {
-          backgroundColor: backgrounds[tone],
+          backgroundColor: backgrounds()[tone],
           borderWidth: small ? border.base : border.strong,
           borderColor: colors.ink,
           borderRadius: small ? radius.row : radius.card,

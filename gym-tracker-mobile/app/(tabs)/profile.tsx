@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import type { AppSettings } from '@/types';
 import { requestVoicePermission, voiceInputAvailable } from '@/services/voiceInput';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/domain/plates';
@@ -181,6 +182,14 @@ export default function Profile() {
 
         <SectionTitle title={t('profile.language.title')} />
         <LanguagePicker value={settings.language} onChange={(language) => updateSettings({ language })} />
+
+        <SectionTitle title={t('profile.appearance.title')} />
+        <Segmented
+          options={THEMES.map(({ id, label }) => ({ id, label: label() }))}
+          value={settings.theme}
+          onChange={(theme) => updateSettings({ theme })}
+          hint={t('profile.appearance.hint')}
+        />
       </FadeIn>
 
       <FadeIn index={3}>
@@ -397,6 +406,51 @@ const LANGUAGES: { id: LanguageSetting; label: () => string }[] = [
   { id: 'fr', label: () => 'Français' },
   { id: 'en', label: () => 'English' },
 ];
+
+const THEMES: { id: AppSettings['theme']; label: () => string }[] = [
+  { id: 'auto', label: () => t('profile.appearance.auto') },
+  { id: 'light', label: () => t('profile.appearance.light') },
+  { id: 'dark', label: () => t('profile.appearance.dark') },
+];
+
+/** Three choices side by side, with one line under them. The screen switches at once. */
+function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  hint,
+}: {
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (id: T) => void;
+  hint: string;
+}) {
+  return (
+    <View style={{ gap: space.sm }}>
+      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 10 }}>
+        {options.map(({ id, label }) => (
+          <Choice
+            key={id}
+            selected={value === id}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => null);
+              onChange(id);
+            }}
+            accessibilityLabel={label}
+            style={{ flex: 1, height: 56, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text size={16} weight="black" numberOfLines={1} adjustsFontSizeToFit>
+              {label}
+            </Text>
+          </Choice>
+        ))}
+      </View>
+      <Text size={14} color={colors.inkMuted} style={{ lineHeight: 19 }}>
+        {hint}
+      </Text>
+    </View>
+  );
+}
 
 /** Automatique / Français / English. The screen switches at once. */
 function LanguagePicker({ value, onChange }: { value: LanguageSetting; onChange: (l: LanguageSetting) => void }) {
