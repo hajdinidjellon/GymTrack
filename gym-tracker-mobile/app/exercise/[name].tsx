@@ -7,6 +7,7 @@ import { formatClock, formatRest, formatShortDay } from '@/domain/format';
 import { clampRest, REST_STEP } from '@/domain/rest';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
+import { bestE1rm, repRecords } from '@/domain/strength';
 import { warmupsOn } from '@/domain/warmup';
 import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
@@ -60,7 +61,10 @@ export default function ExerciseScreen() {
 
   const lift = planLift(def, ctx);
   const target = lift.targets[0];
-  const history = exerciseHistory(def, ctx.workouts).slice(0, 5);
+  const fullHistory = exerciseHistory(def, ctx.workouts);
+  const history = fullHistory.slice(0, 5);
+  const strongest = def.timed ? null : bestE1rm(fullHistory);
+  const records = def.timed ? [] : repRecords(fullHistory);
   const bodyweight = def.equipment === 'bodyweight';
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
   const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def.equipment, ctx.settings.units));
@@ -136,6 +140,63 @@ export default function ExerciseScreen() {
             </Text>
           </View>
           <Sparkline values={weights} height={72} />
+        </StickerCard>
+      ) : null}
+
+      {strongest ? (
+        <StickerCard style={{ marginTop: 16, gap: space.sm }}>
+          <Text size={17} weight="black">
+            {t('exercise.strength.title')}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <Text size={15} weight="bold" color={colors.inkMuted}>
+              {t('exercise.strength.e1rm')}
+            </Text>
+            <Text size={28} weight="black">
+              {t('exercise.strength.kg', { kg: formatKg(strongest.value) })}
+            </Text>
+          </View>
+          <Text size={13} color={colors.inkMuted} style={{ lineHeight: 18 }}>
+            {t('exercise.strength.from', {
+              kg: formatKg(strongest.weight),
+              reps: strongest.reps,
+              date: formatShortDay(strongest.date),
+            })}
+          </Text>
+          <Text size={15} weight="black" style={{ marginTop: space.sm }}>
+            {t('exercise.strength.perReps')}
+          </Text>
+          <View>
+            {records.map((r, i) => (
+              <View
+                key={r.reps}
+                accessible
+                accessibilityLabel={t('exercise.strength.recordA11y', {
+                  reps: t('exercise.strength.reps', { count: r.reps }),
+                  kg: formatKg(r.weight),
+                  date: formatShortDay(r.date),
+                })}
+                style={{
+                  minHeight: 40,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: space.md,
+                  borderTopWidth: i === 0 ? 0 : 2,
+                  borderTopColor: colors.line,
+                }}
+              >
+                <Text size={15} weight="bold" color={colors.inkMuted} style={{ width: 72 }}>
+                  {t('exercise.strength.reps', { count: r.reps })}
+                </Text>
+                <Text size={18} weight="black" style={{ flex: 1 }}>
+                  {t('exercise.strength.kg', { kg: formatKg(r.weight) })}
+                </Text>
+                <Text size={13} color={colors.inkMuted}>
+                  {formatShortDay(r.date)}
+                </Text>
+              </View>
+            ))}
+          </View>
         </StickerCard>
       ) : null}
 

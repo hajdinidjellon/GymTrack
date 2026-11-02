@@ -8,6 +8,15 @@ export const exercise = {
   note: 'Ta note',
   load: 'Ta charge',
   loadRange: '{from} → {to} kg',
+  strength: {
+    title: 'Tes records',
+    e1rm: '1RM estimé',
+    kg: '{kg} kg',
+    from: 'D’après {kg} kg × {reps} · {date}',
+    perReps: 'Ta meilleure charge par nombre de reps',
+    reps: { one: '{count} rep', other: '{count} reps' },
+    recordA11y: '{reps} : {kg} kilos, {date}',
+  },
   rule: 'Tes séries et tes reps',
   plateLoaded: {
     label: 'Machine à disques',

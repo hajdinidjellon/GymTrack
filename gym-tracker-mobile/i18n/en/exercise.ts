@@ -9,6 +9,15 @@ export const exercise: Dictionary['exercise'] = {
   note: 'Your note',
   load: 'Your weight',
   loadRange: '{from} → {to} kg',
+  strength: {
+    title: 'Your records',
+    e1rm: 'Estimated 1RM',
+    kg: '{kg} kg',
+    from: 'From {kg} kg × {reps} · {date}',
+    perReps: 'Your best weight per number of reps',
+    reps: { one: '{count} rep', other: '{count} reps' },
+    recordA11y: '{reps}: {kg} kilos, {date}',
+  },
   rule: 'Your sets and reps',
   plateLoaded: {
     label: 'Plate-loaded machine',
