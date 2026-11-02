@@ -192,7 +192,7 @@ function Field({ label, value, onChangeText, placeholder, kind }: FieldProps) {
             height: 60,
             borderRadius: radius.input,
             borderWidth: border.base,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: colors.card,
             color: colors.ink,
             fontFamily: fonts.regular,

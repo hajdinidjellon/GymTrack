@@ -199,7 +199,7 @@ function DayRow({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.ink : colors.line,
+                borderColor: on ? colors.outlineStrong : colors.line,
                 borderStyle: name === null && !on ? 'dashed' : 'solid',
                 backgroundColor: on ? (name ? colors.coralSoft : colors.paper) : colors.card,
                 ...(on ? hardShadow(2) : {}),
@@ -239,7 +239,7 @@ function PerWeekPicker({ perWeek, onChange }: { perWeek: number; onChange: (n: n
               justifyContent: 'center',
               backgroundColor: on ? colors.coralSoft : colors.card,
               borderWidth: on ? border.strong : border.base,
-              borderColor: colors.ink,
+              borderColor: colors.outline,
               ...(on ? hardShadow(4) : hardShadow(2)),
             }}
           >
@@ -251,7 +251,7 @@ function PerWeekPicker({ perWeek, onChange }: { perWeek: number; onChange: (n: n
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 2,
-                borderColor: colors.ink,
+                borderColor: colors.outline,
                 backgroundColor: colors.paper,
               }}
             >

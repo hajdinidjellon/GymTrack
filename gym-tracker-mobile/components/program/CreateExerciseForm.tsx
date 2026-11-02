@@ -75,7 +75,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', ed
             paddingVertical: 0,
             borderRadius: radius.row,
             borderWidth: border.base,
-            borderColor: error ? colors.coral : colors.ink,
+            borderColor: error ? colors.danger : colors.outline,
             backgroundColor: colors.card,
             fontFamily: fonts.bold,
             fontSize: 17,
@@ -83,7 +83,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', ed
           }}
         />
         {error ? (
-          <Text size={14} weight="bold" color={colors.coral} accessibilityLiveRegion="polite">
+          <Text size={14} weight="bold" color={colors.danger} accessibilityLiveRegion="polite">
             {error}
           </Text>
         ) : null}
@@ -167,7 +167,7 @@ function Options<T extends string>({
                 justifyContent: 'center',
                 borderRadius: radius.pill,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.ink : colors.line,
+                borderColor: on ? colors.outlineStrong : colors.line,
                 backgroundColor: on ? colors.coralSoft : colors.card,
               }}
             >

@@ -52,7 +52,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
           height: 38,
           borderRadius: 19,
           borderWidth: 2,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: pressed ? colors.coralSoft : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',

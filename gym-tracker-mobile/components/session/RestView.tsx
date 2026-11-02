@@ -93,7 +93,7 @@ export function RestView({
           height: 14,
           borderRadius: 7,
           borderWidth: border.base - 0.5,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: colors.sunSoft,
           overflow: 'hidden',
         }}
@@ -166,7 +166,7 @@ function Nudge({ label, a11y, onPress }: { label: string; a11y: string; onPress:
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: border.base,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: pressed ? colors.sunSoft : colors.card,
       })}
     >
@@ -191,7 +191,7 @@ export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpan
         paddingHorizontal: 18,
         borderRadius: radius.pill,
         borderWidth: border.strong,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: pressed ? colors.sunSoft : colors.sun,
         flexDirection: 'row',
         alignItems: 'center',

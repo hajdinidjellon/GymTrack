@@ -132,11 +132,11 @@ export default function ExerciseScreen() {
             paddingHorizontal: 12,
             borderRadius: radius.input,
             borderWidth: 2,
-            borderColor: colors.ink,
-            backgroundColor: colors.sun,
+            borderColor: colors.outline,
+            backgroundColor: colors.sunPanel,
           }}
         >
-          <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
+          <Text size={14} weight="semibold" color={colors.onSunPanel} style={{ lineHeight: 19 }}>
             {reasonLabel(lift)}
           </Text>
         </View>
@@ -266,7 +266,7 @@ export default function ExerciseScreen() {
                 gap: 4,
                 borderRadius: radius.pill,
                 borderWidth: border.base,
-                borderColor: colors.ink,
+                borderColor: colors.outline,
                 backgroundColor: colors.paper,
               }}
             >
@@ -287,7 +287,7 @@ export default function ExerciseScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       borderWidth: on ? border.base : 0,
-                      borderColor: colors.ink,
+                      borderColor: colors.outline,
                       backgroundColor: on ? colors.coralSoft : 'transparent',
                     }}
                   >
@@ -413,7 +413,7 @@ function RoundButton({ label, a11y, onPress }: { label: string; a11y: string; on
         height: 52,
         borderRadius: radius.pill,
         borderWidth: border.base,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: pressed ? colors.coralSoft : colors.card,
         alignItems: 'center',
         justifyContent: 'center',

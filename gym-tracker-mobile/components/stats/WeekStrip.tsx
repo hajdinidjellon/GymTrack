@@ -44,7 +44,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
               justifyContent: 'center',
               backgroundColor: d.done ? plateColor(20) : d.today ? colors.coralSoft : 'transparent',
               borderWidth: d.today ? border.strong : d.done ? border.base : 2,
-              borderColor: d.done || d.today ? colors.ink : colors.line,
+              borderColor: d.done || d.today ? colors.outlineStrong : colors.line,
               borderStyle: d.done || d.today ? 'solid' : 'dashed',
             }}
           >

@@ -107,7 +107,7 @@ function Small({ label, a11y, onPress }: { label: string; a11y: string; onPress:
         height: 40,
         borderRadius: radius.pill,
         borderWidth: border.base,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: pressed ? colors.coralSoft : colors.card,
         alignItems: 'center',
         justifyContent: 'center',

@@ -108,12 +108,12 @@ export function SetView({ cursor, footer }: Props) {
               paddingHorizontal: 14,
               borderRadius: radius.row,
               borderWidth: border.base,
-              borderColor: colors.ink,
-              backgroundColor: colors.sun,
+              borderColor: colors.outline,
+              backgroundColor: colors.sunPanel,
             }}
           >
             {whyKg > 0 ? (
-              <Text size={14} weight="black">
+              <Text size={14} weight="black" color={colors.onSunPanel}>
                 {t('session.setView.why', { kg: formatKg(whyKg) })}
               </Text>
             ) : null}
@@ -200,7 +200,7 @@ export function SetView({ cursor, footer }: Props) {
               borderRadius: radius.row,
               borderWidth: border.base,
               borderStyle: 'dashed',
-              borderColor: pressed ? colors.ink : colors.line,
+              borderColor: pressed ? colors.outlineStrong : colors.line,
               alignItems: 'center',
               justifyContent: 'center',
             })}

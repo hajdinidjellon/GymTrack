@@ -33,7 +33,7 @@ export function SwipeToDelete({ onDelete, deleteLabel, children }: Props) {
             marginLeft: 8,
             borderRadius: radius.row,
             borderWidth: border.base,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: pressed ? colors.ink : colors.danger,
             alignItems: 'center',
             justifyContent: 'center',

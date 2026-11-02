@@ -71,7 +71,8 @@ export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, 
         paddingHorizontal: 10,
         borderRadius: radius.row,
         borderWidth: current ? border.strong : 0,
-        borderColor: colors.ink,
+        // The current set is circled: it must stand out at night too
+        borderColor: colors.outlineStrong,
         backgroundColor: done ? colors.successSoft : current ? colors.coralSoft : colors.paper,
       }}
     >
@@ -90,7 +91,7 @@ export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, 
               borderRadius: 7,
               backgroundColor: colors.coral,
               borderWidth: 2,
-              borderColor: colors.ink,
+              borderColor: colors.outline,
             }}
           />
         ) : null}
@@ -128,12 +129,12 @@ function DoneMark() {
         borderRadius: 16,
         backgroundColor: colors.success,
         borderWidth: 2,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Check size={18} />
+      <Check size={18} color={colors.onSuccess} />
     </View>
   );
 }

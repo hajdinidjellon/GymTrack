@@ -54,11 +54,11 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
           paddingHorizontal: 14,
           borderRadius: radius.row,
           borderWidth: border.base,
-          borderColor: colors.ink,
-          backgroundColor: colors.sun,
+          borderColor: colors.outline,
+          backgroundColor: colors.sunPanel,
         }}
       >
-        <Text size={15} weight="black">
+        <Text size={15} weight="black" color={colors.onSunPanel}>
           {t('session.calibration.firstTime')}
         </Text>
         <Text size={15} weight="semibold">
@@ -124,7 +124,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: on ? border.strong : border.base,
-                  borderColor: colors.ink,
+                  borderColor: colors.outline,
                   backgroundColor: on ? colors.coralSoft : colors.card,
                   ...(on ? hardShadow(2) : {}),
                 }}

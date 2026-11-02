@@ -31,7 +31,7 @@ export function OnboardingHeader({
           borderRadius: 22,
           backgroundColor: colors.card,
           borderWidth: border.base,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           alignItems: 'center',
           justifyContent: 'center',
           ...(pressed ? {} : hardShadow(2)),
@@ -54,7 +54,7 @@ export function OnboardingHeader({
                 height: 12,
                 borderRadius: 6,
                 borderWidth: border.base,
-                borderColor: i <= step ? colors.ink : colors.line,
+                borderColor: i <= step ? colors.outlineStrong : colors.line,
                 borderStyle: i <= step ? 'solid' : 'dashed',
                 backgroundColor: i < step ? colors.success : i === step ? colors.coral : 'transparent',
               }}
@@ -101,7 +101,7 @@ export function Tip({ tip }: { tip: [string, string] }) {
         paddingHorizontal: 16,
         borderRadius: radius.md,
         borderWidth: border.base,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: colors.sunSoft,
       }}
     >
@@ -125,14 +125,14 @@ export function PickMark({ on }: { on: boolean }) {
         height: 30,
         borderRadius: 15,
         borderWidth: border.base,
-        borderColor: on ? colors.ink : colors.line,
+        borderColor: on ? colors.outline : colors.line,
         borderStyle: on ? 'solid' : 'dashed',
         backgroundColor: on ? colors.coral : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      {on ? <Check size={16} /> : null}
+      {on ? <Check size={16} color={colors.onCoral} /> : null}
     </View>
   );
 }

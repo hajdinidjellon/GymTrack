@@ -40,7 +40,7 @@ export function DayNameForm({ initial = '', submitLabel, onSubmit, onCancel }: P
           paddingVertical: 0,
           borderRadius: radius.row,
           borderWidth: border.base,
-          borderColor: error ? colors.coral : colors.ink,
+          borderColor: error ? colors.danger : colors.outline,
           backgroundColor: colors.card,
           fontFamily: fonts.bold,
           fontSize: 17,
@@ -48,7 +48,7 @@ export function DayNameForm({ initial = '', submitLabel, onSubmit, onCancel }: P
         }}
       />
       {error ? (
-        <Text size={14} weight="bold" color={colors.coral} accessibilityLiveRegion="polite">
+        <Text size={14} weight="bold" color={colors.danger} accessibilityLiveRegion="polite">
           {error}
         </Text>
       ) : null}

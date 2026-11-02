@@ -174,7 +174,7 @@ export default function SessionScreen() {
             paddingHorizontal: 12,
             borderRadius: radius.pill,
             borderWidth: 2,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: colors.card,
           }}
         >

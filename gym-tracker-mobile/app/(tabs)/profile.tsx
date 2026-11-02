@@ -214,7 +214,7 @@ export default function Profile() {
                   height: 48,
                   borderRadius: radius.pill,
                   borderWidth: on ? border.strong : border.base,
-                  borderColor: on ? colors.ink : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.line,
                   backgroundColor: on ? colors.coralSoft : colors.card,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -248,7 +248,7 @@ export default function Profile() {
                   gap: 4,
                   backgroundColor: on ? colors.card : 'transparent',
                   borderWidth: border.base,
-                  borderColor: on ? colors.ink : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.line,
                   borderStyle: on ? 'solid' : 'dashed',
                   ...(on ? hardShadow(2) : {}),
                 }}
@@ -266,12 +266,12 @@ export default function Profile() {
                         borderRadius: 11,
                         backgroundColor: colors.success,
                         borderWidth: 2,
-                        borderColor: colors.ink,
+                        borderColor: colors.outline,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Check size={13} />
+                      <Check size={13} color={colors.onSuccess} />
                     </View>
                   ) : null}
                 </View>
@@ -338,7 +338,7 @@ function Switch({ on }: { on: boolean }) {
         height: 30,
         borderRadius: 15,
         borderWidth: border.base,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: on ? colors.success : colors.paper,
         padding: 2,
         alignItems: on ? 'flex-end' : 'flex-start',
@@ -351,7 +351,7 @@ function Switch({ on }: { on: boolean }) {
           height: 21,
           borderRadius: 11,
           borderWidth: 2,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: colors.card,
         }}
       />
@@ -367,7 +367,7 @@ function Group({ children }: { children: React.ReactNode }) {
           borderRadius: radius.card,
           borderCurve: 'continuous',
           borderWidth: border.strong,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: colors.card,
           overflow: 'hidden',
         }}

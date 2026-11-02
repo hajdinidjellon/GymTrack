@@ -9,7 +9,7 @@ export function Sparkle({ size = 28, fill = colors.sun }: { size?: number; fill?
       <Path
         d="M20 4 L24 15 L35 20 L24 25 L20 36 L16 25 L5 20 L16 15 Z"
         fill={fill}
-        stroke={colors.ink}
+        stroke={colors.outline}
         strokeWidth={2.5}
         strokeLinejoin="round"
       />

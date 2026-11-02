@@ -13,26 +13,42 @@ export interface Palette {
   paper: string;
   /** Cards, inputs, secondary buttons. */
   card: string;
-  /** Main text and every outline. */
+  /** Main text. */
   ink: string;
   inkMuted: string;
   /** Third level of text: labels, units. Only on 13 px and up. */
   inkFaint: string;
+  /** Sticker outlines: the ink in light mode, a slate line at night. */
+  outline: string;
+  /** Outline of what is selected, pressed or current: it must stand out from `line`. */
+  outlineStrong: string;
   /** Dashed outlines of empty or upcoming things, separators. */
   line: string;
   /** Behind bottom sheets. */
   scrim: string;
-  /** The hard offset shadow of the stickers. */
+  /** The hard shadow of the stickers. */
   shadow: string;
   /** Main action, current state. */
   coral: string;
+  /** Text and icons on `coral`. */
+  onCoral: string;
+  /** The shadow under the main button. */
+  coralShadow: string;
   /** Hero card and current set. */
   coralSoft: string;
-  /** Explanations, rest, badges. */
+  /** Badges and small marks. */
   sun: string;
+  /** Text on `sun`. */
+  onSun: string;
+  /** Explanation and rest panels: big areas. */
+  sunPanel: string;
+  /** Text on `sunPanel`. */
+  onSunPanel: string;
   sunSoft: string;
   /** Sets done. */
   success: string;
+  /** Icons on `success`. */
+  onSuccess: string;
   successSoft: string;
   successText: string;
   /** Destructive actions only. */
@@ -47,14 +63,22 @@ export const lightPalette: Palette = {
   ink: '#1F1A17',
   inkMuted: '#6B5F57',
   inkFaint: '#8C8078',
+  outline: '#1F1A17',
+  outlineStrong: '#1F1A17',
   line: '#D9CCBF',
   scrim: 'rgba(31, 26, 23, 0.45)',
   shadow: '#1F1A17',
   coral: '#FF6B4A',
+  onCoral: '#1F1A17',
+  coralShadow: '#1F1A17',
   coralSoft: '#FFE0D4',
   sun: '#FFD23F',
+  onSun: '#1F1A17',
+  sunPanel: '#FFD23F',
+  onSunPanel: '#1F1A17',
   sunSoft: '#FFF1BF',
   success: '#5FD39A',
+  onSuccess: '#1F1A17',
   successSoft: '#DDF5E7',
   successText: '#1D7348',
   danger: '#C8372D',
@@ -62,27 +86,38 @@ export const lightPalette: Palette = {
 };
 
 /**
- * The same stickers at night: warm dark paper, cream ink, black shadows.
- * Coral, sun and green are deeper so the cream text on them stays readable.
+ * « Ardoise menthe », the night version: a cold slate background (warm
+ * colours go muddy on brown or warm black), no big coloured areas, colour
+ * only on the button, the pills and the text. The main action turns mint and
+ * sets done turn sky blue: no orange at night. Stickers keep their relief as a
+ * ledge under each card, like Duolingo's dark mode.
  */
 export const darkPalette: Palette = {
-  paper: '#17130F',
-  card: '#241E19',
-  ink: '#F3EADF',
-  inkMuted: '#B9AC9F',
-  inkFaint: '#9A8D80',
-  line: '#4A4038',
+  paper: '#131F24',
+  card: '#202F36',
+  ink: '#F1F7FB',
+  inkMuted: '#A3B3BB',
+  inkFaint: '#8C9EA7',
+  outline: '#37464F',
+  outlineStrong: '#8FA3AD',
+  line: '#37464F',
   scrim: 'rgba(0, 0, 0, 0.6)',
-  shadow: '#000000',
-  coral: '#D9472C',
-  coralSoft: '#4A2620',
-  sun: '#7A5F10',
-  sunSoft: '#3A3010',
-  success: '#2F8F62',
-  successSoft: '#1E3A2C',
-  successText: '#7FE0AE',
-  danger: '#FF6B5E',
-  steel: '#8F8579',
+  shadow: '#37464F',
+  coral: '#6FDCA6',
+  onCoral: '#10241B',
+  coralShadow: '#3E9E6E',
+  coralSoft: '#2A3A42',
+  sun: '#FFD23F',
+  onSun: '#1F1A17',
+  sunPanel: '#26363E',
+  onSunPanel: '#FFD23F',
+  sunSoft: '#2A3A42',
+  success: '#5BC8F5',
+  onSuccess: '#0B2230',
+  successSoft: '#183447',
+  successText: '#8FD8F8',
+  danger: '#FF7B70',
+  steel: '#52656D',
 };
 
 export type ColorScheme = 'light' | 'dark';
@@ -166,8 +201,17 @@ export const space = {
 } as const;
 
 /** Offset ink shadow, no blur: 5 for cards, 4 for big buttons, 2 for small things. */
-export function hardShadow(offset: 2 | 4 | 5): Pick<ViewStyle, 'boxShadow'> {
-  return { boxShadow: `${offset}px ${offset}px 0px ${colors.shadow}` };
+export function hardShadow(offset: 2 | 4 | 5, color: string = colors.shadow): Pick<ViewStyle, 'boxShadow'> {
+  // At night the sticker sits on a ledge right under it, like a pressed key
+  if (scheme === 'dark') return { boxShadow: `0px ${Math.min(offset, 4)}px 0px ${color}` };
+  return { boxShadow: `${offset}px ${offset}px 0px ${color}` };
+}
+
+/** How far a pressed sticker sinks onto its shadow: diagonally by day, straight down at night. */
+export function pressOffset(offset: number): { translateX: number; translateY: number } {
+  return scheme === 'dark'
+    ? { translateX: 0, translateY: Math.min(offset, 4) }
+    : { translateX: offset, translateY: offset };
 }
 
 /** Ready-made text styles, for components that do not go through `Text`. */

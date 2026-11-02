@@ -62,7 +62,7 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
           paddingHorizontal: 12,
           borderRadius: radius.pill,
           borderWidth: border.base,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: pressed ? colors.coralSoft : colors.card,
           justifyContent: 'center',
         })}

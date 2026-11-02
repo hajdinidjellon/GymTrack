@@ -73,13 +73,13 @@ export default function Summary() {
             height: 56,
             borderRadius: 28,
             borderWidth: border.strong,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: colors.success,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Check size={30} />
+          <Check size={30} color={colors.onSuccess} />
         </View>
         <Text size={40} weight="black" accessibilityRole="header" style={{ marginTop: 14, lineHeight: 46 }}>
           {t('session.summary.title')}
@@ -179,7 +179,7 @@ function PlatePile({ count }: { count: number }) {
             marginLeft: i === 0 ? 0 : -2,
             borderRadius: 4,
             borderWidth: 2,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: plateColor(20),
           }}
         />

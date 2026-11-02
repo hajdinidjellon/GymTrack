@@ -13,7 +13,7 @@ type Props = ViewProps & {
 const backgrounds = () => ({
   default: colors.card,
   hero: colors.coralSoft,
-  sun: colors.sun,
+  sun: colors.sunPanel,
 });
 
 export function StickerCard({ tone = 'default', small, style, children, ...rest }: Props) {
@@ -23,7 +23,7 @@ export function StickerCard({ tone = 'default', small, style, children, ...rest 
         {
           backgroundColor: backgrounds()[tone],
           borderWidth: small ? border.base : border.strong,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           borderRadius: small ? radius.row : radius.card,
           borderCurve: 'continuous',
           paddingVertical: small ? space.md : space.lg + 2,

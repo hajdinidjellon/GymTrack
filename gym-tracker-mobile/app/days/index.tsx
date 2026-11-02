@@ -97,7 +97,7 @@ export default function DaysScreen() {
               borderRadius: radius.row,
               borderWidth: border.base,
               borderStyle: 'dashed',
-              borderColor: pressed ? colors.ink : colors.line,
+              borderColor: pressed ? colors.outlineStrong : colors.line,
               alignItems: 'center',
               justifyContent: 'center',
             })}

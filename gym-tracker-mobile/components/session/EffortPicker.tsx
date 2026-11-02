@@ -34,7 +34,7 @@ export function EffortPicker() {
                 height: 44,
                 borderRadius: radius.pill,
                 borderWidth: selected ? border.strong : border.base,
-                borderColor: colors.ink,
+                borderColor: colors.outline,
                 backgroundColor: selected || pressed ? colors.coralSoft : colors.card,
                 alignItems: 'center',
                 justifyContent: 'center',

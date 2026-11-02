@@ -216,11 +216,11 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
               paddingHorizontal: 14,
               borderRadius: radius.row,
               borderWidth: border.base,
-              borderColor: colors.ink,
-              backgroundColor: colors.sun,
+              borderColor: colors.outline,
+              backgroundColor: colors.sunPanel,
             }}
           >
-            <Text size={14} weight="black">
+            <Text size={14} weight="black" color={colors.onSunPanel}>
               {t('home.today.welcomeBack')}
             </Text>
             <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
@@ -237,7 +237,7 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
               borderRadius: radius.md,
               borderCurve: 'continuous',
               borderWidth: border.base,
-              borderColor: colors.ink,
+              borderColor: colors.outline,
               backgroundColor: colors.card,
             }}
           >
@@ -482,7 +482,7 @@ function DayPicker({
                 paddingHorizontal: 10,
                 borderRadius: radius.row,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.ink : colors.line,
+                borderColor: on ? colors.outlineStrong : colors.line,
                 backgroundColor: on ? colors.coralSoft : colors.card,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -538,7 +538,7 @@ function DayPicker({
                     borderWidth: on ? border.strong : border.base,
                     // Hors programme : en pointillés tant qu'on ne l'a pas choisie
                     borderStyle: on ? 'solid' : 'dashed',
-                    borderColor: on ? colors.ink : colors.line,
+                    borderColor: on ? colors.outlineStrong : colors.line,
                     backgroundColor: on ? colors.coralSoft : 'transparent',
                     justifyContent: 'center',
                     ...(on ? hardShadow(2) : {}),

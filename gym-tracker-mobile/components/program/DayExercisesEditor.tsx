@@ -54,7 +54,7 @@ export function DayExercisesEditor<T>({ split, day, items, keyOf, renderRow, onD
           borderRadius: radius.row,
           borderWidth: border.base,
           borderStyle: 'dashed',
-          borderColor: pressed ? colors.ink : colors.line,
+          borderColor: pressed ? colors.outlineStrong : colors.line,
           alignItems: 'center',
           justifyContent: 'center',
         })}

@@ -31,7 +31,7 @@ function pillStyle(state: PillState, pressed: boolean): ViewStyle {
       waiting: pressed ? colors.coralSoft : 'transparent',
     }[state],
     borderWidth: state === 'current' ? border.strong : 2,
-    borderColor: solid ? colors.ink : colors.line,
+    borderColor: solid ? colors.outlineStrong : colors.line,
     borderStyle: solid ? 'solid' : 'dashed',
   };
 }
@@ -79,9 +79,9 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
               style={({ pressed }) => pillStyle(finished ? 'finished' : now ? 'current' : 'waiting', pressed)}
             >
               {finished ? (
-                <Check size={15} />
+                <Check size={15} color={colors.onSuccess} />
               ) : (
-                <Text size={now ? 15 : 13} weight="black" color={now ? colors.ink : colors.inkFaint}>
+                <Text size={now ? 15 : 13} weight="black" color={now ? colors.onCoral : colors.inkFaint}>
                   {i + 1}
                 </Text>
               )}

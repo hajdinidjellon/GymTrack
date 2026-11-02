@@ -40,7 +40,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
             backgroundColor: colors.paper,
             borderWidth: border.strong,
             borderBottomWidth: 0,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             paddingTop: 14,
             paddingHorizontal: 24,
             paddingBottom: Math.max(insets.bottom, 16) + 8,
@@ -75,7 +75,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
                     backgroundColor: on ? colors.coralSoft : colors.card,
                     borderWidth: on ? border.strong : border.base,
                     borderStyle: isTarget && !on ? 'dashed' : 'solid',
-                    borderColor: colors.ink,
+                    borderColor: colors.outline,
                   }}
                 >
                   <Text size={32} weight="black">

@@ -9,6 +9,7 @@ import {
   hardShadow,
   lightPalette,
   plateInk,
+  pressOffset,
   setColorScheme,
   text,
 } from '@/constants/theme';
@@ -16,6 +17,8 @@ import { resolveScheme, useAppearance } from '@/hooks/useLocale';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { Chip } from '@/components/ui/Chip';
 import { StickerCard } from '@/components/ui/StickerCard';
+import { StickerButton } from '@/components/ui/StickerButton';
+import { Check } from '@/components/ui/icons';
 
 afterEach(() => {
   setColorScheme('light');
@@ -61,5 +64,23 @@ describe('dark mode', () => {
     await render(<Probe />);
     expect(screen.getByText('dark')).toBeOnTheScreen();
     expect(colors.card).toBe(darkPalette.card);
+  });
+});
+
+describe('Ardoise menthe at night', () => {
+  it('sits the stickers on a ledge and sinks them straight down', () => {
+    expect(hardShadow(5).boxShadow).toBe(`5px 5px 0px ${lightPalette.shadow}`);
+    expect(pressOffset(4)).toEqual({ translateX: 4, translateY: 4 });
+    setColorScheme('dark');
+    expect(hardShadow(5).boxShadow).toBe(`0px 4px 0px ${darkPalette.shadow}`);
+    expect(hardShadow(2, colors.coralShadow).boxShadow).toBe(`0px 2px 0px ${darkPalette.coralShadow}`);
+    expect(pressOffset(4)).toEqual({ translateX: 0, translateY: 4 });
+  });
+
+  it('turns the main action mint with dark text, no orange', async () => {
+    setColorScheme('dark');
+    expect(colors.coral).toBe('#6FDCA6');
+    await render(<StickerButton label="Valider" icon={<Check size={20} />} onPress={() => undefined} />);
+    expect(screen.getByText('Valider')).toHaveStyle({ color: darkPalette.onCoral });
   });
 });

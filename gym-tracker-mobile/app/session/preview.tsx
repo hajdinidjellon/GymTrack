@@ -113,7 +113,7 @@ export default function Preview() {
                 borderWidth: on ? border.strong : border.base,
                 // Hors programme : en pointillés tant qu'on ne l'a pas choisie
                 borderStyle: d.extra && !on ? 'dashed' : 'solid',
-                borderColor: d.extra && !on ? colors.inkFaint : colors.ink,
+                borderColor: d.extra && !on ? colors.inkFaint : colors.outlineStrong,
                 backgroundColor: on ? colors.coralSoft : colors.card,
                 justifyContent: 'center',
               }}
@@ -197,7 +197,7 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
             height: 32,
             borderRadius: 16,
             borderWidth: 2,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: pressed ? colors.coralSoft : colors.card,
             alignItems: 'center',
             justifyContent: 'center',
