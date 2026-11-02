@@ -47,13 +47,6 @@ export const profile = {
     auto: 'Automatique',
     autoHint: 'Automatique : la langue de ton téléphone.',
   },
-  appearance: {
-    title: 'Apparence',
-    auto: 'Auto',
-    light: 'Clair',
-    dark: 'Sombre',
-    hint: 'Auto : comme ton téléphone, sombre le soir s’il l’est.',
-  },
   plates: {
     title: 'Disques de ta salle',
     chip: 'Touche pour choisir',

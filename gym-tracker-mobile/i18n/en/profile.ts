@@ -47,13 +47,6 @@ export const profile: Dictionary['profile'] = {
     auto: 'Automatic',
     autoHint: 'Automatic: your phone’s language.',
   },
-  appearance: {
-    title: 'Appearance',
-    auto: 'Auto',
-    light: 'Light',
-    dark: 'Dark',
-    hint: 'Auto: like your phone, dark at night if it is.',
-  },
   plates: {
     title: 'Your gym’s plates',
     chip: 'Tap to choose',
