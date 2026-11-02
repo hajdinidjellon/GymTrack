@@ -9,6 +9,10 @@ describe('parseSettings', () => {
     expect(parseSettings('{oops')).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('starts in light mode, whatever the phone', () => {
+    expect(parseSettings(null).theme).toBe('light');
+  });
+
   it('merges stored values over the defaults', () => {
     expect(parseSettings(JSON.stringify({ voice: false, plates: [20, 10] }))).toMatchObject({
       voice: false,

@@ -39,7 +39,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   signedOut: false,
   programSwitchDismissed: null,
   language: 'auto',
-  theme: 'auto',
+  theme: 'light',
   warmups: true,
   warmupOverrides: {},
   supersets: {},
