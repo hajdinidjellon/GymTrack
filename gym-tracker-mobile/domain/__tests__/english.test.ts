@@ -208,7 +208,7 @@ describe('the onboarding in English', () => {
   it('gives the choices and the tips', () => {
     expect(BAR_CHOICES.map((b) => b.label)).toEqual(['standard', 'short']);
     expect(EXPERIENCES.map((e) => `${e.title}: ${e.sub}`)).toEqual([
-      "I'm new: We start with the empty bar",
+      "I'm new: We start light: empty bar, machines at their lowest",
       'A few months: I know the movements',
       'Over a year: I know my weights',
     ]);

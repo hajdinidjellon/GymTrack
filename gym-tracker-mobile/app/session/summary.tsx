@@ -10,7 +10,7 @@ import { formatThousands } from '@/domain/format';
 import { formatKg } from '@/domain/plates';
 import { findExerciseDef } from '@/domain/programs';
 import { workingSets } from '@/domain/progression';
-import { deltaLabel, newRecords, planLift, tonnage } from '@/domain/sessionBuilder';
+import { deltaLabel, newRecords, planLift, targetLoad, tonnage } from '@/domain/sessionBuilder';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -43,7 +43,7 @@ export default function Summary() {
         lift.decision === 'add_weight' && def.equipment === 'barbell'
           ? t('session.summary.perSideIncrease', { kg: formatKg(lift.rule.increment / 2) })
           : deltaLabel(lift);
-      return [{ name: def.name, label }];
+      return [{ name: def.name, label, target: targetLoad(lift.targets, def.timed) }];
     });
   }, [workout, ctx, own]);
 
@@ -145,9 +145,14 @@ export default function Summary() {
                   borderBottomColor: colors.line,
                 }}
               >
-                <Text size={16} weight="bold" numberOfLines={1} style={{ flex: 1 }}>
-                  {exerciseName(n.name)}
-                </Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text size={16} weight="bold" numberOfLines={1}>
+                    {exerciseName(n.name)}
+                  </Text>
+                  <Text size={14} weight="black" color={colors.inkMuted}>
+                    {n.target}
+                  </Text>
+                </View>
                 <View>
                   <Chip tone={n.label.startsWith('+') ? 'success' : 'neutral'} label={n.label} />
                 </View>

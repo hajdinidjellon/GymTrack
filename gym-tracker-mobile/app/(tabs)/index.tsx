@@ -127,6 +127,7 @@ export default function Today() {
             plan={plan}
             days={days}
             today={today?.name ?? null}
+            firstTime={workouts.length === 0}
             onChoose={(name) => setChoice({ name, after: workouts.length })}
           />
         </FadeIn>
@@ -165,10 +166,12 @@ interface TodayProps {
   days: ChoosableDay[];
   /** The day planned today, none on a day off. */
   today: string | null;
+  /** No session yet: the program decides, no choice to make. */
+  firstTime?: boolean;
   onChoose: (name: string) => void;
 }
 
-function TodayCard({ plan, days, today, onChoose }: TodayProps) {
+function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
   // Le premier mouvement à la barre déjà réglé : c'est lui qu'on dessine
   const featured = plan.lifts.find((l) => l.def.equipment === 'barbell' && l.decision !== 'calibrate');
   const target = featured?.targets[0];
@@ -179,7 +182,9 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
   return (
     <>
       <SectionTitle title={plan.name === today ? t('home.today.planned') : t('home.today.chosen')} />
-      {days.length > 1 ? <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} /> : null}
+      {days.length > 1 && !firstTime ? (
+        <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} />
+      ) : null}
       <StickerCard tone="hero" style={{ paddingTop: 18, paddingBottom: 8 }}>
         <View style={{ position: 'absolute', top: 14, right: 16 }}>
           <Sparkle size={34} />
@@ -440,6 +445,9 @@ function DayPicker({
 }) {
   const program = days.filter((d) => !d.extra);
   const extras = days.filter((d) => d.extra);
+  // The other programs' days wait behind one link, unless one is already picked
+  const [showExtras, setShowExtras] = useState(false);
+  const extrasOpen = showExtras || extras.some((d) => d.name === current);
   return (
     <View style={{ marginBottom: space.md }}>
       <Text size={14} weight="bold" color={colors.inkMuted}>
@@ -488,7 +496,19 @@ function DayPicker({
           );
         })}
       </View>
-      {extras.length ? (
+      {extras.length && !extrasOpen ? (
+        <Pressable
+          onPress={() => setShowExtras(true)}
+          accessibilityRole="button"
+          hitSlop={8}
+          style={{ marginTop: space.md, alignSelf: 'flex-start' }}
+        >
+          <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
+            {t('home.picker.extraLink')}
+          </Text>
+        </Pressable>
+      ) : null}
+      {extras.length && extrasOpen ? (
         <>
           <Text size={13} weight="bold" color={colors.inkMuted} style={{ marginTop: space.md }}>
             {t('home.picker.extraLabel')}

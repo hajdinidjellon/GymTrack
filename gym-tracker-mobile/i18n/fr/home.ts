@@ -53,6 +53,7 @@ export const home = {
     a11yPlanned: 'Séance {name}, prévue aujourd’hui',
     planned: 'prévue',
     extraLabel: 'Ou, pour une fois, hors programme',
+    extraLink: 'Une séance d’un autre programme, pour une fois ?',
     a11yExtra: 'Séance {name}, hors programme',
   },
   switch: {

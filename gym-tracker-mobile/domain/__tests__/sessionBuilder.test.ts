@@ -94,6 +94,10 @@ describe('nextDay', () => {
     it('ignores a week that no longer fits the program', () => {
       expect(todayStatus(week(['Haut', null, 'Bas', null, null, null, null]))).toEqual({ kind: 'free' });
       expect(todayStatus(ctx())).toEqual({ kind: 'free' });
+      // Trained today without a fixed week: done all the same, no second session "du jour"
+      expect(todayStatus({ ...ctx([workout(new Date().toISOString(), 'Push', [])]), now: new Date() })).toEqual({
+        kind: 'done',
+      });
     });
   });
 });

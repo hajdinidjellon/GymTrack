@@ -21,7 +21,11 @@ import * as Session from '@/domain/session';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
 import { nextExerciseLine, nextSetLine, restOverLine } from '@/domain/voiceLines';
-import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from '@/services/notifications';
+import {
+  cancelRestCompleteNotification,
+  requestPermissions,
+  scheduleRestCompleteNotification,
+} from '@/services/notifications';
 import { speak } from '@/services/speech';
 import { playRestBell, REST_BELL_MS } from '@/services/sound';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -196,6 +200,8 @@ export const useSessionStore = create<SessionStore>()(
 
         startSession: (name, exercises) => {
           clearRestEndTimeout();
+          // Asked when it makes sense (the first session, for the end of the rest), not at the app's launch
+          if (settings().notifications) requestPermissions().catch(() => null);
           const session = Session.createSession(newId(), name, exercises, new Date());
           set({ activeSession: Session.refreshWarmups(session, settings()) });
         },

@@ -124,7 +124,7 @@ export const domain = {
     barClassic: 'classique',
     barShort: 'courte',
     newTitle: 'Je débute',
-    newSub: 'On commence avec la barre seule',
+    newSub: 'On commence léger : barre à vide, machines au plus bas',
     monthsTitle: 'Quelques mois',
     monthsSub: 'Je connais les mouvements',
     yearsTitle: "Plus d'un an",
@@ -146,7 +146,7 @@ export const domain = {
     },
     experienceTips: {
       newLead: 'On y va doucement.',
-      new: 'Barre seule pour apprendre les mouvements, la charge monte vite ensuite.',
+      new: 'Barre à vide et charges légères pour apprendre les mouvements, la charge monte vite ensuite.',
       monthsLead: 'Pas besoin de connaître tes charges.',
       months: 'À la première séance, tu choisis un poids par exercice : on calcule le reste.',
       yearsLead: 'Tu connais tes charges ?',

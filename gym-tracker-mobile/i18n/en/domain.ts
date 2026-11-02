@@ -125,7 +125,7 @@ export const domain: Dictionary['domain'] = {
     barClassic: 'standard',
     barShort: 'short',
     newTitle: "I'm new",
-    newSub: 'We start with the empty bar',
+    newSub: 'We start light: empty bar, machines at their lowest',
     monthsTitle: 'A few months',
     monthsSub: 'I know the movements',
     yearsTitle: 'Over a year',
@@ -147,7 +147,7 @@ export const domain: Dictionary['domain'] = {
     },
     experienceTips: {
       newLead: "We'll take it easy.",
-      new: 'Empty bar to learn the movements, then the weight goes up fast.',
+      new: 'Empty bar and light weights to learn the movements, then the weight goes up fast.',
       monthsLead: 'No need to know your weights.',
       months: 'On your first session, you pick a weight per exercise: we work out the rest.',
       yearsLead: 'You know your weights?',

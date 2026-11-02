@@ -17,7 +17,8 @@ export interface OnboardingAnswers {
 export const DEFAULT_ANSWERS: OnboardingAnswers = {
   goal: 'muscle',
   perWeek: 3,
-  experience: 'months',
+  // Skipped: the lightest start, the safe one
+  experience: 'new',
   barWeight: 20,
   plates: DEFAULT_PLATES,
 };

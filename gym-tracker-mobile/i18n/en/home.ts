@@ -54,6 +54,7 @@ export const home: Dictionary['home'] = {
     a11yPlanned: '{name} workout, planned for today',
     planned: 'planned',
     extraLabel: 'Or, just this once, off program',
+    extraLink: 'A session from another program, just this once?',
     a11yExtra: '{name} workout, off program',
   },
   switch: {

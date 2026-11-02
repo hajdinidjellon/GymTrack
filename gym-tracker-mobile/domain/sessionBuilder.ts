@@ -108,9 +108,10 @@ export type TodayStatus = { kind: 'free' } | { kind: 'train'; name: string } | {
 export function todayStatus(ctx: BuildContext): TodayStatus {
   const names = getSplit(ctx.profile.program.split).days.map((d) => d.name);
   const schedule = validSchedule(ctx.profile.program.schedule, names);
-  if (!schedule) return { kind: 'free' };
   const now = ctx.now ?? new Date();
+  // Already trained today, fixed week or not: no other session "du jour"
   if (trainedOn(ctx.workouts, now)) return { kind: 'done' };
+  if (!schedule) return { kind: 'free' };
   const name = schedule[weekdayIndex(now)];
   return name ? { kind: 'train', name } : { kind: 'rest' };
 }

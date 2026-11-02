@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as Speech from 'expo-speech';
-import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from '@/services/notifications';
+import {
+  cancelRestCompleteNotification,
+  requestPermissions,
+  scheduleRestCompleteNotification,
+} from '@/services/notifications';
 import { playRestBell } from '@/services/sound';
 import { useSessionStore } from '@/stores/sessionStore';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
@@ -406,5 +410,11 @@ describe('a rest that ends while the phone sleeps', () => {
     store().completeSet('bench', 0);
     store().completeSet('bench', 1);
     expect(cancelRestCompleteNotification).toHaveBeenCalled();
+  });
+});
+
+describe('notification permission', () => {
+  it('is asked when a session starts, not when the app opens', () => {
+    expect(requestPermissions).toHaveBeenCalled();
   });
 });

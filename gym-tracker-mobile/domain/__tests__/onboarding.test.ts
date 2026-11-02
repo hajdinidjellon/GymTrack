@@ -55,7 +55,7 @@ describe('tips', () => {
     expect(goalTip('force')[1]).toContain('5 reps');
     expect(rhythmTip(3)).toEqual(['3 séances,', expect.stringContaining('full body')]);
     expect(rhythmTip(4)[1]).toContain('deux fois');
-    expect(experienceTip('new')[1]).toContain('Barre seule');
+    expect(experienceTip('new')[1]).toContain('Barre à vide');
   });
 });
 

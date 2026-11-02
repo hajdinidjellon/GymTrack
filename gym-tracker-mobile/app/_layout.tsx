@@ -11,7 +11,6 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_800ExtraBold } from '@exp
 
 import { getDb } from '@/services/db';
 import { logger } from '@/services/logger';
-import { requestPermissions } from '@/services/notifications';
 import { colors } from '@/constants/theme';
 import { LaunchAnimation } from '@/components/brand/LaunchAnimation';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -55,11 +54,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsDone) SplashScreen.hideAsync().catch(() => null);
   }, [fontsDone]);
-
-  useEffect(() => {
-    if (!ready) return;
-    if (useSettingsStore.getState().settings.notifications) requestPermissions().catch(() => null);
-  }, [ready]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.paper }}>

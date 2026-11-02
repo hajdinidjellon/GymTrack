@@ -51,7 +51,8 @@ describe('CalibrationView', () => {
   it('offers weights that fit the exercise', async () => {
     await show(fresh({ name: 'Squat', equipment: 'barbell', muscleGroups: ['legs'] }));
     expect(screen.getByLabelText('120 kilos')).toBeTruthy();
-    expect(screen.queryByLabelText('20 kilos')).toBeNull();
+    // The empty bar always comes first: where a beginner starts
+    expect(screen.getByLabelText('20 kilos')).toBeTruthy();
   });
 
   it('says nothing more for a weight stack', async () => {
