@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import React, { useId, useState } from 'react';
+import { InputAccessoryView, Keyboard, Platform, Pressable, TextInput, View } from 'react-native';
 import { border, colors, fonts, hardShadow } from '@/constants/theme';
 import { parseAmount } from '@/domain/format';
 import { ChevronLeft, ChevronRight } from './icons';
@@ -24,6 +24,9 @@ interface Props {
 export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, onChange, integer, inputLabel }: Props) {
   // Texte en cours de frappe : "62," n'est pas encore un nombre, on l'affiche tel quel
   const [draft, setDraft] = useState<string | null>(null);
+  // The iPhone number pad has no "OK" key: a bar above it closes it, so Valider shows again
+  const accessoryId = `stepper-${useId()}`;
+  const ios = Platform.OS === 'ios';
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -44,6 +47,7 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
           placeholderTextColor={colors.inkFaint}
           keyboardType={integer ? 'number-pad' : 'decimal-pad'}
           returnKeyType="done"
+          inputAccessoryViewID={ios ? accessoryId : undefined}
           selectTextOnFocus
           maxLength={6}
           accessibilityLabel={inputLabel}
@@ -65,6 +69,27 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
       <Arrow onPress={onPlus} label={plusLabel}>
         <ChevronRight size={24} />
       </Arrow>
+      {ios ? (
+        <InputAccessoryView nativeID={accessoryId}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'flex-end',
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderTopWidth: border.base,
+              borderTopColor: colors.ink,
+              backgroundColor: colors.paper,
+            }}
+          >
+            <Pressable onPress={() => Keyboard.dismiss()} accessibilityRole="button" hitSlop={10}>
+              <Text size={18} weight="black">
+                {t('ui.stepper.done')}
+              </Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      ) : null}
     </View>
   );
 }

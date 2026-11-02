@@ -85,6 +85,7 @@ export function SetView({ cursor, footer }: Props) {
         contentContainerStyle={{ paddingHorizontal: space.gutter, paddingTop: space.md, paddingBottom: space.lg }}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
       >
         {exercise.lastTime ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

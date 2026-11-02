@@ -109,6 +109,8 @@ export const session = {
     startOther: "Choisis ta charge de départ. Ensuite, on s'occupe de tout.",
     inputLabel: 'Charge de départ en kilos',
     presetA11y: '{kg} kilos',
+    suggested: 'conseillé',
+    presetSuggestedA11y: '{kg} kilos, conseillé',
     start: 'Commencer à {kg} kg',
   },
 

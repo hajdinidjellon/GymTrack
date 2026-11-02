@@ -52,7 +52,7 @@ describe('CalibrationView', () => {
     await show(fresh({ name: 'Squat', equipment: 'barbell', muscleGroups: ['legs'] }));
     expect(screen.getByLabelText('120 kilos')).toBeTruthy();
     // The empty bar always comes first: where a beginner starts
-    expect(screen.getByLabelText('20 kilos')).toBeTruthy();
+    expect(screen.getByLabelText(/^20 kilos/)).toBeTruthy();
   });
 
   it('says nothing more for a weight stack', async () => {
@@ -62,7 +62,7 @@ describe('CalibrationView', () => {
 
   it('never goes under the empty bar', async () => {
     await show(fresh({ name: 'Développé couché', equipment: 'barbell' }));
-    await fireEvent.press(screen.getByLabelText('20 kilos'));
+    await fireEvent.press(screen.getByLabelText(/^20 kilos/));
     await fireEvent.press(screen.getByLabelText('Moins 2,5 kg'));
     expect(screen.getByText('Barre à vide')).toBeTruthy();
     expect(screen.getByText('Commencer à 20 kg')).toBeTruthy();
@@ -83,9 +83,14 @@ describe('CalibrationView', () => {
     expect(screen.getByText('Commencer à 7,9 kg')).toBeTruthy();
   });
 
+  it('marks the suggested weight', async () => {
+    await show(fresh({ name: 'Squat', equipment: 'barbell', muscleGroups: ['legs'] }));
+    expect(screen.getByText('conseillé')).toBeOnTheScreen();
+  });
+
   it('steps the weight with the round buttons', async () => {
     await show(fresh({ plateLoaded: true }));
-    await fireEvent.press(screen.getByLabelText('20 kilos'));
+    await fireEvent.press(screen.getByLabelText(/^20 kilos/));
     await fireEvent.press(screen.getByLabelText('Plus 2,5 kg'));
     expect(screen.getByText('Commencer à 22,5 kg')).toBeTruthy();
   });

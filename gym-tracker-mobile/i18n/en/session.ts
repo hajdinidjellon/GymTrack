@@ -109,6 +109,8 @@ export const session: Dictionary['session'] = {
     startOther: "Pick your starting weight. We'll handle the rest.",
     inputLabel: 'Starting weight in kilos',
     presetA11y: '{kg} kilos',
+    suggested: 'suggested',
+    presetSuggestedA11y: '{kg} kilos, suggested',
     start: 'Start at {kg} kg',
   },
 

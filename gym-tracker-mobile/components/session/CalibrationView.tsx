@@ -33,7 +33,8 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   const plates = useSettingsStore((s) => s.settings.plates);
   // What the gym can really make: its bar and plates, the machine's weight step
   const presets = fitToGym(startPresets({ ...exercise, gear }), loading, { barWeight, plates }, step);
-  const [weight, setWeight] = useState(() => calibrationPreset(presets, experience) ?? 20);
+  const suggested = calibrationPreset(presets, experience);
+  const [weight, setWeight] = useState(() => suggested ?? 20);
   const setStartWeight = useSessionStore((s) => s.setStartWeight);
   // Any weight goes, down to the empty bar; off the bar, anything above zero (a 2,9 kg cable)
   const allowed = (w: number) => (loading === 'bar' ? w >= barWeight : w > 0);
@@ -109,7 +110,11 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
                 onPress={() => pick(v)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={t('session.calibration.presetA11y', { kg: v })}
+                accessibilityLabel={
+                  v === suggested
+                    ? t('session.calibration.presetSuggestedA11y', { kg: v })
+                    : t('session.calibration.presetA11y', { kg: v })
+                }
                 style={{
                   // Three per row: 30 % plus the gaps leaves no room for a fourth
                   flexBasis: '30%',
@@ -124,9 +129,14 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
                   ...(on ? hardShadow(2) : {}),
                 }}
               >
-                <Text size={26} weight="black">
+                <Text size={26} weight="black" style={{ lineHeight: 30 }}>
                   {v}
                 </Text>
+                {v === suggested ? (
+                  <Text size={12} weight="bold" color={colors.inkMuted}>
+                    {t('session.calibration.suggested')}
+                  </Text>
+                ) : null}
               </Pressable>
             );
           })}

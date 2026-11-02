@@ -32,6 +32,8 @@ export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, s
       {scroll ? (
         <ScrollView
           scrollEnabled={scrollEnabled}
+          // Keyboard open: a tap on a button works the first time, it does not just close the keyboard
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={[content, { paddingBottom: space.xl }]}
           showsVerticalScrollIndicator={false}
         >
