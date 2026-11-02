@@ -1,5 +1,5 @@
-import React, { useId, useState } from 'react';
-import { InputAccessoryView, Keyboard, Platform, Pressable, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { Keyboard, Pressable, TextInput, View } from 'react-native';
 import { border, colors, fonts, hardShadow } from '@/constants/theme';
 import { parseAmount } from '@/domain/format';
 import { ChevronLeft, ChevronRight } from './icons';
@@ -24,71 +24,74 @@ interface Props {
 export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, onChange, integer, inputLabel }: Props) {
   // Texte en cours de frappe : "62," n'est pas encore un nombre, on l'affiche tel quel
   const [draft, setDraft] = useState<string | null>(null);
-  // The iPhone number pad has no "OK" key: a bar above it closes it, so Valider shows again
-  const accessoryId = `stepper-${useId()}`;
-  const ios = Platform.OS === 'ios';
 
+  const typing = draft !== null;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Arrow onPress={onMinus} label={minusLabel}>
-        <ChevronLeft size={24} />
-      </Arrow>
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 }}>
-        <TextInput
-          value={draft ?? value}
-          onFocus={() => setDraft('')}
-          onBlur={() => setDraft(null)}
-          onChangeText={(text) => {
-            setDraft(text);
-            const n = parseAmount(text, integer);
-            if (n !== null) onChange(n);
-          }}
-          placeholder={value}
-          placeholderTextColor={colors.inkFaint}
-          keyboardType={integer ? 'number-pad' : 'decimal-pad'}
-          returnKeyType="done"
-          inputAccessoryViewID={ios ? accessoryId : undefined}
-          selectTextOnFocus
-          maxLength={6}
-          accessibilityLabel={inputLabel}
-          accessibilityHint={t('ui.stepper.typeHint')}
-          style={{
-            fontFamily: fonts.black,
-            fontSize: 60,
-            lineHeight: 70,
-            color: colors.ink,
-            padding: 0,
-            minWidth: 80,
-            textAlign: 'center',
-          }}
-        />
-        <Text size={18} weight="titleMedium" color={colors.inkMuted}>
-          {unit}
-        </Text>
-      </View>
-      <Arrow onPress={onPlus} label={plusLabel}>
-        <ChevronRight size={24} />
-      </Arrow>
-      {ios ? (
-        <InputAccessoryView nativeID={accessoryId}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'flex-end',
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              borderTopWidth: border.base,
-              borderTopColor: colors.ink,
-              backgroundColor: colors.paper,
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Arrow onPress={onMinus} label={minusLabel}>
+          <ChevronLeft size={24} />
+        </Arrow>
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 }}>
+          <TextInput
+            value={draft ?? value}
+            onFocus={() => setDraft('')}
+            onEndEditing={() => setDraft(null)}
+            onBlur={() => setDraft(null)}
+            onChangeText={(text) => {
+              setDraft(text);
+              const n = parseAmount(text, integer);
+              if (n !== null) onChange(n);
             }}
-          >
-            <Pressable onPress={() => Keyboard.dismiss()} accessibilityRole="button" hitSlop={10}>
-              <Text size={18} weight="black">
-                {t('ui.stepper.done')}
-              </Text>
-            </Pressable>
-          </View>
-        </InputAccessoryView>
+            placeholder={value}
+            placeholderTextColor={colors.inkFaint}
+            keyboardType={integer ? 'number-pad' : 'decimal-pad'}
+            returnKeyType="done"
+            selectTextOnFocus
+            maxLength={6}
+            accessibilityLabel={inputLabel}
+            accessibilityHint={t('ui.stepper.typeHint')}
+            style={{
+              fontFamily: fonts.black,
+              fontSize: 60,
+              lineHeight: 70,
+              color: colors.ink,
+              padding: 0,
+              minWidth: 80,
+              textAlign: 'center',
+            }}
+          />
+          <Text size={18} weight="titleMedium" color={colors.inkMuted}>
+            {unit}
+          </Text>
+        </View>
+        <Arrow onPress={onPlus} label={plusLabel}>
+          <ChevronRight size={24} />
+        </Arrow>
+      </View>
+      {/* The number pad has no "OK" key on iPhone: this one closes it, so Valider shows again */}
+      {typing ? (
+        <Pressable
+          onPress={() => Keyboard.dismiss()}
+          accessibilityRole="button"
+          hitSlop={10}
+          style={({ pressed }) => ({
+            alignSelf: 'center',
+            marginTop: 6,
+            paddingHorizontal: 22,
+            height: 40,
+            borderRadius: 20,
+            borderWidth: border.base,
+            borderColor: colors.ink,
+            backgroundColor: pressed ? colors.coralSoft : colors.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+          })}
+        >
+          <Text size={16} weight="black">
+            {t('ui.stepper.done')}
+          </Text>
+        </Pressable>
       ) : null}
     </View>
   );

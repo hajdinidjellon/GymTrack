@@ -5,7 +5,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Stepper } from '@/components/ui/Stepper';
 
 describe('Stepper', () => {
-  it('puts an OK button above the number pad, which closes it', async () => {
+  it('shows an OK button while typing, which closes the keyboard', async () => {
     const dismiss = jest.spyOn(Keyboard, 'dismiss');
     await render(
       <Stepper
@@ -19,6 +19,8 @@ describe('Stepper', () => {
         inputLabel="Charge"
       />,
     );
+    expect(screen.queryByRole('button', { name: 'OK' })).toBeNull();
+    await fireEvent(screen.getByLabelText('Charge'), 'focus');
     await fireEvent.press(screen.getByRole('button', { name: 'OK' }));
     expect(dismiss).toHaveBeenCalled();
   });
