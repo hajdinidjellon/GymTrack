@@ -84,14 +84,21 @@ describe('Bleu nuit at night', () => {
     expect(screen.getByText('Valider')).toHaveStyle({ color: darkPalette.onCoral });
   });
 
-  it('outlines only what can be tapped', async () => {
+  it('shows what is selected on its own tint, never the colour of a card', () => {
+    for (const palette of [lightPalette, darkPalette]) {
+      expect(palette.coralSoft).not.toBe(palette.card);
+      expect(palette.coralSoft).not.toBe(palette.inset);
+    }
+  });
+
+  it('outlines every sticker in black, like by day', async () => {
     setColorScheme('dark');
     await render(
       <StickerCard testID="card">
         <StickerButton label="Valider" onPress={() => undefined} />
       </StickerCard>,
     );
-    expect(screen.getByTestId('card')).toHaveStyle({ borderColor: 'transparent' });
+    expect(screen.getByTestId('card')).toHaveStyle({ borderColor: darkPalette.frame });
     setColorScheme('light');
     await render(<StickerCard testID="light-card" />);
     expect(screen.getByTestId('light-card')).toHaveStyle({ borderColor: lightPalette.ink });

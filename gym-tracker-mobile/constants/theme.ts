@@ -20,11 +20,11 @@ export interface Palette {
   inkMuted: string;
   /** Third level of text: labels, units. Only on 13 px and up. */
   inkFaint: string;
-  /** Sticker outlines: the ink in light mode, a slate line at night. */
+  /** Sticker outlines: the ink in light mode, black at night. */
   outline: string;
   /** Outline of what is selected, pressed or current: it must stand out from `line`. */
   outlineStrong: string;
-  /** Outline of what only shows information (cards, panels, badges): the ink in light mode, none at night. */
+  /** Outline of what only shows information (cards, panels, badges): the ink in light mode, black at night. */
   frame: string;
   /** The ink line around drawings (plates, bar, logo, sparkles): dark in both modes. */
   drawn: string;
@@ -103,9 +103,8 @@ export const lightPalette: Palette = {
 
 /**
  * « Bleu nuit », the night version: a deep night-blue background with
- * blue-tinted cards, sky blue for the main action and the outlines. Only what
- * can be tapped (buttons) and the current set are outlined; cards and panels
- * stand on their colour alone. Sets done get a green mark, trained days a
+ * blue-tinted cards, sky blue for the main action. Every sticker is outlined
+ * in black, like by day. Sets done get a green mark, trained days a
  * yellow one. Stickers keep their relief as a ledge under each card.
  */
 export const darkPalette: Palette = {
@@ -115,9 +114,9 @@ export const darkPalette: Palette = {
   ink: '#DCE6EA',
   inkMuted: '#9FB6C2',
   inkFaint: '#8FA8B5',
-  outline: '#4FA3CC',
-  outlineStrong: '#5BC8F5',
-  frame: 'transparent',
+  outline: '#02090D',
+  outlineStrong: '#02090D',
+  frame: '#02090D',
   drawn: '#02090D',
   line: '#23465E',
   scrim: 'rgba(0, 0, 0, 0.6)',
@@ -125,7 +124,7 @@ export const darkPalette: Palette = {
   coral: '#5BC8F5',
   onCoral: '#06141B',
   coralShadow: '#1E7FAE',
-  coralSoft: '#112637',
+  coralSoft: '#1C5275',
   sun: '#FFD23F',
   onSun: '#1F1A17',
   sunPanel: '#112637',
