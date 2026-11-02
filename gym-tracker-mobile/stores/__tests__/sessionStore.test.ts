@@ -390,3 +390,21 @@ describe('voice commands', () => {
     expect(session().exercises[0]!.sets[0]!.completed).toBe(false);
   });
 });
+
+describe('a rest that ends while the phone sleeps', () => {
+  it('stays quiet when the app wakes up late: the notification already rang', () => {
+    store().completeSet('bench', 0);
+    const now = Date.now();
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now + 120_000 + 10_000);
+    jest.advanceTimersByTime(120_000);
+    expect(playRestBell).not.toHaveBeenCalled();
+    expect(session().restEndsAt).toBeNull();
+    clock.mockRestore();
+  });
+
+  it('ends the rest when the next set is validated from the minimized bar', () => {
+    store().completeSet('bench', 0);
+    store().completeSet('bench', 1);
+    expect(cancelRestCompleteNotification).toHaveBeenCalled();
+  });
+});

@@ -6,6 +6,7 @@ import { colors, radius, space } from '@/constants/theme';
 import { useLocale } from '@/hooks/useLocale';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { dayName, exerciseName, listOf, t } from '@/i18n';
+import { isRateable } from '@/domain/session';
 import { findCurrent } from '@/domain/sessionCursor';
 import { setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -19,6 +20,7 @@ import { SessionProgress } from '@/components/session/SessionProgress';
 import { SwapExercise } from '@/components/session/SwapExercise';
 import { DoLater } from '@/components/session/DoLater';
 import { AddExercise } from '@/components/session/AddExercise';
+import { SessionDone } from '@/components/session/SessionDone';
 
 // Pendant qu'on quitte l'écran, la séance est déjà vidée : on ne redirige pas une deuxième fois
 let leaving = false;
@@ -39,8 +41,17 @@ function confirmFinish(left: number) {
   const message = left > 0 ? t('session.logger.finishLeft', { count: left }) : t('session.logger.finishNoneLeft');
   Alert.alert(t('session.logger.finishTitle'), message, [
     { text: t('common.continue'), style: 'cancel' },
+    { text: t('session.logger.abandon'), style: 'destructive', onPress: confirmAbandon },
+    { text: t('session.logger.finish'), onPress: () => void finish() },
+  ]);
+}
+
+/** Abandoning wipes the whole session: asked a second time, never one tap away. */
+function confirmAbandon() {
+  Alert.alert(t('session.logger.abandonTitle'), t('session.logger.abandonText'), [
+    { text: t('common.cancel'), style: 'cancel' },
     {
-      text: t('session.logger.abandon'),
+      text: t('session.logger.abandonConfirm'),
       style: 'destructive',
       onPress: () => {
         leaving = true;
@@ -48,7 +59,6 @@ function confirmFinish(left: number) {
         router.dismissTo('/(tabs)');
       },
     },
-    { text: t('session.logger.finish'), onPress: () => void finish() },
   ]);
 }
 
@@ -70,15 +80,17 @@ export default function SessionScreen() {
     leaving = false;
   }, []);
 
-  // Dernière série validée : direction le bilan, sans bouton à chercher
-  useEffect(() => {
-    if (done) void finish();
-  }, [done]);
-
   useEffect(() => {
     if (!session && !leaving) router.dismissTo('/(tabs)');
   }, [session]);
 
+  // Dernière série validée : le ressenti, une annulation possible, puis le bilan
+  if (session && done)
+    return (
+      <Screen style={{ paddingBottom: Math.max(insets.bottom, space.lg) + space.sm }}>
+        <SessionDone onFinish={() => void finish()} />
+      </Screen>
+    );
   if (!session || !cursor)
     return (
       <Screen>
@@ -131,9 +143,16 @@ export default function SessionScreen() {
       </View>
 
       <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 34 }}>
-          {exerciseName(exercise.name)}
-        </Text>
+        <Pressable
+          onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: exercise.name } })}
+          accessibilityRole="button"
+          accessibilityHint={t('session.logger.exerciseHint')}
+          style={{ flex: 1 }}
+        >
+          <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ lineHeight: 34 }}>
+            {exerciseName(exercise.name)}
+          </Text>
+        </Pressable>
         <SwapExercise exercise={exercise} sessionName={session.name} />
       </View>
       {partners ? (
@@ -201,7 +220,7 @@ export default function SessionScreen() {
                       : t('session.logger.setDone', { n: lastDone.n })
                   : undefined
               }
-              rateable={!!lastDone && !lastDone.warmup}
+              rateable={isRateable(session)}
               note={doneExercise?.restNote}
               doneExerciseId={last?.exerciseId}
               onMinimize={() => setMinimized(true)}

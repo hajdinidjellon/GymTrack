@@ -87,7 +87,19 @@ describe('sets', () => {
   it('completes every remaining set at once', () => {
     const s = Session.completeRemaining(Session.completeSet(session([bench()]), 'bench', 0), 'bench');
     expect(s.exercises[0]!.sets.every((set) => set.completed)).toBe(true);
-    expect(s.lastCompleted).toEqual({ exerciseId: 'bench', setIndex: 1 });
+    expect(s.lastCompleted).toEqual({ exerciseId: 'bench', setIndex: 1, batch: [1] });
+  });
+
+  it('undoes everything "Tout comme prévu" validated, not just the last set', () => {
+    const three = session([
+      active('bench', [
+        { weight: 60, reps: 10 },
+        { weight: 60, reps: 10 },
+        { weight: 60, reps: 10 },
+      ]),
+    ]);
+    const s = Session.undoLastSet(Session.completeRemaining(Session.completeSet(three, 'bench', 0), 'bench'));
+    expect(s.exercises[0]!.sets.map((set) => set.completed)).toEqual([true, false, false]);
   });
 
   it('leaves the session alone when nothing remains', () => {
@@ -547,5 +559,26 @@ describe('supersets', () => {
   it('saves the session without the superset group', () => {
     const w = Session.toWorkout(Session.completeSet(pair(), 'bench', 0), new Date('2026-10-20T19:00:00Z'));
     expect(w.exercises[0]).not.toHaveProperty('superset');
+  });
+});
+
+describe('isRateable', () => {
+  it('asks how it felt only after the last working set of an exercise', () => {
+    const two = session([bench()]);
+    expect(Session.isRateable(two)).toBe(false);
+    const first = Session.completeSet(two, 'bench', 0);
+    expect(Session.isRateable(first)).toBe(false);
+    expect(Session.isRateable(Session.completeSet(first, 'bench', 1))).toBe(true);
+    const dropped = Session.addDropSet(Session.completeSet(first, 'bench', 1), 'bench', 1);
+    expect(Session.isRateable(Session.completeSet(dropped, 'bench', 2))).toBe(false);
+  });
+
+  it('answers the calibration once the weight is picked', () => {
+    const s = Session.setStartWeight(
+      session([active('row', [{ weight: 0, reps: 8 }], { needsWeight: true })]),
+      'row',
+      50,
+    );
+    expect(s.exercises[0]!.reason).toBe('Ta charge de départ : on ajuste dès la prochaine fois.');
   });
 });

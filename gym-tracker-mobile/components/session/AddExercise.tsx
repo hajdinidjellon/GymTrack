@@ -50,14 +50,13 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
           height: 28,
           borderRadius: 14,
           borderWidth: 2,
-          borderStyle: pressed ? 'solid' : 'dashed',
-          borderColor: pressed ? colors.ink : colors.inkFaint,
+          borderColor: colors.ink,
           backgroundColor: pressed ? colors.coralSoft : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
         })}
       >
-        <Text size={16} weight="black" color={colors.inkMuted} style={{ lineHeight: 18 }}>
+        <Text size={16} weight="black" style={{ lineHeight: 18 }}>
           +
         </Text>
       </Pressable>

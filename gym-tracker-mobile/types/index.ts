@@ -217,5 +217,6 @@ export interface ActiveSession {
   /** Absolute timestamps so the timers survive re-renders and app restarts. */
   restEndsAt: number | null;
   restDuration: number | null;
-  lastCompleted: { exerciseId: string; setIndex: number } | null;
+  /** The last validation, to undo it. `batch`: every set "Tout comme prévu" validated at once. */
+  lastCompleted: { exerciseId: string; setIndex: number; batch?: number[] } | null;
 }

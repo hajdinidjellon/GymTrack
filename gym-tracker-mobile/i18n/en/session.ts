@@ -13,6 +13,10 @@ export const session: Dictionary['session'] = {
     },
     finishNoneLeft: 'The sets you did are saved.',
     abandon: 'Discard',
+    abandonTitle: 'Discard the session?',
+    abandonText: 'Nothing will be saved, not even the sets already logged.',
+    abandonConfirm: 'Delete everything',
+    exerciseHint: 'Opens the settings of this exercise',
     finish: 'End',
     exerciseOf: '· exercise {n} of {total}',
     setOf: 'Set {n} of {total}',
@@ -110,6 +114,7 @@ export const session: Dictionary['session'] = {
 
   doLater: {
     a11y: 'Do {name} later',
+    label: 'Do it later',
   },
 
   effort: {
@@ -137,7 +142,6 @@ export const session: Dictionary['session'] = {
     title: 'Rest',
     minimize: 'Minimize',
     minimizeA11y: 'Minimize the timer',
-    closeA11y: 'Close the rest',
     timerA11y: { one: 'Rest, {count} second left', other: 'Rest, {count} seconds left' },
     miniA11y: {
       one: 'Rest, {count} second left. Expand the timer',
@@ -160,6 +164,14 @@ export const session: Dictionary['session'] = {
   running: {
     title: 'Workout in progress',
     progress: { one: '{done} / {count} set done', other: '{done} / {count} sets done' },
+  },
+
+  done: {
+    title: 'Last set logged',
+    text: 'Say how that last set went: your next session takes it into account.',
+    undo: 'Undo the last set',
+    oneMore: '+ One more set',
+    finish: 'Finish the session',
   },
 
   progress: {

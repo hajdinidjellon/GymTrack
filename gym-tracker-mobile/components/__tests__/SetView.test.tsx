@@ -65,11 +65,11 @@ describe('SetView', () => {
     expect(screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, en cours')).toBeOnTheScreen();
   });
 
-  it('shows the rest at the bottom of the same screen, instead of the validate button', async () => {
+  it('keeps the validate button under the minimized rest', async () => {
     const cursor = findCurrent(useSessionStore.getState().activeSession!.exercises)!;
     await render(<SetView cursor={cursor} footer={<Text>Repos</Text>} />);
     expect(screen.getByText('Repos')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Valider la série' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Valider la série' })).toBeOnTheScreen();
   });
 
   it('adjusts the weight by the exercise increment', async () => {
@@ -78,7 +78,13 @@ describe('SetView', () => {
     expect(sets()[0]!.weight).toBe(65);
   });
 
-  it('completes every set as planned', async () => {
+  it('completes every set as planned, once the first one is done', async () => {
+    useSessionStore.getState().startSession('Push', [{ ...bench, sets: [...bench.sets, bench.sets[0]!] }]);
+    const first = await renderCurrentSet();
+    expect(screen.queryByRole('button', { name: /Tout comme prévu/ })).toBeNull();
+    await first.unmount();
+    useSessionStore.getState().completeSet('bench', 0);
+    useSessionStore.getState().stopRestTimer();
     await renderCurrentSet();
     await fireEvent.press(screen.getByRole('button', { name: 'Tout comme prévu · 2 séries' }));
     expect(sets().every((s) => s.completed)).toBe(true);

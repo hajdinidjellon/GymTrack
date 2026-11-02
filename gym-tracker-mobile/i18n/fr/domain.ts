@@ -235,6 +235,7 @@ export const domain = {
     reasonStartBodyweight: 'Première séance : vise le bas de la fourchette.',
     reasonStart: 'Charge de départ calculée à 70 % de ton record.',
     reasonCalibrate: 'Première fois : choisis ta charge, ensuite on calcule tout.',
+    reasonCalibrated: 'Ta charge de départ : on ajuste dès la prochaine fois.',
     weeks: { one: '{count} semaine', other: '{count} semaines' },
     months: { one: '{count} mois', other: '{count} mois' },
   },

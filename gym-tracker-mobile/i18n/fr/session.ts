@@ -12,6 +12,10 @@ export const session = {
     },
     finishNoneLeft: 'Les séries validées sont enregistrées.',
     abandon: 'Abandonner',
+    abandonTitle: 'Abandonner la séance ?',
+    abandonText: 'Rien ne sera enregistré, même les séries déjà validées.',
+    abandonConfirm: 'Tout effacer',
+    exerciseHint: 'Ouvre les réglages de cet exercice',
     finish: 'Terminer',
     exerciseOf: '· exercice {n} sur {total}',
     setOf: 'Série {n} sur {total}',
@@ -110,6 +114,7 @@ export const session = {
 
   doLater: {
     a11y: 'Faire {name} plus tard',
+    label: 'Faire plus tard',
   },
 
   effort: {
@@ -137,7 +142,6 @@ export const session = {
     title: 'Repos',
     minimize: 'Réduire',
     minimizeA11y: 'Réduire le minuteur',
-    closeA11y: 'Fermer le repos',
     timerA11y: { one: 'Repos, {count} seconde restante', other: 'Repos, {count} secondes restantes' },
     miniA11y: {
       one: 'Repos, {count} seconde restante. Agrandir le minuteur',
@@ -160,6 +164,14 @@ export const session = {
   running: {
     title: 'Séance en cours',
     progress: { one: '{done} / {count} série validée', other: '{done} / {count} séries validées' },
+  },
+
+  done: {
+    title: 'Dernière série validée',
+    text: 'Dis comment s’est passée cette dernière série : la prochaine séance en tient compte.',
+    undo: 'Annuler la dernière série',
+    oneMore: '+ Une série de plus',
+    finish: 'Terminer la séance',
   },
 
   progress: {

@@ -6,6 +6,7 @@ import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
 import { isWarmup, setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
@@ -22,7 +23,7 @@ import { t } from '@/i18n';
 
 interface Props {
   cursor: Cursor;
-  /** Replaces the validate buttons at the bottom: the rest panel, during a rest. */
+  /** Above the validate buttons: the minimized rest bar. Validating ends the rest. */
   footer?: React.ReactNode;
 }
 
@@ -66,6 +67,9 @@ export function SetView({ cursor, footer }: Props) {
   const timed = !!exercise.timed && !warmup;
   const repStep = timed ? (exercise.rule?.repStep ?? 5) : 1;
   const remaining = workingCount(exercise.sets, 'left');
+  // "Tout comme prévu" once the first set is done: never a mis-tap away from set 1
+  const started = workingCount(exercise.sets, 'done') > 0;
+  const firstSessions = useWorkoutStore((s) => s.workouts.length < 3);
   const bodyweight = exercise.equipment === 'bodyweight';
   const loading = loadingOf(exercise);
   const targetReps = set.target?.reps ?? set.reps;
@@ -204,7 +208,7 @@ export function SetView({ cursor, footer }: Props) {
               {t('session.setView.addSet')}
             </Text>
           </Pressable>
-          {exercise.sets.length > 1 ? (
+          {exercise.sets.length > 1 && firstSessions ? (
             <Text size={13} color={colors.inkFaint} align="center" style={{ marginTop: 6 }}>
               {t('session.setView.swipeHint')}
             </Text>
@@ -213,7 +217,10 @@ export function SetView({ cursor, footer }: Props) {
       </ScrollView>
 
       <View style={{ gap: space.sm + 2, paddingTop: space.sm }}>
-        {footer ?? (timed ? <HoldTimer key={`${exercise.id}-${setIndex}`} cursor={cursor} /> : null) ?? (
+        {footer}
+        {timed ? (
+          <HoldTimer key={`${exercise.id}-${setIndex}`} cursor={cursor} />
+        ) : (
           <>
             {warmup ? (
               <StickerButton
@@ -225,7 +232,7 @@ export function SetView({ cursor, footer }: Props) {
                   skipWarmups(exercise.id);
                 }}
               />
-            ) : remaining > 1 ? (
+            ) : remaining > 1 && started ? (
               <StickerButton
                 label={t('session.setView.allAsPlanned', { count: remaining })}
                 variant="secondary"

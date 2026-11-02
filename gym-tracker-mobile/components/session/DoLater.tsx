@@ -21,7 +21,7 @@ export function DoLater({ exercise }: { exercise: ActiveExercise }) {
       hitSlop={12}
     >
       <Text size={15} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
-        {t('common.later')}
+        {t('session.doLater.label')}
       </Text>
     </Pressable>
   );

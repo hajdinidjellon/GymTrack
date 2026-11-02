@@ -68,6 +68,8 @@ export function setStartWeight(session: ActiveSession, exerciseId: string, weigh
   return mapExercise(session, exerciseId, (e) => ({
     ...e,
     needsWeight: false,
+    // "Choisis ta charge" is answered: the reason says what happens next
+    reason: t('domain.plan.reasonCalibrated'),
     sets: e.sets.map((set) =>
       set.completed ? set : { ...set, weight, target: { weight, reps: set.target?.reps ?? set.reps } },
     ),
@@ -112,10 +114,12 @@ export function completeSet(session: ActiveSession, exerciseId: string, setIndex
 export function undoLastSet(session: ActiveSession): ActiveSession {
   const last = session.lastCompleted;
   if (!last || !findSet(session, last.exerciseId, last.setIndex)?.completed) return session;
-  return {
-    ...endRest(updateSet(session, last.exerciseId, last.setIndex, { completed: false })),
-    lastCompleted: null,
-  };
+  // "Tout comme prévu" is undone as a whole, like it was done
+  const undone = (last.batch ?? [last.setIndex]).reduce(
+    (s, i) => updateSet(s, last.exerciseId, i, { completed: false }),
+    session,
+  );
+  return { ...endRest(undone), lastCompleted: null };
 }
 
 /** One more set at the end, a copy of the last one, still to do: no rating, no time. */
@@ -273,8 +277,20 @@ export function completeRemaining(session: ActiveSession, exerciseId: string, no
       ...e,
       sets: e.sets.map((s) => (s.completed ? s : { ...s, completed: true, doneAt: now })),
     })),
-    lastCompleted: { exerciseId, setIndex: lastIndex },
+    lastCompleted: { exerciseId, setIndex: lastIndex, batch: indexes },
   };
+}
+
+/**
+ * "Comment c'était ?" only counts on the last working set of an exercise
+ * (it steers the next targets): asked there, not after every set.
+ */
+export function isRateable(session: ActiveSession): boolean {
+  const last = session.lastCompleted;
+  const exercise = last && session.exercises.find((e) => e.id === last.exerciseId);
+  const set = exercise?.sets[last!.setIndex];
+  if (!exercise || !set?.completed || isExtra(set)) return false;
+  return exercise.sets.filter((s) => !isExtra(s)).every((s) => s.completed);
 }
 
 export function isDone(session: ActiveSession): boolean {

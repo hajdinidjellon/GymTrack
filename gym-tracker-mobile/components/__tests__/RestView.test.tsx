@@ -124,12 +124,11 @@ describe('RestView', () => {
     expect(session().exercises[0]!.sets[0]!.completed).toBe(false);
   });
 
-  it('closes the rest or shrinks it', async () => {
+  it('shrinks the rest, with no second button doing the same as "Passer le repos"', async () => {
     await renderRest();
     await fireEvent.press(screen.getByRole('button', { name: 'Réduire le minuteur' }));
     expect(onMinimize).toHaveBeenCalled();
-    await fireEvent.press(screen.getByRole('button', { name: 'Fermer le repos' }));
-    expect(session().restEndsAt).toBeNull();
+    expect(screen.queryByText('✕')).toBeNull();
   });
 
   it('brings the popup back from the small bar', async () => {

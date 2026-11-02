@@ -96,12 +96,18 @@ function clearRestEndTimeout() {
   restBellVoice = null;
 }
 
+/** Past this, a rest end the phone delivers late (app asleep) stays quiet: the notification already rang. */
+const LATE_MS = 2000;
+
 function armRestEnd(ms: number) {
   clearRestEndTimeout();
+  const due = Date.now() + ms;
   restEndTimeout = setTimeout(() => {
     restEndTimeout = null;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
+    const late = Date.now() - due > LATE_MS;
     useSessionStore.setState((s) => ({ activeSession: s.activeSession && Session.endRest(s.activeSession) }));
+    if (late) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
 
     const { restBell, voice } = settings();
     if (restBell) playRestBell();
@@ -243,6 +249,8 @@ export const useSessionStore = create<SessionStore>()(
           const session = get().activeSession;
           const target = session && Session.findSet(session, exerciseId, setIndex);
           if (!target || target.completed) return;
+          // Validated during a rest (the minimized bar): that rest is over
+          if (session.restEndsAt != null) get().stopRestTimer();
           apply((s) => Session.completeSet(s, exerciseId, setIndex, Date.now()));
           afterSet(exerciseId, restAfter(exerciseId, target.restTime));
         },
@@ -251,6 +259,7 @@ export const useSessionStore = create<SessionStore>()(
           const exercise = get().activeSession?.exercises.find((e) => e.id === exerciseId);
           const last = exercise ? Session.remainingSets(exercise).pop() : undefined;
           if (!exercise || last === undefined) return;
+          if (get().activeSession?.restEndsAt != null) get().stopRestTimer();
           apply((s) => Session.completeRemaining(s, exerciseId, Date.now()));
           afterSet(exerciseId, restAfter(exerciseId, exercise.sets[last]?.restTime));
         },

@@ -65,7 +65,6 @@ export function RestView({
           {onMinimize ? (
             <Nudge label={t('session.rest.minimize')} a11y={t('session.rest.minimizeA11y')} onPress={onMinimize} />
           ) : null}
-          <Nudge label="✕" a11y={t('session.rest.closeA11y')} onPress={stopRestTimer} />
         </View>
       </View>
 
