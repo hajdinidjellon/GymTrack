@@ -23,7 +23,7 @@ export function StickerCard({ tone = 'default', small, style, children, ...rest 
         {
           backgroundColor: backgrounds()[tone],
           borderWidth: small ? border.base : border.strong,
-          borderColor: colors.outline,
+          borderColor: colors.frame,
           borderRadius: small ? radius.row : radius.card,
           borderCurve: 'continuous',
           paddingVertical: small ? space.md : space.lg + 2,

@@ -54,7 +54,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
           paddingHorizontal: 14,
           borderRadius: radius.row,
           borderWidth: border.base,
-          borderColor: colors.outline,
+          borderColor: colors.frame,
           backgroundColor: colors.sunPanel,
         }}
       >

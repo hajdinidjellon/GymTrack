@@ -56,7 +56,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
           borderRadius: radius.pill,
           backgroundColor: colors.card,
           borderWidth: border.strong,
-          borderColor: colors.outline,
+          borderColor: colors.frame,
           ...hardShadow(4),
         }}
       >

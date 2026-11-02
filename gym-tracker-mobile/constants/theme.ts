@@ -22,6 +22,8 @@ export interface Palette {
   outline: string;
   /** Outline of what is selected, pressed or current: it must stand out from `line`. */
   outlineStrong: string;
+  /** Outline of what only shows information (cards, panels, badges): the ink in light mode, none at night. */
+  frame: string;
   /** Dashed outlines of empty or upcoming things, separators. */
   line: string;
   /** Behind bottom sheets. */
@@ -51,6 +53,10 @@ export interface Palette {
   onSuccess: string;
   successSoft: string;
   successText: string;
+  /** The week strip: a day trained, today and the text on today. */
+  dayDone: string;
+  dayToday: string;
+  onDayToday: string;
   /** Destructive actions only. */
   danger: string;
   /** The steel of the bar. */
@@ -65,6 +71,7 @@ export const lightPalette: Palette = {
   inkFaint: '#8C8078',
   outline: '#1F1A17',
   outlineStrong: '#1F1A17',
+  frame: '#1F1A17',
   line: '#D9CCBF',
   scrim: 'rgba(31, 26, 23, 0.45)',
   shadow: '#1F1A17',
@@ -81,43 +88,50 @@ export const lightPalette: Palette = {
   onSuccess: '#1F1A17',
   successSoft: '#DDF5E7',
   successText: '#1D7348',
+  dayDone: '#3D7BF4',
+  dayToday: '#FFE0D4',
+  onDayToday: '#1F1A17',
   danger: '#C8372D',
   steel: '#D2C5B6',
 };
 
 /**
- * « Ardoise menthe », the night version: a cold slate background (warm
- * colours go muddy on brown or warm black), no big coloured areas, colour
- * only on the button, the pills and the text. The main action turns mint and
- * sets done turn sky blue: no orange at night. Stickers keep their relief as a
- * ledge under each card, like Duolingo's dark mode.
+ * « Bleu nuit », the night version: a deep night-blue background with
+ * blue-tinted cards, sky blue for the main action and the outlines. Only what
+ * can be tapped (buttons) and the current set are outlined; cards and panels
+ * stand on their colour alone. Sets done get a green mark, trained days a
+ * yellow one. Stickers keep their relief as a ledge under each card.
  */
 export const darkPalette: Palette = {
-  paper: '#131F24',
-  card: '#202F36',
-  ink: '#F1F7FB',
-  inkMuted: '#A3B3BB',
-  inkFaint: '#8C9EA7',
-  outline: '#37464F',
-  outlineStrong: '#8FA3AD',
-  line: '#37464F',
+  paper: '#06141B',
+  card: '#112637',
+  ink: '#DCE6EA',
+  inkMuted: '#9FB6C2',
+  inkFaint: '#8AA3B0',
+  outline: '#4FA3CC',
+  outlineStrong: '#5BC8F5',
+  frame: 'transparent',
+  line: '#23465E',
   scrim: 'rgba(0, 0, 0, 0.6)',
-  shadow: '#37464F',
-  coral: '#6FDCA6',
-  onCoral: '#10241B',
-  coralShadow: '#3E9E6E',
-  coralSoft: '#2A3A42',
+  shadow: '#02090D',
+  coral: '#5BC8F5',
+  onCoral: '#06141B',
+  coralShadow: '#1E7FAE',
+  coralSoft: '#112637',
   sun: '#FFD23F',
   onSun: '#1F1A17',
-  sunPanel: '#26363E',
-  onSunPanel: '#FFD23F',
-  sunSoft: '#2A3A42',
-  success: '#5BC8F5',
-  onSuccess: '#0B2230',
-  successSoft: '#183447',
-  successText: '#8FD8F8',
+  sunPanel: '#112637',
+  onSunPanel: '#F4F8FA',
+  sunSoft: '#163B55',
+  success: '#4CC38A',
+  onSuccess: '#06141B',
+  successSoft: '#13355A',
+  successText: '#A9CEF5',
+  dayDone: '#FFD23F',
+  dayToday: '#4CC38A',
+  onDayToday: '#06141B',
   danger: '#FF7B70',
-  steel: '#52656D',
+  steel: '#3E6680',
 };
 
 export type ColorScheme = 'light' | 'dark';

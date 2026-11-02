@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { border, colors, plateColor } from '@/constants/theme';
+import { border, colors } from '@/constants/theme';
 import type { WeekDay } from '@/domain/stats';
 import { Text } from '@/components/ui/Text';
 import { Check } from '@/components/ui/icons';
@@ -16,7 +16,7 @@ const DAY_KEYS: TKey[] = [
   'progress.stats.week.sunday',
 ];
 
-/** Monday to Sunday. A trained day is a blue 20 kg plate, today is circled in coral, days ahead are dashed. */
+/** Monday to Sunday. A trained day is filled (`dayDone`), today too (`dayToday`), days ahead are dashed. */
 export function WeekStrip({ days }: { days: WeekDay[] }) {
   const done = days.flatMap((d, i) => {
     const key = DAY_KEYS[i];
@@ -42,7 +42,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
               borderRadius: 18,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: d.done ? plateColor(20) : d.today ? colors.coralSoft : 'transparent',
+              backgroundColor: d.done ? colors.dayDone : d.today ? colors.dayToday : 'transparent',
               borderWidth: d.today ? border.strong : d.done ? border.base : 2,
               borderColor: d.done || d.today ? colors.outlineStrong : colors.line,
               borderStyle: d.done || d.today ? 'solid' : 'dashed',
@@ -51,7 +51,7 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
             {d.done ? (
               <Check size={18} color={colors.card} />
             ) : (
-              <Text size={13} weight="bold" color={d.today ? colors.ink : colors.inkFaint}>
+              <Text size={13} weight="bold" color={d.today ? colors.onDayToday : colors.inkFaint}>
                 {d.date.getDate()}
               </Text>
             )}

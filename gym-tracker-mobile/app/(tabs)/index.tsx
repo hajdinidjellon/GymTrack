@@ -216,7 +216,7 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
               paddingHorizontal: 14,
               borderRadius: radius.row,
               borderWidth: border.base,
-              borderColor: colors.outline,
+              borderColor: colors.frame,
               backgroundColor: colors.sunPanel,
             }}
           >
@@ -237,7 +237,7 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
               borderRadius: radius.md,
               borderCurve: 'continuous',
               borderWidth: border.base,
-              borderColor: colors.outline,
+              borderColor: colors.frame,
               backgroundColor: colors.card,
             }}
           >

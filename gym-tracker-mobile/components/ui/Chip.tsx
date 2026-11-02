@@ -22,7 +22,7 @@ export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: 
         paddingHorizontal: 10,
         borderRadius: radius.pill,
         borderWidth: 2,
-        borderColor: colors.outline,
+        borderColor: colors.frame,
         backgroundColor: bg,
         flexDirection: 'row',
         alignItems: 'center',

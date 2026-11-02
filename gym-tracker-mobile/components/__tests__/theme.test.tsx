@@ -67,7 +67,7 @@ describe('dark mode', () => {
   });
 });
 
-describe('Ardoise menthe at night', () => {
+describe('Bleu nuit at night', () => {
   it('sits the stickers on a ledge and sinks them straight down', () => {
     expect(hardShadow(5).boxShadow).toBe(`5px 5px 0px ${lightPalette.shadow}`);
     expect(pressOffset(4)).toEqual({ translateX: 4, translateY: 4 });
@@ -77,10 +77,23 @@ describe('Ardoise menthe at night', () => {
     expect(pressOffset(4)).toEqual({ translateX: 0, translateY: 4 });
   });
 
-  it('turns the main action mint with dark text, no orange', async () => {
+  it('turns the main action sky blue with dark text, no orange', async () => {
     setColorScheme('dark');
-    expect(colors.coral).toBe('#6FDCA6');
+    expect(colors.coral).toBe('#5BC8F5');
     await render(<StickerButton label="Valider" icon={<Check size={20} />} onPress={() => undefined} />);
     expect(screen.getByText('Valider')).toHaveStyle({ color: darkPalette.onCoral });
+  });
+
+  it('outlines only what can be tapped', async () => {
+    setColorScheme('dark');
+    await render(
+      <StickerCard testID="card">
+        <StickerButton label="Valider" onPress={() => undefined} />
+      </StickerCard>,
+    );
+    expect(screen.getByTestId('card')).toHaveStyle({ borderColor: 'transparent' });
+    setColorScheme('light');
+    await render(<StickerCard testID="light-card" />);
+    expect(screen.getByTestId('light-card')).toHaveStyle({ borderColor: lightPalette.ink });
   });
 });

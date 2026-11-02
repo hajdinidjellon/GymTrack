@@ -14,7 +14,7 @@ export function StatTile({ value, label, highlight }: { value: string; label: st
         borderCurve: 'continuous',
         backgroundColor: highlight ? colors.sunPanel : colors.card,
         borderWidth: border.base,
-        borderColor: colors.outline,
+        borderColor: colors.frame,
         paddingVertical: 12,
         paddingHorizontal: 12,
         gap: 2,

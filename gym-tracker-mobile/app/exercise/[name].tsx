@@ -132,7 +132,7 @@ export default function ExerciseScreen() {
             paddingHorizontal: 12,
             borderRadius: radius.input,
             borderWidth: 2,
-            borderColor: colors.outline,
+            borderColor: colors.frame,
             backgroundColor: colors.sunPanel,
           }}
         >
