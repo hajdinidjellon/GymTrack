@@ -312,3 +312,24 @@ describe('helpers', () => {
     expect(roundDownToIncrement(89.9999999999, 2.5)).toBe(90);
   });
 });
+
+describe('timed (seconds)', () => {
+  const held: ProgressionRule = { kind: 'double', sets: 3, repMin: 30, repMax: 60, increment: 2.5, repStep: 5 };
+
+  it('adds 5 s per set, 10 s after an easy one, with no ceiling', () => {
+    expect(reps(nextTargets([session(0, [40, 40, 35])], held))).toEqual([45, 45, 40]);
+    const easy = nextTargets([session(0, [60, 60, 60], [{}, {}, { rpe: 6 }])], held);
+    expect(easy.decision).toBe('add_two_reps');
+    expect(reps(easy)).toEqual([70, 70, 70]);
+  });
+});
+
+describe('drop sets', () => {
+  it('never hold the weight back nor count as missed', () => {
+    const drop: Partial<WorkoutSet> = { setType: 'drop' };
+    const done = nextTargets([session(60, [12, 12, 12, 6], [{}, {}, {}, { ...drop, weight: 45 }])], rule);
+    expect(done.decision).toBe('add_weight');
+    const short = nextTargets([session(60, [10, 9, 8, 4], [{}, {}, {}, drop])], rule);
+    expect(short.decision).toBe('add_reps');
+  });
+});

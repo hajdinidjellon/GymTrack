@@ -30,7 +30,7 @@ export function InsightsCard({ insights, sessions }: { insights: Insight[]; sess
               gap: 2,
               paddingTop: i === 0 ? 0 : space.sm,
               borderTopWidth: i === 0 ? 0 : 2,
-              borderTopColor: colors.ink,
+              borderTopColor: colors.outline,
             }}
           >
             <Text size={13} weight="bold">

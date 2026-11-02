@@ -31,7 +31,7 @@ function pillStyle(state: PillState, pressed: boolean): ViewStyle {
       waiting: pressed ? colors.coralSoft : 'transparent',
     }[state],
     borderWidth: state === 'current' ? border.strong : 2,
-    borderColor: solid ? colors.ink : colors.line,
+    borderColor: solid ? colors.outlineStrong : colors.line,
     borderStyle: solid ? 'solid' : 'dashed',
   };
 }
@@ -49,7 +49,12 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
         const waiting = !finished && !now;
         return (
           <React.Fragment key={e.id}>
-            {i > 0 ? (
+            {i > 0 && e.superset && exercises[i - 1]?.superset === e.superset ? (
+              // Superset: the two pills are joined by a "+", not a line
+              <Text size={15} weight="black" color={colors.ink} accessibilityLabel={t('session.progress.supersetA11y')}>
+                +
+              </Text>
+            ) : i > 0 ? (
               <View
                 style={{
                   flex: 1,
@@ -74,9 +79,9 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
               style={({ pressed }) => pillStyle(finished ? 'finished' : now ? 'current' : 'waiting', pressed)}
             >
               {finished ? (
-                <Check size={15} />
+                <Check size={15} color={colors.onSuccess} />
               ) : (
-                <Text size={now ? 15 : 13} weight="black" color={now ? colors.ink : colors.inkFaint}>
+                <Text size={now ? 15 : 13} weight="black" color={now ? colors.onCoral : colors.inkFaint}>
                   {i + 1}
                 </Text>
               )}

@@ -12,11 +12,23 @@ export const session = {
     },
     finishNoneLeft: 'Les séries validées sont enregistrées.',
     abandon: 'Abandonner',
+    abandonTitle: 'Abandonner la séance ?',
+    abandonText: 'Rien ne sera enregistré, même les séries déjà validées.',
+    abandonConfirm: 'Tout effacer',
+    exerciseHint: 'Ouvre les réglages de cet exercice',
     finish: 'Terminer',
     exerciseOf: '· exercice {n} sur {total}',
     setOf: 'Série {n} sur {total}',
     nextSetOf: 'Prochaine série {n} sur {total}',
     setDone: 'Série {n} validée',
+    warmupOf: 'Échauffement {n} sur {total}',
+    nextWarmupOf: 'Prochain échauffement {n} sur {total}',
+    warmupDone: 'Échauffement validé',
+    dropSet: 'Série dégressive',
+    nextDropSet: 'Ensuite : série dégressive',
+    dropDone: 'Dégressive validée',
+    listening: 'Micro ouvert · dis « fait », « 8 » ou « plus tard »',
+    superset: 'En superset avec {name} · sans repos entre les deux',
   },
 
   preview: {
@@ -41,7 +53,7 @@ export const session = {
       barbell: 'Barre',
       dumbbell: 'Haltères',
       machine: 'Machine',
-      bodyweight: 'PDC',
+      bodyweight: 'Poids du corps',
     },
   },
 
@@ -97,11 +109,14 @@ export const session = {
     startOther: "Choisis ta charge de départ. Ensuite, on s'occupe de tout.",
     inputLabel: 'Charge de départ en kilos',
     presetA11y: '{kg} kilos',
+    suggested: 'conseillé',
+    presetSuggestedA11y: '{kg} kilos, conseillé',
     start: 'Commencer à {kg} kg',
   },
 
   doLater: {
     a11y: 'Faire {name} plus tard',
+    label: 'Faire plus tard',
   },
 
   effort: {
@@ -129,7 +144,6 @@ export const session = {
     title: 'Repos',
     minimize: 'Réduire',
     minimizeA11y: 'Réduire le minuteur',
-    closeA11y: 'Fermer le repos',
     timerA11y: { one: 'Repos, {count} seconde restante', other: 'Repos, {count} secondes restantes' },
     miniA11y: {
       one: 'Repos, {count} seconde restante. Agrandir le minuteur',
@@ -141,6 +155,8 @@ export const session = {
     nextExercise: 'Ensuite · {name}',
     nextExerciseSet: 'Ensuite · {name}, série {n}',
     nextSet: 'Ensuite · série {n}',
+    nextWarmup: 'Ensuite · échauffement {n}',
+    nextDrop: 'Ensuite · dégressive',
     weightToSet: 'Charge à régler',
     skip: 'Passer le repos',
     undoA11y: 'Annuler la dernière série',
@@ -152,7 +168,16 @@ export const session = {
     progress: { one: '{done} / {count} série validée', other: '{done} / {count} séries validées' },
   },
 
+  done: {
+    title: 'Dernière série validée',
+    text: 'Dis comment s’est passée cette dernière série : la prochaine séance en tient compte.',
+    undo: 'Annuler la dernière série',
+    oneMore: '+ Une série de plus',
+    finish: 'Terminer la séance',
+  },
+
   progress: {
+    supersetA11y: 'enchaîné avec',
     doNow: 'Faire {name} maintenant',
     finished: '{name}, terminé',
     current: '{name}, en cours',
@@ -168,6 +193,17 @@ export const session = {
     headerKg: 'KG',
     headerReps: 'REPS',
     deleteA11y: 'Supprimer la série {n}',
+    warmupShort: 'Éch.',
+    a11yWarmup: 'Échauffement, {kg} kilos, {reps} reps, {state}',
+    a11ySeconds: 'Série {index}, {reps} secondes, {state}',
+    headerSeconds: 'SEC',
+    dropShort: 'Dégr.',
+    failureShort: 'Échec',
+    a11yDrop: 'Dégressive, {kg} kilos, {reps} reps, {state}',
+    a11yFailure: 'Série {index} jusqu’à l’échec, {kg} kilos, {reps} reps, {state}',
+    menuHint: 'Appui long : dégressive ou échec',
+    deleteWarmupA11y: 'Supprimer cet échauffement',
+    deleteDropA11y: 'Supprimer cette dégressive',
   },
 
   setView: {
@@ -180,8 +216,32 @@ export const session = {
     missed: 'Série ratée ? Note les reps faites',
     addSetA11y: 'Ajouter une série',
     addSet: '+ Ajouter une série',
-    swipeHint: 'Glisse une série vers la gauche pour la supprimer',
+    swipeHint: 'Glisse une série à gauche pour la supprimer, appui long pour une dégressive',
     allAsPlanned: { one: 'Tout comme prévu · {count} série', other: 'Tout comme prévu · {count} séries' },
     validateA11y: 'Valider la série',
+    warmupHint: 'Échauffement · ne compte pas dans tes stats',
+    skipWarmup: "Passer l'échauffement",
+    secondsUnit: 's',
+    secondsInput: 'Durée en secondes',
+    secondsMinus: 'Moins 5 secondes',
+    secondsPlus: 'Plus 5 secondes',
+  },
+
+  setMenu: {
+    title: 'Série {n}',
+    titleDrop: 'Série dégressive',
+    addDrop: 'Ajouter une dégressive après',
+    failure: 'Jusqu’à l’échec',
+    normal: 'Série normale',
+  },
+
+  hold: {
+    start: 'Lancer · {s} s',
+    validateWithout: 'Valider sans chrono',
+    prep: 'Mets-toi en position',
+    holding: 'Tiens bon',
+    stop: 'Stop',
+    prepA11y: 'Départ dans {s} secondes',
+    leftA11y: 'Encore {s} secondes',
   },
 };

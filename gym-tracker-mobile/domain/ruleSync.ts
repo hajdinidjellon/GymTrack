@@ -25,7 +25,7 @@ function goalRule(goal: Goal, def: ExerciseDef): RuleOverride {
 /** The sets and reps an exercise runs on: the user's own, else the goal's. */
 export function effectiveRule(def: ExerciseDef, ctx: RuleContext): RuleOverride {
   const own = ctx.overrides[def.name];
-  return own ? clampRule(own) : goalRule(ctx.goal, def);
+  return own ? clampRule(own, def.timed) : goalRule(ctx.goal, def);
 }
 
 /** The similar exercises on the same sets and reps as this one: they follow its changes. */
@@ -48,7 +48,7 @@ export function applyRule(
   const targets = [def, ...(similar ? followers(def, ctx) : [])];
   const overrides = { ...ctx.overrides };
   for (const e of targets) {
-    const rule = next && clampRule(next);
+    const rule = next && clampRule(next, e.timed);
     if (!rule || sameRule(rule, goalRule(ctx.goal, e))) delete overrides[e.name];
     else overrides[e.name] = rule;
   }

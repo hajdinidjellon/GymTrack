@@ -4,8 +4,11 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '@/constants/theme';
 import { useLocale } from '@/hooks/useLocale';
-import { dayName, exerciseName, t } from '@/i18n';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import { dayName, exerciseName, listOf, t } from '@/i18n';
+import { isRateable } from '@/domain/session';
 import { findCurrent } from '@/domain/sessionCursor';
+import { setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
@@ -17,6 +20,7 @@ import { SessionProgress } from '@/components/session/SessionProgress';
 import { SwapExercise } from '@/components/session/SwapExercise';
 import { DoLater } from '@/components/session/DoLater';
 import { AddExercise } from '@/components/session/AddExercise';
+import { SessionDone } from '@/components/session/SessionDone';
 
 // Pendant qu'on quitte l'écran, la séance est déjà vidée : on ne redirige pas une deuxième fois
 let leaving = false;
@@ -37,8 +41,17 @@ function confirmFinish(left: number) {
   const message = left > 0 ? t('session.logger.finishLeft', { count: left }) : t('session.logger.finishNoneLeft');
   Alert.alert(t('session.logger.finishTitle'), message, [
     { text: t('common.continue'), style: 'cancel' },
+    { text: t('session.logger.abandon'), style: 'destructive', onPress: confirmAbandon },
+    { text: t('session.logger.finish'), onPress: () => void finish() },
+  ]);
+}
+
+/** Abandoning wipes the whole session: asked a second time, never one tap away. */
+function confirmAbandon() {
+  Alert.alert(t('session.logger.abandonTitle'), t('session.logger.abandonText'), [
+    { text: t('common.cancel'), style: 'cancel' },
     {
-      text: t('session.logger.abandon'),
+      text: t('session.logger.abandonConfirm'),
       style: 'destructive',
       onPress: () => {
         leaving = true;
@@ -46,7 +59,6 @@ function confirmFinish(left: number) {
         router.dismissTo('/(tabs)');
       },
     },
-    { text: t('session.logger.finish'), onPress: () => void finish() },
   ]);
 }
 
@@ -54,6 +66,7 @@ export default function SessionScreen() {
   useLocale();
   const session = useSessionStore((s) => s.activeSession);
   const insets = useSafeAreaInsets();
+  const listening = useVoiceCommands(!!session);
   const cursor = session ? findCurrent(session.exercises) : null;
   const done = !!session && !cursor;
   const resting = session?.restEndsAt != null;
@@ -67,15 +80,17 @@ export default function SessionScreen() {
     leaving = false;
   }, []);
 
-  // Dernière série validée : direction le bilan, sans bouton à chercher
-  useEffect(() => {
-    if (done) void finish();
-  }, [done]);
-
   useEffect(() => {
     if (!session && !leaving) router.dismissTo('/(tabs)');
   }, [session]);
 
+  // Dernière série validée : le ressenti, une annulation possible, puis le bilan
+  if (session && done)
+    return (
+      <Screen style={{ paddingBottom: Math.max(insets.bottom, space.lg) + space.sm }}>
+        <SessionDone onFinish={() => void finish()} />
+      </Screen>
+    );
   if (!session || !cursor)
     return (
       <Screen>
@@ -86,7 +101,16 @@ export default function SessionScreen() {
   const { exercise, exerciseIndex, setIndex } = cursor;
   const last = session.lastCompleted;
   const doneExercise = last && session.exercises.find((e) => e.id === last.exerciseId);
-  const left = session.exercises.reduce((n, e) => n + e.sets.filter((set) => !set.completed).length, 0);
+  const left = session.exercises.reduce((n, e) => n + workingCount(e.sets, 'left'), 0);
+  const now = setNumber(exercise.sets, setIndex);
+  const partners = exercise.superset
+    ? listOf(
+        session.exercises
+          .filter((e) => e.superset === exercise.superset && e.id !== exercise.id)
+          .map((e) => exerciseName(e.name)),
+      )
+    : null;
+  const lastDone = doneExercise ? setNumber(doneExercise.sets, last.setIndex) : null;
 
   // Pendant le repos, le bas de l'écran garde le minuteur en petit ; en grand, il s'ouvre au milieu
   const rest = resting ? <RestMini restEndsAt={session.restEndsAt!} onExpand={() => setMinimized(false)} /> : null;
@@ -119,11 +143,28 @@ export default function SessionScreen() {
       </View>
 
       <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ flex: 1, lineHeight: 34 }}>
-          {exerciseName(exercise.name)}
-        </Text>
+        <Pressable
+          onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: exercise.name } })}
+          accessibilityRole="button"
+          accessibilityHint={t('session.logger.exerciseHint')}
+          style={{ flex: 1 }}
+        >
+          <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ lineHeight: 34 }}>
+            {exerciseName(exercise.name)}
+          </Text>
+        </Pressable>
         <SwapExercise exercise={exercise} sessionName={session.name} />
       </View>
+      {partners ? (
+        <Text size={14} weight="bold" color={colors.inkMuted} style={{ marginTop: 4 }}>
+          {t('session.logger.superset', { name: partners })}
+        </Text>
+      ) : null}
+      {listening ? (
+        <Text size={13} weight="bold" color={colors.inkMuted} style={{ marginTop: 4 }} accessibilityLiveRegion="polite">
+          {t('session.logger.listening')}
+        </Text>
+      ) : null}
       <View
         style={{ marginTop: space.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
       >
@@ -133,15 +174,16 @@ export default function SessionScreen() {
             paddingHorizontal: 12,
             borderRadius: radius.pill,
             borderWidth: 2,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: colors.card,
           }}
         >
           <Text size={14} weight="black">
-            {t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', {
-              n: setIndex + 1,
-              total: exercise.sets.length,
-            })}
+            {now.drop
+              ? t(resting ? 'session.logger.nextDropSet' : 'session.logger.dropSet')
+              : now.warmup
+                ? t(resting ? 'session.logger.nextWarmupOf' : 'session.logger.warmupOf', { n: now.n, total: now.total })
+                : t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', { n: now.n, total: now.total })}
           </Text>
         </View>
         <DoLater exercise={exercise} />
@@ -169,7 +211,16 @@ export default function SessionScreen() {
               next={cursor}
               restEndsAt={session.restEndsAt!}
               total={session.restDuration ?? 90}
-              doneLabel={doneExercise ? t('session.logger.setDone', { n: last.setIndex + 1 }) : undefined}
+              doneLabel={
+                lastDone
+                  ? lastDone.warmup
+                    ? t('session.logger.warmupDone')
+                    : lastDone.drop
+                      ? t('session.logger.dropDone')
+                      : t('session.logger.setDone', { n: lastDone.n })
+                  : undefined
+              }
+              rateable={isRateable(session)}
               note={doneExercise?.restNote}
               doneExerciseId={last?.exerciseId}
               onMinimize={() => setMinimized(true)}

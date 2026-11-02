@@ -44,6 +44,8 @@ export interface Exercise {
   rule?: ProgressionRule;
   /** First session with no history: the starting weight was picked by hand. */
   calibration?: boolean;
+  /** Held for a time (plank…): `reps` counts seconds. */
+  timed?: boolean;
 }
 
 // ============================================================
@@ -58,6 +60,8 @@ export interface ProgressionRule {
   repMax: number;
   /** Weight step in the user's unit (2.5 kg, 5 lbs, 1-2 for dumbbells...). */
   increment: number;
+  /** Reps added per progress step: 1, or 5 seconds on a timed exercise. */
+  repStep?: number;
 }
 
 export interface SetTarget {
@@ -126,6 +130,10 @@ export interface CustomExercise {
   equipment: Equipment;
   category: ExerciseCategory;
   muscleGroups: MuscleGroup[];
+  /** Held for a time: counted in seconds, not reps. */
+  timed?: boolean;
+  /** Its old names, after a rename: the saved sessions still match it. */
+  aliases?: string[];
 }
 
 export interface RuleOverride {
@@ -141,6 +149,8 @@ export interface AppSettings {
   notifications: boolean;
   /** Spoken cues during the session (next set, plates to load). */
   voice: boolean;
+  /** Short spoken commands during the session ("fait", "8", "plus tard"). Off by default: it opens the microphone. */
+  voiceCommands: boolean;
   /** A bell when the rest is over, even with the phone on silent. */
   restBell: boolean;
   barWeight: number;
@@ -168,6 +178,16 @@ export interface AppSettings {
   programSwitchDismissed: string | null;
   /** Language of the texts and the voice. `auto` follows the phone. */
   language: 'auto' | 'fr' | 'en';
+  /** Light or dark mode. `auto` follows the phone. */
+  theme: 'auto' | 'light' | 'dark';
+  /** Warm-up sets computed before the working sets. */
+  warmups: boolean;
+  /** Warm-ups on or off for one exercise, over the global choice. */
+  warmupOverrides: Record<string, boolean>;
+  /** Days the user added to a program, per program ("ppl": ["Épaules"]). Their exercises are in `customDays`. */
+  ownDays: Record<string, string[]>;
+  /** Per program day ("ppl/Push"): the exercises chained with the one after them, as a superset. */
+  supersets: Record<string, string[]>;
 }
 
 // ============================================================
@@ -189,6 +209,10 @@ export interface ActiveExercise extends Exercise {
   reason?: string;
   /** Why the rest lasts what it lasts, when it is not the default. */
   restNote?: string;
+  /** The user skipped or removed warm-ups: they are not computed again this session. */
+  keepWarmups?: boolean;
+  /** Superset: the exercises with the same group take turns, no rest in between. */
+  superset?: string;
 }
 
 export interface ActiveSession {
@@ -199,5 +223,6 @@ export interface ActiveSession {
   /** Absolute timestamps so the timers survive re-renders and app restarts. */
   restEndsAt: number | null;
   restDuration: number | null;
-  lastCompleted: { exerciseId: string; setIndex: number } | null;
+  /** The last validation, to undo it. `batch`: every set "Tout comme prévu" validated at once. */
+  lastCompleted: { exerciseId: string; setIndex: number; batch?: number[] } | null;
 }

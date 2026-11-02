@@ -24,7 +24,7 @@ export function Choice({ selected, onPress, accessibilityLabel, children, style 
           borderCurve: 'continuous',
           backgroundColor: selected ? colors.coralSoft : colors.card,
           borderWidth: selected ? border.strong : border.base,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           ...(pressed ? {} : hardShadow(selected ? 4 : 2)),
           transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : [],
         },

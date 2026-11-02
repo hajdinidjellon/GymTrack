@@ -114,6 +114,14 @@ export function workingSets(sets: WorkoutSet[]): WorkoutSet[] {
   return sets.filter((s) => s.setType !== 'warmup' && s.completed !== false);
 }
 
+/**
+ * The sets that steer the next targets: working sets without the drop sets.
+ * A drop is lighter on purpose: it is neither a missed set nor the weight of the day.
+ */
+export function mainSets(sets: WorkoutSet[]): WorkoutSet[] {
+  return workingSets(sets).filter((s) => s.setType !== 'drop');
+}
+
 /** The weight most sets were done at. On a tie, the heavier one. */
 export function referenceWeight(sets: WorkoutSet[]): number {
   const counts = new Map<number, number>();
@@ -167,7 +175,7 @@ export function nextTargets(
   options: { startWeight?: number; now?: Date } = {},
 ): ProgressionResult {
   const sessions = history
-    .map((h) => ({ date: h.date, sets: workingSets(h.sets) }))
+    .map((h) => ({ date: h.date, sets: mainSets(h.sets) }))
     .filter((h) => h.sets.length > 0)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -225,9 +233,10 @@ export function nextTargets(
 
   const effort = lastEffort(last.sets);
   const hold = effort === 'max' && allOutStreak(sessions, weight) % 2 === 1;
-  const step = hold ? 0 : effort === 'easy' ? 2 : 1;
+  const unit = rule.repStep ?? 1;
+  const step = hold ? 0 : effort === 'easy' ? 2 * unit : unit;
   return {
-    decision: hold ? 'hold' : step === 2 ? 'add_two_reps' : 'add_reps',
+    decision: hold ? 'hold' : step === 2 * unit ? 'add_two_reps' : 'add_reps',
     targets: fill(rule, weight, (i) => {
       const set = last.sets[i];
       if (!set) return rule.repMin;

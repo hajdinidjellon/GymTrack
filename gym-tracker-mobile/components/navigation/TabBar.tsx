@@ -56,7 +56,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
           borderRadius: radius.pill,
           backgroundColor: colors.card,
           borderWidth: border.strong,
-          borderColor: colors.ink,
+          borderColor: colors.frame,
           ...hardShadow(4),
         }}
       >
@@ -86,7 +86,7 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
                 justifyContent: 'center',
                 gap: 3,
                 borderWidth: focused ? border.base : 0,
-                borderColor: colors.ink,
+                borderColor: colors.outline,
                 backgroundColor: focused ? colors.coralSoft : pressed ? colors.paper : 'transparent',
               })}
             >

@@ -23,7 +23,7 @@ export function StepHeader({ step, total }: { step?: number; total?: number }) {
                 height: 12,
                 borderRadius: 6,
                 borderWidth: 2,
-                borderColor: i < step ? colors.ink : colors.line,
+                borderColor: i < step ? colors.outlineStrong : colors.line,
                 borderStyle: i < step ? 'solid' : 'dashed',
                 backgroundColor: i < step ? colors.coral : 'transparent',
               }}

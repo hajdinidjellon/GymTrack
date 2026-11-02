@@ -8,11 +8,32 @@ export const exercise = {
   note: 'Ta note',
   load: 'Ta charge',
   loadRange: '{from} → {to} kg',
+  strength: {
+    title: 'Tes records',
+    e1rm: '1RM estimé',
+    kg: '{kg} kg',
+    from: 'D’après {kg} kg × {reps} · {date}',
+    perReps: 'Ta meilleure charge par nombre de reps',
+    reps: { one: '{count} rep', other: '{count} reps' },
+    recordA11y: '{reps} : {kg} kilos, {date}',
+  },
   rule: 'Tes séries et tes reps',
+  own: {
+    edit: 'Modifier',
+    remove: 'Supprimer',
+    removeTitle: 'Supprimer {name} ?',
+    removeText: 'Il sort de tes séances. Les séances déjà faites restent dans ton historique.',
+    removeConfirm: 'Supprimer',
+  },
   plateLoaded: {
     label: 'Machine à disques',
     on: 'Le poids se compte de chaque côté.',
     off: 'Le poids se lit sur la pile de la machine.',
+  },
+  warmups: {
+    label: "Séries d'échauffement",
+    on: 'Calculées avant tes séries, avec les disques. Hors stats.',
+    off: 'Tu attaques directement tes séries.',
   },
   increment: {
     title: 'Ajouter à chaque palier',

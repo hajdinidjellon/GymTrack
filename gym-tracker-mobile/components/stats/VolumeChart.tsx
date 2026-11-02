@@ -32,7 +32,7 @@ export function VolumeChart({ weeks }: { weeks: WeekVolume[] }) {
       <View onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)} style={{ height: HEIGHT }}>
         {width ? (
           <Svg width={width} height={HEIGHT}>
-            <Line x1={0} x2={width} y1={HEIGHT - 1} y2={HEIGHT - 1} stroke={colors.ink} strokeWidth={2} />
+            <Line x1={0} x2={width} y1={HEIGHT - 1} y2={HEIGHT - 1} stroke={colors.outline} strokeWidth={2} />
             {weeks.map((w, i) => {
               const h = w.tonnage ? Math.max(8, (w.tonnage / max) * (HEIGHT - 24)) : 0;
               const current = i === weeks.length - 1;
@@ -46,7 +46,7 @@ export function VolumeChart({ weeks }: { weeks: WeekVolume[] }) {
                   height={h}
                   rx={Math.min(6, bar / 2)}
                   fill={current ? colors.coral : i === bestIndex ? colors.sun : colors.card}
-                  stroke={colors.ink}
+                  stroke={colors.outline}
                   strokeWidth={2.5}
                 />
               );

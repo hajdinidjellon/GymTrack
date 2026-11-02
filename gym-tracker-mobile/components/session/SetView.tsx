@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Keyboard, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Keyboard, Pressable, ScrollView, View, type AlertButton } from 'react-native';
 import { border, colors, radius, space } from '@/constants/theme';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
+import { isWarmup, setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
@@ -13,6 +15,7 @@ import { Check } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 import { ExerciseNote } from './ExerciseNote';
+import { HoldTimer } from './HoldTimer';
 import { LoadHint } from './LoadHint';
 import { MissedRepsSheet } from './MissedRepsSheet';
 import { SetsTable } from './SetRow';
@@ -20,7 +23,7 @@ import { t } from '@/i18n';
 
 interface Props {
   cursor: Cursor;
-  /** Replaces the validate buttons at the bottom: the rest panel, during a rest. */
+  /** Above the validate buttons: the minimized rest bar. Validating ends the rest. */
   footer?: React.ReactNode;
 }
 
@@ -33,15 +36,47 @@ export function SetView({ cursor, footer }: Props) {
   const updateSet = useSessionStore((s) => s.updateSet);
   const addSet = useSessionStore((s) => s.addSet);
   const removeSet = useSessionStore((s) => s.removeSet);
+  const skipWarmups = useSessionStore((s) => s.skipWarmups);
+  const addDropSet = useSessionStore((s) => s.addDropSet);
+  const toggleFailure = useSessionStore((s) => s.toggleFailure);
+
+  /** Long press on a set: a drop set after it, or "jusqu'à l'échec". */
+  const openSetMenu = (i: number) => {
+    const target = exercise.sets[i];
+    if (!target) return;
+    const { drop, n } = setNumber(exercise.sets, i);
+    const buttons: AlertButton[] = [];
+    if (target.weight > 0)
+      buttons.push({ text: t('session.setMenu.addDrop'), onPress: () => addDropSet(exercise.id, i) });
+    if (!drop) {
+      const failure = target.setType === 'failure';
+      buttons.push({
+        text: t(failure ? 'session.setMenu.normal' : 'session.setMenu.failure'),
+        onPress: () => toggleFailure(exercise.id, i),
+      });
+    }
+    if (buttons.length === 0) return;
+    buttons.push({ text: t('common.cancel'), style: 'cancel' });
+    Alert.alert(drop ? t('session.setMenu.titleDrop') : t('session.setMenu.title', { n }), undefined, buttons);
+  };
   const [missed, setMissed] = useState(false);
 
   const step = exercise.rule?.increment ?? 2.5;
   const perSide = usePerSide(set.weight);
-  const remaining = exercise.sets.filter((s) => !s.completed).length;
+  const warmup = isWarmup(set);
+  const timed = !!exercise.timed && !warmup;
+  const repStep = timed ? (exercise.rule?.repStep ?? 5) : 1;
+  const remaining = workingCount(exercise.sets, 'left');
+  // "Tout comme prévu" once the first set is done: never a mis-tap away from set 1
+  const started = workingCount(exercise.sets, 'done') > 0;
+  const firstSessions = useWorkoutStore((s) => s.workouts.length < 3);
   const bodyweight = exercise.equipment === 'bodyweight';
   const loading = loadingOf(exercise);
   const targetReps = set.target?.reps ?? set.reps;
+  // On the first set of the exercise, warm-up or not; the weight it explains is the working one
   const why = setIndex === 0 && exercise.reason;
+  const firstWorking = exercise.sets.find((s) => !isWarmup(s));
+  const whyKg = firstWorking?.target?.weight ?? firstWorking?.weight ?? 0;
 
   return (
     <View style={{ flex: 1 }}>
@@ -50,6 +85,7 @@ export function SetView({ cursor, footer }: Props) {
         contentContainerStyle={{ paddingHorizontal: space.gutter, paddingTop: space.md, paddingBottom: space.lg }}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
       >
         {exercise.lastTime ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -72,13 +108,13 @@ export function SetView({ cursor, footer }: Props) {
               paddingHorizontal: 14,
               borderRadius: radius.row,
               borderWidth: border.base,
-              borderColor: colors.ink,
-              backgroundColor: colors.sun,
+              borderColor: colors.frame,
+              backgroundColor: colors.sunPanel,
             }}
           >
-            {set.weight > 0 ? (
-              <Text size={14} weight="black">
-                {t('session.setView.why', { kg: formatKg(set.target?.weight ?? set.weight) })}
+            {whyKg > 0 ? (
+              <Text size={14} weight="black" color={colors.onSunPanel}>
+                {t('session.setView.why', { kg: formatKg(whyKg) })}
               </Text>
             ) : null}
             <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
@@ -87,7 +123,12 @@ export function SetView({ cursor, footer }: Props) {
           </View>
         ) : null}
 
-        <StickerCard style={{ marginTop: space.md, paddingHorizontal: 10, paddingVertical: 10 }}>
+        {warmup ? (
+          <Text size={14} weight="bold" color={colors.inkMuted} style={{ marginTop: space.md }}>
+            {t('session.setView.warmupHint')}
+          </Text>
+        ) : null}
+        <StickerCard style={{ marginTop: warmup ? space.sm : space.md, paddingHorizontal: 10, paddingVertical: 10 }}>
           {!bodyweight ? (
             <>
               <Stepper
@@ -119,29 +160,36 @@ export function SetView({ cursor, footer }: Props) {
           ) : null}
           <Stepper
             value={String(set.reps)}
-            unit={t('common.reps')}
-            onMinus={() => nudgeSet(exercise.id, setIndex, 'reps', -1)}
-            onPlus={() => nudgeSet(exercise.id, setIndex, 'reps', 1)}
-            minusLabel={t('session.setView.repMinus')}
-            plusLabel={t('session.setView.repPlus')}
+            unit={timed ? t('session.setView.secondsUnit') : t('common.reps')}
+            onMinus={() => nudgeSet(exercise.id, setIndex, 'reps', -repStep)}
+            onPlus={() => nudgeSet(exercise.id, setIndex, 'reps', repStep)}
+            minusLabel={timed ? t('session.setView.secondsMinus') : t('session.setView.repMinus')}
+            plusLabel={timed ? t('session.setView.secondsPlus') : t('session.setView.repPlus')}
             onChange={(reps) => updateSet(exercise.id, setIndex, { reps })}
             integer
-            inputLabel={t('session.setView.repsInput')}
+            inputLabel={timed ? t('session.setView.secondsInput') : t('session.setView.repsInput')}
           />
         </StickerCard>
-        <Pressable
-          onPress={() => setMissed(true)}
-          accessibilityRole="button"
-          hitSlop={8}
-          style={{ marginTop: space.md, alignSelf: 'center' }}
-        >
-          <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
-            {t('session.setView.missed')}
-          </Text>
-        </Pressable>
+        {warmup || timed ? null : (
+          <Pressable
+            onPress={() => setMissed(true)}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ marginTop: space.md, alignSelf: 'center' }}
+          >
+            <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
+              {t('session.setView.missed')}
+            </Text>
+          </Pressable>
+        )}
 
         <View style={{ marginTop: space.lg }}>
-          <SetsTable exercise={exercise} current={setIndex} onRemove={(i) => removeSet(exercise.id, i)} />
+          <SetsTable
+            exercise={exercise}
+            current={setIndex}
+            onRemove={(i) => removeSet(exercise.id, i)}
+            onLongPress={openSetMenu}
+          />
           <Pressable
             onPress={() => addSet(exercise.id)}
             accessibilityRole="button"
@@ -152,7 +200,7 @@ export function SetView({ cursor, footer }: Props) {
               borderRadius: radius.row,
               borderWidth: border.base,
               borderStyle: 'dashed',
-              borderColor: pressed ? colors.ink : colors.line,
+              borderColor: pressed ? colors.outlineStrong : colors.line,
               alignItems: 'center',
               justifyContent: 'center',
             })}
@@ -161,7 +209,7 @@ export function SetView({ cursor, footer }: Props) {
               {t('session.setView.addSet')}
             </Text>
           </Pressable>
-          {exercise.sets.length > 1 ? (
+          {exercise.sets.length > 1 && firstSessions ? (
             <Text size={13} color={colors.inkFaint} align="center" style={{ marginTop: 6 }}>
               {t('session.setView.swipeHint')}
             </Text>
@@ -170,9 +218,22 @@ export function SetView({ cursor, footer }: Props) {
       </ScrollView>
 
       <View style={{ gap: space.sm + 2, paddingTop: space.sm }}>
-        {footer ?? (
+        {footer}
+        {timed ? (
+          <HoldTimer key={`${exercise.id}-${setIndex}`} cursor={cursor} />
+        ) : (
           <>
-            {remaining > 1 ? (
+            {warmup ? (
+              <StickerButton
+                label={t('session.setView.skipWarmup')}
+                variant="secondary"
+                size="small"
+                onPress={() => {
+                  Keyboard.dismiss();
+                  skipWarmups(exercise.id);
+                }}
+              />
+            ) : remaining > 1 && started ? (
               <StickerButton
                 label={t('session.setView.allAsPlanned', { count: remaining })}
                 variant="secondary"

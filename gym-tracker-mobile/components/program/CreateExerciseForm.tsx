@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { border, colors, fonts, radius, space } from '@/constants/theme';
 import { makeCustomExercise, MUSCLE_CHOICES, MUSCLE_LABELS, NAME_MAX, type ExerciseDef } from '@/domain/programs';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { Equipment, ExerciseCategory, MuscleGroup } from '@/types';
+import type { CustomExercise, Equipment, ExerciseCategory, MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { buzz } from '@/components/ui/PressableScale';
@@ -18,30 +18,36 @@ interface Props {
   muscle?: MuscleGroup;
   /** What was typed in the search. */
   initialName?: string;
+  /** An own exercise to change instead of creating one. */
+  editing?: CustomExercise;
   onCreated: (def: ExerciseDef) => void;
   onCancel: () => void;
 }
 
 /** Name, muscle, equipment, kind: a new exercise the app then treats like the others. */
-export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', onCreated, onCancel }: Props) {
+export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', editing, onCreated, onCancel }: Props) {
   const own = useSettingsStore((s) => s.settings.customExercises);
   const addCustomExercise = useSettingsStore((s) => s.addCustomExercise);
-  const [name, setName] = useState(initialName);
-  const [muscle, setMuscle] = useState<MuscleGroup>(
-    initialMuscle && initialMuscle !== 'arms' ? initialMuscle : 'chest',
-  );
-  const [equipment, setEquipment] = useState<Equipment>('machine');
-  const [category, setCategory] = useState<ExerciseCategory>('isolation');
+  const updateCustomExercise = useSettingsStore((s) => s.updateCustomExercise);
+  const [name, setName] = useState(editing?.name ?? initialName);
+  const startMuscle = editing?.muscleGroups[0] ?? initialMuscle;
+  const [muscle, setMuscle] = useState<MuscleGroup>(startMuscle && startMuscle !== 'arms' ? startMuscle : 'chest');
+  const [equipment, setEquipment] = useState<Equipment>(editing?.equipment ?? 'machine');
+  const [category, setCategory] = useState<ExerciseCategory>(editing?.category ?? 'isolation');
+  const [counted, setCounted] = useState<'reps' | 'seconds'>(editing?.timed ? 'seconds' : 'reps');
   const [error, setError] = useState<string | null>(null);
 
   const save = () => {
-    const result = makeCustomExercise({ name, equipment, category, muscle }, own);
+    // Changing it: its own name (and old names) are not "taken"
+    const others = editing ? own.filter((e) => e.name !== editing.name) : own;
+    const result = makeCustomExercise({ name, equipment, category, muscle, timed: counted === 'seconds' }, others);
     if ('error' in result) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
       setError(result.error);
       return;
     }
-    addCustomExercise(result);
+    if (editing) updateCustomExercise(editing.name, result);
+    else addCustomExercise(result);
     onCreated({ ...result, custom: true });
   };
 
@@ -69,7 +75,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
             paddingVertical: 0,
             borderRadius: radius.row,
             borderWidth: border.base,
-            borderColor: error ? colors.coral : colors.ink,
+            borderColor: error ? colors.danger : colors.outline,
             backgroundColor: colors.card,
             fontFamily: fonts.bold,
             fontSize: 17,
@@ -77,7 +83,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
           }}
         />
         {error ? (
-          <Text size={14} weight="bold" color={colors.coral} accessibilityLiveRegion="polite">
+          <Text size={14} weight="bold" color={colors.danger} accessibilityLiveRegion="polite">
             {error}
           </Text>
         ) : null}
@@ -101,12 +107,25 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
         value={category}
         onChange={setCategory}
       />
+      <Options
+        label={t('program.create.counted')}
+        options={[
+          { id: 'reps' as const, label: t('program.create.countedReps') },
+          { id: 'seconds' as const, label: t('program.create.countedSeconds') },
+        ]}
+        value={counted}
+        onChange={setCounted}
+      />
       <Text size={13} color={colors.inkMuted} style={{ lineHeight: 18 }}>
         {t('program.create.hint')}
       </Text>
 
       <View style={{ gap: space.sm }}>
-        <StickerButton label={t('program.create.submit')} size="small" onPress={save} />
+        <StickerButton
+          label={editing ? t('program.create.save') : t('program.create.submit')}
+          size="small"
+          onPress={save}
+        />
         <StickerButton label={t('program.create.back')} variant="secondary" size="small" onPress={onCancel} />
       </View>
     </View>
@@ -148,7 +167,7 @@ function Options<T extends string>({
                 justifyContent: 'center',
                 borderRadius: radius.pill,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.ink : colors.line,
+                borderColor: on ? colors.outlineStrong : colors.line,
                 backgroundColor: on ? colors.coralSoft : colors.card,
               }}
             >

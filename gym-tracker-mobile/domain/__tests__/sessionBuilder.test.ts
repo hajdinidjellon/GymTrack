@@ -10,6 +10,7 @@ import {
   todayStatus,
   planLift,
   reasonLabel,
+  supersetGroups,
   targetLabel,
   targetLoad,
   tonnage,
@@ -93,6 +94,10 @@ describe('nextDay', () => {
     it('ignores a week that no longer fits the program', () => {
       expect(todayStatus(week(['Haut', null, 'Bas', null, null, null, null]))).toEqual({ kind: 'free' });
       expect(todayStatus(ctx())).toEqual({ kind: 'free' });
+      // Trained today without a fixed week: done all the same, no second session "du jour"
+      expect(todayStatus({ ...ctx([workout(new Date().toISOString(), 'Push', [])]), now: new Date() })).toEqual({
+        kind: 'done',
+      });
     });
   });
 });
@@ -347,5 +352,62 @@ describe('weightHistory', () => {
       { date: '2026-10-01', weight: 100 },
       { date: '2026-10-08', weight: 105 },
     ]);
+  });
+});
+
+describe('timed exercises', () => {
+  const held = { kind: 'double' as const, sets: 3, repMin: 30, repMax: 60, increment: 2.5, repStep: 5 };
+  const targets = [
+    { weight: 0, reps: 45 },
+    { weight: 0, reps: 40 },
+  ];
+
+  it('says seconds everywhere', () => {
+    expect(targetLabel(targets, true)).toBe('2 × 40 s');
+    expect(targetLoad(targets, true)).toBe('40 s');
+    expect(targetLoad([{ weight: 10, reps: 45 }], true)).toBe('10 kg × 45 s');
+    expect(lastTimeLabel(targets, true)).toBe('45 · 40 s');
+    expect(deltaLabel({ decision: 'add_reps', rule: held })).toBe('+5 s');
+    expect(deltaLabel({ decision: 'add_two_reps', rule: held })).toBe('+10 s');
+  });
+
+  it('explains the target in seconds', () => {
+    const base = { rule: held, targets };
+    expect(reasonLabel({ ...base, decision: 'add_reps' })).toBe('5 secondes de plus par série que la dernière fois.');
+    expect(reasonLabel({ ...base, decision: 'add_two_reps' })).toBe(
+      'Ta dernière série était facile : 10 secondes de plus par série.',
+    );
+    expect(reasonLabel({ ...base, decision: 'repeat' })).toBe(
+      'Une série a tenu moins de 30 s : on garde la même cible.',
+    );
+    expect(reasonLabel({ ...base, decision: 'add_weight' })).toBe(
+      'Toutes tes séries ont tenu 60 s : on ajoute 2,5 kg.',
+    );
+  });
+
+  it('plans a plank in seconds and marks it timed', () => {
+    const plank = planLift(EXERCISES.plank, ctx());
+    expect(plank.rule).toMatchObject({ repMin: 30, repMax: 60, repStep: 5 });
+    expect(plank.targets.map((x) => x.reps)).toEqual([30, 30, 30]);
+    expect(toActiveExercise(plank).timed).toBe(true);
+    expect(toActiveExercise(planLift(EXERCISES.squat, ctx())).timed).toBeUndefined();
+  });
+});
+
+describe('supersets', () => {
+  it('groups each exercise chained with the next, three in a row included', () => {
+    expect(supersetGroups(['a', 'b', 'c', 'd'], ['a'])).toEqual(['a', 'a', undefined, undefined]);
+    expect(supersetGroups(['a', 'b', 'c', 'd'], ['a', 'b'])).toEqual(['a', 'a', 'a', undefined]);
+    expect(supersetGroups(['a', 'b'], ['b'])).toEqual([undefined, undefined]);
+    expect(supersetGroups(['a', 'b'])).toEqual([undefined, undefined]);
+  });
+
+  it("reads the day's links and starts the session with them", () => {
+    const day = { name: 'Push', exercises: [EXERCISES.bench, EXERCISES.ohp, EXERCISES.dips] };
+    const c = ctx();
+    const plan = planDay(day, { ...c, settings: { ...c.settings, supersets: { 'ppl/Push': ['Développé couché'] } } });
+    expect(plan.links).toEqual(['Développé couché']);
+    expect(toActiveExercises(plan).map((e) => e.superset)).toEqual(['Développé couché', 'Développé couché', undefined]);
+    expect(planDay(day, c).links).toBeUndefined();
   });
 });

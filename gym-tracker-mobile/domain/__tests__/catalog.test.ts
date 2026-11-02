@@ -16,6 +16,7 @@ import {
   makeCustomExercise,
   searchExercises,
   searchKey,
+  similarExercises,
   programDays,
   restFor,
   ruleFor,
@@ -241,5 +242,40 @@ describe('format', () => {
     expect(formatThousands(4800)).toBe('4\u202f800');
     expect(formatThousands(1234567.6)).toBe('1\u202f234\u202f568');
     expect(formatThousands(950)).toBe('950');
+  });
+});
+
+describe('timed exercises in the catalog', () => {
+  it('holds planks for 3 × 30-60 s, whatever the goal', () => {
+    expect(ruleFor('force', EXERCISES.plank, 2.5)).toMatchObject({ sets: 3, repMin: 30, repMax: 60, repStep: 5 });
+    expect(findExerciseDef('Planche')?.name).toBe('Gainage');
+  });
+
+  it('keeps seconds between 5 s and 10 min, own seconds included', () => {
+    expect(clampRule({ sets: 3, repMin: 2, repMax: 900 }, true)).toEqual({ sets: 3, repMin: 5, repMax: 600 });
+    const held = ruleFor('muscle', EXERCISES.plank, 2.5);
+    expect(withOverride(held, { sets: 4, repMin: 45, repMax: 90 })).toMatchObject({ repMin: 45, repMax: 90 });
+  });
+
+  it('never mixes held and counted exercises as similar', () => {
+    const names = (def: (typeof EXERCISES)[keyof typeof EXERCISES]) => similarExercises(def).map((e) => e.name);
+    expect(names(EXERCISES.plank)).toContain('Gainage latéral');
+    expect(names(EXERCISES.plank)).not.toContain('Crunch');
+    expect(names(EXERCISES.crunch)).not.toContain('Gainage');
+  });
+
+  it('creates an own exercise counted in seconds', () => {
+    expect(
+      makeCustomExercise({
+        name: 'Planche lestée',
+        equipment: 'bodyweight',
+        category: 'isolation',
+        muscle: 'core',
+        timed: true,
+      }),
+    ).toMatchObject({ timed: true });
+    expect(
+      makeCustomExercise({ name: 'Curl câble', equipment: 'machine', category: 'isolation', muscle: 'biceps' }),
+    ).not.toHaveProperty('timed');
   });
 });

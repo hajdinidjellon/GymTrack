@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
-import { border, colors, hardShadow, radius, text } from '@/constants/theme';
+import { border, colors, hardShadow, pressOffset, radius } from '@/constants/theme';
 import { buzz, type HapticKind } from './PressableScale';
 import { Text } from './Text';
 
@@ -41,6 +41,12 @@ export function StickerButton({
 }: Props) {
   const big = size !== 'small';
   const offset = big ? 4 : 2;
+  const primary = variant === 'primary';
+  // The icon takes the text colour of the button (dark on the action colour at night too)
+  const tinted =
+    primary && React.isValidElement<{ color?: string }>(icon)
+      ? React.cloneElement(icon, { color: colors.onCoral })
+      : icon;
   const ghost = variant === 'ghost';
   const flat = ghost || disabled;
 
@@ -66,21 +72,24 @@ export function StickerButton({
           gap: 10,
           borderRadius: radius.pill,
           borderWidth: ghost ? 0 : big ? border.strong : border.base,
-          borderColor: colors.ink,
-          backgroundColor: ghost ? 'transparent' : variant === 'primary' ? colors.coral : colors.card,
+          borderColor: primary ? colors.coralShadow : colors.outline,
+          backgroundColor: ghost ? 'transparent' : primary ? colors.coral : colors.card,
           opacity: disabled ? 0.45 : 1,
           // Appuyé, le bouton « s'enfonce » sur son ombre
-          ...(flat || pressed ? {} : hardShadow(offset)),
-          transform: pressed && !flat ? [{ translateX: offset }, { translateY: offset }] : [],
+          ...(flat || pressed ? {} : hardShadow(offset, primary ? colors.coralShadow : colors.shadow)),
+          transform:
+            pressed && !flat
+              ? [{ translateX: pressOffset(offset).translateX }, { translateY: pressOffset(offset).translateY }]
+              : [],
         },
         style,
       ]}
     >
-      {icon ? <View>{icon}</View> : null}
+      {tinted ? <View>{tinted}</View> : null}
       <Text
         weight={ghost ? 'bold' : 'titleMedium'}
         size={FONT[size]}
-        color={ghost ? colors.inkMuted : text.button.color}
+        color={ghost ? colors.inkMuted : primary ? colors.onCoral : colors.ink}
         style={ghost ? { textDecorationLine: 'underline' } : undefined}
       >
         {label}

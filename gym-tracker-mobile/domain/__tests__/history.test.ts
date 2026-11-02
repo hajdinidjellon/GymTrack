@@ -22,7 +22,17 @@ describe('loggedExercises', () => {
       },
       { name: 'Curl haltères', sets: [{ weight: 14, reps: 12, warmup: false, effort: undefined }] },
     ]);
-    expect(setsDone(w)).toBe(3);
+    expect(setsDone(w)).toBe(2);
+  });
+});
+
+describe('drop sets and failure in the history', () => {
+  it('keeps what kind of set it was', () => {
+    const bench = lift('Développé couché', 80, [10, 6]);
+    bench.sets[0] = { ...bench.sets[0]!, setType: 'failure' };
+    bench.sets[1] = { ...bench.sets[1]!, setType: 'drop', weight: 60 };
+    const [e] = loggedExercises(workout('2026-11-01', 'Haut', [bench]));
+    expect(e!.sets.map((x) => x.kind)).toEqual(['failure', 'drop']);
   });
 });
 

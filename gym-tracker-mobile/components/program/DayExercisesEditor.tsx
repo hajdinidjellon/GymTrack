@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { border, colors, radius } from '@/constants/theme';
-import { dayKey, type ExerciseDef, type ProgramDay } from '@/domain/programs';
+import { dayKey, mainMuscle, type ExerciseDef, type ProgramDay } from '@/domain/programs';
 import { moveItem } from '@/domain/reorder';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { SplitId } from '@/types';
@@ -54,7 +54,7 @@ export function DayExercisesEditor<T>({ split, day, items, keyOf, renderRow, onD
           borderRadius: radius.row,
           borderWidth: border.base,
           borderStyle: 'dashed',
-          borderColor: pressed ? colors.ink : colors.line,
+          borderColor: pressed ? colors.outlineStrong : colors.line,
           alignItems: 'center',
           justifyContent: 'center',
         })}
@@ -83,10 +83,9 @@ export function DayExercisesEditor<T>({ split, day, items, keyOf, renderRow, onD
       <ExercisePicker
         visible={adding}
         taken={day.exercises.map((e) => e.name)}
-        onPick={(def) => {
-          save([...day.exercises, def]);
-          setAdding(false);
-        }}
+        muscle={mainMuscle(day.exercises)}
+        stayOpen
+        onPick={(def) => save([...day.exercises, def])}
         onClose={() => setAdding(false)}
       />
     </View>

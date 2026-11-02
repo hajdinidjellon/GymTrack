@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gymtrack.mobile",
@@ -54,6 +54,14 @@
           "microphonePermission": false,
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "GymTrack écoute tes commandes pendant la séance (« fait », « 8 », « plus tard ») quand tu les actives.",
+          "speechRecognitionPermission": "GymTrack reconnaît tes commandes sur le téléphone, rien n'est envoyé."
         }
       ]
     ],

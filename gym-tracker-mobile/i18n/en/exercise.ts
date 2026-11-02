@@ -9,11 +9,32 @@ export const exercise: Dictionary['exercise'] = {
   note: 'Your note',
   load: 'Your weight',
   loadRange: '{from} → {to} kg',
+  strength: {
+    title: 'Your records',
+    e1rm: 'Estimated 1RM',
+    kg: '{kg} kg',
+    from: 'From {kg} kg × {reps} · {date}',
+    perReps: 'Your best weight per number of reps',
+    reps: { one: '{count} rep', other: '{count} reps' },
+    recordA11y: '{reps}: {kg} kilos, {date}',
+  },
   rule: 'Your sets and reps',
+  own: {
+    edit: 'Edit',
+    remove: 'Delete',
+    removeTitle: 'Delete {name}?',
+    removeText: 'It leaves your sessions. The sessions already done stay in your history.',
+    removeConfirm: 'Delete',
+  },
   plateLoaded: {
     label: 'Plate-loaded machine',
     on: 'The weight counts on each side.',
     off: 'The weight is read on the machine stack.',
+  },
+  warmups: {
+    label: 'Warm-up sets',
+    on: 'Computed before your sets, plates included. Not in your stats.',
+    off: 'You go straight to your sets.',
   },
   increment: {
     title: 'Add at each step',

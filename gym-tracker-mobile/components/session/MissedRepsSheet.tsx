@@ -18,7 +18,7 @@ interface Props {
 /** Reps done, in one tap, no keyboard. Centered on the target. */
 export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
-  const [picked, setPicked] = useState(Math.max(0, target - 2));
+  const [picked, setPicked] = useState(Math.max(0, target - 1));
 
   const first = Math.max(0, target - 6);
   const options = Array.from({ length: 9 }, (_, i) => first + i);
@@ -29,7 +29,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
       transparent
       animationType="slide"
       onRequestClose={onClose}
-      onShow={() => setPicked(Math.max(0, target - 2))}
+      onShow={() => setPicked(Math.max(0, target - 1))}
     >
       <View style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t('common.close')} />
@@ -40,7 +40,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
             backgroundColor: colors.paper,
             borderWidth: border.strong,
             borderBottomWidth: 0,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             paddingTop: 14,
             paddingHorizontal: 24,
             paddingBottom: Math.max(insets.bottom, 16) + 8,
@@ -75,7 +75,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
                     backgroundColor: on ? colors.coralSoft : colors.card,
                     borderWidth: on ? border.strong : border.base,
                     borderStyle: isTarget && !on ? 'dashed' : 'solid',
-                    borderColor: colors.ink,
+                    borderColor: colors.outline,
                   }}
                 >
                   <Text size={32} weight="black">

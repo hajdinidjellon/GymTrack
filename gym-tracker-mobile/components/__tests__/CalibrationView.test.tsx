@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useSessionStore } from '@/stores/sessionStore';
+import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { CalibrationView } from '@/components/session/CalibrationView';
 import type { ActiveExercise } from '@/types';
 
@@ -28,6 +29,8 @@ async function show(exercise: ActiveExercise) {
 const sets = () => useSessionStore.getState().activeSession!.exercises[0]!.sets;
 
 beforeEach(() => {
+  // Warm-ups off: these tests are about the working sets
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
   jest.useFakeTimers();
 });
 
@@ -48,7 +51,8 @@ describe('CalibrationView', () => {
   it('offers weights that fit the exercise', async () => {
     await show(fresh({ name: 'Squat', equipment: 'barbell', muscleGroups: ['legs'] }));
     expect(screen.getByLabelText('120 kilos')).toBeTruthy();
-    expect(screen.queryByLabelText('20 kilos')).toBeNull();
+    // The empty bar always comes first: where a beginner starts
+    expect(screen.getByLabelText(/^20 kilos/)).toBeTruthy();
   });
 
   it('says nothing more for a weight stack', async () => {
@@ -58,7 +62,7 @@ describe('CalibrationView', () => {
 
   it('never goes under the empty bar', async () => {
     await show(fresh({ name: 'Développé couché', equipment: 'barbell' }));
-    await fireEvent.press(screen.getByLabelText('20 kilos'));
+    await fireEvent.press(screen.getByLabelText(/^20 kilos/));
     await fireEvent.press(screen.getByLabelText('Moins 2,5 kg'));
     expect(screen.getByText('Barre à vide')).toBeTruthy();
     expect(screen.getByText('Commencer à 20 kg')).toBeTruthy();
@@ -79,9 +83,14 @@ describe('CalibrationView', () => {
     expect(screen.getByText('Commencer à 7,9 kg')).toBeTruthy();
   });
 
+  it('marks the suggested weight', async () => {
+    await show(fresh({ name: 'Squat', equipment: 'barbell', muscleGroups: ['legs'] }));
+    expect(screen.getByText('conseillé')).toBeOnTheScreen();
+  });
+
   it('steps the weight with the round buttons', async () => {
     await show(fresh({ plateLoaded: true }));
-    await fireEvent.press(screen.getByLabelText('20 kilos'));
+    await fireEvent.press(screen.getByLabelText(/^20 kilos/));
     await fireEvent.press(screen.getByLabelText('Plus 2,5 kg'));
     expect(screen.getByText('Commencer à 22,5 kg')).toBeTruthy();
   });

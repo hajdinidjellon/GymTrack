@@ -30,8 +30,10 @@ interface Props {
   suggestedTitle?: string;
   /** Muscle picked first in the creation form. */
   muscle?: MuscleGroup;
-  /** Under the list, above "Fermer": e.g. "keep it for next time". */
-  footer?: React.ReactNode;
+  /** Options read before choosing, under the title: e.g. "keep it for next time". Shown while creating too. */
+  options?: React.ReactNode;
+  /** Stays open after a pick, to add several exercises in a row (the added ones are ticked). */
+  stayOpen?: boolean;
 }
 
 type Tab = 'suggested' | MuscleGroup;
@@ -49,7 +51,8 @@ export function ExercisePicker({
   suggested,
   suggestedTitle = t('session.picker.suggestions'),
   muscle,
-  footer,
+  options,
+  stayOpen,
 }: Props) {
   const insets = useSafeAreaInsets();
   const own = useSettingsStore((s) => s.settings.customExercises);
@@ -77,7 +80,11 @@ export function ExercisePicker({
     onClose();
   };
   const pick = (def: ExerciseDef) => {
-    reset();
+    if (stayOpen) {
+      // Back to the list, same tab: the next one is one tap away
+      setCreating(false);
+      setQuery('');
+    } else reset();
     onPick(def);
   };
 
@@ -101,7 +108,7 @@ export function ExercisePicker({
           paddingVertical: 8,
           borderRadius: radius.row,
           borderWidth: border.base,
-          borderColor: added ? colors.line : colors.ink,
+          borderColor: added ? colors.line : colors.outlineStrong,
           backgroundColor: pressed ? colors.coralSoft : colors.card,
           flexDirection: 'row',
           alignItems: 'center',
@@ -145,7 +152,7 @@ export function ExercisePicker({
             backgroundColor: colors.paper,
             borderWidth: border.strong,
             borderBottomWidth: 0,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             paddingTop: 14,
             paddingBottom: Math.max(insets.bottom, 16) + 8,
           }}
@@ -154,6 +161,7 @@ export function ExercisePicker({
           <Text size={28} weight="black" style={{ marginTop: 18, paddingHorizontal: 24 }} accessibilityRole="header">
             {creating ? t('session.picker.newExercise') : title}
           </Text>
+          {options ? <View style={{ paddingHorizontal: 24, marginTop: space.sm }}>{options}</View> : null}
           {!creating ? (
             <View style={{ paddingHorizontal: 24 }}>
               {/* Marge sur un cadre : sur iOS, une marge sur le TextInput décale son texte vers le bas */}
@@ -172,7 +180,7 @@ export function ExercisePicker({
                     paddingVertical: 0,
                     borderRadius: radius.row,
                     borderWidth: border.base,
-                    borderColor: colors.ink,
+                    borderColor: colors.outline,
                     backgroundColor: colors.card,
                     fontFamily: fonts.bold,
                     fontSize: 16,
@@ -235,7 +243,7 @@ export function ExercisePicker({
                     borderRadius: radius.row,
                     borderWidth: border.base,
                     borderStyle: 'dashed',
-                    borderColor: pressed ? colors.ink : colors.line,
+                    borderColor: pressed ? colors.outlineStrong : colors.line,
                     alignItems: 'center',
                     justifyContent: 'center',
                   })}
@@ -250,7 +258,6 @@ export function ExercisePicker({
             )}
           </ScrollView>
           <View style={{ paddingHorizontal: 24, gap: space.sm }}>
-            {!creating ? footer : null}
             <StickerButton label={t('common.close')} variant="secondary" size="small" onPress={close} />
           </View>
         </View>
@@ -275,7 +282,7 @@ function MuscleTab({ label, selected, onPress }: { label: string; selected: bool
         paddingHorizontal: 14,
         borderRadius: radius.pill,
         borderWidth: selected ? border.strong : border.base,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: selected || pressed ? colors.coralSoft : colors.card,
         justifyContent: 'center',
       })}

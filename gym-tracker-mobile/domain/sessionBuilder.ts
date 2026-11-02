@@ -8,6 +8,7 @@ import {
   referenceWeight,
   startWeightFromOneRepMax,
   workingSets,
+  mainSets,
   type ExerciseSession,
   type ProgressionDecision,
 } from '@/domain/progression';
@@ -15,10 +16,12 @@ import { formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
 import { trainedOn, validSchedule, weekdayIndex } from '@/domain/schedule';
 import {
+  dayKey,
   defaultIncrementFor,
   isPlateLoaded,
   findExerciseDef,
   getSplit,
+  hasExercises,
   programDays,
   ruleFor,
   withOverride,
@@ -33,6 +36,7 @@ import type {
   PersonalRecord,
   ProgressionRule,
   SetTarget,
+  SplitId,
   UserProfile,
   Workout,
   WorkoutSet,
@@ -41,7 +45,12 @@ import type {
 export interface BuildContext {
   profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
   settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> &
-    Partial<Pick<AppSettings, 'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded'>>;
+    Partial<
+      Pick<
+        AppSettings,
+        'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded' | 'supersets' | 'ownDays'
+      >
+    >;
   workouts: Workout[];
   /** Today. Without it, breaks are not looked at. */
   now?: Date;
@@ -68,6 +77,8 @@ export interface PlannedDay {
   name: string;
   lifts: PlannedLift[];
   minutes: number;
+  /** Exercises chained with the one after them (superset). */
+  links?: string[];
 }
 
 function matches(def: ExerciseDef, name: string): boolean {
@@ -98,16 +109,25 @@ export type TodayStatus = { kind: 'free' } | { kind: 'train'; name: string } | {
 export function todayStatus(ctx: BuildContext): TodayStatus {
   const names = getSplit(ctx.profile.program.split).days.map((d) => d.name);
   const schedule = validSchedule(ctx.profile.program.schedule, names);
-  if (!schedule) return { kind: 'free' };
   const now = ctx.now ?? new Date();
+  // Already trained today, fixed week or not: no other session "du jour"
   if (trainedOn(ctx.workouts, now)) return { kind: 'done' };
+  if (!schedule) return { kind: 'free' };
   const name = schedule[weekdayIndex(now)];
   return name ? { kind: 'train', name } : { kind: 'rest' };
 }
 
 /** Today's session from the week, else the day after the last one done, in program order. */
 export function nextDay(ctx: BuildContext): ProgramDay {
-  const days = programDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
+  const all = programDays(
+    ctx.profile.program.split,
+    ctx.settings.customDays,
+    ctx.settings.customExercises,
+    ctx.settings.ownDays,
+  );
+  // An empty day (just created) is never the next session
+  const filled = all.filter(hasExercises);
+  const days = filled.length ? filled : all;
   const status = todayStatus(ctx);
   const planned = status.kind === 'train' ? days.find((d) => d.name === status.name) : undefined;
   if (planned) return planned;
@@ -140,8 +160,8 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   }
 
   const { decision, targets, daysOff } = nextTargets(history, rule, { startWeight, now: ctx.now });
-  const lastSession = history.find((h) => workingSets(h.sets).length > 0);
-  const last = lastSession ? workingSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
+  const lastSession = history.find((h) => mainSets(h.sets).length > 0);
+  const last = lastSession ? mainSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
   const rest = planRest(def, rule, ctx.settings.defaultRestTime, history, ctx.settings.restOverrides?.[def.name]);
   return {
     def,
@@ -157,15 +177,39 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   };
 }
 
-export function planDay(day: ProgramDay, ctx: BuildContext): PlannedDay {
+export function planDay(day: ProgramDay & { split?: SplitId }, ctx: BuildContext): PlannedDay {
   const lifts = day.exercises.map((def) => planLift(def, ctx));
   // ~40 s par série plus le repos
   const seconds = lifts.reduce((sum, l) => sum + l.targets.length * (40 + l.restTime), 0);
-  return { name: day.name, lifts, minutes: Math.round(seconds / 300) * 5 };
+  const links = ctx.settings.supersets?.[dayKey(day.split ?? ctx.profile.program.split, day.name)];
+  return { name: day.name, lifts, minutes: Math.round(seconds / 300) * 5, ...(links?.length ? { links } : {}) };
+}
+
+/**
+ * The superset group of each lift: a lift chained with the next one shares
+ * its group. A chain of three makes a tri-set. Alone: no group.
+ */
+export function supersetGroups(names: string[], links: string[] = []): (string | undefined)[] {
+  const groups: (string | undefined)[] = names.map(() => undefined);
+  for (let i = 0; i < names.length - 1; i++) {
+    if (!links.includes(names[i]!)) continue;
+    const group = groups[i] ?? names[i]!;
+    groups[i] = group;
+    groups[i + 1] = group;
+  }
+  return groups;
 }
 
 export function toActiveExercises(day: PlannedDay): ActiveExercise[] {
-  return day.lifts.map(toActiveExercise);
+  const groups = supersetGroups(
+    day.lifts.map((l) => l.def.name),
+    day.links,
+  );
+  return day.lifts.map((lift, i) => {
+    const exercise = toActiveExercise(lift, i);
+    const group = groups[i];
+    return group ? { ...exercise, superset: group } : exercise;
+  });
 }
 
 export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
@@ -179,8 +223,9 @@ export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
     plateLoaded: lift.plateLoaded || undefined,
     rule: lift.rule,
     calibration: needsWeight || undefined,
+    timed: lift.def.timed || undefined,
     needsWeight,
-    lastTime: lift.last.length ? lastTimeLabel(lift.last) : undefined,
+    lastTime: lift.last.length ? lastTimeLabel(lift.last, lift.def.timed) : undefined,
     reason: reasonLabel(lift),
     restNote: lift.restNote || undefined,
     sets: lift.targets.map((t) => ({
@@ -196,11 +241,12 @@ export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
 
 /** What changed since last time, in a few words. */
 export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string {
+  const seconds = lift.rule.repStep;
   switch (lift.decision) {
     case 'add_reps':
-      return t('domain.plan.deltaOneRep');
+      return seconds ? t('domain.plan.deltaSeconds', { s: seconds }) : t('domain.plan.deltaOneRep');
     case 'add_two_reps':
-      return t('domain.plan.deltaTwoReps');
+      return seconds ? t('domain.plan.deltaSeconds', { s: seconds * 2 }) : t('domain.plan.deltaTwoReps');
     case 'add_weight':
       return t('domain.plan.deltaWeight', { kg: formatKg(lift.rule.increment) });
     case 'hold':
@@ -217,30 +263,42 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
   }
 }
 
-/** "60 kg × 10 · 10 · 9", or "12 · 11 · 10 reps" at bodyweight. */
-export function lastTimeLabel(sets: SetTarget[]): string {
+/** "62,5 kg × 10", "12 reps", "45 s" or "10 kg × 45 s": one load as it is read in the gym. */
+export function loadLabel(weight: number, reps: number | string, timed = false): string {
+  if (weight > 0)
+    return t(timed ? 'domain.load.kgTimesSeconds' : 'domain.load.kgTimes', { kg: formatKg(weight), reps });
+  return t(timed ? 'domain.load.seconds' : 'domain.load.reps', { reps });
+}
+
+/** "60 kg × 10 · 10 · 9", "12 · 11 · 10 reps" at bodyweight, "45 · 45 · 40 s" held. */
+export function lastTimeLabel(sets: SetTarget[], timed = false): string {
   const reps = sets.map((s) => s.reps).join(' · ');
   const weight = referenceWeight(sets.map((s) => ({ ...s, setType: 'normal' as const })));
-  return weight > 0 ? t('domain.load.kgTimes', { kg: formatKg(weight), reps }) : t('domain.load.reps', { reps });
+  return loadLabel(weight, reps, timed);
 }
 
 /** Why today's target is what it is, in one sentence. */
 export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targets' | 'daysOff'>): string {
   const { rule } = lift;
   const bodyweight = (lift.targets[0]?.weight ?? 0) === 0;
+  const seconds = rule.repStep;
   switch (lift.decision) {
     case 'add_weight':
-      return t('domain.plan.reasonAddWeight', { reps: rule.repMax, kg: formatKg(rule.increment) });
+      return t(seconds ? 'domain.plan.reasonAddWeightSeconds' : 'domain.plan.reasonAddWeight', {
+        reps: rule.repMax,
+        kg: formatKg(rule.increment),
+      });
     case 'add_reps':
+      if (seconds) return t('domain.plan.reasonAddSeconds', { s: seconds });
       return bodyweight
         ? t('domain.plan.reasonAddRepsBodyweight')
         : t('domain.plan.reasonAddReps', { reps: rule.repMax });
     case 'add_two_reps':
-      return t('domain.plan.reasonAddTwoReps');
+      return seconds ? t('domain.plan.reasonAddTwoSeconds', { s: seconds * 2 }) : t('domain.plan.reasonAddTwoReps');
     case 'hold':
       return t('domain.plan.reasonHold');
     case 'repeat':
-      return t('domain.plan.reasonRepeat', { reps: rule.repMin });
+      return t(seconds ? 'domain.plan.reasonRepeatSeconds' : 'domain.plan.reasonRepeat', { reps: rule.repMin });
     case 'deload':
       return t('domain.plan.reasonDeload');
     case 'comeback':
@@ -258,23 +316,20 @@ export function breakLabel(days: number): string {
   return t('domain.plan.months', { count: Math.floor(days / 30) });
 }
 
-/** "3 × 10 · 62,5 kg", or "3 × 13" at bodyweight. Uneven reps show the lowest. */
-export function targetLabel(targets: SetTarget[]): string {
+/** "3 × 10 · 62,5 kg", "3 × 13" at bodyweight, "3 × 45 s" held. Uneven reps show the lowest. */
+export function targetLabel(targets: SetTarget[], timed = false): string {
   const first = targets[0];
   if (!first) return '';
   const reps = Math.min(...targets.map((t) => t.reps));
-  const base = `${targets.length} × ${reps}`;
+  const base = `${targets.length} × ${reps}${timed ? ' s' : ''}`;
   return first.weight > 0 ? `${base} · ${formatKg(first.weight)} kg` : base;
 }
 
-/** Today's target as it is read in the gym: "62,5 kg × 10", or "12 reps" without weight. */
-export function targetLoad(targets: SetTarget[]): string {
+/** Today's target as it is read in the gym: "62,5 kg × 10", "12 reps" or "45 s" without weight. */
+export function targetLoad(targets: SetTarget[], timed = false): string {
   const first = targets[0];
   if (!first) return '';
-  const reps = Math.min(...targets.map((t) => t.reps));
-  return first.weight > 0
-    ? t('domain.load.kgTimes', { kg: formatKg(first.weight), reps })
-    : t('domain.load.reps', { reps });
+  return loadLabel(first.weight, Math.min(...targets.map((t) => t.reps)), timed);
 }
 
 /** How many times the logged weight counts in the total: 2 for both sides or both dumbbells. */
@@ -315,7 +370,7 @@ export function newRecords(workout: Workout, history: Workout[], own: CustomExer
 /** Reference weight of each past session, oldest first. Ignores bodyweight sessions. */
 export function weightHistory(def: ExerciseDef, workouts: Workout[]): { date: string; weight: number }[] {
   return exerciseHistory(def, workouts)
-    .map((h) => ({ date: h.date, weight: referenceWeight(workingSets(h.sets)) }))
+    .map((h) => ({ date: h.date, weight: referenceWeight(mainSets(h.sets)) }))
     .filter((h) => h.weight > 0)
     .reverse();
 }

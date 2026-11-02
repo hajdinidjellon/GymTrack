@@ -1,7 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
 import { colors, space } from '@/constants/theme';
-import type { ActiveExercise, ActiveSession } from '@/types';
+import { workingCount } from '@/domain/warmup';
+import type { ActiveSession } from '@/types';
 import { Chip, IndexBadge } from '@/components/ui/Chip';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { StickerCard } from '@/components/ui/StickerCard';
@@ -10,9 +11,9 @@ import { dayName, exerciseName, t } from '@/i18n';
 
 /** A session is running: its own name and exercises, swaps and reorders included. */
 export function RunningCard({ session }: { session: ActiveSession }) {
-  const done = (e: ActiveExercise) => e.sets.filter((s) => s.completed).length;
-  const total = session.exercises.reduce((n, e) => n + e.sets.length, 0);
-  const validated = session.exercises.reduce((n, e) => n + done(e), 0);
+  // Working sets only: warm-ups are not "séries" to the user
+  const total = session.exercises.reduce((n, e) => n + workingCount(e.sets), 0);
+  const validated = session.exercises.reduce((n, e) => n + workingCount(e.sets, 'done'), 0);
   return (
     <>
       <SectionTitle title={t('session.running.title')} />
@@ -40,8 +41,12 @@ export function RunningCard({ session }: { session: ActiveSession }) {
               <Text size={16} weight="bold" numberOfLines={2} style={{ flex: 1 }}>
                 {exerciseName(e.name)}
               </Text>
-              <Text size={14} weight="bold" color={done(e) === e.sets.length ? colors.successText : colors.inkMuted}>
-                {done(e)} / {e.sets.length}
+              <Text
+                size={14}
+                weight="bold"
+                color={workingCount(e.sets, 'left') === 0 ? colors.successText : colors.inkMuted}
+              >
+                {workingCount(e.sets, 'done')} / {workingCount(e.sets)}
               </Text>
             </View>
           ))}

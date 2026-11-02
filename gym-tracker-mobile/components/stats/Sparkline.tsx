@@ -51,7 +51,7 @@ export function Sparkline({ values, height = 64, accent = true }: Props) {
             cy={last.y}
             r={5}
             fill={accent ? colors.coral : colors.card}
-            stroke={colors.ink}
+            stroke={colors.outline}
             strokeWidth={2.5}
           />
         </Svg>

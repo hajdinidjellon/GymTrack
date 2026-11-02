@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Share, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import type { AppSettings } from '@/types';
+import { requestVoicePermission, voiceInputAvailable } from '@/services/voiceInput';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
 import { totals } from '@/domain/stats';
 import { insights } from '@/domain/insights';
-import { workoutsToCsv } from '@/domain/exportCsv';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
 import { localeTag, t, type LanguageSetting } from '@/i18n';
@@ -31,7 +32,9 @@ import { Choice } from '@/components/ui/Choice';
 import { Check, ChevronRight } from '@/components/ui/icons';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { InsightsCard } from '@/components/stats/InsightsCard';
-import { logger } from '@/services/logger';
+
+/** Bars found in gyms: the classic one, the shorter (women's) one, a light training bar. */
+const BAR_WEIGHTS = [20, 15, 10];
 
 export default function Profile() {
   useLocale();
@@ -63,12 +66,22 @@ export default function Profile() {
     if (voice) speak(t('profile.during.voiceHello'));
   };
 
+  const toggleVoiceCommands = async () => {
+    if (settings.voiceCommands) {
+      updateSettings({ voiceCommands: false });
+      return;
+    }
+    if (await requestVoicePermission()) updateSettings({ voiceCommands: true });
+    else Alert.alert(t('profile.during.commandsDeniedTitle'), t('profile.during.commandsDeniedText'));
+  };
+
   const toggleBell = () => {
     const restBell = !settings.restBell;
     updateSettings({ restBell });
     if (restBell) playRestBell();
   };
 
+  const [canListen] = useState(voiceInputAvailable);
   const goal = GOALS.find((g) => g.id === profile?.goal);
   const split = profile ? getSplit(profile.program.split) : null;
 
@@ -106,6 +119,12 @@ export default function Profile() {
         <SectionTitle title={t('profile.training.title')} />
         <Group>
           <Row
+            label={t('profile.training.goal')}
+            value={goal?.title ?? ''}
+            onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })}
+            chevron
+          />
+          <Row
             label={t('profile.training.program')}
             value={split ? t('profile.training.programValue', { split: split.title, n: perWeek }) : ''}
             onPress={() => router.push({ pathname: '/program', params: { edit: '1' } })}
@@ -115,12 +134,6 @@ export default function Profile() {
             label={t('profile.training.days')}
             value={t('profile.training.daysValue')}
             onPress={() => router.push('/days')}
-            chevron
-          />
-          <Row
-            label={t('profile.training.goal')}
-            value={goal?.title ?? ''}
-            onPress={() => router.push({ pathname: '/goal', params: { edit: '1' } })}
             chevron
             last
           />
@@ -132,18 +145,36 @@ export default function Profile() {
             label={t('profile.during.rest')}
             value={t('profile.during.restValue', { seconds: settings.defaultRestTime })}
             onPress={nextRest}
-            hint={t('profile.during.tapToChange')}
+            hint={t('profile.during.restHint')}
           />
           <Row
             label={t('profile.during.voice')}
             value={settings.voice ? t('profile.during.voiceOn') : t('profile.during.voiceOff')}
+            on={settings.voice}
             onPress={toggleVoice}
             hint={t('profile.during.tapToChange')}
           />
           <Row
             label={t('profile.during.bell')}
             value={settings.restBell ? t('profile.during.bellOn') : t('profile.during.bellOff')}
+            on={settings.restBell}
             onPress={toggleBell}
+            hint={t('profile.during.tapToChange')}
+          />
+          {canListen ? (
+            <Row
+              label={t('profile.during.commands')}
+              value={settings.voiceCommands ? t('profile.during.commandsOn') : t('profile.during.commandsOff')}
+              on={settings.voiceCommands}
+              onPress={() => void toggleVoiceCommands()}
+              hint={t('profile.during.commandsHint')}
+            />
+          ) : null}
+          <Row
+            label={t('profile.during.warmups')}
+            value={settings.warmups ? t('profile.during.warmupsOn') : t('profile.during.warmupsOff')}
+            on={settings.warmups}
+            onPress={() => updateSettings({ warmups: !settings.warmups })}
             hint={t('profile.during.tapToChange')}
             last
           />
@@ -151,6 +182,14 @@ export default function Profile() {
 
         <SectionTitle title={t('profile.language.title')} />
         <LanguagePicker value={settings.language} onChange={(language) => updateSettings({ language })} />
+
+        <SectionTitle title={t('profile.appearance.title')} />
+        <Segmented
+          options={THEMES.map(({ id, label }) => ({ id, label: label() }))}
+          value={settings.theme}
+          onChange={(theme) => updateSettings({ theme })}
+          hint={t('profile.appearance.hint')}
+        />
       </FadeIn>
 
       <FadeIn index={3}>
@@ -158,6 +197,36 @@ export default function Profile() {
         <Text size={14} color={colors.inkMuted} style={{ marginBottom: space.md, lineHeight: 19 }}>
           {t('profile.plates.text')}
         </Text>
+        <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8, marginBottom: space.md }}>
+          {BAR_WEIGHTS.map((kg) => {
+            const on = settings.barWeight === kg;
+            return (
+              <PressableScale
+                key={kg}
+                haptic="selection"
+                onPress={() => updateSettings({ barWeight: kg })}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={t('profile.plates.barA11y', { kg: formatKg(kg) })}
+                // On the outer view: the three bars share the whole width
+                containerStyle={{ flex: 1 }}
+                style={{
+                  height: 48,
+                  borderRadius: radius.pill,
+                  borderWidth: on ? border.strong : border.base,
+                  borderColor: on ? colors.outlineStrong : colors.line,
+                  backgroundColor: on ? colors.coralSoft : colors.card,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
+                  {t('profile.plates.bar', { kg: formatKg(kg) })}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {ALL_PLATES.map((kg) => {
             const on = settings.plates.includes(kg);
@@ -179,7 +248,7 @@ export default function Profile() {
                   gap: 4,
                   backgroundColor: on ? colors.card : 'transparent',
                   borderWidth: border.base,
-                  borderColor: on ? colors.ink : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.line,
                   borderStyle: on ? 'solid' : 'dashed',
                   ...(on ? hardShadow(2) : {}),
                 }}
@@ -197,12 +266,12 @@ export default function Profile() {
                         borderRadius: 11,
                         backgroundColor: colors.success,
                         borderWidth: 2,
-                        borderColor: colors.ink,
+                        borderColor: colors.outline,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Check size={13} />
+                      <Check size={13} color={colors.onSuccess} />
                     </View>
                   ) : null}
                 </View>
@@ -223,18 +292,15 @@ export default function Profile() {
           <Row
             label={t('profile.data.total')}
             value={settings.countBothSides ? t('profile.data.bothSides') : t('profile.data.asLogged')}
+            on={settings.countBothSides}
             onPress={() => updateSettings({ countBothSides: !settings.countBothSides })}
             hint={settings.countBothSides ? t('profile.data.bothSidesHint') : t('profile.data.asLoggedHint')}
           />
           <Row
-            label={t('profile.data.export')}
-            value={
-              workouts.length
-                ? t('profile.data.exportValue', { count: workouts.length })
-                : t('profile.data.exportNothing')
-            }
-            onPress={() => void exportWorkouts(workouts)}
-            hint={t('profile.data.exportHint')}
+            label={t('profile.data.transfer')}
+            value={t('profile.data.transferValue')}
+            onPress={() => router.push('/data')}
+            hint={t('profile.data.transferHint')}
             chevron
             last
           />
@@ -257,24 +323,40 @@ export default function Profile() {
   );
 }
 
-/** Every set in a CSV, through the share sheet: a copy the user keeps wherever they want. */
-async function exportWorkouts(workouts: Parameters<typeof workoutsToCsv>[0]) {
-  if (workouts.length === 0) {
-    Alert.alert(t('profile.data.emptyTitle'), t('profile.data.emptyText'));
-    return;
-  }
-  try {
-    await Share.share({ title: t('profile.data.shareTitle'), message: workoutsToCsv(workouts) });
-  } catch (error) {
-    logger.warn('export failed', error);
-    Alert.alert(t('profile.data.failTitle'), t('profile.data.failText'));
-  }
-}
-
 /** "oct. 26" */
 function formatMonth(iso: string): string {
   const d = new Date(iso);
   return `${d.toLocaleDateString(localeTag(), { month: 'short' })} ${String(d.getFullYear()).slice(2)}`;
+}
+
+/** A sticker switch: the knob on the right and green when on. */
+function Switch({ on }: { on: boolean }) {
+  return (
+    <View
+      style={{
+        width: 50,
+        height: 30,
+        borderRadius: 15,
+        borderWidth: border.base,
+        borderColor: colors.outline,
+        backgroundColor: on ? colors.success : colors.paper,
+        padding: 2,
+        alignItems: on ? 'flex-end' : 'flex-start',
+        justifyContent: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: 21,
+          height: 21,
+          borderRadius: 11,
+          borderWidth: 2,
+          borderColor: colors.outline,
+          backgroundColor: colors.card,
+        }}
+      />
+    </View>
+  );
 }
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -285,7 +367,7 @@ function Group({ children }: { children: React.ReactNode }) {
           borderRadius: radius.card,
           borderCurve: 'continuous',
           borderWidth: border.strong,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: colors.card,
           overflow: 'hidden',
         }}
@@ -325,6 +407,51 @@ const LANGUAGES: { id: LanguageSetting; label: () => string }[] = [
   { id: 'en', label: () => 'English' },
 ];
 
+const THEMES: { id: AppSettings['theme']; label: () => string }[] = [
+  { id: 'auto', label: () => t('profile.appearance.auto') },
+  { id: 'light', label: () => t('profile.appearance.light') },
+  { id: 'dark', label: () => t('profile.appearance.dark') },
+];
+
+/** Three choices side by side, with one line under them. The screen switches at once. */
+function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  hint,
+}: {
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (id: T) => void;
+  hint: string;
+}) {
+  return (
+    <View style={{ gap: space.sm }}>
+      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 10 }}>
+        {options.map(({ id, label }) => (
+          <Choice
+            key={id}
+            selected={value === id}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => null);
+              onChange(id);
+            }}
+            accessibilityLabel={label}
+            style={{ flex: 1, height: 56, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text size={16} weight="black" numberOfLines={1} adjustsFontSizeToFit>
+              {label}
+            </Text>
+          </Choice>
+        ))}
+      </View>
+      <Text size={14} color={colors.inkMuted} style={{ lineHeight: 19 }}>
+        {hint}
+      </Text>
+    </View>
+  );
+}
+
 /** Automatique / Français / English. The screen switches at once. */
 function LanguagePicker({ value, onChange }: { value: LanguageSetting; onChange: (l: LanguageSetting) => void }) {
   return (
@@ -361,17 +488,21 @@ interface RowProps {
   chevron?: boolean;
   last?: boolean;
   hint?: string;
+  /** An on/off setting: drawn as a switch, so it reads as something to change. */
+  on?: boolean;
 }
 
-function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
+function Row({ label, value, onPress, chevron, last, hint, on }: RowProps) {
+  const toggle = on !== undefined;
   return (
     <Pressable
       onPress={() => {
         Haptics.selectionAsync().catch(() => null);
         onPress();
       }}
-      accessibilityRole="button"
-      accessibilityLabel={t('profile.row', { label, value })}
+      accessibilityRole={toggle ? 'switch' : 'button'}
+      accessibilityState={toggle ? { checked: on } : undefined}
+      accessibilityLabel={toggle ? label : t('profile.row', { label, value })}
       accessibilityHint={hint}
       style={({ pressed }) => ({
         height: 56,
@@ -389,15 +520,19 @@ function Row({ label, value, onPress, chevron, last, hint }: RowProps) {
         {label}
       </Text>
       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
-        <Text
-          size={chevron ? 14 : 16}
-          weight={chevron ? 'semibold' : 'black'}
-          color={chevron ? colors.inkMuted : colors.ink}
-          numberOfLines={1}
-          style={{ flexShrink: 1 }}
-        >
-          {value}
-        </Text>
+        {toggle ? (
+          <Switch on={on} />
+        ) : (
+          <Text
+            size={chevron ? 14 : 16}
+            weight={chevron ? 'semibold' : 'black'}
+            color={chevron ? colors.inkMuted : colors.ink}
+            numberOfLines={1}
+            style={{ flexShrink: 1 }}
+          >
+            {value}
+          </Text>
+        )}
         {chevron ? <ChevronRight size={18} /> : null}
       </View>
     </Pressable>

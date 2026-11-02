@@ -70,7 +70,9 @@ export function fitToGym(
     if (loading === 'perSide') return round2(sum(platesForSide(p, gym.plates)));
     return increment > 0 ? round2(Math.max(increment, Math.floor(p / increment + 1e-9) * increment)) : p;
   };
-  return [...new Set(presets.map(fit))].filter((p) => p > 0).sort((a, b) => a - b);
+  // The empty bar is always offered first on the bar: where a beginner starts
+  const options = loading === 'bar' ? [gym.barWeight, ...presets.map(fit)] : presets.map(fit);
+  return [...new Set(options)].filter((p) => p > 0).sort((a, b) => a - b);
 }
 
 const sum = (list: number[]) => list.reduce((a, b) => a + b, 0);

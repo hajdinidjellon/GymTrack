@@ -1,7 +1,7 @@
 import { translatedList } from '@/domain/format';
 import { DEFAULT_PLATES } from '@/domain/plates';
 import { getSplit } from '@/domain/programs';
-import { TRAINING_DAYS } from '@/domain/schedule';
+import { defaultSchedule, weekdayIndex, type Schedule } from '@/domain/schedule';
 import { dayName, t } from '@/i18n';
 import type { Experience, Goal, SplitId } from '@/types';
 
@@ -12,14 +12,18 @@ export interface OnboardingAnswers {
   experience: Experience;
   barWeight: number;
   plates: number[];
+  /** The days picked on the rhythm question. Null when skipped: the program days then follow each other. */
+  schedule: Schedule | null;
 }
 
 export const DEFAULT_ANSWERS: OnboardingAnswers = {
   goal: 'muscle',
   perWeek: 3,
-  experience: 'months',
+  // Skipped: the lightest start, the safe one
+  experience: 'new',
   barWeight: 20,
   plates: DEFAULT_PLATES,
+  schedule: null,
 };
 
 export const PER_WEEK_CHOICES = [2, 3, 4, 5, 6];
@@ -74,26 +78,37 @@ export const WEEKDAYS = translatedList([
   'domain.weekdaysShort.sun',
 ]);
 
-/**
- * An example week: for each day, the letter of the program day done on it
- * (A, B, C… in the split's order) or null for rest.
- */
-export function weekPlan(perWeek: number): (string | null)[] {
-  const days = getSplit(splitFor(perWeek)).days.length;
-  const training = TRAINING_DAYS[perWeek] ?? TRAINING_DAYS[3]!;
-  return WEEKDAYS.map((_, i) => {
-    const n = training.indexOf(i);
-    return n < 0 ? null : String.fromCharCode(65 + (n % days));
-  });
+/** The session names of the program the rhythm gives. */
+export function sessionNames(perWeek: number): string[] {
+  return getSplit(splitFor(perWeek)).days.map((d) => d.name);
 }
 
-/** "A Haut · B Bas" under the example week. */
-export function weekLegend(perWeek: number): string {
-  const split = splitFor(perWeek);
+/** The week on screen: the days picked, else the example week of the rhythm. */
+export function answersWeek(answers: Pick<OnboardingAnswers, 'perWeek' | 'schedule'>): Schedule {
+  return answers.schedule ?? defaultSchedule(sessionNames(answers.perWeek), answers.perWeek);
+}
+
+/** "A", "B", "C": the letter of a session in its program's order. */
+export function sessionLetter(name: string, names: string[]): string {
+  return String.fromCharCode(65 + Math.max(0, names.indexOf(name)));
+}
+
+/** The first session to show: today's in the week, else the program's first. */
+export function firstSession(week: Schedule | null, names: string[], now = new Date()): string {
+  return week?.[weekdayIndex(now)] ?? names[0]!;
+}
+
+/** "A Haut · B Bas": what each letter of the week stands for. */
+export function splitLegend(split: SplitId): string {
   if (split === 'fb') return t('domain.onboarding.legendFullBody');
   return getSplit(split)
     .days.map((d, i) => `${String.fromCharCode(65 + i)} ${dayName(d.name)}`)
     .join(' · ');
+}
+
+/** The legend under the example week of a rhythm. */
+export function weekLegend(perWeek: number): string {
+  return splitLegend(splitFor(perWeek));
 }
 
 /** The short reaction under each question: a bold lead and one sentence. */
@@ -101,8 +116,9 @@ export function goalTip(goal: Goal): [string, string] {
   return [t(`domain.onboarding.goalTips.${goal}Lead`), t(`domain.onboarding.goalTips.${goal}`)];
 }
 
-export function rhythmTip(perWeek: number): [string, string] {
-  return [t('domain.onboarding.rhythmLead', { count: perWeek }), t(`domain.onboarding.splitTips.${splitFor(perWeek)}`)];
+/** `count`: the sessions placed in the week, when they differ from the rhythm picked. */
+export function rhythmTip(perWeek: number, count = perWeek): [string, string] {
+  return [t('domain.onboarding.rhythmLead', { count }), t(`domain.onboarding.splitTips.${splitFor(perWeek)}`)];
 }
 
 export function experienceTip(experience: Experience): [string, string] {

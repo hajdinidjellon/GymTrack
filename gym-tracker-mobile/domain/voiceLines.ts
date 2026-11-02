@@ -6,6 +6,7 @@
 import { LOADING_SUFFIX, loadingOf, missingPerSide, sidePlates } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
+import { setNumber } from '@/domain/warmup';
 import { exerciseName, listOf, t } from '@/i18n';
 import type { AppSettings } from '@/types';
 
@@ -22,13 +23,27 @@ export function platesLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeigh
   return missing > 0 ? `${line} ${t('domain.voice.missing', { kg: formatKg(missing) })}` : line;
 }
 
-/** "Série 2. 62,5 kilos, 10 reps." or "Série 1. 12 kilos par haltère, 10 reps." */
+/** "Série 2. 62,5 kilos, 10 reps.", "Série 1. 12 kilos par haltère, 10 reps." or "Échauffement 1. 20 kilos, 10 reps." */
 export function setLine(cursor: Cursor): string {
   const { set, setIndex } = cursor;
+  const { warmup, drop, n } = setNumber(cursor.exercise.sets, setIndex);
   const suffix = LOADING_SUFFIX[loadingOf(cursor.exercise)];
-  if (set.weight <= 0) return t('domain.voice.setReps', { n: setIndex + 1, reps: set.reps });
+  const timed = !!cursor.exercise.timed;
+  if (set.weight <= 0) return t(timed ? 'domain.voice.setSeconds' : 'domain.voice.setReps', { n, reps: set.reps });
   const load = `${kilos(set.weight)}${suffix ? ` ${suffix}` : ''}`;
-  return t('domain.voice.setLoad', { n: setIndex + 1, load, reps: set.reps });
+  const key = warmup
+    ? 'domain.voice.warmupLoad'
+    : drop
+      ? 'domain.voice.dropLoad'
+      : timed
+        ? 'domain.voice.setLoadSeconds'
+        : 'domain.voice.setLoad';
+  return t(key, { n, load, reps: set.reps });
+}
+
+/** Straight to the next set, no rest in between (warm-ups): the plates first, then the set. */
+export function nextSetLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeight' | 'plates'>): string {
+  return [platesLine(cursor, settings), setLine(cursor)].filter(Boolean).join(' ');
 }
 
 /** Said while resting, as soon as the next set is a new exercise. The user's note on it comes last. */

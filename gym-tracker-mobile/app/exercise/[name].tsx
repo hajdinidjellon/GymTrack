@@ -1,12 +1,14 @@
-import React from 'react';
-import { Pressable, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Modal, Pressable, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatClock, formatRest, formatShortDay } from '@/domain/format';
 import { clampRest, REST_STEP } from '@/domain/rest';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
+import { bestE1rm, repRecords } from '@/domain/strength';
+import { warmupsOn } from '@/domain/warmup';
 import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
 import {
@@ -21,6 +23,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
+import { Minus, Plus } from '@/components/ui/icons';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { BackButton } from '@/components/ui/BackButton';
 import { LoadedBar } from '@/components/disc/LoadedBar';
@@ -30,10 +33,11 @@ import { SharedRuleEditor } from '@/components/program/SharedRuleEditor';
 import { ExerciseNote } from '@/components/session/ExerciseNote';
 import { LoadHint } from '@/components/session/LoadHint';
 import { CheckRow } from '@/components/ui/CheckRow';
+import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 import { exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 
-const STEPS = [1, 2, 2.5, 5];
+const STEPS = [1, 1.25, 2, 2.5, 5];
 
 export default function ExerciseScreen() {
   useLocale();
@@ -43,6 +47,10 @@ export default function ExerciseScreen() {
   const setIncrement = useSettingsStore((s) => s.setIncrement);
   const setRestOverride = useSettingsStore((s) => s.setRestOverride);
   const setPlateLoaded = useSettingsStore((s) => s.setPlateLoaded);
+  const setWarmups = useSettingsStore((s) => s.setWarmups);
+  const removeCustomExercise = useSettingsStore((s) => s.removeCustomExercise);
+  const [editing, setEditing] = useState(false);
+  const warmupChoice = useSettingsStore((s) => s.settings);
 
   if (!def || !ctx) {
     return (
@@ -55,14 +63,32 @@ export default function ExerciseScreen() {
     );
   }
 
+  // Created by the user: it can be changed or removed
+  const own = def.custom ? ctx.settings.customExercises?.find((e) => e.name === def.name) : undefined;
+  const confirmRemove = (name: string) =>
+    Alert.alert(t('exercise.own.removeTitle', { name: exerciseName(name) }), t('exercise.own.removeText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('exercise.own.removeConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          removeCustomExercise(name);
+          router.back();
+        },
+      },
+    ]);
   const lift = planLift(def, ctx);
   const target = lift.targets[0];
-  const history = exerciseHistory(def, ctx.workouts).slice(0, 5);
+  const fullHistory = exerciseHistory(def, ctx.workouts);
+  const history = fullHistory.slice(0, 5);
+  const strongest = def.timed ? null : bestE1rm(fullHistory);
+  const records = def.timed ? [] : repRecords(fullHistory);
   const bodyweight = def.equipment === 'bodyweight';
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
   const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def.equipment, ctx.settings.units));
   const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded });
   const equipment = t(`program.equipment.${def.equipment}`);
+  const warmups = warmupsOn(def.name, warmupChoice);
 
   return (
     <Screen scroll>
@@ -71,13 +97,33 @@ export default function ExerciseScreen() {
         eyebrow={def.custom ? t('exercise.ownEyebrow', { equipment }) : equipment}
         title={exerciseName(def.name)}
       />
+      {own ? (
+        <View style={{ flexDirection: 'row', gap: space.lg, marginTop: -space.sm, marginBottom: space.md }}>
+          <Link label={t('exercise.own.edit')} onPress={() => setEditing(true)} />
+          <Link label={t('exercise.own.remove')} onPress={() => confirmRemove(own.name)} />
+        </View>
+      ) : null}
+      <Modal visible={editing} animationType="slide" onRequestClose={() => setEditing(false)}>
+        <Screen scroll>
+          {own ? (
+            <CreateExerciseForm
+              editing={own}
+              onCreated={(next) => {
+                setEditing(false);
+                if (next.name !== own.name) router.setParams({ name: next.name });
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : null}
+        </Screen>
+      </Modal>
 
       <StickerCard tone="hero">
         <Text size={15} weight="bold">
           {t('exercise.nextTarget')}
         </Text>
         <Text size={34} weight="black" style={{ lineHeight: 42 }}>
-          {lift.decision === 'calibrate' ? t('exercise.toCalibrate') : targetLoad(lift.targets)}
+          {lift.decision === 'calibrate' ? t('exercise.toCalibrate') : targetLoad(lift.targets, def.timed)}
         </Text>
         <View
           style={{
@@ -87,17 +133,17 @@ export default function ExerciseScreen() {
             paddingHorizontal: 12,
             borderRadius: radius.input,
             borderWidth: 2,
-            borderColor: colors.ink,
-            backgroundColor: colors.sun,
+            borderColor: colors.frame,
+            backgroundColor: colors.sunPanel,
           }}
         >
-          <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
+          <Text size={14} weight="semibold" color={colors.onSunPanel} style={{ lineHeight: 19 }}>
             {reasonLabel(lift)}
           </Text>
         </View>
         {lift.last.length ? (
           <Text size={15} style={{ marginTop: 8 }}>
-            {t('exercise.lastTime', { last: lastTimeLabel(lift.last) })}
+            {t('exercise.lastTime', { last: lastTimeLabel(lift.last, def.timed) })}
           </Text>
         ) : null}
         {lift.decision !== 'calibrate' && target && target.weight > 0 ? (
@@ -135,6 +181,63 @@ export default function ExerciseScreen() {
         </StickerCard>
       ) : null}
 
+      {strongest ? (
+        <StickerCard style={{ marginTop: 16, gap: space.sm }}>
+          <Text size={17} weight="black">
+            {t('exercise.strength.title')}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <Text size={15} weight="bold" color={colors.inkMuted}>
+              {t('exercise.strength.e1rm')}
+            </Text>
+            <Text size={28} weight="black">
+              {t('exercise.strength.kg', { kg: formatKg(strongest.value) })}
+            </Text>
+          </View>
+          <Text size={13} color={colors.inkMuted} style={{ lineHeight: 18 }}>
+            {t('exercise.strength.from', {
+              kg: formatKg(strongest.weight),
+              reps: strongest.reps,
+              date: formatShortDay(strongest.date),
+            })}
+          </Text>
+          <Text size={15} weight="black" style={{ marginTop: space.sm }}>
+            {t('exercise.strength.perReps')}
+          </Text>
+          <View>
+            {records.map((r, i) => (
+              <View
+                key={r.reps}
+                accessible
+                accessibilityLabel={t('exercise.strength.recordA11y', {
+                  reps: t('exercise.strength.reps', { count: r.reps }),
+                  kg: formatKg(r.weight),
+                  date: formatShortDay(r.date),
+                })}
+                style={{
+                  minHeight: 40,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: space.md,
+                  borderTopWidth: i === 0 ? 0 : 2,
+                  borderTopColor: colors.line,
+                }}
+              >
+                <Text size={15} weight="bold" color={colors.inkMuted} style={{ width: 72 }}>
+                  {t('exercise.strength.reps', { count: r.reps })}
+                </Text>
+                <Text size={18} weight="black" style={{ flex: 1 }}>
+                  {t('exercise.strength.kg', { kg: formatKg(r.weight) })}
+                </Text>
+                <Text size={13} color={colors.inkMuted}>
+                  {formatShortDay(r.date)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </StickerCard>
+      ) : null}
+
       <StickerCard style={{ marginTop: 16 }}>
         <Text size={17} weight="black" style={{ marginBottom: 12 }}>
           {t('exercise.rule')}
@@ -164,7 +267,7 @@ export default function ExerciseScreen() {
                 gap: 4,
                 borderRadius: radius.pill,
                 borderWidth: border.base,
-                borderColor: colors.ink,
+                borderColor: colors.outline,
                 backgroundColor: colors.paper,
               }}
             >
@@ -185,7 +288,7 @@ export default function ExerciseScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       borderWidth: on ? border.base : 0,
-                      borderColor: colors.ink,
+                      borderColor: colors.outline,
                       backgroundColor: on ? colors.coralSoft : 'transparent',
                     }}
                   >
@@ -206,7 +309,7 @@ export default function ExerciseScreen() {
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <RoundButton
-            label="−"
+            icon={<Minus size={24} />}
             a11y={t('exercise.rest.minus', { seconds: REST_STEP })}
             onPress={() => setRestOverride(def.name, clampRest(lift.restTime - REST_STEP))}
           />
@@ -218,7 +321,7 @@ export default function ExerciseScreen() {
             {formatClock(lift.restTime)}
           </Text>
           <RoundButton
-            label="+"
+            icon={<Plus size={24} />}
             a11y={t('exercise.rest.plus', { seconds: REST_STEP })}
             onPress={() => setRestOverride(def.name, clampRest(lift.restTime + REST_STEP))}
           />
@@ -237,6 +340,14 @@ export default function ExerciseScreen() {
               {t('exercise.rest.auto')}
             </Text>
           </Pressable>
+        ) : null}
+        {!bodyweight && !def.timed ? (
+          <CheckRow
+            label={t('exercise.warmups.label')}
+            checked={warmups}
+            onChange={(on) => setWarmups(def.name, on)}
+            detail={t(warmups ? 'exercise.warmups.on' : 'exercise.warmups.off')}
+          />
         ) : null}
       </StickerCard>
 
@@ -267,6 +378,7 @@ export default function ExerciseScreen() {
                   <Text size={18} weight="black">
                     {w > 0 ? t('exercise.history.weight', { kg: formatKg(w) }) : ''}
                     {sets.map((s) => s.reps).join(' · ')}
+                    {def.timed ? ' s' : ''}
                   </Text>
                 </View>
               );
@@ -278,7 +390,17 @@ export default function ExerciseScreen() {
   );
 }
 
-function RoundButton({ label, a11y, onPress }: { label: string; a11y: string; onPress: () => void }) {
+function Link({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8}>
+      <Text size={15} weight="bold" style={{ textDecorationLine: 'underline' }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function RoundButton({ icon, a11y, onPress }: { icon: React.ReactNode; a11y: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={() => {
@@ -292,15 +414,13 @@ function RoundButton({ label, a11y, onPress }: { label: string; a11y: string; on
         height: 52,
         borderRadius: radius.pill,
         borderWidth: border.base,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: pressed ? colors.coralSoft : colors.card,
         alignItems: 'center',
         justifyContent: 'center',
       })}
     >
-      <Text size={26} weight="black">
-        {label}
-      </Text>
+      {icon}
     </Pressable>
   );
 }

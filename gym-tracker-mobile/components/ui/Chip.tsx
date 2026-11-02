@@ -5,15 +5,16 @@ import { Text } from './Text';
 
 type Tone = 'neutral' | 'sun' | 'success';
 
-const tones: Record<Tone, { bg: string; fg: string }> = {
-  neutral: { bg: colors.card, fg: colors.ink },
-  sun: { bg: colors.sun, fg: colors.ink },
+// A function: the colours follow light or dark mode at each render
+const tones = (): Record<Tone, { bg: string; fg: string }> => ({
+  neutral: { bg: colors.inset, fg: colors.ink },
+  sun: { bg: colors.sun, fg: colors.onSun },
   success: { bg: colors.successSoft, fg: colors.successText },
-};
+});
 
 /** Small badge: "+2,5 kg", "5 exercices", "3 sem." */
 export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: Tone; icon?: React.ReactNode }) {
-  const { bg, fg } = tones[tone];
+  const { bg, fg } = tones()[tone];
   return (
     <View
       style={{
@@ -21,7 +22,7 @@ export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: 
         paddingHorizontal: 10,
         borderRadius: radius.pill,
         borderWidth: 2,
-        borderColor: colors.ink,
+        borderColor: colors.frame,
         backgroundColor: bg,
         flexDirection: 'row',
         alignItems: 'center',
@@ -46,7 +47,7 @@ export function IndexBadge({ value }: { value: number }) {
         height: 30,
         borderRadius: 15,
         borderWidth: border.base - 0.5,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         backgroundColor: colors.sunSoft,
         alignItems: 'center',
         justifyContent: 'center',

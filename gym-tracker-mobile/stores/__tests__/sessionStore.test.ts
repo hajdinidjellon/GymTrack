@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as Speech from 'expo-speech';
-import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from '@/services/notifications';
+import {
+  cancelRestCompleteNotification,
+  requestPermissions,
+  scheduleRestCompleteNotification,
+} from '@/services/notifications';
 import { playRestBell } from '@/services/sound';
 import { useSessionStore } from '@/stores/sessionStore';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
@@ -25,13 +29,16 @@ function exercise(id: string, sets: number, patch: Partial<ActiveExercise> = {})
   };
 }
 
+// Warm-ups have their own tests below: off here, so set indexes stay simple
+const BASE = { ...DEFAULT_SETTINGS, warmups: false };
+
 const store = () => useSessionStore.getState();
 const session = () => store().activeSession!;
 
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
-  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+  useSettingsStore.setState({ settings: { ...BASE } });
   store().startSession('Push', [exercise('bench', 2), exercise('ohp', 1)]);
 });
 
@@ -56,7 +63,7 @@ describe('sets', () => {
   });
 
   it('does not rest when the timer is turned off', () => {
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, restTimerEnabled: false } });
+    useSettingsStore.setState({ settings: { ...BASE, restTimerEnabled: false } });
     store().completeSet('bench', 0);
     expect(session().restEndsAt).toBeNull();
   });
@@ -73,7 +80,7 @@ describe('sets', () => {
   });
 
   it('stays quiet when the voice is off', () => {
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, voice: false } });
+    useSettingsStore.setState({ settings: { ...BASE, voice: false } });
     store().completeRemaining('bench');
     expect(Speech.speak).not.toHaveBeenCalled();
   });
@@ -90,7 +97,7 @@ describe('sets', () => {
     store().setStartWeight('row', 40);
     expect(session().exercises[0]).toMatchObject({ needsWeight: false });
     expect(session().exercises[0]!.sets[1]).toMatchObject({ weight: 40, target: { weight: 40, reps: 10 } });
-    expect(Speech.speak).toHaveBeenCalledWith('Série 1. 40 kilos, 10 reps.', expect.anything());
+    expect(Speech.speak).toHaveBeenCalledWith('Mets 10 de chaque côté. Série 1. 40 kilos, 10 reps.', expect.anything());
   });
 });
 
@@ -121,7 +128,7 @@ describe('rest timer', () => {
   });
 
   it('stays silent with the bell off, and the notification too', () => {
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, restBell: false } });
+    useSettingsStore.setState({ settings: { ...BASE, restBell: false } });
     store().completeSet('bench', 0);
     expect(scheduleRestCompleteNotification).toHaveBeenLastCalledWith(120, 'bench · 60 kg × 10', false);
     jest.advanceTimersByTime(120_000);
@@ -255,5 +262,159 @@ describe('rating a set', () => {
     store().completeSet('bench', 0);
     store().rateLastSet('max');
     expect(store().finishSession()!.exercises[0]!.sets[0]!.rpe).toBe(10);
+  });
+});
+
+describe('warm-ups', () => {
+  beforeEach(() => {
+    store().discardSession();
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    store().startSession('Push', [
+      exercise('bench', 2, { sets: exercise('x', 2).sets.map((x) => ({ ...x, weight: 100 })) }),
+    ]);
+  });
+
+  it('starts the session with the warm-ups first', () => {
+    expect(session().exercises[0]!.sets.map((x) => x.weight)).toEqual([20, 40, 60, 80, 100, 100]);
+  });
+
+  it('goes straight to the next warm-up and says what to load', () => {
+    store().completeSet('bench', 0);
+    expect(session().restEndsAt).toBeNull();
+    expect(Speech.speak).toHaveBeenCalledWith(
+      'Mets 10 de chaque côté. Échauffement 2. 40 kilos, 5 reps.',
+      expect.anything(),
+    );
+  });
+
+  it('rests before the working sets', () => {
+    for (let i = 0; i < 4; i++) store().completeSet('bench', i);
+    expect(session().restDuration).toBe(90);
+  });
+
+  it('skips the warm-ups left and announces the first working set', () => {
+    store().skipWarmups('bench');
+    expect(session().exercises[0]!.sets.map((x) => x.weight)).toEqual([100, 100]);
+    expect(Speech.speak).toHaveBeenLastCalledWith(
+      'Mets 20 et 20 de chaque côté. Série 1. 100 kilos, 10 reps.',
+      expect.anything(),
+    );
+  });
+
+  it('computes them once the start weight is picked', () => {
+    store().discardSession();
+    store().startSession('Push', [exercise('row', 1, { needsWeight: true })]);
+    expect(session().exercises[0]!.sets).toHaveLength(1);
+    store().setStartWeight('row', 80);
+    expect(session().exercises[0]!.sets.map((x) => x.weight)).toEqual([20, 30, 47.5, 62.5, 80]);
+  });
+});
+
+describe('held sets', () => {
+  beforeEach(() => {
+    store().discardSession();
+    store().startSession('Abdos', [exercise('plank', 2, { equipment: 'bodyweight', timed: true })]);
+  });
+
+  it('cues the start of the hold', () => {
+    store().holdStarted();
+    expect(Speech.speak).toHaveBeenCalledWith("C'est parti.", expect.anything());
+  });
+
+  it('logs the seconds held, rings when the target is reached, then rests', () => {
+    store().finishHold('plank', 0, 60, true);
+    expect(session().exercises[0]!.sets[0]).toMatchObject({ reps: 60, completed: true });
+    expect(playRestBell).toHaveBeenCalled();
+    expect(session().restEndsAt).not.toBeNull();
+  });
+
+  it('logs a hold stopped early without the bell', () => {
+    store().finishHold('plank', 0, 22, false);
+    expect(session().exercises[0]!.sets[0]!.reps).toBe(22);
+    expect(playRestBell).not.toHaveBeenCalled();
+  });
+});
+
+describe('supersets and drop sets', () => {
+  beforeEach(() => {
+    store().discardSession();
+    store().startSession('Push', [
+      exercise('bench', 2, { superset: 'bench' }),
+      exercise('row', 2, { superset: 'bench', muscleGroups: ['back'] }),
+    ]);
+  });
+
+  it('goes to the partner without resting, then rests after the round', () => {
+    store().completeSet('bench', 0);
+    expect(session().restEndsAt).toBeNull();
+    expect(Speech.speak).toHaveBeenCalledWith(expect.stringContaining('Prochain exercice : row'), expect.anything());
+    store().completeSet('row', 0);
+    expect(session().restDuration).toBe(120);
+  });
+
+  it('adds a drop set and marks a set to failure', () => {
+    store().addDropSet('bench', 0);
+    expect(session().exercises[0]!.sets[1]).toMatchObject({ setType: 'drop', weight: 47.5 });
+    store().toggleFailure('bench', 0);
+    expect(session().exercises[0]!.sets[0]!.setType).toBe('failure');
+  });
+});
+
+describe('voice commands', () => {
+  it('validates the current set, with the reps said', () => {
+    store().voiceCommand({ kind: 'reps', reps: 7 });
+    expect(session().exercises[0]!.sets[0]).toMatchObject({ reps: 7, completed: true });
+    store().voiceCommand({ kind: 'validate' });
+    expect(session().exercises[0]!.sets[1]!.completed).toBe(true);
+    expect(session().restEndsAt).not.toBeNull();
+  });
+
+  it('rates the last set once, even said twice', () => {
+    store().completeSet('bench', 0);
+    store().voiceCommand({ kind: 'effort', effort: 'easy' });
+    store().voiceCommand({ kind: 'effort', effort: 'easy' });
+    expect(session().exercises[0]!.sets[0]!.rpe).toBeDefined();
+  });
+
+  it('ends the rest, and sends the exercise to the end', () => {
+    store().completeSet('bench', 0);
+    store().voiceCommand({ kind: 'skipRest' });
+    expect(session().restEndsAt).toBeNull();
+    store().voiceCommand({ kind: 'skipRest' });
+    store().voiceCommand({ kind: 'later' });
+    expect(session().exercises.map((e) => e.id)).toEqual(['ohp', 'bench']);
+  });
+
+  it('does nothing before a weight is picked, nor without a session', () => {
+    store().discardSession();
+    store().voiceCommand({ kind: 'validate' });
+    store().startSession('Push', [exercise('row', 1, { needsWeight: true })]);
+    store().voiceCommand({ kind: 'validate' });
+    store().voiceCommand({ kind: 'effort', effort: 'max' });
+    expect(session().exercises[0]!.sets[0]!.completed).toBe(false);
+  });
+});
+
+describe('a rest that ends while the phone sleeps', () => {
+  it('stays quiet when the app wakes up late: the notification already rang', () => {
+    store().completeSet('bench', 0);
+    const now = Date.now();
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now + 120_000 + 10_000);
+    jest.advanceTimersByTime(120_000);
+    expect(playRestBell).not.toHaveBeenCalled();
+    expect(session().restEndsAt).toBeNull();
+    clock.mockRestore();
+  });
+
+  it('ends the rest when the next set is validated from the minimized bar', () => {
+    store().completeSet('bench', 0);
+    store().completeSet('bench', 1);
+    expect(cancelRestCompleteNotification).toHaveBeenCalled();
+  });
+});
+
+describe('notification permission', () => {
+  it('is asked when a session starts, not when the app opens', () => {
+    expect(requestPermissions).toHaveBeenCalled();
   });
 });

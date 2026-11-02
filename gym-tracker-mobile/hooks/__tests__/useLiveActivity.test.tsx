@@ -14,6 +14,11 @@ const mockNative = {
   start: jest.fn(),
 };
 
+// The native module is there, like in a development build
+jest.mock('expo', () => ({
+  ...(jest.requireActual('expo') as object),
+  requireOptionalNativeModule: () => ({}),
+}));
 jest.mock('expo-widgets', () => ({
   addUserInteractionListener: (listener: Listener) => {
     mockNative.listener = listener;
@@ -66,7 +71,7 @@ beforeEach(() => {
   jest.useFakeTimers();
   mockNative.instances = [];
   mockNative.start.mockClear();
-  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
 });
 
 afterEach(() => {

@@ -61,7 +61,7 @@ export default function GoalScreen() {
                 height: 64,
                 borderRadius: 16,
                 borderWidth: border.base - 0.5,
-                borderColor: colors.ink,
+                borderColor: colors.outline,
                 backgroundColor: colors.paper,
                 alignItems: 'center',
                 justifyContent: 'center',

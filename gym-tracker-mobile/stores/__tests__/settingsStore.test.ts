@@ -9,6 +9,10 @@ describe('parseSettings', () => {
     expect(parseSettings('{oops')).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('starts in light mode, whatever the phone', () => {
+    expect(parseSettings(null).theme).toBe('light');
+  });
+
   it('merges stored values over the defaults', () => {
     expect(parseSettings(JSON.stringify({ voice: false, plates: [20, 10] }))).toMatchObject({
       voice: false,
@@ -113,6 +117,53 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.plateLoaded).toEqual({ 'Chest press': false, 'Pec deck': true });
     setPlateLoaded(EXERCISES.chestpress, true);
     expect(useSettingsStore.getState().settings.plateLoaded).toEqual({ 'Pec deck': true });
+  });
+
+  it('stores warm-ups per exercise only when they differ from the global choice', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { setWarmups } = useSettingsStore.getState();
+    setWarmups('Squat', false);
+    expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({ Squat: false });
+    setWarmups('Squat', true);
+    expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({});
+  });
+
+  it('chains and unchains exercises of a day', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { toggleSuperset } = useSettingsStore.getState();
+    toggleSuperset('ppl/Push', 'Développé couché');
+    toggleSuperset('ppl/Push', 'Dips');
+    expect(useSettingsStore.getState().settings.supersets).toEqual({ 'ppl/Push': ['Développé couché', 'Dips'] });
+    toggleSuperset('ppl/Push', 'Développé couché');
+    toggleSuperset('ppl/Push', 'Dips');
+    expect(useSettingsStore.getState().settings.supersets).toEqual({});
+  });
+
+  it('changes, renames and removes an own exercise', () => {
+    const press = {
+      name: 'Presse A',
+      equipment: 'machine' as const,
+      category: 'compound' as const,
+      muscleGroups: ['legs' as const],
+    };
+    useSettingsStore.setState({
+      settings: { ...DEFAULT_SETTINGS, customExercises: [press], customDays: { 'ppl/Legs': ['Presse A'] } },
+    });
+    const { updateCustomExercise, removeCustomExercise } = useSettingsStore.getState();
+    updateCustomExercise('Presse A', { ...press, name: 'Presse B' });
+    expect(useSettingsStore.getState().settings.customDays).toEqual({ 'ppl/Legs': ['Presse B'] });
+    removeCustomExercise('Presse B');
+    expect(useSettingsStore.getState().settings.customExercises).toEqual([]);
+  });
+
+  it('adds, renames and removes an own day', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { addOwnDay, renameOwnDay, removeOwnDay } = useSettingsStore.getState();
+    addOwnDay('ppl', 'Épaules');
+    renameOwnDay('ppl', 'Épaules', 'Delts');
+    expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: ['Delts'] });
+    removeOwnDay('ppl', 'Delts');
+    expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: [] });
   });
 
   it('loads what was saved', async () => {

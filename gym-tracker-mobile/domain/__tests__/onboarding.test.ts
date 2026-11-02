@@ -1,12 +1,15 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  answersWeek,
   calibrationPreset,
   experienceTip,
+  firstSession,
   goalTip,
   rhythmTip,
+  sessionLetter,
+  sessionNames,
   splitFor,
   weekLegend,
-  weekPlan,
 } from '@/domain/onboarding';
 
 describe('splitFor', () => {
@@ -21,24 +24,41 @@ describe('splitFor', () => {
   });
 });
 
-describe('weekPlan', () => {
-  it('alternates A and B on three days for a full body', () => {
-    expect(weekPlan(3)).toEqual(['A', null, 'B', null, 'A', null, null]);
+describe('answersWeek', () => {
+  it('shows the example week of the rhythm until days are picked', () => {
+    expect(answersWeek({ perWeek: 3, schedule: null })).toEqual([
+      'Full body A',
+      null,
+      'Full body B',
+      null,
+      'Full body A',
+      null,
+      null,
+    ]);
+    const picked = [null, 'Haut', null, 'Bas', null, null, null];
+    expect(answersWeek({ perWeek: 4, schedule: picked })).toBe(picked);
+  });
+});
+
+describe('sessionLetter', () => {
+  it('gives each session its letter in the program order', () => {
+    expect(sessionLetter('Pull', sessionNames(5))).toBe('B');
+    expect(sessionLetter('Inconnue', sessionNames(5))).toBe('A');
+  });
+});
+
+describe('firstSession', () => {
+  const names = sessionNames(4);
+  // 2026-11-04 is a Wednesday
+  const wednesday = new Date(2026, 10, 4, 12);
+
+  it("is today's session in the week", () => {
+    expect(firstSession([null, null, 'Bas', null, null, null, null], names, wednesday)).toBe('Bas');
   });
 
-  it('cycles the three days of push / pull / legs', () => {
-    expect(weekPlan(5)).toEqual(['A', 'B', 'C', null, 'A', 'B', null]);
-  });
-
-  it('always leaves Sunday off', () => {
-    for (const n of [2, 3, 4, 5, 6]) {
-      expect(weekPlan(n).filter(Boolean)).toHaveLength(n);
-      expect(weekPlan(n)[6]).toBeNull();
-    }
-  });
-
-  it('falls back to three days for an unknown rhythm', () => {
-    expect(weekPlan(9).filter(Boolean)).toHaveLength(3);
+  it("is the program's first on a rest day or without a week", () => {
+    expect(firstSession(['Bas', null, null, null, null, null, null], names, wednesday)).toBe('Haut');
+    expect(firstSession(null, names, wednesday)).toBe('Haut');
   });
 });
 
@@ -55,7 +75,9 @@ describe('tips', () => {
     expect(goalTip('force')[1]).toContain('5 reps');
     expect(rhythmTip(3)).toEqual(['3 séances,', expect.stringContaining('full body')]);
     expect(rhythmTip(4)[1]).toContain('deux fois');
-    expect(experienceTip('new')[1]).toContain('Barre seule');
+    // The sessions placed in the week, not the rhythm picked
+    expect(rhythmTip(4, 5)[0]).toBe('5 séances,');
+    expect(experienceTip('new')[1]).toContain('Barre à vide');
   });
 });
 

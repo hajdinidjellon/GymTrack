@@ -29,6 +29,7 @@ const ruleSchema: z.ZodType<ProgressionRule> = z.object({
   repMin: reps,
   repMax: reps,
   increment: z.number().positive().max(50),
+  repStep: z.number().int().min(1).max(60).optional(),
 });
 
 const setSchema: z.ZodType<WorkoutSet> = z.object({
@@ -63,6 +64,8 @@ const customExerciseSchema: z.ZodType<CustomExercise> = z.object({
   equipment: z.enum(['barbell', 'dumbbell', 'machine', 'bodyweight']),
   category,
   muscleGroups: z.array(muscleGroup).min(1).max(10),
+  timed: z.boolean().optional(),
+  aliases: z.array(z.string().max(100)).max(20).optional(),
 });
 
 const exerciseSchema: z.ZodType<Exercise> = z.object({
@@ -75,6 +78,7 @@ const exerciseSchema: z.ZodType<Exercise> = z.object({
   tempo: z.string().max(20).optional(),
   rule: ruleSchema.optional(),
   calibration: z.boolean().optional(),
+  timed: z.boolean().optional(),
 });
 
 export const workoutSchema: z.ZodType<Workout> = z.object({
@@ -135,6 +139,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     restTimerEnabled: z.boolean(),
     notifications: z.boolean(),
     voice: z.boolean(),
+    voiceCommands: z.boolean(),
     restBell: z.boolean(),
     programSwitchDismissed: z.string().max(40).nullable(),
     barWeight: z.number().min(0).max(50),
@@ -145,8 +150,9 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
       z.string().max(100),
       z.object({
         sets: z.number().int().min(1).max(10),
-        repMin: z.number().int().min(1).max(50),
-        repMax: z.number().int().min(1).max(50),
+        // Up to 600: on a timed exercise these are seconds
+        repMin: z.number().int().min(1).max(600),
+        repMax: z.number().int().min(1).max(600),
       }),
     ),
     restOverrides: z.record(z.string().max(100), z.number().int().min(15).max(600)),
@@ -156,6 +162,11 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     countBothSides: z.boolean(),
     signedOut: z.boolean(),
     language: z.enum(['auto', 'fr', 'en']),
+    theme: z.enum(['auto', 'light', 'dark']),
+    warmups: z.boolean(),
+    warmupOverrides: z.record(z.string().max(100), z.boolean()),
+    supersets: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),
+    ownDays: z.record(z.string().max(10), z.array(z.string().max(100)).max(14)),
   })
   .partial();
 

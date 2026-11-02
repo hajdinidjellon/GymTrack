@@ -1,5 +1,6 @@
 /** The "Progrès" tab and the stats components (charts, tiles, insights). */
 export const progress = {
+  history: 'Tout l’historique',
   title: 'Progrès',
   subtitle: 'Ce que tu as gagné depuis le début, en disques.',
   empty: {

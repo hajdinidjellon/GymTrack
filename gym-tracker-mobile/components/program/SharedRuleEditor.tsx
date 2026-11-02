@@ -32,14 +32,7 @@ export function SharedRuleEditor({ def, goal, base, bodyweight }: Props) {
 
   return (
     <View style={{ gap: 12 }}>
-      <RuleEditor
-        rule={effectiveRule(def, ctx)}
-        base={base}
-        custom={def.name in overrides}
-        bodyweight={bodyweight}
-        onChange={(rule) => setRule(def, rule, goal, similar)}
-        onReset={() => setRule(def, null, goal, similar)}
-      />
+      {/* Read before the first tap: it says what the buttons below will change */}
       {following.length ? (
         <CheckRow
           label={t('program.rule.similar')}
@@ -48,6 +41,15 @@ export function SharedRuleEditor({ def, goal, base, bodyweight }: Props) {
           onChange={setSimilar}
         />
       ) : null}
+      <RuleEditor
+        rule={effectiveRule(def, ctx)}
+        base={base}
+        custom={def.name in overrides}
+        bodyweight={bodyweight}
+        timed={def.timed}
+        onChange={(rule) => setRule(def, rule, goal, similar)}
+        onReset={() => setRule(def, null, goal, similar)}
+      />
     </View>
   );
 }

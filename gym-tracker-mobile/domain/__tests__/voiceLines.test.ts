@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { findCurrent } from '@/domain/sessionCursor';
-import { nextExerciseLine, platesLine, restOverLine, setLine } from '@/domain/voiceLines';
+import { nextExerciseLine, nextSetLine, platesLine, restOverLine, setLine } from '@/domain/voiceLines';
 import { active } from './fixtures';
 
 const gym = { barWeight: 20, plates: [20, 15, 10, 5, 2.5, 1.25] };
@@ -38,6 +38,18 @@ describe('voice lines', () => {
     expect(restOverLine(cursor())).toBe("C'est reparti. Série 1. 62,5 kilos, 10 reps.");
   });
 
+  it('announces a warm-up apart from the working sets, plates first when there is no rest', () => {
+    const squat = active('Squat', [{ weight: 100, reps: 5 }]);
+    squat.sets.unshift(
+      { weight: 20, reps: 10, setType: 'warmup', completed: true },
+      { weight: 40, reps: 5, setType: 'warmup' },
+    );
+    expect(setLine(cursor(squat))).toBe('Échauffement 2. 40 kilos, 5 reps.');
+    expect(nextSetLine(cursor(squat), gym)).toBe('Mets 10 de chaque côté. Échauffement 2. 40 kilos, 5 reps.');
+    const curl = active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' });
+    expect(nextSetLine(cursor(curl), gym)).toBe('Série 1. 12 kilos par haltère, 10 reps.');
+  });
+
   it('says when the weight is per dumbbell or per side', () => {
     const curl = active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' });
     expect(setLine(cursor(curl))).toBe('Série 1. 12 kilos par haltère, 10 reps.');
@@ -60,5 +72,22 @@ describe('voice lines', () => {
     expect(nextExerciseLine(cursor(), { ...gym, ...notes })).toBe(
       'Prochain exercice : Squat. Mets 20 et 1,25 de chaque côté. Note : pieds écartés.',
     );
+  });
+});
+
+describe('timed voice lines', () => {
+  it('says seconds for a hold', () => {
+    const plank = active('Gainage', [{ weight: 0, reps: 45 }], { equipment: 'bodyweight', timed: true });
+    expect(setLine(cursor(plank))).toBe('Série 1. 45 secondes.');
+    const weighted = active('Gainage', [{ weight: 10, reps: 45 }], { equipment: 'machine', timed: true });
+    expect(setLine(cursor(weighted))).toBe('Série 1. 10 kilos, 45 secondes.');
+  });
+});
+
+describe('drop set voice line', () => {
+  it('names the drop set instead of numbering it', () => {
+    const press = active('Squat', [{ weight: 100, reps: 5, completed: true }]);
+    press.sets.push({ weight: 80, reps: 5, setType: 'drop' });
+    expect(setLine(cursor(press))).toBe('Dégressive. 80 kilos, 5 reps.');
   });
 });

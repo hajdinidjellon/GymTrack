@@ -43,7 +43,7 @@ export function Barbell({ perSide, scale = 1, barWidth = 96, highlightFrom }: Pr
   const tallest = Math.max(plateSize(20, scale).height, ...plates.map((p) => p.height));
   const sleeve = { width: Math.round(22 * scale), height: Math.max(8, Math.round(14 * scale)) };
   const collar = { width: Math.max(5, Math.round(8 * scale)), height: Math.round(28 * scale) };
-  const steel = { backgroundColor: colors.steel, borderWidth: line, borderColor: colors.ink };
+  const steel = { backgroundColor: colors.steel, borderWidth: line, borderColor: colors.drawn };
 
   const side = (mirror: boolean) => {
     const list = mirror ? [...plates].reverse() : plates;
@@ -56,7 +56,7 @@ export function Barbell({ perSide, scale = 1, barWidth = 96, highlightFrom }: Pr
           borderRadius: Math.max(3, p.width * 0.4),
           backgroundColor: p.faded ? colors.paper : plateColor(p.kg),
           borderWidth: line,
-          borderColor: p.faded ? colors.line : colors.ink,
+          borderColor: p.faded ? colors.line : colors.drawn,
           borderStyle: p.faded ? 'dashed' : 'solid',
           // Les disques se chevauchent un peu, comme des autocollants
           marginLeft: i === 0 ? 0 : -line,
@@ -81,7 +81,7 @@ export function Barbell({ perSide, scale = 1, barWidth = 96, highlightFrom }: Pr
           backgroundColor: colors.steel,
           borderTopWidth: line,
           borderBottomWidth: line,
-          borderColor: colors.ink,
+          borderColor: colors.drawn,
         }}
       />
       <View style={{ ...collar, ...steel, borderRadius: 3, marginRight: -line }} />
@@ -106,7 +106,7 @@ export function MiniPlates({ perSide }: { perSide: number[] }) {
               marginLeft: i === 0 ? 0 : -1.5,
               borderRadius: 3,
               borderWidth: 1.5,
-              borderColor: colors.ink,
+              borderColor: colors.drawn,
               backgroundColor: plateColor(kg),
             }}
           />
@@ -119,7 +119,7 @@ export function MiniPlates({ perSide }: { perSide: number[] }) {
           marginLeft: -1.5,
           backgroundColor: colors.steel,
           borderWidth: 1.5,
-          borderColor: colors.ink,
+          borderColor: colors.drawn,
           borderTopRightRadius: 4,
           borderBottomRightRadius: 4,
         }}

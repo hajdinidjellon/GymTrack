@@ -12,16 +12,22 @@ export function StatTile({ value, label, highlight }: { value: string; label: st
         minWidth: 0,
         borderRadius: radius.row,
         borderCurve: 'continuous',
-        backgroundColor: highlight ? colors.sun : colors.card,
+        backgroundColor: highlight ? colors.sunPanel : colors.inset,
         borderWidth: border.base,
-        borderColor: colors.ink,
+        borderColor: colors.frame,
         paddingVertical: 12,
         paddingHorizontal: 12,
         gap: 2,
         ...hardShadow(2),
       }}
     >
-      <Text size={24} weight="black" numberOfLines={1} adjustsFontSizeToFit>
+      <Text
+        size={24}
+        weight="black"
+        color={highlight ? colors.onSunPanel : colors.ink}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
         {value}
       </Text>
       <Text size={13} weight="semibold" color={highlight ? colors.ink : colors.inkMuted} numberOfLines={1}>

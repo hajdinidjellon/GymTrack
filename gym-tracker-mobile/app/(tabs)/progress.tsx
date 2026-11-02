@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, space } from '@/constants/theme';
 import { formatShortDay, formatThousands } from '@/domain/format';
@@ -100,6 +100,17 @@ export default function Progress() {
         />
         <StatTile value={String(allRecords.length)} label={t('progress.tiles.records', { count: allRecords.length })} />
       </FadeIn>
+      <Pressable
+        onPress={() => router.push('/history')}
+        accessibilityRole="button"
+        hitSlop={8}
+        style={{ marginTop: space.md, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4 }}
+      >
+        <Text size={15} weight="black" style={{ textDecorationLine: 'underline' }}>
+          {t('progress.history')}
+        </Text>
+        <ChevronRight size={16} />
+      </Pressable>
 
       <FadeIn index={2}>
         <SectionTitle

@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
+import { setsDone } from '@/domain/history';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
   breakLabel,
@@ -21,7 +22,7 @@ import {
 import { isProgress } from '@/domain/progression';
 import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
-import { choosableDays, getSplit, type ChoosableDay } from '@/domain/programs';
+import { type ChoosableDay, choosableDays, getSplit, hasExercises } from '@/domain/programs';
 import { latestWorkoutDate, suggestedSplit, SWITCH_AFTER } from '@/domain/programSwitch';
 import { nextScheduled, validSchedule, whenLabel } from '@/domain/schedule';
 import { useBuildContext } from '@/hooks/useTodayPlan';
@@ -62,7 +63,12 @@ export default function Today() {
   const picked = choice?.after === workouts.length ? choice.name : null;
   const { days, today, plan, off } = useMemo(() => {
     if (!ctx) return { days: [], today: null, plan: null, off: null };
-    const list = choosableDays(ctx.profile.program.split, ctx.settings.customDays, ctx.settings.customExercises);
+    const list = choosableDays(
+      ctx.profile.program.split,
+      ctx.settings.customDays,
+      ctx.settings.customExercises,
+      ctx.settings.ownDays,
+    ).filter(hasExercises);
     const next = nextDay(ctx);
     const day = list.find((d) => d.name === picked) ?? next;
     const status = todayStatus(ctx);
@@ -126,6 +132,7 @@ export default function Today() {
             plan={plan}
             days={days}
             today={today?.name ?? null}
+            firstTime={workouts.length === 0}
             onChoose={(name) => setChoice({ name, after: workouts.length })}
           />
         </FadeIn>
@@ -164,10 +171,12 @@ interface TodayProps {
   days: ChoosableDay[];
   /** The day planned today, none on a day off. */
   today: string | null;
+  /** No session yet: the program decides, no choice to make. */
+  firstTime?: boolean;
   onChoose: (name: string) => void;
 }
 
-function TodayCard({ plan, days, today, onChoose }: TodayProps) {
+function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
   // Le premier mouvement à la barre déjà réglé : c'est lui qu'on dessine
   const featured = plan.lifts.find((l) => l.def.equipment === 'barbell' && l.decision !== 'calibrate');
   const target = featured?.targets[0];
@@ -178,7 +187,9 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
   return (
     <>
       <SectionTitle title={plan.name === today ? t('home.today.planned') : t('home.today.chosen')} />
-      {days.length > 1 ? <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} /> : null}
+      {days.length > 1 && !firstTime ? (
+        <DayPicker days={days} current={plan.name} today={today} onChoose={onChoose} />
+      ) : null}
       <StickerCard tone="hero" style={{ paddingTop: 18, paddingBottom: 8 }}>
         <View style={{ position: 'absolute', top: 14, right: 16 }}>
           <Sparkle size={34} />
@@ -205,11 +216,11 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
               paddingHorizontal: 14,
               borderRadius: radius.row,
               borderWidth: border.base,
-              borderColor: colors.ink,
-              backgroundColor: colors.sun,
+              borderColor: colors.frame,
+              backgroundColor: colors.sunPanel,
             }}
           >
-            <Text size={14} weight="black">
+            <Text size={14} weight="black" color={colors.onSunPanel}>
               {t('home.today.welcomeBack')}
             </Text>
             <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>
@@ -226,8 +237,8 @@ function TodayCard({ plan, days, today, onChoose }: TodayProps) {
               borderRadius: radius.md,
               borderCurve: 'continuous',
               borderWidth: border.base,
-              borderColor: colors.ink,
-              backgroundColor: colors.card,
+              borderColor: colors.frame,
+              backgroundColor: colors.inset,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -303,7 +314,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       accessibilityLabel={
         calibrate
           ? t('home.lift.a11yToChoose', { name })
-          : t('home.lift.a11y', { name, target: targetLabel(lift.targets) })
+          : t('home.lift.a11y', { name, target: targetLabel(lift.targets, lift.def.timed) })
       }
       style={{
         paddingVertical: space.md + 2,
@@ -322,7 +333,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         {/* Today's target, then what changed: the badge sits right after it, not at the edge */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 }}>
           <Text size={16} weight="black">
-            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets)}
+            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets, lift.def.timed)}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
             {sets}
@@ -331,7 +342,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         </View>
         {lift.last.length ? (
           <Text size={13} color={colors.inkMuted} numberOfLines={1}>
-            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last) })}
+            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last, lift.def.timed) })}
           </Text>
         ) : null}
       </View>
@@ -344,7 +355,7 @@ function LastWorkout() {
   const last = useWorkoutStore((s) => s.workouts[0]);
   const factor = useLoadFactor();
   if (!last) return null;
-  const sets = last.exercises.reduce((n, e) => n + e.sets.filter((s) => s.completed).length, 0);
+  const sets = setsDone(last);
   const date = formatShortDay(last.date);
   return (
     <>
@@ -439,6 +450,9 @@ function DayPicker({
 }) {
   const program = days.filter((d) => !d.extra);
   const extras = days.filter((d) => d.extra);
+  // The other programs' days wait behind one link, unless one is already picked
+  const [showExtras, setShowExtras] = useState(false);
+  const extrasOpen = showExtras || extras.some((d) => d.name === current);
   return (
     <View style={{ marginBottom: space.md }}>
       <Text size={14} weight="bold" color={colors.inkMuted}>
@@ -468,7 +482,7 @@ function DayPicker({
                 paddingHorizontal: 10,
                 borderRadius: radius.row,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.ink : colors.line,
+                borderColor: on ? colors.outlineStrong : colors.line,
                 backgroundColor: on ? colors.coralSoft : colors.card,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -487,7 +501,19 @@ function DayPicker({
           );
         })}
       </View>
-      {extras.length ? (
+      {extras.length && !extrasOpen ? (
+        <Pressable
+          onPress={() => setShowExtras(true)}
+          accessibilityRole="button"
+          hitSlop={8}
+          style={{ marginTop: space.md, alignSelf: 'flex-start' }}
+        >
+          <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
+            {t('home.picker.extraLink')}
+          </Text>
+        </Pressable>
+      ) : null}
+      {extras.length && extrasOpen ? (
         <>
           <Text size={13} weight="bold" color={colors.inkMuted} style={{ marginTop: space.md }}>
             {t('home.picker.extraLabel')}
@@ -512,7 +538,7 @@ function DayPicker({
                     borderWidth: on ? border.strong : border.base,
                     // Hors programme : en pointillés tant qu'on ne l'a pas choisie
                     borderStyle: on ? 'solid' : 'dashed',
-                    borderColor: on ? colors.ink : colors.line,
+                    borderColor: on ? colors.outlineStrong : colors.line,
                     backgroundColor: on ? colors.coralSoft : 'transparent',
                     justifyContent: 'center',
                     ...(on ? hardShadow(2) : {}),

@@ -22,7 +22,9 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
 
   const own = ctx.settings.customExercises;
   const split = ctx.profile.program.split;
-  const day = choosableDays(split, ctx.settings.customDays, own).find((d) => d.name === sessionName);
+  const day = choosableDays(split, ctx.settings.customDays, own, ctx.settings.ownDays).find(
+    (d) => d.name === sessionName,
+  );
   const def = findExerciseDef(current.name, own);
   const taken = exercises.map((e) => e.name);
 
@@ -46,18 +48,17 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
         accessibilityLabel={t('session.add.a11y')}
         hitSlop={8}
         style={({ pressed }) => ({
-          width: 28,
-          height: 28,
-          borderRadius: 14,
+          width: 38,
+          height: 38,
+          borderRadius: 19,
           borderWidth: 2,
-          borderStyle: pressed ? 'solid' : 'dashed',
-          borderColor: pressed ? colors.ink : colors.inkFaint,
+          borderColor: colors.outline,
           backgroundColor: pressed ? colors.coralSoft : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
         })}
       >
-        <Text size={16} weight="black" color={colors.inkMuted} style={{ lineHeight: 18 }}>
+        <Text size={24} weight="black" style={{ lineHeight: 26 }}>
           +
         </Text>
       </Pressable>
@@ -70,7 +71,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
         muscle={current.muscleGroups[0]}
         onPick={pick}
         onClose={() => setOpen(false)}
-        footer={
+        options={
           day ? (
             <CheckRow label={t('session.add.keep', { day: dayName(day.name) })} checked={keep} onChange={setKeep} />
           ) : null

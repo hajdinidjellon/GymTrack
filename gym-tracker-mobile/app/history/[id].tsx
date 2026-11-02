@@ -6,7 +6,7 @@ import { EFFORT_LABELS } from '@/domain/effort';
 import { formatDay, formatThousands } from '@/domain/format';
 import { loggedExercises, setsDone, type LoggedSet } from '@/domain/history';
 import { formatKg } from '@/domain/plates';
-import { newRecords, tonnage } from '@/domain/sessionBuilder';
+import { loadLabel, newRecords, tonnage } from '@/domain/sessionBuilder';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -81,7 +81,7 @@ export default function WorkoutScreen() {
                 </Text>
                 <ChevronRight size={18} />
               </PressableScale>
-              <SetLines sets={e.sets} />
+              <SetLines sets={e.sets} timed={e.timed} />
             </StickerCard>
           </FadeIn>
         ))}
@@ -102,12 +102,16 @@ export default function WorkoutScreen() {
 }
 
 /** "1   80 kg × 10   Juste bien", warm-ups marked and not numbered. */
-function SetLines({ sets }: { sets: LoggedSet[] }) {
+function SetLines({ sets, timed }: { sets: LoggedSet[]; timed?: boolean }) {
   let n = 0;
   return (
     <View>
       {sets.map((s, i) => {
-        const label = s.warmup ? t('history.detail.warmup') : String(++n);
+        const label = s.warmup
+          ? t('history.detail.warmup')
+          : s.kind === 'drop'
+            ? t('history.detail.drop')
+            : String(++n);
         return (
           <View
             key={i}
@@ -124,13 +128,11 @@ function SetLines({ sets }: { sets: LoggedSet[] }) {
               {label}
             </Text>
             <Text size={16} weight="black" color={s.warmup ? colors.inkMuted : colors.ink} style={{ flex: 1 }}>
-              {s.weight > 0
-                ? t('history.detail.setWeight', { kg: formatKg(s.weight), reps: s.reps })
-                : t('history.detail.setReps', { reps: s.reps })}
+              {loadLabel(s.weight, s.reps, timed)}
             </Text>
-            {s.effort ? (
+            {s.effort || s.kind === 'failure' ? (
               <Text size={13} weight="semibold" color={colors.inkMuted}>
-                {EFFORT_LABELS[s.effort]}
+                {s.effort ? EFFORT_LABELS[s.effort] : t('history.detail.failure')}
               </Text>
             ) : null}
           </View>

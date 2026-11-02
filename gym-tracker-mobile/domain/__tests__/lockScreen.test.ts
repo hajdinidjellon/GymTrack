@@ -35,6 +35,12 @@ describe('lockScreenProps', () => {
     });
   });
 
+  it('numbers a warm-up apart from the working sets', () => {
+    const squat = active('Squat', [{ weight: 100, reps: 5 }]);
+    squat.sets.unshift({ weight: 20, reps: 10, setType: 'warmup' }, { weight: 40, reps: 5, setType: 'warmup' });
+    expect(lockScreenProps(session([squat]), gym, NOW)).toMatchObject({ setLabel: 'Échauf. 1/2', setShort: '1/2' });
+  });
+
   it('gives the rest window while resting', () => {
     const s = { ...session([active('a', [{ weight: 80, reps: 8 }])]), restEndsAt: NOW + 60_000, restDuration: 90 };
     expect(lockScreenProps(s, gym, NOW)).toMatchObject({ restStart: NOW - 30_000, restEnd: NOW + 60_000 });
@@ -85,5 +91,20 @@ describe('lockScreenProps', () => {
       setsDone: 1,
       setsTotal: 1,
     });
+  });
+});
+
+describe('lockScreenProps on a hold', () => {
+  it('shows the seconds to hold', () => {
+    const plank = active('Gainage', [{ weight: 0, reps: 45 }], { equipment: 'bodyweight', timed: true });
+    expect(lockScreenProps(session([plank]), gym, NOW).target).toBe('45 s');
+  });
+});
+
+describe('lockScreenProps on a drop set', () => {
+  it('names it', () => {
+    const press = active('Squat', [{ weight: 100, reps: 5, completed: true }]);
+    press.sets.push({ weight: 80, reps: 5, setType: 'drop' });
+    expect(lockScreenProps(session([press]), gym, NOW).setLabel).toBe('Dégressive');
   });
 });

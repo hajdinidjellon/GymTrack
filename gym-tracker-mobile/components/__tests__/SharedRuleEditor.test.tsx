@@ -17,7 +17,7 @@ describe('SharedRuleEditor', () => {
   it('changes the similar exercises along with this one', async () => {
     await renderEditor();
     expect(screen.getByRole('checkbox', { name: 'Pareil pour les exercices similaires' })).toBeChecked();
-    await fireEvent.press(screen.getByRole('button', { name: 'Séries : moins un' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Séries : moins 1' }));
     expect(overrides()['Chest press']).toEqual({ sets: 2, repMin: 8, repMax: 12 });
     expect(overrides()['Développé couché']).toEqual({ sets: 2, repMin: 8, repMax: 12 });
   });
@@ -25,7 +25,7 @@ describe('SharedRuleEditor', () => {
   it('changes only this exercise once unticked', async () => {
     await renderEditor();
     await fireEvent.press(screen.getByRole('checkbox', { name: 'Pareil pour les exercices similaires' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Séries : moins un' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Séries : moins 1' }));
     expect(overrides()).toEqual({ 'Chest press': { sets: 2, repMin: 8, repMax: 12 } });
   });
 

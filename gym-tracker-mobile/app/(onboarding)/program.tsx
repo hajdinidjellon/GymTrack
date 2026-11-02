@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, hardShadow } from '@/constants/theme';
+import { splitLegend } from '@/domain/onboarding';
 import { getSplit, SPLITS } from '@/domain/programs';
-import { defaultSchedule, trainingCount, validSchedule, WEEKDAY_NAMES, type Schedule } from '@/domain/schedule';
-import { dayName, t } from '@/i18n';
+import { defaultSchedule, trainingCount, validSchedule, type Schedule } from '@/domain/schedule';
+import { t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -12,6 +13,9 @@ import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { Choice } from '@/components/ui/Choice';
+import { StickerCard } from '@/components/ui/StickerCard';
+import { buzz } from '@/components/ui/PressableScale';
+import { WeekPicker } from '@/components/program/WeekPicker';
 import { StepHeader } from '@/components/ui/StepHeader';
 import type { Goal, SplitId } from '@/types';
 import { resetTo } from '@/components/navigation/resetTo';
@@ -43,10 +47,6 @@ export default function ProgramScreen() {
         days || perWeek,
       ),
     );
-  };
-
-  const setDay = (index: number, name: string | null) => {
-    setSchedule((week) => week.map((n, i) => (i === index ? name : n)));
   };
 
   const save = async () => {
@@ -144,75 +144,23 @@ export default function ProgramScreen() {
       </Text>
 
       {fixed ? (
-        <View style={{ gap: 12, marginTop: 16 }}>
-          {WEEKDAY_NAMES.map((weekday, i) => (
-            <DayRow
-              key={weekday}
-              weekday={weekday}
-              names={names}
-              value={schedule[i] ?? null}
-              onChange={(n) => setDay(i, n)}
-            />
-          ))}
-        </View>
+        <StickerCard style={{ marginTop: 16, gap: 16 }}>
+          <WeekPicker
+            week={schedule}
+            names={names}
+            onChange={(week) => {
+              buzz('selection');
+              setSchedule(week);
+            }}
+          />
+          <Text size={14} color={colors.inkMuted} style={{ lineHeight: 20 }}>
+            {splitLegend(split)}
+          </Text>
+        </StickerCard>
       ) : (
         <PerWeekPicker perWeek={perWeek} onChange={setPerWeek} />
       )}
     </Screen>
-  );
-}
-
-function DayRow({
-  weekday,
-  names,
-  value,
-  onChange,
-}: {
-  weekday: string;
-  names: string[];
-  value: string | null;
-  onChange: (name: string | null) => void;
-}) {
-  const options: (string | null)[] = [null, ...names];
-  return (
-    <View style={{ gap: 6 }}>
-      <Text size={15} weight="bold" style={{ textTransform: 'capitalize' }}>
-        {weekday}
-      </Text>
-      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-        {options.map((name) => {
-          const on = value === name;
-          return (
-            <Pressable
-              key={name ?? 'rest'}
-              onPress={() => onChange(name)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={t('onboarding.program.dayLabel', {
-                weekday,
-                name: name ? dayName(name) : t('onboarding.program.restLabel'),
-              })}
-              style={{
-                minHeight: 40,
-                paddingHorizontal: 14,
-                borderRadius: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.ink : colors.line,
-                borderStyle: name === null && !on ? 'dashed' : 'solid',
-                backgroundColor: on ? (name ? colors.coralSoft : colors.paper) : colors.card,
-                ...(on ? hardShadow(2) : {}),
-              }}
-            >
-              <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
-                {name ? dayName(name) : t('onboarding.program.rest')}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
   );
 }
 
@@ -239,7 +187,7 @@ function PerWeekPicker({ perWeek, onChange }: { perWeek: number; onChange: (n: n
               justifyContent: 'center',
               backgroundColor: on ? colors.coralSoft : colors.card,
               borderWidth: on ? border.strong : border.base,
-              borderColor: colors.ink,
+              borderColor: colors.outline,
               ...(on ? hardShadow(4) : hardShadow(2)),
             }}
           >
@@ -251,7 +199,7 @@ function PerWeekPicker({ perWeek, onChange }: { perWeek: number; onChange: (n: n
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 2,
-                borderColor: colors.ink,
+                borderColor: colors.outline,
                 backgroundColor: colors.paper,
               }}
             >

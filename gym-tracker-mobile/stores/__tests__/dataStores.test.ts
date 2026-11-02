@@ -74,3 +74,22 @@ describe('workoutStore', () => {
     expect(useWorkoutStore.getState().workouts).toHaveLength(1);
   });
 });
+
+describe('workoutStore.importWorkouts', () => {
+  it('saves only the new sessions, then syncs', async () => {
+    useWorkoutStore.setState({ workouts: [workout('a')] });
+    const added = await useWorkoutStore
+      .getState()
+      .importWorkouts([workout('a'), { ...workout('b'), date: '2026-10-25' }]);
+    expect(added).toBe(1);
+    expect(mockedDb.saveWorkoutLocal).toHaveBeenCalledTimes(1);
+    expect(useWorkoutStore.getState().workouts.map((w) => w.id)).toEqual(['b', 'a']);
+    expect(flushSyncQueue).toHaveBeenCalled();
+  });
+
+  it('does not sync when nothing was added', async () => {
+    useWorkoutStore.setState({ workouts: [workout('a')] });
+    expect(await useWorkoutStore.getState().importWorkouts([workout('a')])).toBe(0);
+    expect(flushSyncQueue).not.toHaveBeenCalled();
+  });
+});

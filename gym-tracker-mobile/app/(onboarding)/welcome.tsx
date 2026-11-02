@@ -39,7 +39,7 @@ export default function Welcome() {
             height: 34,
             borderRadius: 17,
             borderWidth: border.strong,
-            borderColor: colors.ink,
+            borderColor: colors.drawn,
             backgroundColor: colors.coral,
             alignItems: 'center',
             justifyContent: 'center',
@@ -51,7 +51,7 @@ export default function Welcome() {
               height: 10,
               borderRadius: 5,
               borderWidth: 2,
-              borderColor: colors.ink,
+              borderColor: colors.drawn,
               backgroundColor: colors.paper,
             }}
           />
@@ -94,7 +94,7 @@ function PreviewCard() {
         padding: space.md,
         borderRadius: radius.md,
         borderWidth: border.strong,
-        borderColor: colors.ink,
+        borderColor: colors.drawn,
         backgroundColor: colors.card,
         transform: [{ rotate: '-4deg' }],
         ...hardShadow(4),
@@ -138,7 +138,7 @@ function BigPlate() {
           height: 380,
           borderRadius: 190,
           borderWidth: border.strong,
-          borderColor: colors.ink,
+          borderColor: colors.drawn,
           backgroundColor: plateColor(20),
           alignItems: 'center',
           justifyContent: 'center',
@@ -151,7 +151,7 @@ function BigPlate() {
             height: 300,
             borderRadius: 150,
             borderWidth: 2,
-            borderColor: colors.ink,
+            borderColor: colors.drawn,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -165,7 +165,7 @@ function BigPlate() {
               height: 100,
               borderRadius: 50,
               borderWidth: border.strong,
-              borderColor: colors.ink,
+              borderColor: colors.drawn,
               backgroundColor: colors.steel,
               alignItems: 'center',
               justifyContent: 'center',
@@ -177,7 +177,7 @@ function BigPlate() {
                 height: 40,
                 borderRadius: 20,
                 borderWidth: border.base,
-                borderColor: colors.ink,
+                borderColor: colors.drawn,
                 backgroundColor: colors.paper,
               }}
             />

@@ -1,7 +1,8 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { border, colors, radius } from '@/constants/theme';
 import { formatKg } from '@/domain/plates';
+import { isExtra, setNumber } from '@/domain/warmup';
 import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { SwipeToDelete } from '@/components/ui/SwipeToDelete';
@@ -17,22 +18,52 @@ interface Props {
   state: State;
   /** Bodyweight: no kg column. */
   noWeight?: boolean;
+  /** A warm-up: "Éch." instead of its number. */
+  warmup?: boolean;
+  /** Held for a time: the reps are seconds. */
+  timed?: boolean;
+  /** Its kind, when not a plain set: named instead of numbered. */
+  kind?: 'drop' | 'failure';
+  /** Long press: the set's menu (drop set, failure). */
+  onLongPress?: () => void;
 }
 
 /** One line of the sets table: Série | kg | reps | mark. The current one is circled. */
-export function SetRow({ index, kg, reps, state, noWeight }: Props) {
+export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, onLongPress }: Props) {
   const current = state === 'current';
   const done = state === 'done';
   const color = done ? colors.successText : state === 'upcoming' ? colors.inkMuted : colors.ink;
   const stateLabel = t(done ? 'session.setRow.done' : current ? 'session.setRow.current' : 'session.setRow.upcoming');
-  const label = noWeight
-    ? t('session.setRow.a11yNoWeight', { index, reps, state: stateLabel })
-    : t('session.setRow.a11y', { index, kg: formatKg(kg), reps, state: stateLabel });
+  const label = warmup
+    ? t('session.setRow.a11yWarmup', { kg: formatKg(kg), reps, state: stateLabel })
+    : kind === 'drop'
+      ? t('session.setRow.a11yDrop', { kg: formatKg(kg), reps, state: stateLabel })
+      : kind === 'failure'
+        ? t('session.setRow.a11yFailure', { index, kg: formatKg(kg), reps, state: stateLabel })
+        : timed && noWeight
+          ? t('session.setRow.a11ySeconds', { index, reps, state: stateLabel })
+          : noWeight
+            ? t('session.setRow.a11yNoWeight', { index, reps, state: stateLabel })
+            : t('session.setRow.a11y', { index, kg: formatKg(kg), reps, state: stateLabel });
+
+  const tag = warmup
+    ? t('session.setRow.warmupShort')
+    : kind === 'drop'
+      ? t('session.setRow.dropShort')
+      : kind === 'failure'
+        ? t('session.setRow.failureShort')
+        : null;
 
   return (
-    <View
+    <Pressable
+      onLongPress={onLongPress}
+      delayLongPress={350}
+      disabled={!onLongPress}
       accessible
       accessibilityLabel={label}
+      accessibilityHint={onLongPress ? t('session.setRow.menuHint') : undefined}
+      accessibilityActions={onLongPress ? [{ name: 'longpress' }] : undefined}
+      onAccessibilityAction={onLongPress ? () => onLongPress() : undefined}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -40,12 +71,13 @@ export function SetRow({ index, kg, reps, state, noWeight }: Props) {
         paddingHorizontal: 10,
         borderRadius: radius.row,
         borderWidth: current ? border.strong : 0,
-        borderColor: colors.ink,
+        // The current set is circled: it must stand out at night too
+        borderColor: colors.outlineStrong,
         backgroundColor: done ? colors.successSoft : current ? colors.coralSoft : colors.paper,
       }}
     >
-      <Text size={16} weight="bold" color={color} style={{ width: 52 }}>
-        {index}
+      <Text size={tag ? 14 : 16} weight="bold" color={tag ? colors.inkMuted : color} style={{ width: 52 }}>
+        {tag ?? index}
       </Text>
       {noWeight ? null : <Cell value={formatKg(kg)} color={color} big={current} />}
       <Cell value={String(reps)} color={color} big={current} />
@@ -59,7 +91,7 @@ export function SetRow({ index, kg, reps, state, noWeight }: Props) {
               borderRadius: 7,
               backgroundColor: colors.coral,
               borderWidth: 2,
-              borderColor: colors.ink,
+              borderColor: colors.outline,
             }}
           />
         ) : null}
@@ -76,7 +108,7 @@ export function SetRow({ index, kg, reps, state, noWeight }: Props) {
           />
         ) : null}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -97,12 +129,12 @@ function DoneMark() {
         borderRadius: 16,
         backgroundColor: colors.success,
         borderWidth: 2,
-        borderColor: colors.ink,
+        borderColor: colors.outline,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Check size={18} />
+      <Check size={18} color={colors.onSuccess} />
     </View>
   );
 }
@@ -112,36 +144,53 @@ interface TableProps {
   current: number;
   /** Sets still to do can be swiped away. */
   onRemove?: (setIndex: number) => void;
+  /** Long press on a set: its menu. */
+  onLongPress?: (setIndex: number) => void;
 }
 
 /** Every set of the exercise. Column headers are the only capitals of the app. */
-export function SetsTable({ exercise, current, onRemove }: TableProps) {
+export function SetsTable({ exercise, current, onRemove, onLongPress }: TableProps) {
   const noWeight = exercise.equipment === 'bodyweight';
-  const canRemove = !!onRemove && exercise.sets.length > 1;
+  // A warm-up or a drop can always go; the last working set stays
+  const canRemove = (i: number) =>
+    !!onRemove && (isExtra(exercise.sets[i]!) || exercise.sets.filter((s) => !isExtra(s)).length > 1);
   return (
     <View>
       <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 4 }}>
         <Header label={t('session.setRow.headerSet')} style={{ width: 52 }} />
         {noWeight ? null : <Header label={t('session.setRow.headerKg')} center />}
-        <Header label={t('session.setRow.headerReps')} center />
+        <Header label={t(exercise.timed ? 'session.setRow.headerSeconds' : 'session.setRow.headerReps')} center />
         <View style={{ width: 44 }} />
       </View>
       <View style={{ gap: 4 }}>
-        {exercise.sets.map((s, i) => (
-          <SwipeToDelete
-            key={`${i}-${exercise.sets.length}`}
-            deleteLabel={t('session.setRow.deleteA11y', { n: i + 1 })}
-            onDelete={canRemove && !s.completed ? () => onRemove(i) : undefined}
-          >
-            <SetRow
-              index={i + 1}
-              kg={s.weight}
-              reps={s.reps}
-              noWeight={noWeight}
-              state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
-            />
-          </SwipeToDelete>
-        ))}
+        {exercise.sets.map((s, i) => {
+          const { warmup, drop, n } = setNumber(exercise.sets, i);
+          return (
+            <SwipeToDelete
+              key={`${i}-${exercise.sets.length}`}
+              deleteLabel={
+                warmup
+                  ? t('session.setRow.deleteWarmupA11y')
+                  : drop
+                    ? t('session.setRow.deleteDropA11y')
+                    : t('session.setRow.deleteA11y', { n })
+              }
+              onDelete={canRemove(i) && !s.completed ? () => onRemove!(i) : undefined}
+            >
+              <SetRow
+                index={n}
+                kg={s.weight}
+                reps={s.reps}
+                noWeight={noWeight}
+                warmup={warmup}
+                timed={exercise.timed}
+                kind={s.setType === 'drop' || s.setType === 'failure' ? s.setType : undefined}
+                onLongPress={onLongPress && !warmup ? () => onLongPress(i) : undefined}
+                state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
+              />
+            </SwipeToDelete>
+          );
+        })}
       </View>
     </View>
   );

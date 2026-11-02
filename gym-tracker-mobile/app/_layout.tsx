@@ -11,17 +11,19 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_800ExtraBold } from '@exp
 
 import { getDb } from '@/services/db';
 import { logger } from '@/services/logger';
-import { requestPermissions } from '@/services/notifications';
 import { colors } from '@/constants/theme';
 import { LaunchAnimation } from '@/components/brand/LaunchAnimation';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useAppearance } from '@/hooks/useLocale';
 import { useLiveActivity } from '@/hooks/useLiveActivity';
 
 SplashScreen.preventAutoHideAsync().catch(() => null);
 
 export default function RootLayout() {
+  // Applied first: every screen below reads the colours of this scheme
+  const scheme = useAppearance();
   const [fontsLoaded, fontError] = useFonts({
     'Nunito-Regular': Nunito_400Regular,
     'Nunito-SemiBold': Nunito_600SemiBold,
@@ -56,15 +58,10 @@ export default function RootLayout() {
     if (fontsDone) SplashScreen.hideAsync().catch(() => null);
   }, [fontsDone]);
 
-  useEffect(() => {
-    if (!ready) return;
-    if (useSettingsStore.getState().settings.notifications) requestPermissions().catch(() => null);
-  }, [ready]);
-
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.paper }}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         {ready ? (
           <Stack
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.paper }, animation: 'fade' }}

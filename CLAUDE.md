@@ -36,13 +36,14 @@ app/
   (onboarding)/            ← welcome, setup (the 4 first-launch questions + recap), login; goal/program edit from Profile (?edit=1)
   (tabs)/                  ← index (Aujourd'hui), progress, profile; _layout gates on profile and resumes a running session
   session/preview.tsx      ← today's session, "Lancer la séance"
-  session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state
+  session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state; the last set opens SessionDone (effort, undo, one more set, then save)
   session/summary.tsx      ← tonnage, next targets
   exercise/[name].tsx      ← next target, own sets/reps (RuleEditor), plate-loaded or stack, increment picker, history
   history/index.tsx        ← "Historique": every past session, newest first (home → Dernière séance → Historique)
   history/[id].tsx         ← one past session: each exercise, set by set (weight × reps, effort), records
-  days/index.tsx           ← "Mes séances": every day of the program (Profil → Mes séances)
-  days/[name].tsx          ← one day: add, remove, drag to reorder its exercises
+  days/index.tsx           ← "Mes séances": every day of the program, "+ Nouvelle séance" adds one's own (Profil → Mes séances)
+  days/[name].tsx          ← one day: add, remove, drag to reorder its exercises, "+ superset" chains one with the next
+  data/index.tsx           ← "Tes données": backup, restore, import from Strong or Hevy, CSV export (Profil → Sauvegarde, import)
 ```
 
 ### Layers — enforced by ESLint (`import/no-restricted-paths`)
@@ -75,6 +76,15 @@ A layer never imports a layer above it. Always import with `@/`.
 - `exportCsv.ts` — every set as CSV for the share sheet.
 - `loading.ts` — what the weight counts: the whole bar, each side of a plate-loaded machine (chest press, leg press…), each dumbbell, or the stack; the plates for one side.
 - `notes.ts` — the per-exercise note ("siège cran 4"), one clean line.
+- `warmup.ts` — warm-up sets before the working sets: empty bar then ~40/60/80 % of the first working weight, rounded to the gym's plates; one closer set on a muscle already warm, none on timed or bodyweight work. `setNumber` numbers warm-ups, drop sets and working sets apart. Warm-ups never count (`workingSets`).
+- `hold.ts` — the timer of a held set (plank…): 3 s countdown, then the hold. Timed exercises (`timed`) count seconds in `reps`, progress by `rule.repStep` (5 s).
+- `strength.ts` — estimated 1RM (Epley, ≤ 12 reps) and records per number of reps, for the exercise page.
+- `backup.ts` — the backup file (JSON, validated on restore), merging sessions by id.
+- `importWorkouts.ts` — Strong and Hevy CSV exports to sessions; names matched to the catalog only when movement and equipment agree.
+- `ownDays.ts` — days the user adds to a program (`settings.ownDays`): named, renamed, removed; an empty one is never the next session (`hasExercises`).
+- `ownExercises.ts` — editing or deleting an own exercise; a rename moves every setting under the name and keeps the old name as an alias.
+- `voiceCommands.ts` — what a few spoken words mean ("fait", "8", "plus tard"…); more than 4 words is never a command.
+- Drop sets (`setType: 'drop'`) never steer progression (`mainSets`). Supersets: exercises with the same `superset` group take turns (`sessionCursor`), no rest inside a round (`supersetHandoff`).
 - `profile.ts`, `week.ts`, `plates.ts`, `sessionCursor.ts`, `voiceLines.ts`, `format.ts`.
 
 ### Services (`services/`)
@@ -83,6 +93,8 @@ A layer never imports a layer above it. Always import with `@/`.
 - `sync.ts` — Supabase queue; an entry is dropped only once Supabase confirmed it.
 - `supabase.ts` + `secureStorage.ts` — auth session encrypted (AES key in the Keychain).
 - `logger.ts` — dev-only logs. `console.*` is banned elsewhere.
+- `files.ts` — write a file and open the share sheet, or pick one (expo-file-system, expo-sharing).
+- `voiceInput.ts` — on-device speech recognition for the voice commands; the native module is loaded only when it exists (not in Expo Go). `speech.ts` tells when the app itself is talking, so its voice is never taken for a command.
 
 ### State — Zustand stores (`stores/`)
 
@@ -91,7 +103,7 @@ A layer never imports a layer above it. Always import with `@/`.
 | `sessionStore` | Running session, persisted in `expo-sqlite/kv-store`. Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here. |
 | `workoutStore` | Past workouts (SQLite) |
 | `profileStore` | Goal, program, PRs. Normalizes profiles from the old app version. |
-| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments, own exercises per day (`customDays`, key `"ppl/Legs"`) and own sets/reps per exercise (`ruleOverrides`), own rest per exercise (`restOverrides`), own exercises (`customExercises`), a note per exercise (`exerciseNotes`, read by the voice), plate-loaded or stack machine per exercise (`plateLoaded`, over the catalog's). Totals count both sides and both dumbbells when `countBothSides` is on. Validated on load. |
+| `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments, own exercises per day (`customDays`, key `"ppl/Legs"`) and own sets/reps per exercise (`ruleOverrides`), own rest per exercise (`restOverrides`), own exercises (`customExercises`), a note per exercise (`exerciseNotes`, read by the voice), plate-loaded or stack machine per exercise (`plateLoaded`, over the catalog's), warm-ups on/off globally and per exercise (`warmups`, `warmupOverrides`), supersets per day (`supersets`, key `"ppl/Push"`), voice commands (`voiceCommands`, off by default). Totals count both sides and both dumbbells when `countBothSides` is on. Validated on load. |
 
 ### Tests
 
@@ -101,7 +113,7 @@ A layer never imports a layer above it. Always import with `@/`.
 
 ### Design system — "Autocollant" (clarté + style illustré)
 
-`constants/theme.ts`: `paper` background, white `card`s, everything outlined and shadowed in `ink`. Fredoka for titles, numbers and buttons (`weight="black"` / `"titleMedium"`), Nunito for the rest. No capitals except the sets table column headers.
+`constants/theme.ts`: `paper` background, white `card`s, everything outlined and shadowed in `ink`. Light and dark palettes (`settings.theme`: auto / light / dark): `colors.x` reads the current one, so read it at render time, never in a module-level constant; routes re-render through `useLocale()`. Dark is « Bleu nuit » (night-blue background, blue-tinted cards, sky-blue action, green done marks, yellow trained days, a ledge under each sticker; every sticker outlined in black, like by day): never assume the light pairs, use the roles — `outline`/`outlineStrong` for borders of what can be tapped, `frame` for cards, panels and badges, `inset` for what sits inside a card (a step lighter at night), `drawn` for the ink line of drawings (plates, bar, logo, sparkles: dark in both modes), `dayDone`/`dayToday` for the week strip, `onCoral`, `onSun`, `onSuccess` for what sits on a fill, `sunPanel`/`onSunPanel` for explanation panels, `danger` for errors, `hardShadow()`/`pressOffset()` for relief. Plates keep their IWF colours in both modes. Fredoka for titles, numbers and buttons (`weight="black"` / `"titleMedium"`), Nunito for the rest. No capitals except the sets table column headers.
 
 - `coral` = main action and "current" state: one coral button per screen. `coralSoft` = the hero card (one per screen) and the current set/selection.
 - `sun` = explanations ("Pourquoi 80 kg ?"), the rest panel, badges. `success` / `successSoft` = sets done.

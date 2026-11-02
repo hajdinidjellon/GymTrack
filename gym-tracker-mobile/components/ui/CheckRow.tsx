@@ -32,13 +32,13 @@ export function CheckRow({ label, checked, onChange, detail }: Props) {
           height: 28,
           borderRadius: 8,
           borderWidth: border.base,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: checked ? colors.success : colors.card,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {checked ? <Check size={16} /> : null}
+        {checked ? <Check size={16} color={colors.onSuccess} /> : null}
       </View>
       <View style={{ flex: 1 }}>
         <Text size={15} weight="bold">

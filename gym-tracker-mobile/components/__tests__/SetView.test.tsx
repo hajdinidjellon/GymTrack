@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
-import { Text } from 'react-native';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Alert, Text, type AlertButton } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
+import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { SetView } from '@/components/session/SetView';
 import type { ActiveExercise } from '@/types';
 
@@ -35,6 +36,8 @@ function renderCurrentSet() {
 const sets = () => useSessionStore.getState().activeSession!.exercises[0]!.sets;
 
 beforeEach(() => {
+  // Warm-ups off: these tests are about the working sets
+  useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
   jest.useFakeTimers();
   useSessionStore.getState().startSession('Push', [bench]);
 });
@@ -62,11 +65,11 @@ describe('SetView', () => {
     expect(screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, en cours')).toBeOnTheScreen();
   });
 
-  it('shows the rest at the bottom of the same screen, instead of the validate button', async () => {
+  it('keeps the validate button under the minimized rest', async () => {
     const cursor = findCurrent(useSessionStore.getState().activeSession!.exercises)!;
     await render(<SetView cursor={cursor} footer={<Text>Repos</Text>} />);
     expect(screen.getByText('Repos')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Valider la série' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Valider la série' })).toBeOnTheScreen();
   });
 
   it('adjusts the weight by the exercise increment', async () => {
@@ -75,7 +78,13 @@ describe('SetView', () => {
     expect(sets()[0]!.weight).toBe(65);
   });
 
-  it('completes every set as planned', async () => {
+  it('completes every set as planned, once the first one is done', async () => {
+    useSessionStore.getState().startSession('Push', [{ ...bench, sets: [...bench.sets, bench.sets[0]!] }]);
+    const first = await renderCurrentSet();
+    expect(screen.queryByRole('button', { name: /Tout comme prévu/ })).toBeNull();
+    await first.unmount();
+    useSessionStore.getState().completeSet('bench', 0);
+    useSessionStore.getState().stopRestTimer();
     await renderCurrentSet();
     await fireEvent.press(screen.getByRole('button', { name: 'Tout comme prévu · 2 séries' }));
     expect(sets().every((s) => s.completed)).toBe(true);
@@ -117,5 +126,122 @@ describe('SetView', () => {
     useSessionStore.getState().startSession('Push', [press]);
     await renderCurrentSet();
     expect(screen.getByText('De chaque côté : 20 + 20 + 20 + 2,5')).toBeTruthy();
+  });
+});
+
+describe('SetView with warm-ups', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    useSessionStore.getState().startSession('Push', [bench]);
+  });
+
+  it('says it is a warm-up, explains the working weight, and offers to skip', async () => {
+    await renderCurrentSet();
+    expect(screen.getByText('Échauffement · ne compte pas dans tes stats')).toBeOnTheScreen();
+    expect(screen.getByText('Pourquoi 62,5 kg ?')).toBeOnTheScreen();
+    expect(screen.getAllByText('Éch.').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Série ratée ? Note les reps faites')).toBeNull();
+    expect(screen.queryByText(/Tout comme prévu/)).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: "Passer l'échauffement" }));
+    expect(sets().every((s) => s.setType === 'normal')).toBe(true);
+  });
+
+  it('numbers the working sets from 1, after the warm-ups', async () => {
+    await renderCurrentSet();
+    expect(screen.getByLabelText('Série 1, 62,5 kilos, 10 reps, à venir')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Échauffement, 20 kilos, 10 reps, en cours')).toBeOnTheScreen();
+  });
+});
+
+describe('SetView on a held set', () => {
+  const plank: ActiveExercise = {
+    id: 'plank',
+    name: 'Gainage',
+    category: 'isolation',
+    muscleGroups: ['core'],
+    equipment: 'bodyweight',
+    needsWeight: false,
+    timed: true,
+    rule: { kind: 'double', sets: 2, repMin: 30, repMax: 60, increment: 2.5, repStep: 5 },
+    sets: [0, 1].map(() => ({ weight: 0, reps: 45, setType: 'normal' as const, restTime: 60, completed: false })),
+  };
+
+  beforeEach(() => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, voice: false } });
+    useSessionStore.getState().startSession('Abdos', [plank]);
+  });
+
+  it('counts in seconds, 5 by 5, with no missed-reps link', async () => {
+    await renderCurrentSet();
+    expect(screen.getByText('SEC')).toBeOnTheScreen();
+    expect(screen.queryByText('Série ratée ? Note les reps faites')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Plus 5 secondes' }));
+    expect(sets()[0]!.reps).toBe(50);
+  });
+
+  it('runs the countdown, then the hold, and validates by itself at the end', async () => {
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Lancer · 45 s' }));
+    expect(screen.getByText('Mets-toi en position')).toBeOnTheScreen();
+    await act(() => jest.advanceTimersByTime(3200));
+    expect(screen.getByText('Tiens bon')).toBeOnTheScreen();
+    await act(() => jest.advanceTimersByTime(45_000));
+    expect(sets()[0]).toMatchObject({ reps: 45, completed: true });
+  });
+
+  it('logs what was held when stopped, and cancels during the countdown', async () => {
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Lancer · 45 s' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Annuler' }));
+    expect(sets()[0]!.completed).toBe(false);
+    await fireEvent.press(screen.getByRole('button', { name: 'Lancer · 45 s' }));
+    await act(() => jest.advanceTimersByTime(3000 + 20_400));
+    await fireEvent.press(screen.getByRole('button', { name: 'Stop' }));
+    expect(sets()[0]).toMatchObject({ reps: 20, completed: true });
+  });
+
+  it('can be logged without the timer', async () => {
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Valider sans chrono' }));
+    expect(sets()[0]).toMatchObject({ reps: 45, completed: true });
+  });
+});
+
+describe('SetView set menu', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
+    useSessionStore.getState().startSession('Push', [bench]);
+  });
+
+  it('adds a drop set or marks a set to failure from a long press', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    await fireEvent(screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, à venir'), 'longPress');
+    const [title, , buttons] = alert.mock.calls.at(-1)!;
+    expect(title).toBe('Série 2');
+    expect((buttons as AlertButton[]).map((b) => b.text)).toEqual([
+      'Ajouter une dégressive après',
+      'Jusqu’à l’échec',
+      'Annuler',
+    ]);
+    await act(() => (buttons as AlertButton[])[0]!.onPress!());
+    expect(sets()[2]).toMatchObject({ setType: 'drop', weight: 50 });
+    await act(() => (buttons as AlertButton[])[1]!.onPress!());
+    expect(sets()[1]!.setType).toBe('failure');
+    alert.mockRestore();
+  });
+
+  it('shows the drop set by name in the table and offers no failure on it', async () => {
+    useSessionStore.getState().addDropSet('bench', 1);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    expect(screen.getByText('Dégr.')).toBeOnTheScreen();
+    await fireEvent(screen.getByLabelText('Dégressive, 50 kilos, 10 reps, à venir'), 'longPress');
+    expect(alert.mock.calls.at(-1)![0]).toBe('Série dégressive');
+    expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).toEqual([
+      'Ajouter une dégressive après',
+      'Annuler',
+    ]);
+    alert.mockRestore();
   });
 });

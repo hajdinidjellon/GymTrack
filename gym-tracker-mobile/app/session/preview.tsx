@@ -6,7 +6,7 @@ import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
 import { describeSide, loadBar } from '@/domain/plates';
-import { choosableDays, type ChoosableDay } from '@/domain/programs';
+import { choosableDays, type ChoosableDay, hasExercises } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -35,12 +35,13 @@ export default function Preview() {
   const ctx = useBuildContext();
   const customDays = useSettingsStore((s) => s.settings.customDays);
   const own = useSettingsStore((s) => s.settings.customExercises);
+  const ownDays = useSettingsStore((s) => s.settings.ownDays);
   const [picked, setPicked] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
   const splitId = ctx?.profile.program.split;
   // Le programme, puis les séances des autres programmes, pour une fois
-  const days = splitId ? choosableDays(splitId, customDays, own) : [];
+  const days = splitId ? choosableDays(splitId, customDays, own, ownDays).filter(hasExercises) : [];
   const today = ctx ? nextDay(ctx) : null;
   const day: ChoosableDay | undefined =
     days.find((d) => d.name === (picked ?? today?.name)) ??
@@ -112,7 +113,7 @@ export default function Preview() {
                 borderWidth: on ? border.strong : border.base,
                 // Hors programme : en pointillés tant qu'on ne l'a pas choisie
                 borderStyle: d.extra && !on ? 'dashed' : 'solid',
-                borderColor: d.extra && !on ? colors.inkFaint : colors.ink,
+                borderColor: d.extra && !on ? colors.inkFaint : colors.outlineStrong,
                 backgroundColor: on ? colors.coralSoft : colors.card,
                 justifyContent: 'center',
               }}
@@ -157,7 +158,7 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
       accessibilityRole="button"
       accessibilityLabel={t('session.preview.liftA11y', {
         name: exerciseName(lift.def.name),
-        target: calibrate ? t('session.preview.firstTime') : targetLabel(lift.targets),
+        target: calibrate ? t('session.preview.firstTime') : targetLabel(lift.targets, lift.def.timed),
         delta: deltaLabel(lift),
       })}
     >
@@ -169,7 +170,7 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1} style={{ flexShrink: 1 }}>
-              {calibrate ? t('session.preview.weightToPick') : targetLabel(lift.targets)}
+              {calibrate ? t('session.preview.weightToPick') : targetLabel(lift.targets, lift.def.timed)}
             </Text>
             {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
           </View>
@@ -196,7 +197,7 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
             height: 32,
             borderRadius: 16,
             borderWidth: 2,
-            borderColor: colors.ink,
+            borderColor: colors.outline,
             backgroundColor: pressed ? colors.coralSoft : colors.card,
             alignItems: 'center',
             justifyContent: 'center',

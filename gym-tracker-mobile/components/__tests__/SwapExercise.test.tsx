@@ -68,4 +68,17 @@ describe('SwapExercise', () => {
     expect(names()[0]).toBe('Écarté Panatta');
     expect(useSessionStore.getState().activeSession!.exercises[0]!.needsWeight).toBe(true);
   });
+
+  it('creates an exercise counted in seconds', async () => {
+    await openSwap();
+    await fireEvent.press(screen.getByRole('button', { name: 'Créer un exercice' }));
+    await fireEvent.changeText(screen.getByLabelText("Nom de l'exercice"), 'Planche lestée');
+    await fireEvent.press(screen.getByRole('radio', { name: 'Secondes (gainage…)' }));
+    await fireEvent.press(screen.getByRole('button', { name: "Créer l'exercice" }));
+    expect(useSettingsStore.getState().settings.customExercises[0]).toMatchObject({
+      name: 'Planche lestée',
+      timed: true,
+    });
+    expect(useSessionStore.getState().activeSession!.exercises[0]!.timed).toBe(true);
+  });
 });

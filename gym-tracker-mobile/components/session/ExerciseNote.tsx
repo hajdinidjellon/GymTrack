@@ -35,7 +35,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
           paddingHorizontal: 12,
           borderRadius: radius.input,
           borderWidth: border.base,
-          borderColor: colors.ink,
+          borderColor: colors.outline,
           backgroundColor: colors.card,
           fontFamily: fonts.semibold,
           fontSize: 15,
@@ -58,7 +58,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
         borderRadius: radius.input,
         borderWidth: border.base,
         borderStyle: note ? 'solid' : 'dashed',
-        borderColor: note || pressed ? colors.ink : colors.line,
+        borderColor: note || pressed ? colors.outlineStrong : colors.line,
         backgroundColor: note ? colors.card : 'transparent',
       })}
     >

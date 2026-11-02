@@ -39,6 +39,7 @@ const ex = (
 const withPlates = (def: ExerciseDef): ExerciseDef => ({ ...def, plateLoaded: true });
 const onCable = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'cable' });
 const onSmith = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'smith' });
+const held = (def: ExerciseDef): ExerciseDef => ({ ...def, timed: true });
 
 export const EXERCISES = {
   // Pectoraux
@@ -160,11 +161,17 @@ export const EXERCISES = {
   crunch: ex('Crunch', 'bodyweight', 'isolation', ['core']),
   legraise: ex('Relevés de jambes', 'bodyweight', 'isolation', ['core']),
   abwheel: ex('Roue abdominale', 'bodyweight', 'isolation', ['core']),
+  plank: held(ex('Gainage', 'bodyweight', 'isolation', ['core'], ['Planche'])),
+  sideplank: held(ex('Gainage latéral', 'bodyweight', 'isolation', ['core'], ['Planche latérale'])),
+  wallsit: held(ex('Chaise', 'bodyweight', 'isolation', ['legs'], ['Chaise contre le mur'])),
+  deadhang: held(ex('Suspension barre', 'bodyweight', 'isolation', ['back'])),
 } satisfies Record<string, ExerciseDef>;
 
 export interface ProgramDay {
   name: string;
   exercises: ExerciseDef[];
+  /** Added by the user: it can be renamed or removed. */
+  own?: boolean;
 }
 
 export interface Split {
@@ -237,14 +244,31 @@ export function programDays(
   split: SplitId,
   customDays: Record<string, string[]> | undefined,
   own: CustomExercise[] | undefined,
+  ownDays?: Record<string, string[]>,
 ): ProgramDay[] {
-  return getSplit(split).days.map((day) => {
-    const names = customDays?.[dayKey(split, day.name)];
-    if (!names) return day;
-    const exercises = names.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
-    return { name: day.name, exercises };
+  const exercisesOf = (name: string) =>
+    customDays?.[dayKey(split, name)]?.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
+  const days = getSplit(split).days.map((day) => {
+    const exercises = exercisesOf(day.name);
+    return exercises ? { name: day.name, exercises } : day;
   });
+  // The days the user added, after the program's, with what they put in them
+  const added = (ownDays?.[split] ?? []).map((name) => ({ name, exercises: exercisesOf(name) ?? [], own: true }));
+  return [...days, ...added];
 }
+
+/** The muscle most of the day works: where the list opens. */
+export function mainMuscle(exercises: ExerciseDef[]): MuscleGroup | undefined {
+  const counts = new Map<MuscleGroup, number>();
+  for (const e of exercises) {
+    const m = e.muscleGroups[0];
+    if (m) counts.set(m, (counts.get(m) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+
+/** A day with exercises: the only kind offered as a session. */
+export const hasExercises = (day: ProgramDay): boolean => day.exercises.length > 0;
 
 /** A day the user can pick: from their program, or from another one for a one-off session. */
 export interface ChoosableDay extends ProgramDay {
@@ -262,11 +286,12 @@ export function choosableDays(
   split: SplitId,
   customDays: Record<string, string[]> | undefined,
   own: CustomExercise[] | undefined,
+  ownDays?: Record<string, string[]>,
 ): ChoosableDay[] {
-  const out: ChoosableDay[] = programDays(split, customDays, own).map((d) => ({ ...d, split, extra: false }));
+  const out: ChoosableDay[] = programDays(split, customDays, own, ownDays).map((d) => ({ ...d, split, extra: false }));
   for (const other of SPLITS) {
     if (other.id === split) continue;
-    for (const day of programDays(other.id, customDays, own)) {
+    for (const day of programDays(other.id, customDays, own, ownDays)) {
       if (!out.some((d) => d.name === day.name)) out.push({ ...day, split: other.id, extra: true });
     }
   }
@@ -386,8 +411,9 @@ export function alternativesFor(def: ExerciseDef, own: CustomExercise[] = []): E
 /** Close enough to share sets and reps: same main muscle, same kind of movement, both loaded or both bodyweight. */
 export function similarExercises(def: ExerciseDef, own: CustomExercise[] = []): ExerciseDef[] {
   const bodyweight = def.equipment === 'bodyweight';
+  // Seconds and reps never share a rule: a plank does not follow the crunches
   return alternativesFor(def, own).filter(
-    (e) => e.category === def.category && (e.equipment === 'bodyweight') === bodyweight,
+    (e) => e.category === def.category && (e.equipment === 'bodyweight') === bodyweight && !!e.timed === !!def.timed,
   );
 }
 
@@ -398,7 +424,7 @@ export const NAME_MAX = 40;
  * taken by the catalog, an old name, or another own exercise.
  */
 export function makeCustomExercise(
-  input: { name: string; equipment: Equipment; category: ExerciseCategory; muscle: MuscleGroup },
+  input: { name: string; equipment: Equipment; category: ExerciseCategory; muscle: MuscleGroup; timed?: boolean },
   own: CustomExercise[] = [],
 ): CustomExercise | { error: string } {
   const name = input.name.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
@@ -413,7 +439,13 @@ export function makeCustomExercise(
       ? { error: t('domain.programs.nameTaken') }
       : { error: t('domain.programs.nameTakenAs', { name: shown }) };
   }
-  return { name, equipment: input.equipment, category: input.category, muscleGroups: [input.muscle] };
+  const made: CustomExercise = {
+    name,
+    equipment: input.equipment,
+    category: input.category,
+    muscleGroups: [input.muscle],
+  };
+  return input.timed ? { ...made, timed: true } : made;
 }
 
 export interface GoalDef {
@@ -453,8 +485,12 @@ export function isPlateLoaded(def: ExerciseDef, own: Record<string, boolean> = {
   return def.equipment === 'machine' && (own[def.name] ?? !!def.plateLoaded);
 }
 
+/** A timed exercise: 3 holds of 30 to 60 s, 5 s more each time. */
+export const TIMED_RULE = { sets: 3, repMin: 30, repMax: 60, repStep: 5 } as const;
+
 /** Heavy low reps only make sense on the big barbell lifts. */
 export function ruleFor(goal: Goal, def: ExerciseDef, increment: number): ProgressionRule {
+  if (def.timed) return { kind: 'double', ...TIMED_RULE, increment };
   if (goal === 'force' && def.equipment === 'barbell') {
     return { kind: 'double', sets: 5, repMin: 3, repMax: 5, increment };
   }
@@ -462,20 +498,24 @@ export function ruleFor(goal: Goal, def: ExerciseDef, increment: number): Progre
   return { kind: 'double', sets: 3, repMin: 8, repMax: 12, increment };
 }
 
-export const RULE_LIMITS = { sets: [1, 10], reps: [1, 50] } as const;
+export const RULE_LIMITS = { sets: [1, 10], reps: [1, 50], seconds: [5, 600] } as const;
 
-/** Keeps a rule the user is editing valid: at least one set, min reps never above max. */
-export function clampRule(rule: RuleOverride): RuleOverride {
+/**
+ * Keeps a rule the user is editing valid: at least one set, min reps never
+ * above max. Timed: seconds, from 5 s to 10 min.
+ */
+export function clampRule(rule: RuleOverride, timed = false): RuleOverride {
   const clamp = (n: number, [lo, hi]: readonly [number, number]) => Math.max(lo, Math.min(hi, Math.round(n)));
+  const range = timed ? RULE_LIMITS.seconds : RULE_LIMITS.reps;
   const sets = clamp(rule.sets, RULE_LIMITS.sets);
-  const repMin = clamp(rule.repMin, RULE_LIMITS.reps);
-  const repMax = Math.max(repMin, clamp(rule.repMax, RULE_LIMITS.reps));
+  const repMin = clamp(rule.repMin, range);
+  const repMax = Math.max(repMin, clamp(rule.repMax, range));
   return { sets, repMin, repMax };
 }
 
 /** The goal's rule, with the user's own sets and reps on top. */
 export function withOverride(rule: ProgressionRule, override: RuleOverride | undefined): ProgressionRule {
-  return override ? { ...rule, ...clampRule(override) } : rule;
+  return override ? { ...rule, ...clampRule(override, rule.repStep !== undefined) } : rule;
 }
 
 /** Minimum rest per kind of set, in seconds. */

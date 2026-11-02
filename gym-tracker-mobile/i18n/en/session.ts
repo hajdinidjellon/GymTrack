@@ -13,11 +13,23 @@ export const session: Dictionary['session'] = {
     },
     finishNoneLeft: 'The sets you did are saved.',
     abandon: 'Discard',
+    abandonTitle: 'Discard the session?',
+    abandonText: 'Nothing will be saved, not even the sets already logged.',
+    abandonConfirm: 'Delete everything',
+    exerciseHint: 'Opens the settings of this exercise',
     finish: 'End',
     exerciseOf: '· exercise {n} of {total}',
     setOf: 'Set {n} of {total}',
     nextSetOf: 'Next set {n} of {total}',
     setDone: 'Set {n} done',
+    warmupOf: 'Warm-up {n} of {total}',
+    nextWarmupOf: 'Next warm-up {n} of {total}',
+    warmupDone: 'Warm-up done',
+    dropSet: 'Drop set',
+    nextDropSet: 'Next: drop set',
+    dropDone: 'Drop set done',
+    listening: 'Mic on · say “done”, “8” or “later”',
+    superset: 'Superset with {name} · no rest in between',
   },
 
   preview: {
@@ -41,7 +53,7 @@ export const session: Dictionary['session'] = {
       barbell: 'Barbell',
       dumbbell: 'Dumbbells',
       machine: 'Machine',
-      bodyweight: 'BW',
+      bodyweight: 'Bodyweight',
     },
   },
 
@@ -97,11 +109,14 @@ export const session: Dictionary['session'] = {
     startOther: "Pick your starting weight. We'll handle the rest.",
     inputLabel: 'Starting weight in kilos',
     presetA11y: '{kg} kilos',
+    suggested: 'suggested',
+    presetSuggestedA11y: '{kg} kilos, suggested',
     start: 'Start at {kg} kg',
   },
 
   doLater: {
     a11y: 'Do {name} later',
+    label: 'Do it later',
   },
 
   effort: {
@@ -129,7 +144,6 @@ export const session: Dictionary['session'] = {
     title: 'Rest',
     minimize: 'Minimize',
     minimizeA11y: 'Minimize the timer',
-    closeA11y: 'Close the rest',
     timerA11y: { one: 'Rest, {count} second left', other: 'Rest, {count} seconds left' },
     miniA11y: {
       one: 'Rest, {count} second left. Expand the timer',
@@ -141,6 +155,8 @@ export const session: Dictionary['session'] = {
     nextExercise: 'Next · {name}',
     nextExerciseSet: 'Next · {name}, set {n}',
     nextSet: 'Next · set {n}',
+    nextWarmup: 'Next · warm-up {n}',
+    nextDrop: 'Next · drop set',
     weightToSet: 'Weight to set',
     skip: 'Skip rest',
     undoA11y: 'Undo the last set',
@@ -152,7 +168,16 @@ export const session: Dictionary['session'] = {
     progress: { one: '{done} / {count} set done', other: '{done} / {count} sets done' },
   },
 
+  done: {
+    title: 'Last set logged',
+    text: 'Say how that last set went: your next session takes it into account.',
+    undo: 'Undo the last set',
+    oneMore: '+ One more set',
+    finish: 'Finish the session',
+  },
+
   progress: {
+    supersetA11y: 'chained with',
     doNow: 'Do {name} now',
     finished: '{name}, finished',
     current: '{name}, in progress',
@@ -168,6 +193,17 @@ export const session: Dictionary['session'] = {
     headerKg: 'KG',
     headerReps: 'REPS',
     deleteA11y: 'Delete set {n}',
+    warmupShort: 'Warm',
+    a11yWarmup: 'Warm-up, {kg} kilos, {reps} reps, {state}',
+    a11ySeconds: 'Set {index}, {reps} seconds, {state}',
+    headerSeconds: 'SEC',
+    dropShort: 'Drop',
+    failureShort: 'Fail',
+    a11yDrop: 'Drop set, {kg} kilos, {reps} reps, {state}',
+    a11yFailure: 'Set {index} to failure, {kg} kilos, {reps} reps, {state}',
+    menuHint: 'Long press: drop set or failure',
+    deleteWarmupA11y: 'Delete this warm-up',
+    deleteDropA11y: 'Delete this drop set',
   },
 
   setView: {
@@ -180,8 +216,32 @@ export const session: Dictionary['session'] = {
     missed: 'Missed the set? Log the reps you did',
     addSetA11y: 'Add a set',
     addSet: '+ Add a set',
-    swipeHint: 'Swipe a set left to delete it',
+    swipeHint: 'Swipe a set left to delete it, long press for a drop set',
     allAsPlanned: { one: 'All as planned · {count} set', other: 'All as planned · {count} sets' },
     validateA11y: 'Log the set',
+    warmupHint: "Warm-up · doesn't count in your stats",
+    skipWarmup: 'Skip the warm-up',
+    secondsUnit: 's',
+    secondsInput: 'Time in seconds',
+    secondsMinus: 'Minus 5 seconds',
+    secondsPlus: 'Plus 5 seconds',
+  },
+
+  setMenu: {
+    title: 'Set {n}',
+    titleDrop: 'Drop set',
+    addDrop: 'Add a drop set after',
+    failure: 'To failure',
+    normal: 'Normal set',
+  },
+
+  hold: {
+    start: 'Start · {s} s',
+    validateWithout: 'Log without the timer',
+    prep: 'Get in position',
+    holding: 'Hold it',
+    stop: 'Stop',
+    prepA11y: 'Starting in {s} seconds',
+    leftA11y: '{s} seconds left',
   },
 };
