@@ -23,6 +23,7 @@ export const session = {
     dropSet: 'Série dégressive',
     nextDropSet: 'Ensuite : série dégressive',
     dropDone: 'Dégressive validée',
+    listening: 'Micro ouvert · dis « fait », « 8 » ou « plus tard »',
     superset: 'En superset avec {name} · sans repos entre les deux',
   },
 

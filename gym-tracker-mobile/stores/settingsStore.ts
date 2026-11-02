@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   restTimerEnabled: true,
   notifications: true,
   voice: true,
+  voiceCommands: false,
   restBell: true,
   barWeight: DEFAULT_BAR,
   plates: DEFAULT_PLATES,

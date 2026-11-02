@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { requestVoicePermission, voiceInputAvailable } from '@/services/voiceInput';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { ALL_PLATES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
@@ -61,12 +62,22 @@ export default function Profile() {
     if (voice) speak(t('profile.during.voiceHello'));
   };
 
+  const toggleVoiceCommands = async () => {
+    if (settings.voiceCommands) {
+      updateSettings({ voiceCommands: false });
+      return;
+    }
+    if (await requestVoicePermission()) updateSettings({ voiceCommands: true });
+    else Alert.alert(t('profile.during.commandsDeniedTitle'), t('profile.during.commandsDeniedText'));
+  };
+
   const toggleBell = () => {
     const restBell = !settings.restBell;
     updateSettings({ restBell });
     if (restBell) playRestBell();
   };
 
+  const [canListen] = useState(voiceInputAvailable);
   const goal = GOALS.find((g) => g.id === profile?.goal);
   const split = profile ? getSplit(profile.program.split) : null;
 
@@ -144,6 +155,14 @@ export default function Profile() {
             onPress={toggleBell}
             hint={t('profile.during.tapToChange')}
           />
+          {canListen ? (
+            <Row
+              label={t('profile.during.commands')}
+              value={settings.voiceCommands ? t('profile.during.commandsOn') : t('profile.during.commandsOff')}
+              onPress={() => void toggleVoiceCommands()}
+              hint={t('profile.during.commandsHint')}
+            />
+          ) : null}
           <Row
             label={t('profile.during.warmups')}
             value={settings.warmups ? t('profile.during.warmupsOn') : t('profile.during.warmupsOff')}

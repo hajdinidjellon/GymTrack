@@ -33,6 +33,12 @@ export const profile: Dictionary['profile'] = {
     warmups: 'Warm-up',
     warmupsOn: 'Computed',
     warmupsOff: 'Off',
+    commands: 'Voice commands',
+    commandsOn: 'On',
+    commandsOff: 'Off',
+    commandsHint: '“done”, “8”, “later”, “easy”… recognized on the phone, nothing is sent. Tap to change.',
+    commandsDeniedTitle: 'Microphone denied',
+    commandsDeniedText: 'Allow the microphone and speech recognition for GymTrack in the phone’s Settings.',
     tapToChange: 'Tap to change',
   },
   language: {

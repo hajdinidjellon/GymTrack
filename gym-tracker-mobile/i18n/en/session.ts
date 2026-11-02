@@ -24,6 +24,7 @@ export const session: Dictionary['session'] = {
     dropSet: 'Drop set',
     nextDropSet: 'Next: drop set',
     dropDone: 'Drop set done',
+    listening: 'Mic on · say “done”, “8” or “later”',
     superset: 'Superset with {name} · no rest in between',
   },
 

@@ -56,7 +56,14 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "GymTrack écoute tes commandes pendant la séance (« fait », « 8 », « plus tard ») quand tu les actives.",
+          "speechRecognitionPermission": "GymTrack reconnaît tes commandes sur le téléphone, rien n'est envoyé."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

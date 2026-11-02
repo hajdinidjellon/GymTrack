@@ -138,6 +138,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     restTimerEnabled: z.boolean(),
     notifications: z.boolean(),
     voice: z.boolean(),
+    voiceCommands: z.boolean(),
     restBell: z.boolean(),
     programSwitchDismissed: z.string().max(40).nullable(),
     barWeight: z.number().min(0).max(50),

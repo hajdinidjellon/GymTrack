@@ -355,3 +355,38 @@ describe('supersets and drop sets', () => {
     expect(session().exercises[0]!.sets[0]!.setType).toBe('failure');
   });
 });
+
+describe('voice commands', () => {
+  it('validates the current set, with the reps said', () => {
+    store().voiceCommand({ kind: 'reps', reps: 7 });
+    expect(session().exercises[0]!.sets[0]).toMatchObject({ reps: 7, completed: true });
+    store().voiceCommand({ kind: 'validate' });
+    expect(session().exercises[0]!.sets[1]!.completed).toBe(true);
+    expect(session().restEndsAt).not.toBeNull();
+  });
+
+  it('rates the last set once, even said twice', () => {
+    store().completeSet('bench', 0);
+    store().voiceCommand({ kind: 'effort', effort: 'easy' });
+    store().voiceCommand({ kind: 'effort', effort: 'easy' });
+    expect(session().exercises[0]!.sets[0]!.rpe).toBeDefined();
+  });
+
+  it('ends the rest, and sends the exercise to the end', () => {
+    store().completeSet('bench', 0);
+    store().voiceCommand({ kind: 'skipRest' });
+    expect(session().restEndsAt).toBeNull();
+    store().voiceCommand({ kind: 'skipRest' });
+    store().voiceCommand({ kind: 'later' });
+    expect(session().exercises.map((e) => e.id)).toEqual(['ohp', 'bench']);
+  });
+
+  it('does nothing before a weight is picked, nor without a session', () => {
+    store().discardSession();
+    store().voiceCommand({ kind: 'validate' });
+    store().startSession('Push', [exercise('row', 1, { needsWeight: true })]);
+    store().voiceCommand({ kind: 'validate' });
+    store().voiceCommand({ kind: 'effort', effort: 'max' });
+    expect(session().exercises[0]!.sets[0]!.completed).toBe(false);
+  });
+});

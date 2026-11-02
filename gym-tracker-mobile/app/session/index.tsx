@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '@/constants/theme';
 import { useLocale } from '@/hooks/useLocale';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { dayName, exerciseName, listOf, t } from '@/i18n';
 import { findCurrent } from '@/domain/sessionCursor';
 import { setNumber, workingCount } from '@/domain/warmup';
@@ -55,6 +56,7 @@ export default function SessionScreen() {
   useLocale();
   const session = useSessionStore((s) => s.activeSession);
   const insets = useSafeAreaInsets();
+  const listening = useVoiceCommands(!!session);
   const cursor = session ? findCurrent(session.exercises) : null;
   const done = !!session && !cursor;
   const resting = session?.restEndsAt != null;
@@ -137,6 +139,11 @@ export default function SessionScreen() {
       {partners ? (
         <Text size={14} weight="bold" color={colors.inkMuted} style={{ marginTop: 4 }}>
           {t('session.logger.superset', { name: partners })}
+        </Text>
+      ) : null}
+      {listening ? (
+        <Text size={13} weight="bold" color={colors.inkMuted} style={{ marginTop: 4 }} accessibilityLiveRegion="polite">
+          {t('session.logger.listening')}
         </Text>
       ) : null}
       <View

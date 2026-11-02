@@ -15,7 +15,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { Storage } from 'expo-sqlite/kv-store';
 import * as Haptics from 'expo-haptics';
-import type { Effort } from '@/domain/effort';
+import { effortOf, type Effort } from '@/domain/effort';
+import type { VoiceCommand } from '@/domain/voiceCommands';
 import * as Session from '@/domain/session';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
@@ -68,6 +69,8 @@ interface SessionStore {
   addDropSet: (exerciseId: string, setIndex: number) => void;
   /** "Jusqu'à l'échec" on a working set, or back to normal. */
   toggleFailure: (exerciseId: string, setIndex: number) => void;
+  /** A spoken command: validate, reps done, how it felt, later, end of rest. */
+  voiceCommand: (command: VoiceCommand) => void;
   /** A held set just started (after the countdown): a tap in the hand, "C'est parti". */
   holdStarted: () => void;
   /** A held set is over: logs the seconds held and validates it. The bell when the target was reached. */
@@ -299,6 +302,36 @@ export const useSessionStore = create<SessionStore>()(
         toggleFailure: (exerciseId, setIndex) => {
           apply((s) => Session.toggleFailure(s, exerciseId, setIndex));
           Haptics.selectionAsync().catch(() => null);
+        },
+
+        voiceCommand: (command) => {
+          const session = get().activeSession;
+          const current = session && findCurrent(session.exercises);
+          if (!session) return;
+          switch (command.kind) {
+            case 'validate':
+            case 'reps':
+              // Still to calibrate: the weight has to be picked on screen first
+              if (!current || current.exercise.needsWeight) return;
+              get().stopRestTimer();
+              if (command.kind === 'reps')
+                get().updateSet(current.exercise.id, current.setIndex, { reps: command.reps });
+              get().completeSet(current.exercise.id, current.setIndex);
+              return;
+            case 'effort': {
+              // Said twice, it stays: the same tap twice would clear it
+              const last = session.lastCompleted;
+              const set = last && Session.findSet(session, last.exerciseId, last.setIndex);
+              if (set?.completed && effortOf(set.rpe) !== command.effort) get().rateLastSet(command.effort);
+              return;
+            }
+            case 'later':
+              if (current) get().doLater(current.exercise.id);
+              return;
+            case 'skipRest':
+              if (session.restEndsAt != null) get().stopRestTimer();
+              return;
+          }
         },
 
         skipWarmups: (exerciseId) => {
