@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Share, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
@@ -7,7 +7,6 @@ import { ALL_PLATES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
 import { totals } from '@/domain/stats';
 import { insights } from '@/domain/insights';
-import { workoutsToCsv } from '@/domain/exportCsv';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
 import { localeTag, t, type LanguageSetting } from '@/i18n';
@@ -31,7 +30,6 @@ import { Choice } from '@/components/ui/Choice';
 import { Check, ChevronRight } from '@/components/ui/icons';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { InsightsCard } from '@/components/stats/InsightsCard';
-import { logger } from '@/services/logger';
 
 export default function Profile() {
   useLocale();
@@ -233,14 +231,10 @@ export default function Profile() {
             hint={settings.countBothSides ? t('profile.data.bothSidesHint') : t('profile.data.asLoggedHint')}
           />
           <Row
-            label={t('profile.data.export')}
-            value={
-              workouts.length
-                ? t('profile.data.exportValue', { count: workouts.length })
-                : t('profile.data.exportNothing')
-            }
-            onPress={() => void exportWorkouts(workouts)}
-            hint={t('profile.data.exportHint')}
+            label={t('profile.data.transfer')}
+            value={t('profile.data.transferValue')}
+            onPress={() => router.push('/data')}
+            hint={t('profile.data.transferHint')}
             chevron
             last
           />
@@ -261,20 +255,6 @@ export default function Profile() {
       </FadeIn>
     </Screen>
   );
-}
-
-/** Every set in a CSV, through the share sheet: a copy the user keeps wherever they want. */
-async function exportWorkouts(workouts: Parameters<typeof workoutsToCsv>[0]) {
-  if (workouts.length === 0) {
-    Alert.alert(t('profile.data.emptyTitle'), t('profile.data.emptyText'));
-    return;
-  }
-  try {
-    await Share.share({ title: t('profile.data.shareTitle'), message: workoutsToCsv(workouts) });
-  } catch (error) {
-    logger.warn('export failed', error);
-    Alert.alert(t('profile.data.failTitle'), t('profile.data.failText'));
-  }
 }
 
 /** "oct. 26" */

@@ -1,5 +1,6 @@
 import type { Dictionary } from '@/i18n/fr';
 import { common } from './common';
+import { data } from './data';
 import { domain } from './domain';
 import { exercise } from './exercise';
 import { history } from './history';
@@ -13,6 +14,7 @@ import { ui } from './ui';
 
 export const en: Dictionary = {
   common,
+  data,
   domain,
   exercise,
   history,
