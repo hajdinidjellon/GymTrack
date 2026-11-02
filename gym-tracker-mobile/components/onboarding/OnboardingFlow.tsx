@@ -9,14 +9,19 @@ import {
   GYM_PLATES,
   PER_WEEK_CHOICES,
   WEEKDAYS,
+  answersWeek,
+  cycleDay,
   experienceTip,
+  firstSession,
   goalTip,
   rhythmTip,
+  sessionLetter,
+  sessionNames,
   splitFor,
   weekLegend,
-  weekPlan,
   type OnboardingAnswers,
 } from '@/domain/onboarding';
+import { defaultSchedule, trainingCount, WEEKDAY_NAMES } from '@/domain/schedule';
 import { formatKg } from '@/domain/plates';
 import { dayName, exerciseName, t } from '@/i18n';
 import { planDay } from '@/domain/sessionBuilder';
@@ -35,6 +40,7 @@ import { PlateFace } from '@/components/disc/PlateFace';
 import { OnboardingHeader, PickMark, Question, Tip } from './OnboardingParts';
 
 const QUESTIONS = 4;
+const RHYTHM = 1;
 const RECAP = QUESTIONS;
 
 export type FlowEnd = 'session' | 'home';
@@ -57,7 +63,12 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
     setAnswers((a) => ({ ...a, ...patch }));
   };
   const back = () => (step === 0 ? onExit() : setStep(step - 1));
-  const next = () => setStep(step + 1);
+  const next = () => {
+    // Continuer sur la semaine affichée : c'est elle qu'on garde
+    if (step === RHYTHM && !answers.schedule) setAnswers((a) => ({ ...a, schedule: answersWeek(a) }));
+    setStep(step + 1);
+  };
+  const noDay = step === RHYTHM && trainingCount(answersWeek(answers)) === 0;
 
   if (step === RECAP) return <Recap answers={answers} onBack={back} onFinish={(end) => onFinish(answers, end)} />;
 
@@ -69,6 +80,7 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
           label={step === QUESTIONS - 1 ? t('onboarding.flow.seeProgram') : t('common.continue')}
           haptic="light"
           onPress={next}
+          disabled={noDay}
         />
       }
     >
@@ -137,7 +149,9 @@ function GoalStep({ answers, set }: StepProps) {
 }
 
 function RhythmStep({ answers, set }: StepProps) {
-  const week = weekPlan(answers.perWeek);
+  const names = sessionNames(answers.perWeek);
+  const week = answersWeek(answers);
+  const count = trainingCount(week);
   return (
     <>
       <Question title={t('onboarding.flow.rhythm.title')} subtitle={t('onboarding.flow.rhythm.subtitle')} />
@@ -148,7 +162,8 @@ function RhythmStep({ answers, set }: StepProps) {
             <Choice
               key={n}
               selected={on}
-              onPress={() => set({ perWeek: n })}
+              // Un autre rythme, un autre programme : on repart de sa semaine type
+              onPress={() => set({ perWeek: n, schedule: defaultSchedule(sessionNames(n), n) })}
               accessibilityLabel={t('onboarding.flow.rhythm.perWeek', { n })}
               style={{ flex: 1, height: 72, alignItems: 'center', justifyContent: 'center' }}
             >
@@ -169,17 +184,21 @@ function RhythmStep({ answers, set }: StepProps) {
             {getSplit(splitFor(answers.perWeek)).title}
           </Text>
         </View>
-        <View
-          accessible
-          accessibilityLabel={t('onboarding.flow.rhythm.weekLabel', {
-            days: WEEKDAYS.filter((_, i) => week[i]).join(', '),
-          })}
-          style={{ flexDirection: 'row', justifyContent: 'space-between' }}
-        >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           {WEEKDAYS.map((d, i) => {
-            const letter = week[i];
+            const name = week[i] ?? null;
             return (
-              <View key={d} style={{ alignItems: 'center', gap: 6 }}>
+              <Pressable
+                key={d}
+                onPress={() => set({ schedule: cycleDay(week, i, names) })}
+                accessibilityRole="button"
+                accessibilityLabel={t('onboarding.flow.rhythm.dayLabel', {
+                  weekday: WEEKDAY_NAMES[i]!,
+                  name: name ? dayName(name) : t('onboarding.flow.rhythm.rest'),
+                })}
+                hitSlop={4}
+                style={({ pressed }) => ({ alignItems: 'center', gap: 6, opacity: pressed ? 0.7 : 1 })}
+              >
                 <Text size={13} weight="bold" color={colors.inkMuted}>
                   {d}
                 </Text>
@@ -189,28 +208,30 @@ function RhythmStep({ answers, set }: StepProps) {
                     height: 38,
                     borderRadius: 19,
                     borderWidth: border.base,
-                    borderColor: letter ? colors.outlineStrong : colors.line,
-                    borderStyle: letter ? 'solid' : 'dashed',
-                    backgroundColor: letter ? colors.coralSoft : 'transparent',
+                    borderColor: name ? colors.outlineStrong : colors.line,
+                    borderStyle: name ? 'solid' : 'dashed',
+                    backgroundColor: name ? colors.coralSoft : 'transparent',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  {letter ? (
+                  {name ? (
                     <Text size={15} weight="titleMedium">
-                      {letter}
+                      {sessionLetter(name, names)}
                     </Text>
                   ) : null}
                 </View>
-              </View>
+              </Pressable>
             );
           })}
         </View>
-        <Text size={14} color={colors.inkMuted} style={{ lineHeight: 20 }}>
-          {t('onboarding.flow.rhythm.legend', { legend: weekLegend(answers.perWeek) })}
+        <Text size={14} color={count === 0 ? colors.danger : colors.inkMuted} style={{ lineHeight: 20 }}>
+          {count === 0
+            ? t('onboarding.flow.rhythm.pickOne')
+            : t('onboarding.flow.rhythm.legend', { legend: weekLegend(answers.perWeek) })}
         </Text>
       </StickerCard>
-      <Tip tip={rhythmTip(answers.perWeek)} />
+      <Tip tip={rhythmTip(answers.perWeek, count)} />
     </>
   );
 }
@@ -375,13 +396,17 @@ function Recap({
   const settings = useSettingsStore((s) => s.settings);
   const split = getSplit(splitFor(answers.perWeek));
   const goal = GOALS.find((g) => g.id === answers.goal) ?? GOALS[0]!;
+  const perWeek = answers.schedule ? trainingCount(answers.schedule) : answers.perWeek;
   const plan = useMemo(
     () =>
-      planDay(split.days[0]!, {
-        profile: { goal: answers.goal, program: { split: split.id, perWeek: answers.perWeek }, prs: [] },
-        settings,
-        workouts: [],
-      }),
+      planDay(
+        split.days.find((d) => d.name === firstSession(answers.schedule, sessionNames(answers.perWeek)))!,
+        {
+          profile: { goal: answers.goal, program: { split: split.id, perWeek: answers.perWeek }, prs: [] },
+          settings,
+          workouts: [],
+        },
+      ),
     [answers, settings, split],
   );
 
@@ -417,7 +442,7 @@ function Recap({
             {t('onboarding.flow.recap.ready')}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[split.title, t('onboarding.flow.recap.perWeek', { n: answers.perWeek }), goal.sub].map((label) => (
+            {[split.title, t('onboarding.flow.recap.perWeek', { n: perWeek }), goal.sub].map((label) => (
               <View
                 key={label}
                 style={{

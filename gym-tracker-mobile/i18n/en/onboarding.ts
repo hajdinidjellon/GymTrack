@@ -32,8 +32,10 @@ export const onboarding: Dictionary['onboarding'] = {
       subtitle: 'Be realistic: 3 sessions you stick to beat 5 you skip.',
       perWeek: '{n} sessions a week',
       week: 'Your typical week',
-      weekLabel: 'Example: sessions on {days}',
-      legend: '{legend}. The days are just an example: pick your own in Profile, Program.',
+      legend: '{legend}. Tap a day to change its session. You can change it later in Profile, Program.',
+      dayLabel: '{weekday}: {name}. Tap to change.',
+      rest: 'rest',
+      pickOne: 'Pick at least one day: tap it to put a session on it.',
     },
     experience: {
       title: 'How long have you been lifting?',

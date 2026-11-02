@@ -1,6 +1,7 @@
 import React from 'react';
 import { router } from 'expo-router';
 import { splitFor, type OnboardingAnswers } from '@/domain/onboarding';
+import { trainingCount } from '@/domain/schedule';
 import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -18,7 +19,10 @@ export default function Setup() {
     });
     await useProfileStore.getState().saveProfile({
       goal: answers.goal,
-      program: { split: splitFor(answers.perWeek), perWeek: answers.perWeek },
+      // The days picked become the week; skipped, the sessions simply follow each other
+      program: answers.schedule
+        ? { split: splitFor(answers.perWeek), perWeek: trainingCount(answers.schedule), schedule: answers.schedule }
+        : { split: splitFor(answers.perWeek), perWeek: answers.perWeek },
       experience: answers.experience,
       prs: profile?.prs ?? [],
       bodyStats: profile?.bodyStats ?? [],

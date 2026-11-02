@@ -31,8 +31,10 @@ export const onboarding = {
       subtitle: 'Sois réaliste : mieux vaut 3 séances tenues que 5 ratées.',
       perWeek: '{n} séances par semaine',
       week: 'Ta semaine type',
-      weekLabel: 'Exemple : séances le {days}',
-      legend: '{legend}. Les jours sont un exemple : tu choisiras les tiens dans Profil, Programme.',
+      legend: '{legend}. Touche un jour pour changer sa séance. Modifiable ensuite dans Profil, Programme.',
+      dayLabel: '{weekday} : {name}. Touche pour changer.',
+      rest: 'repos',
+      pickOne: 'Choisis au moins un jour : touche-le pour y mettre une séance.',
     },
     experience: {
       title: 'Tu soulèves depuis quand ?',
