@@ -26,6 +26,8 @@ export interface Palette {
   outlineStrong: string;
   /** Outline of what only shows information (cards, panels, badges): the ink in light mode, none at night. */
   frame: string;
+  /** The ink line around drawings (plates, bar, logo, sparkles): dark in both modes. */
+  drawn: string;
   /** Dashed outlines of empty or upcoming things, separators. */
   line: string;
   /** Behind bottom sheets. */
@@ -75,6 +77,7 @@ export const lightPalette: Palette = {
   outline: '#1F1A17',
   outlineStrong: '#1F1A17',
   frame: '#1F1A17',
+  drawn: '#1F1A17',
   line: '#D9CCBF',
   scrim: 'rgba(31, 26, 23, 0.45)',
   shadow: '#1F1A17',
@@ -115,6 +118,7 @@ export const darkPalette: Palette = {
   outline: '#4FA3CC',
   outlineStrong: '#5BC8F5',
   frame: 'transparent',
+  drawn: '#02090D',
   line: '#23465E',
   scrim: 'rgba(0, 0, 0, 0.6)',
   shadow: '#02090D',

@@ -42,11 +42,11 @@ export function PlateFace({ kg, size, off }: Props) {
   return (
     <Svg width={size} height={size}>
       <G>
-        <Circle cx={c} cy={c} r={r} fill={color} stroke={colors.outline} strokeWidth={2.5} />
+        <Circle cx={c} cy={c} r={r} fill={color} stroke={colors.drawn} strokeWidth={2.5} />
         {/* Rebord : un fin anneau à l'encre */}
-        <Circle cx={c} cy={c} r={r * 0.82} fill="none" stroke={colors.outline} strokeOpacity={0.25} strokeWidth={1.5} />
-        <Circle cx={c} cy={c} r={r * 0.34} fill={colors.steel} stroke={colors.outline} strokeWidth={2} />
-        <Circle cx={c} cy={c} r={r * 0.14} fill={colors.paper} stroke={colors.outline} strokeWidth={1.5} />
+        <Circle cx={c} cy={c} r={r * 0.82} fill="none" stroke={colors.drawn} strokeOpacity={0.25} strokeWidth={1.5} />
+        <Circle cx={c} cy={c} r={r * 0.34} fill={colors.steel} stroke={colors.drawn} strokeWidth={2} />
+        <Circle cx={c} cy={c} r={r * 0.14} fill={colors.paper} stroke={colors.drawn} strokeWidth={1.5} />
         {r >= 18 ? (
           <SvgText
             x={c}

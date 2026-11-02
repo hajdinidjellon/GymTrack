@@ -179,7 +179,7 @@ function PlatePile({ count }: { count: number }) {
             marginLeft: i === 0 ? 0 : -2,
             borderRadius: 4,
             borderWidth: 2,
-            borderColor: colors.outline,
+            borderColor: colors.drawn,
             backgroundColor: plateColor(20),
           }}
         />
