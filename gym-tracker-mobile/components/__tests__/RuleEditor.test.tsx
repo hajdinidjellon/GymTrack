@@ -10,7 +10,7 @@ describe('RuleEditor', () => {
   it('changes the sets and keeps the reps valid', async () => {
     const onChange = jest.fn();
     await render(<RuleEditor rule={base} base={base} custom={false} onChange={onChange} onReset={jest.fn()} />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Séries : plus un' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Séries : plus 1' }));
     expect(onChange).toHaveBeenLastCalledWith({ sets: 4, repMin: 8, repMax: 12 });
     expect(screen.queryByRole('button', { name: /Revenir/ })).toBeNull();
   });
@@ -23,14 +23,23 @@ describe('RuleEditor', () => {
     expect(screen.queryByText(/ajoute du poids/)).toBeNull();
   });
 
+  it('counts seconds 5 by 5 on a hold', async () => {
+    const onChange = jest.fn();
+    const held = { sets: 3, repMin: 30, repMax: 60 };
+    await render(<RuleEditor rule={held} base={held} custom={false} timed onChange={onChange} onReset={jest.fn()} />);
+    await fireEvent.press(screen.getByRole('button', { name: 'Secondes maxi : plus 5' }));
+    expect(onChange).toHaveBeenLastCalledWith({ sets: 3, repMin: 30, repMax: 65 });
+    expect(screen.getByText('Tu tiens 30 s, puis 5 s de plus à chaque séance réussie.')).toBeOnTheScreen();
+  });
+
   it('does nothing at a limit', async () => {
     const onChange = jest.fn();
     const rule = { sets: 1, repMin: 8, repMax: 8 };
     await render(<RuleEditor rule={rule} base={base} custom onChange={onChange} onReset={jest.fn()} />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Séries : moins un' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Reps maxi : moins un' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Séries : moins 1' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Reps maxi : moins 1' }));
     expect(onChange).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getByRole('button', { name: 'Reps mini : plus un' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Reps mini : plus 1' }));
     expect(onChange).toHaveBeenLastCalledWith({ sets: 1, repMin: 9, repMax: 9 });
   });
 
@@ -50,7 +59,7 @@ describe('RuleEditor', () => {
       await render(
         <RuleEditor rule={{ ...base, sets: 5 }} base={base} custom onChange={jest.fn()} onReset={onReset} />,
       );
-      expect(screen.getByRole('button', { name: 'Sets: plus one' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Sets: plus 1' })).toBeOnTheScreen();
       expect(screen.getByLabelText('Min reps: 8')).toBeOnTheScreen();
       expect(screen.getByText(/up to 12, then we add weight and you go back to 8/)).toBeOnTheScreen();
       await fireEvent.press(screen.getByRole('button', { name: 'Back to 3 × 8–12 (your goal)' }));

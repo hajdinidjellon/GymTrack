@@ -225,9 +225,10 @@ export function nextTargets(
 
   const effort = lastEffort(last.sets);
   const hold = effort === 'max' && allOutStreak(sessions, weight) % 2 === 1;
-  const step = hold ? 0 : effort === 'easy' ? 2 : 1;
+  const unit = rule.repStep ?? 1;
+  const step = hold ? 0 : effort === 'easy' ? 2 * unit : unit;
   return {
-    decision: hold ? 'hold' : step === 2 ? 'add_two_reps' : 'add_reps',
+    decision: hold ? 'hold' : step === 2 * unit ? 'add_two_reps' : 'add_reps',
     targets: fill(rule, weight, (i) => {
       const set = last.sets[i];
       if (!set) return rule.repMin;

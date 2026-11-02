@@ -29,6 +29,7 @@ const ruleSchema: z.ZodType<ProgressionRule> = z.object({
   repMin: reps,
   repMax: reps,
   increment: z.number().positive().max(50),
+  repStep: z.number().int().min(1).max(60).optional(),
 });
 
 const setSchema: z.ZodType<WorkoutSet> = z.object({
@@ -63,6 +64,7 @@ const customExerciseSchema: z.ZodType<CustomExercise> = z.object({
   equipment: z.enum(['barbell', 'dumbbell', 'machine', 'bodyweight']),
   category,
   muscleGroups: z.array(muscleGroup).min(1).max(10),
+  timed: z.boolean().optional(),
 });
 
 const exerciseSchema: z.ZodType<Exercise> = z.object({
@@ -75,6 +77,7 @@ const exerciseSchema: z.ZodType<Exercise> = z.object({
   tempo: z.string().max(20).optional(),
   rule: ruleSchema.optional(),
   calibration: z.boolean().optional(),
+  timed: z.boolean().optional(),
 });
 
 export const workoutSchema: z.ZodType<Workout> = z.object({
@@ -145,8 +148,9 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
       z.string().max(100),
       z.object({
         sets: z.number().int().min(1).max(10),
-        repMin: z.number().int().min(1).max(50),
-        repMax: z.number().int().min(1).max(50),
+        // Up to 600: on a timed exercise these are seconds
+        repMin: z.number().int().min(1).max(600),
+        repMax: z.number().int().min(1).max(600),
       }),
     ),
     restOverrides: z.record(z.string().max(100), z.number().int().min(15).max(600)),

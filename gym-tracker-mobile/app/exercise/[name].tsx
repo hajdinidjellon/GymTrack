@@ -81,7 +81,7 @@ export default function ExerciseScreen() {
           {t('exercise.nextTarget')}
         </Text>
         <Text size={34} weight="black" style={{ lineHeight: 42 }}>
-          {lift.decision === 'calibrate' ? t('exercise.toCalibrate') : targetLoad(lift.targets)}
+          {lift.decision === 'calibrate' ? t('exercise.toCalibrate') : targetLoad(lift.targets, def.timed)}
         </Text>
         <View
           style={{
@@ -101,7 +101,7 @@ export default function ExerciseScreen() {
         </View>
         {lift.last.length ? (
           <Text size={15} style={{ marginTop: 8 }}>
-            {t('exercise.lastTime', { last: lastTimeLabel(lift.last) })}
+            {t('exercise.lastTime', { last: lastTimeLabel(lift.last, def.timed) })}
           </Text>
         ) : null}
         {lift.decision !== 'calibrate' && target && target.weight > 0 ? (
@@ -242,7 +242,7 @@ export default function ExerciseScreen() {
             </Text>
           </Pressable>
         ) : null}
-        {!bodyweight ? (
+        {!bodyweight && !def.timed ? (
           <CheckRow
             label={t('exercise.warmups.label')}
             checked={warmups}
@@ -279,6 +279,7 @@ export default function ExerciseScreen() {
                   <Text size={18} weight="black">
                     {w > 0 ? t('exercise.history.weight', { kg: formatKg(w) }) : ''}
                     {sets.map((s) => s.reps).join(' · ')}
+                    {def.timed ? ' s' : ''}
                   </Text>
                 </View>
               );

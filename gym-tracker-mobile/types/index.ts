@@ -44,6 +44,8 @@ export interface Exercise {
   rule?: ProgressionRule;
   /** First session with no history: the starting weight was picked by hand. */
   calibration?: boolean;
+  /** Held for a time (plank…): `reps` counts seconds. */
+  timed?: boolean;
 }
 
 // ============================================================
@@ -58,6 +60,8 @@ export interface ProgressionRule {
   repMax: number;
   /** Weight step in the user's unit (2.5 kg, 5 lbs, 1-2 for dumbbells...). */
   increment: number;
+  /** Reps added per progress step: 1, or 5 seconds on a timed exercise. */
+  repStep?: number;
 }
 
 export interface SetTarget {
@@ -126,6 +130,8 @@ export interface CustomExercise {
   equipment: Equipment;
   category: ExerciseCategory;
   muscleGroups: MuscleGroup[];
+  /** Held for a time: counted in seconds, not reps. */
+  timed?: boolean;
 }
 
 export interface RuleOverride {

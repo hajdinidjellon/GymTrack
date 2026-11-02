@@ -151,6 +151,8 @@ interface Row {
   date: Date;
   title: string;
   exercise: string;
+  /** Held for a time (plank…): the reps are seconds. */
+  timed: boolean;
   set: Omit<WorkoutSet, 'completed'>;
   minutes?: number;
 }
@@ -180,22 +182,36 @@ function rpeOf(cells: string[], columns: Columns): number | undefined {
   return rpe !== null && rpe > 0 && rpe <= 10 ? rpe : undefined;
 }
 
+/**
+ * Reps, or seconds for a hold with no distance (a plank, not a run).
+ * Neither: null, the line is not a set the app can log.
+ */
+function amount(cells: string[], columns: Columns, secondsColumn: string, distanceColumns: string[]) {
+  const reps = parseNumber(col(cells, columns, 'reps'));
+  if (reps !== null && reps > 0) return { reps: Math.round(reps), timed: false };
+  const seconds = parseNumber(col(cells, columns, secondsColumn));
+  const distance = parseNumber(col(cells, columns, ...distanceColumns)) ?? 0;
+  if (seconds !== null && seconds > 0 && distance <= 0) return { reps: Math.round(seconds), timed: true };
+  return null;
+}
+
 function strongRow(cells: string[], columns: Columns): Row | 'skip' | null {
   const order = (col(cells, columns, 'set order') ?? '').trim().toLowerCase();
   // "Rest Timer" lines and notes are not sets: dropped without counting
   if (!/^\d+$/.test(order) && !STRONG_TYPES[order]) return null;
   const date = parseDate(col(cells, columns, 'date') ?? '');
-  const reps = parseNumber(col(cells, columns, 'reps'));
+  const done = amount(cells, columns, 'seconds', ['distance']);
   const exercise = col(cells, columns, 'exercise name')?.trim();
-  if (!date || !exercise || reps === null || reps <= 0) return 'skip';
+  if (!date || !exercise || !done) return 'skip';
   return {
     date,
     title: col(cells, columns, 'workout name')?.trim() ?? '',
     exercise,
+    timed: done.timed,
     minutes: durationMinutes(col(cells, columns, 'duration')),
     set: {
       weight: weightOf(cells, columns),
-      reps: Math.round(reps),
+      reps: done.reps,
       setType: STRONG_TYPES[order] ?? 'normal',
       rpe: rpeOf(cells, columns),
     },
@@ -205,18 +221,19 @@ function strongRow(cells: string[], columns: Columns): Row | 'skip' | null {
 function hevyRow(cells: string[], columns: Columns): Row | 'skip' {
   const date = parseDate(col(cells, columns, 'start_time') ?? '');
   const end = parseDate(col(cells, columns, 'end_time') ?? '');
-  const reps = parseNumber(col(cells, columns, 'reps'));
+  const done = amount(cells, columns, 'duration_seconds', ['distance_km', 'distance_miles']);
   const exercise = col(cells, columns, 'exercise_title')?.trim();
-  if (!date || !exercise || reps === null || reps <= 0) return 'skip';
+  if (!date || !exercise || !done) return 'skip';
   const type = (col(cells, columns, 'set_type') ?? '').trim().toLowerCase();
   return {
     date,
     title: col(cells, columns, 'title')?.trim() ?? '',
     exercise,
+    timed: done.timed,
     minutes: end ? Math.round((end.getTime() - date.getTime()) / 60000) : undefined,
     set: {
       weight: weightOf(cells, columns),
-      reps: Math.round(reps),
+      reps: done.reps,
       setType: HEVY_TYPES[type] ?? 'normal',
       rpe: rpeOf(cells, columns),
     },
@@ -270,12 +287,13 @@ export function importWorkouts(text: string, own: CustomExercise[] = []): Import
     sessions.set(key, session);
     const def = match(row.exercise);
     const name = (def?.name ?? row.exercise).slice(0, 100);
-    const exercise = session.exercises.get(name) ?? {
+    const exercise: Exercise = session.exercises.get(name) ?? {
       id: `${slug(name)}-${session.exercises.size}`,
       name,
       category: def?.category ?? 'compound',
       muscleGroups: def?.muscleGroups ?? [],
       sets: [],
+      ...(row.timed || def?.timed ? { timed: true } : {}),
     };
     session.exercises.set(name, exercise);
     const { rpe, ...set } = row.set;

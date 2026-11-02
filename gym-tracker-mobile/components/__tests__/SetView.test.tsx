@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { Text } from 'react-native';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
@@ -144,5 +144,59 @@ describe('SetView with warm-ups', () => {
     await renderCurrentSet();
     expect(screen.getByLabelText('Série 1, 62,5 kilos, 10 reps, à venir')).toBeOnTheScreen();
     expect(screen.getByLabelText('Échauffement, 20 kilos, 10 reps, en cours')).toBeOnTheScreen();
+  });
+});
+
+describe('SetView on a held set', () => {
+  const plank: ActiveExercise = {
+    id: 'plank',
+    name: 'Gainage',
+    category: 'isolation',
+    muscleGroups: ['core'],
+    equipment: 'bodyweight',
+    needsWeight: false,
+    timed: true,
+    rule: { kind: 'double', sets: 2, repMin: 30, repMax: 60, increment: 2.5, repStep: 5 },
+    sets: [0, 1].map(() => ({ weight: 0, reps: 45, setType: 'normal' as const, restTime: 60, completed: false })),
+  };
+
+  beforeEach(() => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, voice: false } });
+    useSessionStore.getState().startSession('Abdos', [plank]);
+  });
+
+  it('counts in seconds, 5 by 5, with no missed-reps link', async () => {
+    await renderCurrentSet();
+    expect(screen.getByText('SEC')).toBeOnTheScreen();
+    expect(screen.queryByText('Série ratée ? Note les reps faites')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Plus 5 secondes' }));
+    expect(sets()[0]!.reps).toBe(50);
+  });
+
+  it('runs the countdown, then the hold, and validates by itself at the end', async () => {
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Lancer · 45 s' }));
+    expect(screen.getByText('Mets-toi en position')).toBeOnTheScreen();
+    await act(() => jest.advanceTimersByTime(3200));
+    expect(screen.getByText('Tiens bon')).toBeOnTheScreen();
+    await act(() => jest.advanceTimersByTime(45_000));
+    expect(sets()[0]).toMatchObject({ reps: 45, completed: true });
+  });
+
+  it('logs what was held when stopped, and cancels during the countdown', async () => {
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Lancer · 45 s' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Annuler' }));
+    expect(sets()[0]!.completed).toBe(false);
+    await fireEvent.press(screen.getByRole('button', { name: 'Lancer · 45 s' }));
+    await act(() => jest.advanceTimersByTime(3000 + 20_400));
+    await fireEvent.press(screen.getByRole('button', { name: 'Stop' }));
+    expect(sets()[0]).toMatchObject({ reps: 20, completed: true });
+  });
+
+  it('can be logged without the timer', async () => {
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByRole('button', { name: 'Valider sans chrono' }));
+    expect(sets()[0]).toMatchObject({ reps: 45, completed: true });
   });
 });

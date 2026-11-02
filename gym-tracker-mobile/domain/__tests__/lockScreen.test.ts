@@ -93,3 +93,10 @@ describe('lockScreenProps', () => {
     });
   });
 });
+
+describe('lockScreenProps on a hold', () => {
+  it('shows the seconds to hold', () => {
+    const plank = active('Gainage', [{ weight: 0, reps: 45 }], { equipment: 'bodyweight', timed: true });
+    expect(lockScreenProps(session([plank]), gym, NOW).target).toBe('45 s');
+  });
+});

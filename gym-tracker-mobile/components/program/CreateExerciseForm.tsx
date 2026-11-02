@@ -32,10 +32,11 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
   );
   const [equipment, setEquipment] = useState<Equipment>('machine');
   const [category, setCategory] = useState<ExerciseCategory>('isolation');
+  const [counted, setCounted] = useState<'reps' | 'seconds'>('reps');
   const [error, setError] = useState<string | null>(null);
 
   const save = () => {
-    const result = makeCustomExercise({ name, equipment, category, muscle }, own);
+    const result = makeCustomExercise({ name, equipment, category, muscle, timed: counted === 'seconds' }, own);
     if ('error' in result) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
       setError(result.error);
@@ -100,6 +101,15 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', on
         options={KINDS.map((id) => ({ id, label: t(`program.kind.${id}`) }))}
         value={category}
         onChange={setCategory}
+      />
+      <Options
+        label={t('program.create.counted')}
+        options={[
+          { id: 'reps' as const, label: t('program.create.countedReps') },
+          { id: 'seconds' as const, label: t('program.create.countedSeconds') },
+        ]}
+        value={counted}
+        onChange={setCounted}
       />
       <Text size={13} color={colors.inkMuted} style={{ lineHeight: 18 }}>
         {t('program.create.hint')}

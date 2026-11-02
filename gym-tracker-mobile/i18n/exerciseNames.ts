@@ -101,6 +101,10 @@ export const EXERCISE_NAMES_EN: Record<string, string> = {
   Crunch: 'Crunch',
   'Relevés de jambes': 'Leg raises',
   'Roue abdominale': 'Ab wheel',
+  Gainage: 'Plank',
+  'Gainage latéral': 'Side plank',
+  Chaise: 'Wall sit',
+  'Suspension barre': 'Dead hang',
 };
 
 /** English names of the program days, keyed by their (stored) French name. Push, Pull, Legs and Full body stay. */

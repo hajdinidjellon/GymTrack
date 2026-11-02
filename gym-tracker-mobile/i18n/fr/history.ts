@@ -9,8 +9,6 @@ export const history = {
     lifted: '{kg} kg soulevés',
     record: 'Record · {name} {kg} kg',
     warmup: 'échauff.',
-    setWeight: '{kg} kg × {reps}',
-    setReps: '{reps} reps',
     exerciseA11y: 'Voir {name}',
     all: 'Tout l’historique',
     notFound: 'Cette séance n’existe plus.',

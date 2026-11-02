@@ -349,3 +349,42 @@ describe('weightHistory', () => {
     ]);
   });
 });
+
+describe('timed exercises', () => {
+  const held = { kind: 'double' as const, sets: 3, repMin: 30, repMax: 60, increment: 2.5, repStep: 5 };
+  const targets = [
+    { weight: 0, reps: 45 },
+    { weight: 0, reps: 40 },
+  ];
+
+  it('says seconds everywhere', () => {
+    expect(targetLabel(targets, true)).toBe('2 × 40 s');
+    expect(targetLoad(targets, true)).toBe('40 s');
+    expect(targetLoad([{ weight: 10, reps: 45 }], true)).toBe('10 kg × 45 s');
+    expect(lastTimeLabel(targets, true)).toBe('45 · 40 s');
+    expect(deltaLabel({ decision: 'add_reps', rule: held })).toBe('+5 s');
+    expect(deltaLabel({ decision: 'add_two_reps', rule: held })).toBe('+10 s');
+  });
+
+  it('explains the target in seconds', () => {
+    const base = { rule: held, targets };
+    expect(reasonLabel({ ...base, decision: 'add_reps' })).toBe('5 secondes de plus par série que la dernière fois.');
+    expect(reasonLabel({ ...base, decision: 'add_two_reps' })).toBe(
+      'Ta dernière série était facile : 10 secondes de plus par série.',
+    );
+    expect(reasonLabel({ ...base, decision: 'repeat' })).toBe(
+      'Une série a tenu moins de 30 s : on garde la même cible.',
+    );
+    expect(reasonLabel({ ...base, decision: 'add_weight' })).toBe(
+      'Toutes tes séries ont tenu 60 s : on ajoute 2,5 kg.',
+    );
+  });
+
+  it('plans a plank in seconds and marks it timed', () => {
+    const plank = planLift(EXERCISES.plank, ctx());
+    expect(plank.rule).toMatchObject({ repMin: 30, repMax: 60, repStep: 5 });
+    expect(plank.targets.map((x) => x.reps)).toEqual([30, 30, 30]);
+    expect(toActiveExercise(plank).timed).toBe(true);
+    expect(toActiveExercise(planLift(EXERCISES.squat, ctx())).timed).toBeUndefined();
+  });
+});

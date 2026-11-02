@@ -402,3 +402,10 @@ describe('warm-ups in the session', () => {
     expect(w.exercises[0]!.sets.map((set) => set.setType)).toEqual(['warmup', 'normal', 'normal']);
   });
 });
+
+describe('nextSetSummary on a hold', () => {
+  it('names the seconds', () => {
+    const plank = active('Gainage', [{ weight: 0, reps: 45 }], { equipment: 'bodyweight', timed: true });
+    expect(Session.nextSetSummary(session([plank]), formatKg)).toBe('Gainage · 45 s');
+  });
+});

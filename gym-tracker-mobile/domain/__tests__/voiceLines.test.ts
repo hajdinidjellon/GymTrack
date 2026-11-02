@@ -74,3 +74,12 @@ describe('voice lines', () => {
     );
   });
 });
+
+describe('timed voice lines', () => {
+  it('says seconds for a hold', () => {
+    const plank = active('Gainage', [{ weight: 0, reps: 45 }], { equipment: 'bodyweight', timed: true });
+    expect(setLine(cursor(plank))).toBe('Série 1. 45 secondes.');
+    const weighted = active('Gainage', [{ weight: 10, reps: 45 }], { equipment: 'machine', timed: true });
+    expect(setLine(cursor(weighted))).toBe('Série 1. 10 kilos, 45 secondes.');
+  });
+});

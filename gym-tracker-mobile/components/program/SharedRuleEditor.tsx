@@ -37,6 +37,7 @@ export function SharedRuleEditor({ def, goal, base, bodyweight }: Props) {
         base={base}
         custom={def.name in overrides}
         bodyweight={bodyweight}
+        timed={def.timed}
         onChange={(rule) => setRule(def, rule, goal, similar)}
         onReset={() => setRule(def, null, goal, similar)}
       />

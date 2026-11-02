@@ -28,9 +28,11 @@ export function setLine(cursor: Cursor): string {
   const { set, setIndex } = cursor;
   const { warmup, n } = setNumber(cursor.exercise.sets, setIndex);
   const suffix = LOADING_SUFFIX[loadingOf(cursor.exercise)];
-  if (set.weight <= 0) return t('domain.voice.setReps', { n, reps: set.reps });
+  const timed = !!cursor.exercise.timed;
+  if (set.weight <= 0) return t(timed ? 'domain.voice.setSeconds' : 'domain.voice.setReps', { n, reps: set.reps });
   const load = `${kilos(set.weight)}${suffix ? ` ${suffix}` : ''}`;
-  return t(warmup ? 'domain.voice.warmupLoad' : 'domain.voice.setLoad', { n, load, reps: set.reps });
+  const key = warmup ? 'domain.voice.warmupLoad' : timed ? 'domain.voice.setLoadSeconds' : 'domain.voice.setLoad';
+  return t(key, { n, load, reps: set.reps });
 }
 
 /** Straight to the next set, no rest in between (warm-ups): the plates first, then the set. */

@@ -179,8 +179,9 @@ export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
     plateLoaded: lift.plateLoaded || undefined,
     rule: lift.rule,
     calibration: needsWeight || undefined,
+    timed: lift.def.timed || undefined,
     needsWeight,
-    lastTime: lift.last.length ? lastTimeLabel(lift.last) : undefined,
+    lastTime: lift.last.length ? lastTimeLabel(lift.last, lift.def.timed) : undefined,
     reason: reasonLabel(lift),
     restNote: lift.restNote || undefined,
     sets: lift.targets.map((t) => ({
@@ -196,11 +197,12 @@ export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
 
 /** What changed since last time, in a few words. */
 export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string {
+  const seconds = lift.rule.repStep;
   switch (lift.decision) {
     case 'add_reps':
-      return t('domain.plan.deltaOneRep');
+      return seconds ? t('domain.plan.deltaSeconds', { s: seconds }) : t('domain.plan.deltaOneRep');
     case 'add_two_reps':
-      return t('domain.plan.deltaTwoReps');
+      return seconds ? t('domain.plan.deltaSeconds', { s: seconds * 2 }) : t('domain.plan.deltaTwoReps');
     case 'add_weight':
       return t('domain.plan.deltaWeight', { kg: formatKg(lift.rule.increment) });
     case 'hold':
@@ -217,30 +219,42 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
   }
 }
 
-/** "60 kg × 10 · 10 · 9", or "12 · 11 · 10 reps" at bodyweight. */
-export function lastTimeLabel(sets: SetTarget[]): string {
+/** "62,5 kg × 10", "12 reps", "45 s" or "10 kg × 45 s": one load as it is read in the gym. */
+export function loadLabel(weight: number, reps: number | string, timed = false): string {
+  if (weight > 0)
+    return t(timed ? 'domain.load.kgTimesSeconds' : 'domain.load.kgTimes', { kg: formatKg(weight), reps });
+  return t(timed ? 'domain.load.seconds' : 'domain.load.reps', { reps });
+}
+
+/** "60 kg × 10 · 10 · 9", "12 · 11 · 10 reps" at bodyweight, "45 · 45 · 40 s" held. */
+export function lastTimeLabel(sets: SetTarget[], timed = false): string {
   const reps = sets.map((s) => s.reps).join(' · ');
   const weight = referenceWeight(sets.map((s) => ({ ...s, setType: 'normal' as const })));
-  return weight > 0 ? t('domain.load.kgTimes', { kg: formatKg(weight), reps }) : t('domain.load.reps', { reps });
+  return loadLabel(weight, reps, timed);
 }
 
 /** Why today's target is what it is, in one sentence. */
 export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targets' | 'daysOff'>): string {
   const { rule } = lift;
   const bodyweight = (lift.targets[0]?.weight ?? 0) === 0;
+  const seconds = rule.repStep;
   switch (lift.decision) {
     case 'add_weight':
-      return t('domain.plan.reasonAddWeight', { reps: rule.repMax, kg: formatKg(rule.increment) });
+      return t(seconds ? 'domain.plan.reasonAddWeightSeconds' : 'domain.plan.reasonAddWeight', {
+        reps: rule.repMax,
+        kg: formatKg(rule.increment),
+      });
     case 'add_reps':
+      if (seconds) return t('domain.plan.reasonAddSeconds', { s: seconds });
       return bodyweight
         ? t('domain.plan.reasonAddRepsBodyweight')
         : t('domain.plan.reasonAddReps', { reps: rule.repMax });
     case 'add_two_reps':
-      return t('domain.plan.reasonAddTwoReps');
+      return seconds ? t('domain.plan.reasonAddTwoSeconds', { s: seconds * 2 }) : t('domain.plan.reasonAddTwoReps');
     case 'hold':
       return t('domain.plan.reasonHold');
     case 'repeat':
-      return t('domain.plan.reasonRepeat', { reps: rule.repMin });
+      return t(seconds ? 'domain.plan.reasonRepeatSeconds' : 'domain.plan.reasonRepeat', { reps: rule.repMin });
     case 'deload':
       return t('domain.plan.reasonDeload');
     case 'comeback':
@@ -258,23 +272,20 @@ export function breakLabel(days: number): string {
   return t('domain.plan.months', { count: Math.floor(days / 30) });
 }
 
-/** "3 × 10 · 62,5 kg", or "3 × 13" at bodyweight. Uneven reps show the lowest. */
-export function targetLabel(targets: SetTarget[]): string {
+/** "3 × 10 · 62,5 kg", "3 × 13" at bodyweight, "3 × 45 s" held. Uneven reps show the lowest. */
+export function targetLabel(targets: SetTarget[], timed = false): string {
   const first = targets[0];
   if (!first) return '';
   const reps = Math.min(...targets.map((t) => t.reps));
-  const base = `${targets.length} × ${reps}`;
+  const base = `${targets.length} × ${reps}${timed ? ' s' : ''}`;
   return first.weight > 0 ? `${base} · ${formatKg(first.weight)} kg` : base;
 }
 
-/** Today's target as it is read in the gym: "62,5 kg × 10", or "12 reps" without weight. */
-export function targetLoad(targets: SetTarget[]): string {
+/** Today's target as it is read in the gym: "62,5 kg × 10", "12 reps" or "45 s" without weight. */
+export function targetLoad(targets: SetTarget[], timed = false): string {
   const first = targets[0];
   if (!first) return '';
-  const reps = Math.min(...targets.map((t) => t.reps));
-  return first.weight > 0
-    ? t('domain.load.kgTimes', { kg: formatKg(first.weight), reps })
-    : t('domain.load.reps', { reps });
+  return loadLabel(first.weight, Math.min(...targets.map((t) => t.reps)), timed);
 }
 
 /** How many times the logged weight counts in the total: 2 for both sides or both dumbbells. */

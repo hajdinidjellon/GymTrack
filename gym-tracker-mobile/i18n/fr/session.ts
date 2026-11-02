@@ -174,6 +174,8 @@ export const session = {
     deleteA11y: 'Supprimer la série {n}',
     warmupShort: 'Éch.',
     a11yWarmup: 'Échauffement, {kg} kilos, {reps} reps, {state}',
+    a11ySeconds: 'Série {index}, {reps} secondes, {state}',
+    headerSeconds: 'SEC',
     deleteWarmupA11y: 'Supprimer cet échauffement',
   },
 
@@ -192,5 +194,19 @@ export const session = {
     validateA11y: 'Valider la série',
     warmupHint: 'Échauffement · ne compte pas dans tes stats',
     skipWarmup: "Passer l'échauffement",
+    secondsUnit: 's',
+    secondsInput: 'Durée en secondes',
+    secondsMinus: 'Moins 5 secondes',
+    secondsPlus: 'Plus 5 secondes',
+  },
+
+  hold: {
+    start: 'Lancer · {s} s',
+    validateWithout: 'Valider sans chrono',
+    prep: 'Mets-toi en position',
+    holding: 'Tiens bon',
+    stop: 'Stop',
+    prepA11y: 'Départ dans {s} secondes',
+    leftA11y: 'Encore {s} secondes',
   },
 };

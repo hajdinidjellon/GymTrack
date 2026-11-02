@@ -306,5 +306,5 @@ export function nextSetSummary(session: ActiveSession, formatKg: (n: number) => 
   const name = exerciseName(next.exercise.name);
   return next.set.weight > 0
     ? t('domain.session.nextLoad', { name, kg: formatKg(next.set.weight), reps: next.set.reps })
-    : t('domain.session.nextReps', { name, reps: next.set.reps });
+    : t(next.exercise.timed ? 'domain.session.nextSeconds' : 'domain.session.nextReps', { name, reps: next.set.reps });
 }

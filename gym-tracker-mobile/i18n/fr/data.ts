@@ -44,8 +44,8 @@ export const data = {
       other: '{count} exercices gardés sous leur nom, visibles dans l’historique.',
     },
     skipped: {
-      one: '{count} ligne sans reps ignorée (cardio, gainage…).',
-      other: '{count} lignes sans reps ignorées (cardio, gainage…).',
+      one: '{count} ligne sans reps ni durée ignorée (cardio…).',
+      other: '{count} lignes sans reps ni durée ignorées (cardio…).',
     },
     strongKilos: 'Strong n’indique pas l’unité : les poids sont lus en kilos.',
     errorTitle: 'Import impossible',

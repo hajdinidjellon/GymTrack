@@ -24,6 +24,7 @@ import { cancelRestCompleteNotification, scheduleRestCompleteNotification } from
 import { speak } from '@/services/speech';
 import { playRestBell, REST_BELL_MS } from '@/services/sound';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { t } from '@/i18n';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
 type NudgeField = 'weight' | 'reps';
@@ -63,6 +64,10 @@ interface SessionStore {
   doLater: (exerciseId: string) => void;
   /** Drops the warm-ups left on this exercise. */
   skipWarmups: (exerciseId: string) => void;
+  /** A held set just started (after the countdown): a tap in the hand, "C'est parti". */
+  holdStarted: () => void;
+  /** A held set is over: logs the seconds held and validates it. The bell when the target was reached. */
+  finishHold: (exerciseId: string, setIndex: number, seconds: number, reached: boolean) => void;
 
   startRestTimer: (seconds: number) => void;
   addRestTime: (seconds: number) => void;
@@ -264,6 +269,17 @@ export const useSessionStore = create<SessionStore>()(
         doNow: (exerciseId) => reorder((s) => Session.doNow(s, exerciseId)),
 
         doLater: (exerciseId) => reorder((s) => Session.doLater(s, exerciseId)),
+
+        holdStarted: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => null);
+          if (settings().voice) speak(t('domain.voice.holdGo'));
+        },
+
+        finishHold: (exerciseId, setIndex, seconds, reached) => {
+          if (reached && settings().restBell) playRestBell();
+          get().updateSet(exerciseId, setIndex, { reps: seconds });
+          get().completeSet(exerciseId, setIndex);
+        },
 
         skipWarmups: (exerciseId) => {
           apply((s) => Session.skipWarmups(s, exerciseId));

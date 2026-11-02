@@ -82,7 +82,7 @@ export function lockScreenProps(
   const kg = formatKg(set.weight);
   const load =
     set.weight <= 0
-      ? t('domain.load.reps', { reps: set.reps })
+      ? t(exercise.timed ? 'domain.load.seconds' : 'domain.load.reps', { reps: set.reps })
       : suffix
         ? t('domain.load.kgSuffixTimes', { kg, suffix, reps: set.reps })
         : t('domain.load.kgTimes', { kg, reps: set.reps });

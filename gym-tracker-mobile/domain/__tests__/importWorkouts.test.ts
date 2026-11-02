@@ -17,6 +17,7 @@ const STRONG = [
   '2024-01-15 18:30:00,"Push Day",1h 5m,Bench Press (Barbell),Rest Timer,0,0,0,90,,,',
   '2024-01-15 18:30:00,"Push Day",1h 5m,Bicep Curl (Dumbbell),1,14,12,0,0,,,',
   '2024-01-15 18:30:00,"Push Day",1h 5m,Plank,1,0,0,0,60,,,',
+  '2024-01-15 18:30:00,"Push Day",1h 5m,Running,1,0,0,5,1500,,,',
   '2024-01-17 19:00:00,"Legs",45m,Squat (Barbell),1,100,5,0,0,,,',
   '2024-01-17 19:00:00,"Legs",45m,Squat (Barbell),D,80,8,0,0,,,',
 ].join('\n');
@@ -115,7 +116,9 @@ describe('importWorkouts from Strong', () => {
     const push = result.workouts[0]!;
     expect(push.date).toBe(new Date(2024, 0, 15, 18, 30).toISOString());
     expect(push.duration).toBe(65);
-    expect(push.exercises.map((e) => e.name)).toEqual(['Développé couché', 'Bicep Curl (Dumbbell)']);
+    expect(push.exercises.map((e) => e.name)).toEqual(['Développé couché', 'Bicep Curl (Dumbbell)', 'Gainage']);
+    expect(push.exercises[2]).toMatchObject({ timed: true, sets: [{ weight: 0, reps: 60, setType: 'normal' }] });
+    expect(push.exercises[0]).not.toHaveProperty('timed');
     expect(push.exercises[0]!.sets).toEqual([
       { weight: 40, reps: 10, setType: 'warmup', completed: true },
       { weight: 80, reps: 8, setType: 'normal', rpe: 8, completed: true },
@@ -128,7 +131,7 @@ describe('importWorkouts from Strong', () => {
   });
 
   it('counts what it recognized, kept and skipped', () => {
-    expect(result.recognized).toBe(2);
+    expect(result.recognized).toBe(3);
     expect(result.unknown).toBe(1);
     expect(result.skipped).toBe(1);
   });
@@ -170,7 +173,7 @@ describe('importWorkouts errors', () => {
   it('says why a file cannot be imported', () => {
     expect(importWorkouts('')).toBe('empty');
     expect(importWorkouts('a,b,c\n1,2,3')).toBe('unknownFormat');
-    expect(importWorkouts(STRONG.split('\n').slice(0, 1).concat(STRONG.split('\n')[6]!).join('\n'))).toBe('noSets');
+    expect(importWorkouts(STRONG.split('\n').slice(0, 1).concat(STRONG.split('\n')[7]!).join('\n'))).toBe('noSets');
   });
 
   it('skips lines without a date or a name', () => {
@@ -182,6 +185,12 @@ describe('importWorkouts errors', () => {
       ])
       .join('\n');
     expect(ok(importWorkouts(broken)).skipped).toBe(2);
+  });
+
+  it('keeps a Hevy hold as seconds', () => {
+    const plank = `${HEVY}\r\n"Upper","15 Jan 2024, 18:30","","","Plank","","","0","normal","","","","45",""`;
+    const gainage = ok(importWorkouts(plank)).workouts[0]!.exercises.find((e) => e.name === 'Gainage');
+    expect(gainage).toMatchObject({ timed: true, sets: [{ reps: 45 }] });
   });
 
   it('skips Hevy lines without reps', () => {

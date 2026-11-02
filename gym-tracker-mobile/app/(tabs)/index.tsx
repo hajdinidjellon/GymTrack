@@ -304,7 +304,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       accessibilityLabel={
         calibrate
           ? t('home.lift.a11yToChoose', { name })
-          : t('home.lift.a11y', { name, target: targetLabel(lift.targets) })
+          : t('home.lift.a11y', { name, target: targetLabel(lift.targets, lift.def.timed) })
       }
       style={{
         paddingVertical: space.md + 2,
@@ -323,7 +323,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         {/* Today's target, then what changed: the badge sits right after it, not at the edge */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 }}>
           <Text size={16} weight="black">
-            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets)}
+            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets, lift.def.timed)}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
             {sets}
@@ -332,7 +332,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         </View>
         {lift.last.length ? (
           <Text size={13} color={colors.inkMuted} numberOfLines={1}>
-            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last) })}
+            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last, lift.def.timed) })}
           </Text>
         ) : null}
       </View>

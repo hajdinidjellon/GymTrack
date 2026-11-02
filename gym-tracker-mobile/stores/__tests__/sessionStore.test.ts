@@ -305,3 +305,28 @@ describe('warm-ups', () => {
     expect(session().exercises[0]!.sets.map((x) => x.weight)).toEqual([20, 30, 47.5, 62.5, 80]);
   });
 });
+
+describe('held sets', () => {
+  beforeEach(() => {
+    store().discardSession();
+    store().startSession('Abdos', [exercise('plank', 2, { equipment: 'bodyweight', timed: true })]);
+  });
+
+  it('cues the start of the hold', () => {
+    store().holdStarted();
+    expect(Speech.speak).toHaveBeenCalledWith("C'est parti.", expect.anything());
+  });
+
+  it('logs the seconds held, rings when the target is reached, then rests', () => {
+    store().finishHold('plank', 0, 60, true);
+    expect(session().exercises[0]!.sets[0]).toMatchObject({ reps: 60, completed: true });
+    expect(playRestBell).toHaveBeenCalled();
+    expect(session().restEndsAt).not.toBeNull();
+  });
+
+  it('logs a hold stopped early without the bell', () => {
+    store().finishHold('plank', 0, 22, false);
+    expect(session().exercises[0]!.sets[0]!.reps).toBe(22);
+    expect(playRestBell).not.toHaveBeenCalled();
+  });
+});

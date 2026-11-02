@@ -42,8 +42,8 @@ export const data: Dictionary['data'] = {
       other: '{count} exercises kept under their own name, in your history.',
     },
     skipped: {
-      one: '{count} line without reps skipped (cardio, holds…).',
-      other: '{count} lines without reps skipped (cardio, holds…).',
+      one: '{count} line without reps or time skipped (cardio…).',
+      other: '{count} lines without reps or time skipped (cardio…).',
     },
     strongKilos: 'Strong doesn’t say the unit: weights are read as kilos.',
     errorTitle: 'Import failed',

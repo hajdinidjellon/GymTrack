@@ -174,6 +174,8 @@ export const session: Dictionary['session'] = {
     deleteA11y: 'Delete set {n}',
     warmupShort: 'Warm',
     a11yWarmup: 'Warm-up, {kg} kilos, {reps} reps, {state}',
+    a11ySeconds: 'Set {index}, {reps} seconds, {state}',
+    headerSeconds: 'SEC',
     deleteWarmupA11y: 'Delete this warm-up',
   },
 
@@ -192,5 +194,19 @@ export const session: Dictionary['session'] = {
     validateA11y: 'Log the set',
     warmupHint: "Warm-up · doesn't count in your stats",
     skipWarmup: 'Skip the warm-up',
+    secondsUnit: 's',
+    secondsInput: 'Time in seconds',
+    secondsMinus: 'Minus 5 seconds',
+    secondsPlus: 'Plus 5 seconds',
+  },
+
+  hold: {
+    start: 'Start · {s} s',
+    validateWithout: 'Log without the timer',
+    prep: 'Get in position',
+    holding: 'Hold it',
+    stop: 'Stop',
+    prepA11y: 'Starting in {s} seconds',
+    leftA11y: '{s} seconds left',
   },
 };

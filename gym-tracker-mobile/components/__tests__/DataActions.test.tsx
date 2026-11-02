@@ -104,7 +104,7 @@ describe('DataActions', () => {
         'Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE',
         '2024-01-15 18:30:00,Push Day,1h,Bench Press (Barbell),1,80,8,0,0,,,',
         '2024-01-15 18:30:00,Push Day,1h,Bicep Curl (Dumbbell),1,14,12,0,0,,,',
-        '2024-01-15 18:30:00,Push Day,1h,Plank,1,0,0,0,60,,,',
+        '2024-01-15 18:30:00,Push Day,1h,Running,1,0,0,5,1500,,,',
       ].join('\n'),
     );
     await render(<DataActions />);
@@ -115,7 +115,7 @@ describe('DataActions', () => {
         '1 séance ajoutée depuis Strong.',
         '1 exercice reconnu : la progression le reprend.',
         '1 exercice gardé sous son nom, visible dans l’historique.',
-        '1 ligne sans reps ignorée (cardio, gainage…).',
+        '1 ligne sans reps ni durée ignorée (cardio…).',
         'Strong n’indique pas l’unité : les poids sont lus en kilos.',
       ].join('\n'),
     ]);

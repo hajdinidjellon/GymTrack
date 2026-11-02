@@ -14,6 +14,8 @@ export interface LoggedSet {
 
 export interface LoggedExercise {
   name: string;
+  /** Held for a time: the reps are seconds. */
+  timed?: boolean;
   sets: LoggedSet[];
 }
 
@@ -22,6 +24,7 @@ export function loggedExercises(workout: Workout): LoggedExercise[] {
   return workout.exercises
     .map((e) => ({
       name: e.name,
+      timed: e.timed,
       sets: e.sets
         .filter((s) => s.completed !== false)
         .map((s) => ({ weight: s.weight, reps: s.reps, warmup: s.setType === 'warmup', effort: effortOf(s.rpe) })),

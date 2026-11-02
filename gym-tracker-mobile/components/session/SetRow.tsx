@@ -20,19 +20,23 @@ interface Props {
   noWeight?: boolean;
   /** A warm-up: "Éch." instead of its number. */
   warmup?: boolean;
+  /** Held for a time: the reps are seconds. */
+  timed?: boolean;
 }
 
 /** One line of the sets table: Série | kg | reps | mark. The current one is circled. */
-export function SetRow({ index, kg, reps, state, noWeight, warmup }: Props) {
+export function SetRow({ index, kg, reps, state, noWeight, warmup, timed }: Props) {
   const current = state === 'current';
   const done = state === 'done';
   const color = done ? colors.successText : state === 'upcoming' ? colors.inkMuted : colors.ink;
   const stateLabel = t(done ? 'session.setRow.done' : current ? 'session.setRow.current' : 'session.setRow.upcoming');
   const label = warmup
     ? t('session.setRow.a11yWarmup', { kg: formatKg(kg), reps, state: stateLabel })
-    : noWeight
-      ? t('session.setRow.a11yNoWeight', { index, reps, state: stateLabel })
-      : t('session.setRow.a11y', { index, kg: formatKg(kg), reps, state: stateLabel });
+    : timed && noWeight
+      ? t('session.setRow.a11ySeconds', { index, reps, state: stateLabel })
+      : noWeight
+        ? t('session.setRow.a11yNoWeight', { index, reps, state: stateLabel })
+        : t('session.setRow.a11y', { index, kg: formatKg(kg), reps, state: stateLabel });
 
   return (
     <View
@@ -129,7 +133,7 @@ export function SetsTable({ exercise, current, onRemove }: TableProps) {
       <View style={{ flexDirection: 'row', paddingHorizontal: 10, marginBottom: 4 }}>
         <Header label={t('session.setRow.headerSet')} style={{ width: 52 }} />
         {noWeight ? null : <Header label={t('session.setRow.headerKg')} center />}
-        <Header label={t('session.setRow.headerReps')} center />
+        <Header label={t(exercise.timed ? 'session.setRow.headerSeconds' : 'session.setRow.headerReps')} center />
         <View style={{ width: 44 }} />
       </View>
       <View style={{ gap: 4 }}>
@@ -147,6 +151,7 @@ export function SetsTable({ exercise, current, onRemove }: TableProps) {
                 reps={s.reps}
                 noWeight={noWeight}
                 warmup={warmup}
+                timed={exercise.timed}
                 state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
               />
             </SwipeToDelete>

@@ -4,8 +4,8 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useRestSecondsLeft } from '@/hooks/useSessionClock';
 import { formatClock } from '@/domain/format';
 import { loadingOf } from '@/domain/loading';
-import { formatKg } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
+import { loadLabel } from '@/domain/sessionBuilder';
 import { setNumber } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
 import { Text } from '@/components/ui/Text';
@@ -119,9 +119,7 @@ export function RestView({
             <Text size={22} weight="black" numberOfLines={1}>
               {next.exercise.needsWeight
                 ? t('session.rest.weightToSet')
-                : next.set.weight > 0
-                  ? `${formatKg(next.set.weight)} kg × ${next.set.reps}`
-                  : `${next.set.reps} reps`}
+                : loadLabel(next.set.weight, next.set.reps, next.exercise.timed)}
             </Text>
           </View>
           {perSide.length > 0 && !next.exercise.needsWeight ? <MiniPlates perSide={perSide} /> : null}

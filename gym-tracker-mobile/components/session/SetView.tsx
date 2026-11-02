@@ -14,6 +14,7 @@ import { Check } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 import { ExerciseNote } from './ExerciseNote';
+import { HoldTimer } from './HoldTimer';
 import { LoadHint } from './LoadHint';
 import { MissedRepsSheet } from './MissedRepsSheet';
 import { SetsTable } from './SetRow';
@@ -40,6 +41,8 @@ export function SetView({ cursor, footer }: Props) {
   const step = exercise.rule?.increment ?? 2.5;
   const perSide = usePerSide(set.weight);
   const warmup = isWarmup(set);
+  const timed = !!exercise.timed && !warmup;
+  const repStep = timed ? (exercise.rule?.repStep ?? 5) : 1;
   const remaining = workingCount(exercise.sets, 'left');
   const bodyweight = exercise.equipment === 'bodyweight';
   const loading = loadingOf(exercise);
@@ -130,17 +133,17 @@ export function SetView({ cursor, footer }: Props) {
           ) : null}
           <Stepper
             value={String(set.reps)}
-            unit={t('common.reps')}
-            onMinus={() => nudgeSet(exercise.id, setIndex, 'reps', -1)}
-            onPlus={() => nudgeSet(exercise.id, setIndex, 'reps', 1)}
-            minusLabel={t('session.setView.repMinus')}
-            plusLabel={t('session.setView.repPlus')}
+            unit={timed ? t('session.setView.secondsUnit') : t('common.reps')}
+            onMinus={() => nudgeSet(exercise.id, setIndex, 'reps', -repStep)}
+            onPlus={() => nudgeSet(exercise.id, setIndex, 'reps', repStep)}
+            minusLabel={timed ? t('session.setView.secondsMinus') : t('session.setView.repMinus')}
+            plusLabel={timed ? t('session.setView.secondsPlus') : t('session.setView.repPlus')}
             onChange={(reps) => updateSet(exercise.id, setIndex, { reps })}
             integer
-            inputLabel={t('session.setView.repsInput')}
+            inputLabel={timed ? t('session.setView.secondsInput') : t('session.setView.repsInput')}
           />
         </StickerCard>
-        {warmup ? null : (
+        {warmup || timed ? null : (
           <Pressable
             onPress={() => setMissed(true)}
             accessibilityRole="button"
@@ -183,7 +186,7 @@ export function SetView({ cursor, footer }: Props) {
       </ScrollView>
 
       <View style={{ gap: space.sm + 2, paddingTop: space.sm }}>
-        {footer ?? (
+        {footer ?? (timed ? <HoldTimer key={`${exercise.id}-${setIndex}`} cursor={cursor} /> : null) ?? (
           <>
             {warmup ? (
               <StickerButton

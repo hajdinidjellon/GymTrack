@@ -78,7 +78,8 @@ function plan(exercise: ActiveExercise, warm: boolean, loading: Loading, working
 export function warmupSets(exercise: ActiveExercise, warm: boolean, gym: Gym): WorkoutSet[] {
   const first = exercise.sets.find((s) => !isWarmup(s));
   const working = first?.weight ?? 0;
-  if (!first || exercise.needsWeight || exercise.equipment === 'bodyweight' || working <= 0) return [];
+  if (!first || exercise.needsWeight || exercise.equipment === 'bodyweight' || exercise.timed || working <= 0)
+    return [];
   const loading = loadingOf(exercise);
   if (loading === 'bar' && working <= gym.barWeight) return [];
   const step = exercise.rule?.increment ?? 2.5;
