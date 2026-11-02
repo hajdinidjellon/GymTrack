@@ -5,15 +5,16 @@ import { Text } from './Text';
 
 type Tone = 'neutral' | 'sun' | 'success';
 
-const tones: Record<Tone, { bg: string; fg: string }> = {
+// A function: the colours follow light or dark mode at each render
+const tones = (): Record<Tone, { bg: string; fg: string }> => ({
   neutral: { bg: colors.card, fg: colors.ink },
   sun: { bg: colors.sun, fg: colors.ink },
   success: { bg: colors.successSoft, fg: colors.successText },
-};
+});
 
 /** Small badge: "+2,5 kg", "5 exercices", "3 sem." */
 export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: Tone; icon?: React.ReactNode }) {
-  const { bg, fg } = tones[tone];
+  const { bg, fg } = tones()[tone];
   return (
     <View
       style={{

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
-import { border, colors, hardShadow, radius, text } from '@/constants/theme';
+import { border, colors, hardShadow, radius } from '@/constants/theme';
 import { buzz, type HapticKind } from './PressableScale';
 import { Text } from './Text';
 
@@ -80,7 +80,7 @@ export function StickerButton({
       <Text
         weight={ghost ? 'bold' : 'titleMedium'}
         size={FONT[size]}
-        color={ghost ? colors.inkMuted : text.button.color}
+        color={ghost ? colors.inkMuted : colors.ink}
         style={ghost ? { textDecorationLine: 'underline' } : undefined}
       >
         {label}
