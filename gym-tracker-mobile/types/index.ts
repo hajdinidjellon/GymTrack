@@ -1,5 +1,5 @@
 // ============================================================
-// TYPES PRINCIPAUX — GymTrack Mobile
+// TYPES PRINCIPAUX — Okilo Mobile
 // ============================================================
 
 export type SetType = 'warmup' | 'normal' | 'top' | 'backoff' | 'amrap' | 'drop' | 'failure';

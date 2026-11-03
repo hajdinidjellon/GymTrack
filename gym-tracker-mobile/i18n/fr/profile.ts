@@ -39,7 +39,7 @@ export const profile = {
     commandsHint:
       '« fait », « 8 », « plus tard », « facile »… reconnus sur le téléphone, rien n’est envoyé. Touche pour changer.',
     commandsDeniedTitle: 'Micro refusé',
-    commandsDeniedText: 'Autorise le micro et la reconnaissance vocale pour GymTrack dans les Réglages du téléphone.',
+    commandsDeniedText: 'Autorise le micro et la reconnaissance vocale pour Okilo dans les Réglages du téléphone.',
     tapToChange: 'Touche pour changer',
   },
   language: {

@@ -11,6 +11,7 @@ import { parseList, workoutSchema } from '@/domain/schemas';
 import { logger } from '@/services/logger';
 import type { Workout } from '@/types';
 
+// Storage names keep the app's first name: renaming them would lose the data already there.
 const DB_NAME = 'gymtrack.db';
 const SCHEMA_VERSION = 3;
 

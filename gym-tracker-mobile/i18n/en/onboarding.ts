@@ -2,7 +2,7 @@ import type { Dictionary } from '@/i18n/fr';
 
 export const onboarding: Dictionary['onboarding'] = {
   launch: {
-    loading: 'GymTrack, loading',
+    loading: 'Okilo, loading',
   },
   welcome: {
     start: "Let's go",

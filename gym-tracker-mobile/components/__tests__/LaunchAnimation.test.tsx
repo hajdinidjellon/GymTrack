@@ -13,15 +13,15 @@ afterEach(() => setLocale('fr'));
 describe('LaunchAnimation', () => {
   it('shows the name while the app loads', async () => {
     await render(<LaunchAnimation ready={false} onDone={jest.fn()} />);
-    expect(screen.getByText('GymTrack')).toBeOnTheScreen();
-    expect(screen.getByLabelText('GymTrack, chargement')).toBeOnTheScreen();
+    expect(screen.getByText('Okilo')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Okilo, chargement')).toBeOnTheScreen();
   });
 
   it('keeps the brand name and says it is loading in English', async () => {
     setLocale('en');
     await render(<LaunchAnimation ready={false} onDone={jest.fn()} />);
-    expect(screen.getByText('GymTrack')).toBeOnTheScreen();
-    expect(screen.getByLabelText('GymTrack, loading')).toBeOnTheScreen();
+    expect(screen.getByText('Okilo')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Okilo, loading')).toBeOnTheScreen();
   });
 
   it('waits for the data, however long the animation took', async () => {

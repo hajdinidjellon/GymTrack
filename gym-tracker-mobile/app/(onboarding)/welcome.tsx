@@ -57,7 +57,7 @@ export default function Welcome() {
           />
         </View>
         <Text size={24} weight="black">
-          GymTrack
+          Okilo
         </Text>
       </View>
 

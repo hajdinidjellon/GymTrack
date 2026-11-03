@@ -132,7 +132,7 @@ export function LaunchAnimation({ ready, onDone }: Props) {
         </View>
         <Animated.View style={[{ marginTop: 22 }, wordStyle]}>
           <Text size={38} weight="black">
-            GymTrack
+            Okilo
           </Text>
         </Animated.View>
       </Animated.View>

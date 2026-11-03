@@ -6,6 +6,7 @@ import { t } from '@/i18n';
 export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 20;
 export const PASSWORD_MIN = 6;
+// Kept from the app's first name: accounts already created sign in with it.
 const USERNAME_DOMAIN = 'users.gymtrack.app';
 
 export function normalizeUsername(raw: string): string {

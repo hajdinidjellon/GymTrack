@@ -40,14 +40,14 @@ beforeEach(() => {
 
 describe('shareFile', () => {
   it('writes a fresh file in the cache and opens the share sheet on it', async () => {
-    await shareFile('gymtrack.json', '{}', 'application/json', 'Sauvegarde');
+    await shareFile('okilo.json', '{}', 'application/json', 'Sauvegarde');
     expect(written[0]).toMatchObject({
-      uri: 'file:///cache/gymtrack.json',
+      uri: 'file:///cache/okilo.json',
       created: true,
       deleted: false,
       content: '{}',
     });
-    expect(Sharing.shareAsync).toHaveBeenCalledWith('file:///cache/gymtrack.json', {
+    expect(Sharing.shareAsync).toHaveBeenCalledWith('file:///cache/okilo.json', {
       mimeType: 'application/json',
       dialogTitle: 'Sauvegarde',
     });

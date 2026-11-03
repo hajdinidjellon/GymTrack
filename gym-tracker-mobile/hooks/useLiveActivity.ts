@@ -62,7 +62,7 @@ export function useLiveActivity(): void {
         // Après un redémarrage de l'app, on reprend l'activité déjà affichée
         activity ??= factory.getInstances()[0] ?? null;
         if (activity) void activity.update(props).catch((error: unknown) => logger.warn('live activity update', error));
-        else activity = factory.start(props, 'gymtrack://session');
+        else activity = factory.start(props, 'okilo://session');
         shown = json;
       } catch (error) {
         // Live Activities coupées dans les réglages de l'iPhone : l'app marche sans

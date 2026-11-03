@@ -16,7 +16,7 @@ describe('makeBackup / parseBackup', () => {
       { profile, workouts: sessions, settings: { voice: false, signedOut: true, barWeight: 15 } },
       NOW,
     );
-    expect(JSON.parse(text)).toMatchObject({ app: 'gymtrack', version: 1, exportedAt: NOW.toISOString() });
+    expect(JSON.parse(text)).toMatchObject({ app: 'okilo', version: 1, exportedAt: NOW.toISOString() });
     const back = parseBackup(text) as ParsedBackup;
     expect(back.profile).toEqual(profile);
     expect(back.workouts).toEqual(sessions);
@@ -27,7 +27,7 @@ describe('makeBackup / parseBackup', () => {
 
   it('skips broken sessions and unreadable settings, keeps the rest', () => {
     const text = JSON.stringify({
-      app: 'gymtrack',
+      app: 'okilo',
       version: 1,
       profile: null,
       workouts: [sessions[0], { id: 1 }],
@@ -41,7 +41,7 @@ describe('makeBackup / parseBackup', () => {
   });
 
   it('reads a backup without sessions or settings', () => {
-    expect(parseBackup(JSON.stringify({ app: 'gymtrack', version: 1 }))).toEqual({
+    expect(parseBackup(JSON.stringify({ app: 'okilo', version: 1 }))).toEqual({
       profile: null,
       workouts: [],
       settings: {},
@@ -49,20 +49,24 @@ describe('makeBackup / parseBackup', () => {
     });
   });
 
-  it('refuses anything that is not a GymTrack backup', () => {
+  it('still restores a backup saved under the old name', () => {
+    expect(parseBackup(JSON.stringify({ app: 'gymtrack', version: 1 }))).toMatchObject({ workouts: [], rejected: 0 });
+  });
+
+  it('refuses anything that is not an Okilo backup', () => {
     expect(parseBackup('not json')).toBe('notJson');
     expect(parseBackup('42')).toBe('notBackup');
     expect(parseBackup('null')).toBe('notBackup');
     expect(parseBackup(JSON.stringify({ app: 'other', version: 1 }))).toBe('notBackup');
-    expect(parseBackup(JSON.stringify({ app: 'gymtrack' }))).toBe('notBackup');
-    expect(parseBackup(JSON.stringify({ app: 'gymtrack', version: 2 }))).toBe('newerVersion');
+    expect(parseBackup(JSON.stringify({ app: 'okilo' }))).toBe('notBackup');
+    expect(parseBackup(JSON.stringify({ app: 'okilo', version: 2 }))).toBe('newerVersion');
   });
 });
 
 describe('backupFileName', () => {
   it('dates the file', () => {
-    expect(backupFileName(NOW)).toBe('gymtrack-2026-11-02.json');
-    expect(backupFileName(NOW, 'csv')).toBe('gymtrack-2026-11-02.csv');
+    expect(backupFileName(NOW)).toBe('okilo-2026-11-02.json');
+    expect(backupFileName(NOW, 'csv')).toBe('okilo-2026-11-02.csv');
   });
 });
 

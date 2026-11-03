@@ -16,6 +16,7 @@ import { deviceLocaleTag } from '@/services/locale';
 import { logger } from '@/services/logger';
 import type { AppSettings, CustomExercise, Goal, RuleOverride, SplitId } from '@/types';
 
+// Kept from the app's first name: a new key would reset everyone's settings.
 const SETTINGS_KEY = '@gymtrack/settings';
 
 export const DEFAULT_SETTINGS: AppSettings = {

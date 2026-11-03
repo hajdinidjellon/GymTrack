@@ -10,7 +10,7 @@ export const data = {
     text: 'Un fichier avec tout : séances, programme, réglages. Range-le dans Fichiers ou envoie-le toi par mail.',
     create: 'Créer une sauvegarde',
     restore: 'Restaurer une sauvegarde',
-    shareTitle: 'GymTrack · sauvegarde',
+    shareTitle: 'Okilo · sauvegarde',
     confirmTitle: 'Restaurer cette sauvegarde ?',
     confirmText: {
       one: '{count} séance dedans. Ton programme et tes réglages seront remplacés par ceux du fichier. Tes séances actuelles restent.',
@@ -24,8 +24,8 @@ export const data = {
       one: '{count} séance illisible a été laissée de côté.',
       other: '{count} séances illisibles ont été laissées de côté.',
     },
-    notBackup: 'Ce fichier n’est pas une sauvegarde GymTrack.',
-    newerVersion: 'Cette sauvegarde vient d’une version plus récente de GymTrack. Mets l’app à jour, puis réessaie.',
+    notBackup: 'Ce fichier n’est pas une sauvegarde Okilo.',
+    newerVersion: 'Cette sauvegarde vient d’une version plus récente de Okilo. Mets l’app à jour, puis réessaie.',
   },
 
   import: {
@@ -58,7 +58,7 @@ export const data = {
     title: 'Tableur',
     text: 'Toutes tes séries dans un fichier CSV, pour Excel ou Numbers.',
     button: 'Exporter en CSV',
-    shareTitle: 'GymTrack · mes séances',
+    shareTitle: 'Okilo · mes séances',
     emptyTitle: 'Rien à exporter',
     emptyText: 'Fais ta première séance : elle apparaîtra dans le fichier.',
   },
