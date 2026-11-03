@@ -11,6 +11,9 @@
       "bundleIdentifier": "app.okilo",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Okilo n'utilise pas ta photothèque : cette autorisation ne te sera jamais demandée."
       }
     },
     "android": {
@@ -51,7 +54,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
+          "microphonePermission": "Okilo écoute tes commandes pendant la séance (« fait », « 8 », « plus tard ») quand tu les actives.",
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
         }
@@ -67,6 +70,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "locales": {
+      "fr": "./i18n/native/fr.json",
+      "en": "./i18n/native/en.json"
     },
     "scheme": "okilo",
     "runtimeVersion": {
