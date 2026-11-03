@@ -4,9 +4,9 @@
  */
 export const logger = {
   warn(message: string, error?: unknown) {
-    if (__DEV__) console.warn(`[gymtrack] ${message}`, error ?? '');
+    if (__DEV__) console.warn(`[okilo] ${message}`, error ?? '');
   },
   error(message: string, error?: unknown) {
-    if (__DEV__) console.error(`[gymtrack] ${message}`, error ?? '');
+    if (__DEV__) console.error(`[okilo] ${message}`, error ?? '');
   },
 };

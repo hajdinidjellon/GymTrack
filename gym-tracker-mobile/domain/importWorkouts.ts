@@ -1,6 +1,6 @@
 /**
  * IMPORT — the history exported by Strong or Hevy (CSV), turned into
- * GymTrack sessions. Exercise names are matched to the catalog when it is
+ * Okilo sessions. Exercise names are matched to the catalog when it is
  * safe (same movement, same equipment); the others keep their own name.
  * Every session goes through the same zod schema as a stored one.
  */

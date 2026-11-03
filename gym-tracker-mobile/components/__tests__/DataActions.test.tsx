@@ -56,10 +56,10 @@ describe('DataActions', () => {
     await render(<DataActions />);
     await press('Créer une sauvegarde');
     const [name, content, mime] = shared.mock.calls[0]!;
-    expect(name).toMatch(/^gymtrack-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(name).toMatch(/^okilo-\d{4}-\d{2}-\d{2}\.json$/);
     expect(mime).toBe('application/json');
     expect(JSON.parse(content)).toMatchObject({
-      app: 'gymtrack',
+      app: 'okilo',
       workouts: [{ id: 'w1' }],
       profile: { goal: 'muscle' },
     });
@@ -67,7 +67,7 @@ describe('DataActions', () => {
 
   it('restores a backup after asking, and says what came back', async () => {
     const backup = JSON.stringify({
-      app: 'gymtrack',
+      app: 'okilo',
       version: 1,
       profile: { goal: 'force', program: { split: 'ul', perWeek: 4 }, prs: [], bodyStats: [] },
       workouts: [session, { ...session, id: 'w2', date: '2026-10-20T18:00:00.000Z' }],
@@ -92,7 +92,7 @@ describe('DataActions', () => {
     picked.mockResolvedValueOnce('{"app":"other","version":1}').mockResolvedValueOnce(null);
     await render(<DataActions />);
     await press('Restaurer une sauvegarde');
-    expect(lastAlert()).toEqual(['Ça n’a pas marché', 'Ce fichier n’est pas une sauvegarde GymTrack.']);
+    expect(lastAlert()).toEqual(['Ça n’a pas marché', 'Ce fichier n’est pas une sauvegarde Okilo.']);
     alert.mockClear();
     await press('Restaurer une sauvegarde');
     expect(alert).not.toHaveBeenCalled();

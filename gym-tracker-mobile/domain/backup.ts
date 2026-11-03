@@ -10,7 +10,9 @@ import { normalizeProfile } from '@/domain/profile';
 import { parseList, settingsPatchSchema, workoutSchema } from '@/domain/schemas';
 import type { AppSettings, UserProfile, Workout } from '@/types';
 
-export const BACKUP_APP = 'gymtrack';
+export const BACKUP_APP = 'okilo';
+/** Backups saved before the app was renamed still restore. */
+const LEGACY_BACKUP_APPS: readonly unknown[] = [BACKUP_APP, 'gymtrack'];
 export const BACKUP_VERSION = 1;
 
 export interface Backup {
@@ -40,7 +42,7 @@ export function makeBackup(data: Backup, now: Date): string {
   );
 }
 
-/** "gymtrack-2026-11-02.json", or ".csv" for the spreadsheet export. */
+/** "okilo-2026-11-02.json", or ".csv" for the spreadsheet export. */
 export function backupFileName(now: Date, extension: 'json' | 'csv' = 'json'): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${BACKUP_APP}-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.${extension}`;
@@ -53,7 +55,7 @@ export interface ParsedBackup extends Backup {
   rejected: number;
 }
 
-/** A GymTrack backup, validated. Anything else: why it was refused. */
+/** An Okilo backup, validated. Anything else: why it was refused. */
 export function parseBackup(text: string): ParsedBackup | BackupError {
   let json: unknown;
   try {
@@ -63,7 +65,7 @@ export function parseBackup(text: string): ParsedBackup | BackupError {
   }
   if (!json || typeof json !== 'object') return 'notBackup';
   const raw = json as Record<string, unknown>;
-  if (raw.app !== BACKUP_APP || typeof raw.version !== 'number') return 'notBackup';
+  if (!LEGACY_BACKUP_APPS.includes(raw.app) || typeof raw.version !== 'number') return 'notBackup';
   if (raw.version > BACKUP_VERSION) return 'newerVersion';
 
   const { valid, rejected } = parseList(workoutSchema, Array.isArray(raw.workouts) ? raw.workouts : []);

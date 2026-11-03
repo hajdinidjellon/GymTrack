@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GymTrack",
+    "name": "Okilo",
     "slug": "gym-tracker-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.gymtrack.mobile",
+      "bundleIdentifier": "app.okilo",
       "config": {
         "usesNonExemptEncryption": false
       }
@@ -18,7 +18,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFF6EC"
       },
-      "package": "com.gymtrack.mobile",
+      "package": "app.okilo",
       "permissions": ["android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.VIBRATE"]
     },
     "web": {
@@ -45,7 +45,7 @@
       [
         "expo-widgets",
         {
-          "groupIdentifier": "group.com.hajdinidjellon.gymtrack"
+          "groupIdentifier": "group.app.okilo"
         }
       ],
       [
@@ -60,15 +60,15 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "GymTrack écoute tes commandes pendant la séance (« fait », « 8 », « plus tard ») quand tu les actives.",
-          "speechRecognitionPermission": "GymTrack reconnaît tes commandes sur le téléphone, rien n'est envoyé."
+          "microphonePermission": "Okilo écoute tes commandes pendant la séance (« fait », « 8 », « plus tard ») quand tu les actives.",
+          "speechRecognitionPermission": "Okilo reconnaît tes commandes sur le téléphone, rien n'est envoyé."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     },
-    "scheme": "gymtrack",
+    "scheme": "okilo",
     "runtimeVersion": {
       "policy": "appVersion"
     },

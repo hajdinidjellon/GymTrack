@@ -11,7 +11,7 @@ export const data: Dictionary['data'] = {
     text: 'One file with everything: sessions, program, settings. Keep it in Files or email it to yourself.',
     create: 'Create a backup',
     restore: 'Restore a backup',
-    shareTitle: 'GymTrack · backup',
+    shareTitle: 'Okilo · backup',
     confirmTitle: 'Restore this backup?',
     confirmText: {
       one: '{count} session inside. Your program and settings will be replaced by the file’s. Your current sessions stay.',
@@ -22,8 +22,8 @@ export const data: Dictionary['data'] = {
     doneTitle: 'Backup restored',
     added: { one: '{count} session added to your history.', other: '{count} sessions added to your history.' },
     rejected: { one: '{count} unreadable session was left out.', other: '{count} unreadable sessions were left out.' },
-    notBackup: 'This file is not a GymTrack backup.',
-    newerVersion: 'This backup comes from a newer version of GymTrack. Update the app, then try again.',
+    notBackup: 'This file is not an Okilo backup.',
+    newerVersion: 'This backup comes from a newer version of Okilo. Update the app, then try again.',
   },
 
   import: {
@@ -56,7 +56,7 @@ export const data: Dictionary['data'] = {
     title: 'Spreadsheet',
     text: 'Every set in a CSV file, for Excel or Numbers.',
     button: 'Export as CSV',
-    shareTitle: 'GymTrack · my sessions',
+    shareTitle: 'Okilo · my sessions',
     emptyTitle: 'Nothing to export',
     emptyText: 'Do your first session: it will show up in the file.',
   },

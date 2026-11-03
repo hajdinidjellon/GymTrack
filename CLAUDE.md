@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project structure
 
-Monorepo root at `GymTrack/`. The app lives entirely in `gym-tracker-mobile/`.
+Monorepo root (the app was first called GymTrack, the folders kept that name). The app lives entirely in `gym-tracker-mobile/`.
 
 All commands below must be run from inside `gym-tracker-mobile/`. `node_modules` is installed from Windows: from WSL, run npm through `cmd.exe /c "cd /d C:\...\gym-tracker-mobile && ..."`.
 
@@ -131,4 +131,4 @@ Base components in `components/ui/` (`StickerButton`, `StickerCard`, `Chip`, `Ch
 - Code in English; comments short, in plain French or English, only where they help.
 - Supabase is optional at runtime — `isSupabaseConfigured()` guards cloud calls. Data isolation relies on RLS.
 - `jest-expo` needs `expo-modules-core` hoisted: it is a devDependency on purpose.
-- Bundle identifier: `com.gymtrack.mobile`.
+- App name: Okilo. Bundle identifier and Android package: `app.okilo`, App Group `group.app.okilo`, URL scheme `okilo://`. The EAS slug and the storage names (`gymtrack.db`, `@gymtrack/settings`, `users.gymtrack.app`) keep the first name on purpose: changing them would unlink EAS or lose data. Backups saved as `gymtrack` still restore.

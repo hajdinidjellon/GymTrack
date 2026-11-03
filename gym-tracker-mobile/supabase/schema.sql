@@ -1,4 +1,4 @@
--- GymTrack cloud schema. Run once in Supabase → SQL Editor.
+-- Okilo cloud schema. Run once in Supabase → SQL Editor.
 -- Each row is a JSON blob validated by the app (domain/schemas.ts); RLS keeps every user on their own rows.
 
 create table if not exists public.workouts (

@@ -1,7 +1,7 @@
 /** First launch: welcome, the four questions, the recap, login, goal and program edit. */
 export const onboarding = {
   launch: {
-    loading: 'GymTrack, chargement',
+    loading: 'Okilo, chargement',
   },
   welcome: {
     start: "C'est parti",
