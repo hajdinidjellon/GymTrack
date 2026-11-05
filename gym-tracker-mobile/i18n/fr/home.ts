@@ -26,6 +26,8 @@ export const home = {
     emptyBar: 'Barre à vide',
     noExercises: "Aucun exercice dans cette séance pour l'instant.",
     addExercises: 'Ajouter des exercices',
+    ownSessionEmpty: 'Compose ta séance : ajoute les exercices que tu veux faire. Elle t’attendra la prochaine fois.',
+    ownSessionAdd: 'Choisir mes exercices',
     firstSession: 'Première séance : tu choisiras ta charge de départ sur chaque exercice, ensuite on calcule tout.',
   },
   lift: {
@@ -53,8 +55,9 @@ export const home = {
     a11yPlanned: 'Séance {name}, prévue aujourd’hui',
     planned: 'prévue',
     extraLabel: 'Ou, pour une fois, hors programme',
-    extraLink: 'Une séance d’un autre programme, pour une fois ?',
+    extraLink: 'Autre chose, pour une fois ?',
     a11yExtra: 'Séance {name}, hors programme',
+    a11yOwn: 'Ma séance, que tu composes toi-même, hors programme',
   },
   switch: {
     title: 'Tu as changé de programme ?',

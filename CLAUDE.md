@@ -69,7 +69,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
 - `session.ts` — pure transitions of the running session (complete set, rest, to workout).
 - `schemas.ts` — zod schemas; everything read from disk or the cloud is validated here.
-- `programSwitch.ts` — off-program sessions: `choosableDays` (programs.ts) adds the other programs' days (Haut, Bas, Full body) for a one-off; they keep each exercise's progression and do not move the rotation. Three in a row from the same other program: the home offers to switch (`settings.programSwitchDismissed` after a no).
+- `programSwitch.ts` — off-program sessions: `choosableDays` (programs.ts) adds the other programs' days (Haut, Bas, one `EXTRA_FULL_BODY` instead of A and B) and « Ma séance » (`OWN_SESSION`), the one the user fills in, saved under their program and offered even empty (`isOffered`), for a one-off; they keep each exercise's progression and do not move the rotation. Three in a row from the same other program: the home offers to switch (`settings.programSwitchDismissed` after a no).
 - `ruleSync.ts` — sets/reps shared with similar exercises (same main muscle and kind of movement): the ones on the same rule follow a change.
 - `rest.ts` — rest per exercise: the user's choice, else the rest they really take (measured between validations), else the kind of exercise.
 - `insights.ts` — "Ce que l'app sait de toi": time of day, usual days, duration, rhythm, rests, strongest lift.

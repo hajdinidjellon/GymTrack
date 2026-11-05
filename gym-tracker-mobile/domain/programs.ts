@@ -235,6 +235,16 @@ export function dayKey(split: SplitId, day: string): string {
   return `${split}/${day}`;
 }
 
+/** The exercises the user saved for a day, if any. Names no longer in the catalog are skipped. */
+function savedExercises(
+  split: SplitId,
+  name: string,
+  customDays: Record<string, string[]> | undefined,
+  own: CustomExercise[] | undefined,
+): ExerciseDef[] | undefined {
+  return customDays?.[dayKey(split, name)]?.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
+}
+
 /**
  * The days of the program with the user's own exercises when they chose
  * some. Names no longer in the catalog are skipped.
@@ -246,8 +256,7 @@ export function programDays(
   own: CustomExercise[] | undefined,
   ownDays?: Record<string, string[]>,
 ): ProgramDay[] {
-  const exercisesOf = (name: string) =>
-    customDays?.[dayKey(split, name)]?.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
+  const exercisesOf = (name: string) => savedExercises(split, name, customDays, own);
   const days = getSplit(split).days.map((day) => {
     const exercises = exercisesOf(day.name);
     return exercises ? { name: day.name, exercises } : day;
@@ -270,17 +279,42 @@ export function mainMuscle(exercises: ExerciseDef[]): MuscleGroup | undefined {
 /** A day with exercises: the only kind offered as a session. */
 export const hasExercises = (day: ProgramDay): boolean => day.exercises.length > 0;
 
+/** Off program, one full body: Full body A and B only make sense as a pair, in the program itself. */
+export const EXTRA_FULL_BODY = 'Full body';
+
+/** Off program, the session the user puts together themselves. It starts empty. */
+export const OWN_SESSION = 'Ma séance';
+
 /** A day the user can pick: from their program, or from another one for a one-off session. */
 export interface ChoosableDay extends ProgramDay {
   split: SplitId;
   /** Not in the user's program: done once, it does not move the program along. */
   extra: boolean;
+  /** The session the user puts together: offered even before it has exercises. */
+  ownSession?: boolean;
+}
+
+/** What another program offers for a one-off: its days, a single full body instead of A and B. */
+function extraDaysOf(
+  other: SplitId,
+  customDays: Record<string, string[]> | undefined,
+  own: CustomExercise[] | undefined,
+  ownDays?: Record<string, string[]>,
+): ProgramDay[] {
+  const days = programDays(other, customDays, own, ownDays);
+  if (other !== 'fb') return days;
+  const fullBody: ProgramDay = {
+    name: EXTRA_FULL_BODY,
+    exercises: savedExercises(other, EXTRA_FULL_BODY, customDays, own) ?? getSplit('fb').days[0]!.exercises,
+  };
+  return [fullBody, ...days.filter((d) => d.own)];
 }
 
 /**
  * The user's program days, then the days of the other programs (Haut, Bas,
- * Full body…) for the day the plan does not fit. Each keeps the exercises the
- * user chose for it, saved under its own program ("ul/Haut").
+ * Full body…) for the day the plan does not fit, then the user's own session.
+ * Each keeps the exercises the user chose for it, saved under its own program
+ * ("ul/Haut"); the own session under the user's program.
  */
 export function choosableDays(
   split: SplitId,
@@ -289,18 +323,25 @@ export function choosableDays(
   ownDays?: Record<string, string[]>,
 ): ChoosableDay[] {
   const out: ChoosableDay[] = programDays(split, customDays, own, ownDays).map((d) => ({ ...d, split, extra: false }));
+  const add = (day: ChoosableDay) => {
+    if (!out.some((d) => d.name === day.name)) out.push(day);
+  };
   for (const other of SPLITS) {
     if (other.id === split) continue;
-    for (const day of programDays(other.id, customDays, own, ownDays)) {
-      if (!out.some((d) => d.name === day.name)) out.push({ ...day, split: other.id, extra: true });
-    }
+    for (const day of extraDaysOf(other.id, customDays, own, ownDays)) add({ ...day, split: other.id, extra: true });
   }
+  const exercises = savedExercises(split, OWN_SESSION, customDays, own) ?? [];
+  add({ name: OWN_SESSION, exercises, split, extra: true, ownSession: true });
   return out;
 }
+
+/** A day offered as a session: one with exercises, or the own session, to fill in. */
+export const isOffered = (day: ChoosableDay): boolean => hasExercises(day) || !!day.ownSession;
 
 /** The program a day belongs to, the user's own first. */
 export function splitOfDay(name: string, current: SplitId): SplitId | undefined {
   if (getSplit(current).days.some((d) => d.name === name)) return current;
+  if (name === EXTRA_FULL_BODY) return 'fb';
   return SPLITS.find((s) => s.days.some((d) => d.name === name))?.id;
 }
 
