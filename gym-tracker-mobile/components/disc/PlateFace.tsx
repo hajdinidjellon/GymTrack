@@ -3,7 +3,7 @@ import Svg, { Circle, G, Text as SvgText } from 'react-native-svg';
 import { colors, fonts, plateColor, plateInk } from '@/constants/theme';
 import { formatKg } from '@/domain/plates';
 
-/** Diameter at size 1, close to the real ratio between plates (25 kg = 45 cm, 1,25 kg ≈ 16 cm). */
+/** Diameter at size 1, close to the real ratio between plates (25 kg = 45 cm, 1,25 kg ≈ 16 cm, 0,25 kg ≈ 11 cm). */
 const DIAMETER: Record<string, number> = {
   '25': 1,
   '20': 0.96,
@@ -12,6 +12,8 @@ const DIAMETER: Record<string, number> = {
   '5': 0.66,
   '2.5': 0.54,
   '1.25': 0.44,
+  '0.5': 0.36,
+  '0.25': 0.3,
 };
 
 interface Props {

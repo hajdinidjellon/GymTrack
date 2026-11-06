@@ -14,6 +14,29 @@ export function formatShortDay(date: Date | string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/** "19:42". */
+export function formatTime(ms: number): string {
+  return new Date(ms).toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' });
+}
+
+/** "19:42" today, "hier à 19:42", "Lun. 3 nov. à 19:42" further back. */
+export function formatMoment(ms: number, now: number): string {
+  const time = formatTime(ms);
+  const day = new Date(ms).toDateString();
+  if (day === new Date(now).toDateString()) return time;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (day === yesterday.toDateString()) return t('domain.format.yesterdayAt', { time });
+  return t('domain.format.dayAt', { day: formatShortDay(new Date(ms)), time });
+}
+
+/** "45 min", "1 h 08" for a session. */
+export function formatDuration(minutes: number): string {
+  const m = Math.max(0, Math.round(minutes));
+  if (m < 60) return t('domain.format.minutes', { m });
+  return t('domain.format.hoursMinutes', { h: Math.floor(m / 60), m: String(m % 60).padStart(2, '0') });
+}
+
 /** "4 800" with a thin space, the French way; "4,800" in English. */
 export function formatThousands(n: number): string {
   const separator = getLocale() === 'fr' ? ' ' : ',';

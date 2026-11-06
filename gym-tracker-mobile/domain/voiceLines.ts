@@ -4,7 +4,7 @@
  */
 
 import { LOADING_SUFFIX, loadingOf, missingPerSide, sidePlates } from '@/domain/loading';
-import { formatKg } from '@/domain/plates';
+import { formatKg, type Gym } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
 import { setNumber } from '@/domain/warmup';
 import { exerciseName, listOf, t } from '@/i18n';
@@ -13,7 +13,7 @@ import type { AppSettings } from '@/types';
 const kilos = (n: number) => t('domain.voice.kilos', { kg: formatKg(n) });
 
 /** "Mets 20 et 1,25 de chaque côté." For the bar and the plate-loaded machines only. */
-export function platesLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeight' | 'plates'>): string | null {
+export function platesLine(cursor: Cursor, settings: Gym): string | null {
   const loading = loadingOf(cursor.exercise);
   if (loading !== 'bar' && loading !== 'perSide') return null;
   const perSide = sidePlates(loading, cursor.set.weight, settings);
@@ -42,15 +42,12 @@ export function setLine(cursor: Cursor): string {
 }
 
 /** Straight to the next set, no rest in between (warm-ups): the plates first, then the set. */
-export function nextSetLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeight' | 'plates'>): string {
+export function nextSetLine(cursor: Cursor, settings: Gym): string {
   return [platesLine(cursor, settings), setLine(cursor)].filter(Boolean).join(' ');
 }
 
 /** Said while resting, as soon as the next set is a new exercise. The user's note on it comes last. */
-export function nextExerciseLine(
-  cursor: Cursor,
-  settings: Pick<AppSettings, 'barWeight' | 'plates'> & Partial<Pick<AppSettings, 'exerciseNotes'>>,
-): string {
+export function nextExerciseLine(cursor: Cursor, settings: Gym & Partial<Pick<AppSettings, 'exerciseNotes'>>): string {
   const { name, needsWeight } = cursor.exercise;
   const what = needsWeight ? t('domain.voice.pickStart') : (platesLine(cursor, settings) ?? setLine(cursor));
   const note = settings.exerciseNotes?.[name]?.replace(/[.!?…]+$/, '');

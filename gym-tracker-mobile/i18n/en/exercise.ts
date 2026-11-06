@@ -31,6 +31,11 @@ export const exercise: Dictionary['exercise'] = {
     on: 'The weight counts on each side.',
     off: 'The weight is read on the machine stack.',
   },
+  manual: {
+    label: 'Automatic progression',
+    on: 'The app works out your next weight and reps.',
+    off: 'You follow your own cycle: the app repeats your last session set by set and never changes the weight.',
+  },
   warmups: {
     label: 'Warm-up sets',
     on: 'Computed before your sets, plates included. Not in your stats.',

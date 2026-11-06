@@ -14,6 +14,15 @@ import type { ActiveExercise, WorkoutSet } from '@/types';
 import { active } from './fixtures';
 
 const gym = { barWeight: 20, plates: [20, 15, 10, 5, 2.5, 1.25] };
+
+describe('warm-ups with collars', () => {
+  it('start from the bar and its collars', () => {
+    const sets = warmupSets(bench(100), false, { ...gym, collarWeight: 2.5 });
+    expect(sets[0]?.weight).toBe(25);
+    // every warm-up loads exactly: bar + collars + plates
+    for (const s of sets) expect(((s.weight - 25) / 2) % 1.25).toBe(0);
+  });
+});
 const settings: WarmupSettings = { ...gym, warmups: true, warmupOverrides: {} };
 const loads = (sets: WorkoutSet[]) => sets.map((s) => [s.weight, s.reps]);
 

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { border, colors, fonts, radius, space } from '@/constants/theme';
 import {
   aliasMatch,
-  catalogByMuscle,
-  MUSCLE_LABELS,
+  exercisesByPopularity,
+  namesOf,
   searchExercises,
   searchKey,
   type ExerciseDef,
@@ -14,7 +14,6 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import type { MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
-import { buzz } from '@/components/ui/PressableScale';
 import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 import { exerciseName, t } from '@/i18n';
 
@@ -32,15 +31,17 @@ interface Props {
   muscle?: MuscleGroup;
   /** Options read before choosing, under the title: e.g. "keep it for next time". Shown while creating too. */
   options?: React.ReactNode;
-  /** Stays open after a pick, to add several exercises in a row (the added ones are ticked). */
-  stayOpen?: boolean;
 }
 
-type Tab = 'suggested' | MuscleGroup;
+type Item =
+  | { kind: 'title'; key: string; text: string }
+  | { kind: 'exercise'; key: string; def: ExerciseDef }
+  | { kind: 'create'; key: string };
 
 /**
- * Every exercise of the catalog and the user's own, one muscle tab at a time.
- * A search looks through all of them. One tap picks it; a new one can be created.
+ * Every exercise of the catalog and the user's own in one list, from the most
+ * known to the least known; the suggestions (same muscle when swapping) on
+ * top. A search looks through every name. One tap picks it; a new one can be created.
  */
 export function ExercisePicker({
   visible,
@@ -52,39 +53,45 @@ export function ExercisePicker({
   suggestedTitle = t('session.picker.suggestions'),
   muscle,
   options,
-  stayOpen,
 }: Props) {
   const insets = useSafeAreaInsets();
   const own = useSettingsStore((s) => s.settings.customExercises);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState('');
-  const [chosenTab, setTab] = useState<Tab | null>(null);
-  const groups = catalogByMuscle(own);
-  const tabs: Tab[] = [...(suggested?.length ? ['suggested' as const] : []), ...groups.map((g) => g.muscle)];
-  // Ouverte sur les suggestions, sinon sur le muscle de l'exercice, sinon le premier
-  const defaultTab = tabs.find((x) => x === 'suggested') ?? tabs.find((x) => x === muscle) ?? tabs[0];
-  const tab = chosenTab && tabs.includes(chosenTab) ? chosenTab : defaultTab;
-  const shown = tab === 'suggested' ? (suggested ?? []) : (groups.find((g) => g.muscle === tab)?.exercises ?? []);
+  const searching = query.trim() !== '';
   const found = searchExercises(query, own);
   // Typed exactly, even under another name: no offer to create it again
-  const exact = found.some((e) => [e.name, ...(e.aliases ?? [])].some((n) => searchKey(n) === searchKey(query)));
+  const exact = found.some((e) => namesOf(e).some((n) => searchKey(n) === searchKey(query)));
+
+  const items: Item[] = [];
+  const exercise = (def: ExerciseDef, at: string): Item => ({ kind: 'exercise', key: `${at}/${def.name}`, def });
+  if (searching) {
+    const count = found.length ? t('common.exercises', { count: found.length }) : t('session.picker.notFound');
+    items.push({ kind: 'title', key: 'found', text: count }, ...found.map((d) => exercise(d, 'found')));
+    items.push({ kind: 'create', key: 'create' });
+  } else {
+    // Le bouton « créer » en haut : la liste complète est longue
+    items.push({ kind: 'create', key: 'create' });
+    const first = suggested ?? [];
+    if (first.length) {
+      items.push({ kind: 'title', key: 'suggested', text: suggestedTitle }, ...first.map((d) => exercise(d, 's')));
+    }
+    const rest = exercisesByPopularity(own).filter((d) => !first.some((s) => s.name === d.name));
+    items.push({ kind: 'title', key: 'all', text: t('session.picker.all') }, ...rest.map((d) => exercise(d, 'all')));
+  }
 
   // Rouverte, la fenêtre repart toujours sur la liste
   const reset = () => {
     setCreating(false);
     setQuery('');
-    setTab(null);
   };
   const close = () => {
     reset();
     onClose();
   };
+  // Left open by the parent (several in a row), the list comes back with the added one ticked
   const pick = (def: ExerciseDef) => {
-    if (stayOpen) {
-      // Back to the list, same tab: the next one is one tap away
-      setCreating(false);
-      setQuery('');
-    } else reset();
+    reset();
     onPick(def);
   };
 
@@ -93,7 +100,6 @@ export function ExercisePicker({
     const alias = aliasMatch(def, query);
     return (
       <Pressable
-        key={def.name}
         disabled={added}
         onPress={() => pick(def)}
         accessibilityRole="button"
@@ -108,7 +114,7 @@ export function ExercisePicker({
           paddingVertical: 8,
           borderRadius: radius.row,
           borderWidth: border.base,
-          borderColor: added ? colors.line : colors.outlineStrong,
+          borderColor: added ? colors.outlineSoft : colors.outlineStrong,
           backgroundColor: pressed ? colors.coralSoft : colors.card,
           flexDirection: 'row',
           alignItems: 'center',
@@ -137,6 +143,43 @@ export function ExercisePicker({
     );
   };
 
+  const createButton = () => (
+    <Pressable
+      onPress={() => setCreating(true)}
+      accessibilityRole="button"
+      accessibilityLabel={
+        searching && !exact
+          ? t('session.picker.createNamedA11y', { name: query.trim() })
+          : t('session.picker.createA11y')
+      }
+      style={({ pressed }) => ({
+        minHeight: 52,
+        paddingHorizontal: 16,
+        borderRadius: radius.row,
+        borderWidth: border.base,
+        borderStyle: 'dashed',
+        borderColor: pressed ? colors.outlineStrong : colors.outlineSoft,
+        alignItems: 'center',
+        justifyContent: 'center',
+      })}
+    >
+      <Text size={16} weight="bold" color={colors.inkMuted} numberOfLines={1}>
+        {searching && !exact ? t('session.picker.createNamed', { name: query.trim() }) : t('session.picker.create')}
+      </Text>
+    </Pressable>
+  );
+
+  const renderItem = ({ item }: { item: Item }) => {
+    if (item.kind === 'title') {
+      return (
+        <Text size={14} weight="bold" color={colors.inkMuted} style={{ marginTop: space.md }}>
+          {item.text}
+        </Text>
+      );
+    }
+    return <View style={{ marginTop: 8 }}>{item.kind === 'create' ? createButton() : row(item.def)}</View>;
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView
@@ -162,10 +205,22 @@ export function ExercisePicker({
             {creating ? t('session.picker.newExercise') : title}
           </Text>
           {options ? <View style={{ paddingHorizontal: 24, marginTop: space.sm }}>{options}</View> : null}
-          {!creating ? (
-            <View style={{ paddingHorizontal: 24 }}>
+          {creating ? (
+            <ScrollView
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: space.md }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <CreateExerciseForm
+                muscle={muscle}
+                initialName={query.trim()}
+                onCreated={pick}
+                onCancel={() => setCreating(false)}
+              />
+            </ScrollView>
+          ) : (
+            <>
               {/* Marge sur un cadre : sur iOS, une marge sur le TextInput décale son texte vers le bas */}
-              <View style={{ marginTop: space.md }}>
+              <View style={{ paddingHorizontal: 24, marginTop: space.md }}>
                 <TextInput
                   maxFontSizeMultiplier={1.5}
                   value={query}
@@ -189,108 +244,22 @@ export function ExercisePicker({
                   }}
                 />
               </View>
-              {!query.trim() ? (
-                <View
-                  accessibilityRole="tablist"
-                  style={{ marginTop: space.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-                >
-                  {tabs.map((item) => (
-                    <MuscleTab
-                      key={item}
-                      label={item === 'suggested' ? suggestedTitle : MUSCLE_LABELS[item]}
-                      selected={item === tab}
-                      onPress={() => setTab(item)}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-          <ScrollView
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: space.md }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {creating ? (
-              <CreateExerciseForm
-                muscle={muscle}
-                initialName={query.trim()}
-                onCreated={pick}
-                onCancel={() => setCreating(false)}
+              {/* Plus de 200 exercices : la liste ne dessine que ce qui est à l'écran */}
+              <FlatList
+                data={items}
+                keyExtractor={(item) => item.key}
+                renderItem={renderItem}
+                initialNumToRender={24}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: space.md }}
               />
-            ) : (
-              <>
-                {query.trim() ? (
-                  <View style={{ marginTop: space.md, gap: 8 }}>
-                    <Text size={14} weight="bold" color={colors.inkMuted}>
-                      {found.length ? t('common.exercises', { count: found.length }) : t('session.picker.notFound')}
-                    </Text>
-                    {found.map(row)}
-                  </View>
-                ) : (
-                  <View style={{ marginTop: space.md, gap: 8 }}>{shown.map(row)}</View>
-                )}
-                <Pressable
-                  onPress={() => setCreating(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    query.trim() && !exact
-                      ? t('session.picker.createNamedA11y', { name: query.trim() })
-                      : t('session.picker.createA11y')
-                  }
-                  style={({ pressed }) => ({
-                    marginTop: space.sm,
-                    minHeight: 52,
-                    paddingHorizontal: 16,
-                    borderRadius: radius.row,
-                    borderWidth: border.base,
-                    borderStyle: 'dashed',
-                    borderColor: pressed ? colors.outlineStrong : colors.outlineSoft,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  })}
-                >
-                  <Text size={16} weight="bold" color={colors.inkMuted} numberOfLines={1}>
-                    {query.trim() && !exact
-                      ? t('session.picker.createNamed', { name: query.trim() })
-                      : t('session.picker.create')}
-                  </Text>
-                </Pressable>
-              </>
-            )}
-          </ScrollView>
+            </>
+          )}
           <View style={{ paddingHorizontal: 24, gap: space.sm }}>
             <StickerButton label={t('common.close')} variant="secondary" size="small" onPress={close} />
           </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
-  );
-}
-
-/** One muscle in the tab row: coral-soft and outlined thicker when it is the one shown. */
-function MuscleTab({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={() => {
-        buzz('selection');
-        onPress();
-      }}
-      accessibilityRole="tab"
-      accessibilityState={{ selected }}
-      hitSlop={4}
-      style={({ pressed }) => ({
-        height: 38,
-        paddingHorizontal: 14,
-        borderRadius: radius.pill,
-        borderWidth: selected ? border.strong : border.base,
-        borderColor: colors.outline,
-        backgroundColor: selected || pressed ? colors.coralSoft : colors.card,
-        justifyContent: 'center',
-      })}
-    >
-      <Text size={15} weight={selected ? 'black' : 'titleMedium'}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }

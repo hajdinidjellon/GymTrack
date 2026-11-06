@@ -55,6 +55,7 @@ export const session: Dictionary['session'] = {
       dumbbell: 'Dumbbells',
       machine: 'Machine',
       bodyweight: 'Bodyweight',
+      kettlebell: 'Kettlebell',
     },
   },
 
@@ -68,6 +69,14 @@ export const session: Dictionary['session'] = {
     lifted: 'You lifted',
     plates: { one: "that's {n} 20 kg plate", other: "that's {n} 20 kg plates" },
     duration: 'duration',
+    end: 'Ended: {time}',
+    endEdit: 'change',
+    endEditA11y: 'Change the end time',
+    endEarlier: '− 5 min',
+    endLater: '+ 5 min',
+    endEarlierA11y: 'End 5 minutes earlier',
+    endLaterA11y: 'End 5 minutes later',
+    endDone: 'OK',
     setsDone: { one: 'set done', other: 'sets done' },
     records: { one: 'record', other: 'records' },
     nextTime: 'Next time',
@@ -90,6 +99,7 @@ export const session: Dictionary['session'] = {
 
   picker: {
     suggestions: 'Suggestions',
+    all: 'All exercises, best known first',
     taken: '{name}, already in the workout',
     choose: 'Pick {name}',
     alias: 'Also called {alias}',
@@ -108,6 +118,10 @@ export const session: Dictionary['session'] = {
     firstTime: 'First time',
     startBar: "Load your starting bar. We'll handle the rest.",
     startOther: "Pick your starting weight. We'll handle the rest.",
+    knowMax: 'Know your max?',
+    maxTitle: 'Your one-rep max',
+    maxInput: 'Your max in kilos',
+    useMax: 'Start at 70%: {kg} kg',
     inputLabel: 'Starting weight in kilos',
     presetA11y: '{kg} kilos',
     suggested: 'suggested',
@@ -122,6 +136,8 @@ export const session: Dictionary['session'] = {
 
   effort: {
     question: 'How was it?',
+    rpeQuestion: 'RPE of the set? (10 = nothing left)',
+    rpe: 'RPE {rpe}',
   },
 
   note: {
@@ -170,6 +186,24 @@ export const session: Dictionary['session'] = {
     progress: { one: '{done} / {count} set done', other: '{done} / {count} sets done' },
   },
 
+  stale: {
+    title: 'Your {name} workout was left open',
+    lastSet: {
+      one: 'Last set {when}. Your logged set is not in your history yet.',
+      other: 'Last set {when}. Your {count} logged sets are not in your history yet.',
+    },
+    noSet: 'Started {when}, no set logged.',
+    finishAt: 'Finish at {time}',
+    resume: 'Resume the workout',
+    delete: 'Delete the workout',
+    deleteTitle: 'Delete the workout?',
+    deleteText: {
+      one: 'Your logged set will be erased, nothing will be saved.',
+      other: 'Your {count} logged sets will be erased, nothing will be saved.',
+    },
+    deleteConfirm: 'Delete',
+  },
+
   done: {
     title: 'Last set logged',
     text: 'Say how that last set went: your next session takes it into account.',
@@ -213,6 +247,7 @@ export const session: Dictionary['session'] = {
   setView: {
     lastTime: 'Last time',
     why: 'Why {kg} kg?',
+    whyAssist: 'Why {kg} kg of assist?',
     weightInput: 'Weight in kilos',
     repMinus: 'One rep less',
     repPlus: 'One rep more',

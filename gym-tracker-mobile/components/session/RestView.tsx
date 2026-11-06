@@ -130,7 +130,7 @@ export function RestView({
             <Text size={22} weight="black" numberOfLines={1}>
               {next.exercise.needsWeight
                 ? t('session.rest.weightToSet')
-                : loadLabel(next.set.weight, next.set.reps, next.exercise.timed)}
+                : loadLabel(next.set.weight, next.set.reps, next.exercise.timed, next.exercise.assisted)}
             </Text>
           </View>
           {perSide.length > 0 && !next.exercise.needsWeight ? <MiniPlates perSide={perSide} /> : null}

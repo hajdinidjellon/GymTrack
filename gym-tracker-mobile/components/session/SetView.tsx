@@ -89,7 +89,8 @@ export function SetView({ cursor, footer }: Props) {
   const targetReps = set.target?.reps ?? set.reps;
   // On the first set of the exercise, warm-up or not; the weight it explains is the working one
   const why = setIndex === 0 && exercise.reason;
-  const firstWorking = exercise.sets.find((s) => !isWarmup(s));
+  // The weight the reason explains is the working one: a kept top set is not it
+  const firstWorking = exercise.sets.find((s) => !isWarmup(s) && s.setType !== 'top');
   const whyKg = firstWorking?.target?.weight ?? firstWorking?.weight ?? 0;
 
   return (
@@ -128,7 +129,7 @@ export function SetView({ cursor, footer }: Props) {
           >
             {whyKg > 0 ? (
               <Text size={14} weight="black" color={colors.onSunPanel}>
-                {t('session.setView.why', { kg: formatKg(whyKg) })}
+                {t(exercise.assisted ? 'session.setView.whyAssist' : 'session.setView.why', { kg: formatKg(whyKg) })}
               </Text>
             ) : null}
             <Text size={14} weight="semibold" style={{ lineHeight: 19 }}>

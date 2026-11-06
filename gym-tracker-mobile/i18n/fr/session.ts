@@ -55,6 +55,7 @@ export const session = {
       dumbbell: 'Haltères',
       machine: 'Machine',
       bodyweight: 'Poids du corps',
+      kettlebell: 'Kettlebell',
     },
   },
 
@@ -68,6 +69,14 @@ export const session = {
     lifted: 'Tu as soulevé',
     plates: { one: 'soit {n} disque de 20 kg', other: 'soit {n} disques de 20 kg' },
     duration: 'durée',
+    end: 'Fin : {time}',
+    endEdit: 'modifier',
+    endEditA11y: 'Modifier l’heure de fin',
+    endEarlier: '− 5 min',
+    endLater: '+ 5 min',
+    endEarlierA11y: 'Fin 5 minutes plus tôt',
+    endLaterA11y: 'Fin 5 minutes plus tard',
+    endDone: 'OK',
     setsDone: { one: 'série validée', other: 'séries validées' },
     records: { one: 'record', other: 'records' },
     nextTime: 'La prochaine fois',
@@ -90,6 +99,7 @@ export const session = {
 
   picker: {
     suggestions: 'Suggestions',
+    all: "Tous les exercices, les plus connus d'abord",
     taken: '{name}, déjà dans la séance',
     choose: 'Choisir {name}',
     alias: 'Aussi appelé {alias}',
@@ -108,6 +118,10 @@ export const session = {
     firstTime: 'Première fois',
     startBar: "Charge ta barre de départ. Ensuite, on s'occupe de tout.",
     startOther: "Choisis ta charge de départ. Ensuite, on s'occupe de tout.",
+    knowMax: 'Tu connais ton max ?',
+    maxTitle: 'Ton max sur 1 rep',
+    maxInput: 'Ton max en kilos',
+    useMax: 'Partir à 70 % : {kg} kg',
     inputLabel: 'Charge de départ en kilos',
     presetA11y: '{kg} kilos',
     suggested: 'conseillé',
@@ -122,6 +136,8 @@ export const session = {
 
   effort: {
     question: "Comment c'était ?",
+    rpeQuestion: 'RPE de la série ? (10 = plus rien en réserve)',
+    rpe: 'RPE {rpe}',
   },
 
   note: {
@@ -170,6 +186,24 @@ export const session = {
     progress: { one: '{done} / {count} série validée', other: '{done} / {count} séries validées' },
   },
 
+  stale: {
+    title: 'Ta séance {name} est restée ouverte',
+    lastSet: {
+      one: 'Dernière série {when}. Ta série validée n’est pas encore dans ton historique.',
+      other: 'Dernière série {when}. Tes {count} séries validées ne sont pas encore dans ton historique.',
+    },
+    noSet: 'Lancée {when}, aucune série validée.',
+    finishAt: 'Terminer à {time}',
+    resume: 'Reprendre la séance',
+    delete: 'Supprimer la séance',
+    deleteTitle: 'Supprimer la séance ?',
+    deleteText: {
+      one: 'Ta série validée sera effacée, rien ne sera enregistré.',
+      other: 'Tes {count} séries validées seront effacées, rien ne sera enregistré.',
+    },
+    deleteConfirm: 'Supprimer',
+  },
+
   done: {
     title: 'Dernière série validée',
     text: 'Dis comment s’est passée cette dernière série : la prochaine séance en tient compte.',
@@ -213,6 +247,7 @@ export const session = {
   setView: {
     lastTime: 'Dernière fois',
     why: 'Pourquoi {kg} kg ?',
+    whyAssist: "Pourquoi {kg} kg d'aide ?",
     weightInput: 'Charge en kilos',
     repMinus: 'Moins une rep',
     repPlus: 'Plus une rep',

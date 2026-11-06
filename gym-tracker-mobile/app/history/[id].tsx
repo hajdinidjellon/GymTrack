@@ -6,7 +6,9 @@ import { EFFORT_LABELS } from '@/domain/effort';
 import { formatDay, formatThousands } from '@/domain/format';
 import { loggedExercises, setsDone, type LoggedSet } from '@/domain/history';
 import { formatKg } from '@/domain/plates';
+import { findExerciseDef } from '@/domain/programs';
 import { loadLabel, newRecords, tonnage } from '@/domain/sessionBuilder';
+import { timeline } from '@/domain/sessionTime';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -20,6 +22,7 @@ import { Chip } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { Text } from '@/components/ui/Text';
 import { ChevronRight } from '@/components/ui/icons';
+import { SessionTimeline } from '@/components/stats/SessionTimeline';
 import { dayName, exerciseName, t } from '@/i18n';
 
 /** One past session: what was done on each exercise, set by set. */
@@ -44,6 +47,7 @@ export default function WorkoutScreen() {
 
   const exercises = loggedExercises(workout);
   const records = newRecords(workout, workouts, own);
+  const time = timeline(workout);
 
   return (
     <Screen scroll>
@@ -53,7 +57,6 @@ export default function WorkoutScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: space.lg }}>
           <Chip label={t('common.exercises', { count: exercises.length })} />
           <Chip label={t('common.sets', { count: setsDone(workout) })} />
-          {workout.duration ? <Chip label={t('history.detail.minutes', { n: workout.duration })} /> : null}
           <Chip label={t('history.detail.lifted', { kg: formatThousands(tonnage(workout, factor)) })} />
           {records.map((r) => (
             <Chip
@@ -63,6 +66,11 @@ export default function WorkoutScreen() {
             />
           ))}
         </View>
+        {time && time.minutes > 0 ? (
+          <View style={{ marginBottom: space.lg }}>
+            <SessionTimeline timeline={time} />
+          </View>
+        ) : null}
       </FadeIn>
 
       <View style={{ gap: 12 }}>
@@ -81,7 +89,7 @@ export default function WorkoutScreen() {
                 </Text>
                 <ChevronRight size={18} />
               </PressableScale>
-              <SetLines sets={e.sets} timed={e.timed} />
+              <SetLines sets={e.sets} timed={e.timed} assisted={findExerciseDef(e.name, own)?.assisted} />
             </StickerCard>
           </FadeIn>
         ))}
@@ -102,7 +110,8 @@ export default function WorkoutScreen() {
 }
 
 /** "1   80 kg × 10   Juste bien", warm-ups marked and not numbered. */
-function SetLines({ sets, timed }: { sets: LoggedSet[]; timed?: boolean }) {
+function SetLines({ sets, timed, assisted }: { sets: LoggedSet[]; timed?: boolean; assisted?: boolean }) {
+  const preciseRpe = useSettingsStore((s) => s.settings.preciseRpe);
   let n = 0;
   return (
     <View>
@@ -128,11 +137,15 @@ function SetLines({ sets, timed }: { sets: LoggedSet[]; timed?: boolean }) {
               {label}
             </Text>
             <Text size={16} weight="black" color={s.warmup ? colors.inkMuted : colors.ink} style={{ flex: 1 }}>
-              {loadLabel(s.weight, s.reps, timed)}
+              {loadLabel(s.weight, s.reps, timed, assisted)}
             </Text>
             {s.effort || s.kind === 'failure' ? (
               <Text size={13} weight="semibold" color={colors.inkMuted}>
-                {s.effort ? EFFORT_LABELS[s.effort] : t('history.detail.failure')}
+                {preciseRpe && s.rpe != null
+                  ? t('session.effort.rpe', { rpe: formatKg(s.rpe) })
+                  : s.effort
+                    ? EFFORT_LABELS[s.effort]
+                    : t('history.detail.failure')}
               </Text>
             ) : null}
           </View>

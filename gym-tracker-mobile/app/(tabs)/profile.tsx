@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import type { AppSettings } from '@/types';
 import { requestVoicePermission, voiceInputAvailable } from '@/services/voiceInput';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
-import { ALL_PLATES, formatKg } from '@/domain/plates';
+import { ALL_PLATES, COLLAR_CHOICES, formatKg } from '@/domain/plates';
 import { GOALS, getSplit } from '@/domain/programs';
 import { totals } from '@/domain/stats';
 import { insights } from '@/domain/insights';
@@ -171,6 +171,13 @@ export default function Profile() {
             />
           ) : null}
           <Row
+            label={t('profile.during.rpe')}
+            value={settings.preciseRpe ? t('profile.during.rpeOn') : t('profile.during.rpeOff')}
+            on={settings.preciseRpe}
+            onPress={() => updateSettings({ preciseRpe: !settings.preciseRpe })}
+            hint={t('profile.during.rpeHint')}
+          />
+          <Row
             label={t('profile.during.warmups')}
             value={settings.warmups ? t('profile.during.warmupsOn') : t('profile.during.warmupsOff')}
             on={settings.warmups}
@@ -227,6 +234,43 @@ export default function Profile() {
             );
           })}
         </View>
+        <Text size={15} weight="black" style={{ marginBottom: 8 }}>
+          {t('profile.plates.collars')}
+        </Text>
+        <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 8, marginBottom: 6 }}>
+          {COLLAR_CHOICES.map((kg) => {
+            const on = settings.collarWeight === kg;
+            return (
+              <PressableScale
+                key={kg}
+                haptic="selection"
+                onPress={() => updateSettings({ collarWeight: kg })}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={
+                  kg ? t('profile.plates.collarsA11y', { kg: formatKg(kg) }) : t('profile.plates.collarsNoneA11y')
+                }
+                containerStyle={{ flex: 1 }}
+                style={{
+                  minHeight: 44,
+                  borderRadius: radius.pill,
+                  borderWidth: on ? border.strong : border.base,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
+                  backgroundColor: on ? colors.coralSoft : colors.card,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
+                  {kg ? t('profile.plates.collarsKg', { kg: formatKg(kg) }) : t('profile.plates.collarsNone')}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
+        <Text size={13} color={colors.inkMuted} style={{ marginBottom: space.md, lineHeight: 18 }}>
+          {t('profile.plates.collarsHint')}
+        </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {ALL_PLATES.map((kg) => {
             const on = settings.plates.includes(kg);
@@ -311,6 +355,14 @@ export default function Profile() {
           <Text size={15} color={colors.inkMuted} style={{ lineHeight: 21 }}>
             {signedIn ? t('profile.account.signedIn') : t('profile.account.local')}
           </Text>
+          {signedIn ? (
+            <StickerButton
+              label={t('profile.account.manage')}
+              variant="secondary"
+              size="small"
+              onPress={() => router.push('/account')}
+            />
+          ) : null}
           <StickerButton
             label={signedIn ? t('profile.account.signOut') : t('profile.account.signIn')}
             variant="secondary"

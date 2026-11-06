@@ -18,6 +18,7 @@ const settings = {
   exerciseNotes: { 'Presse Hamer': 'siège 4' },
   plateLoaded: { 'Presse Hamer': true },
   warmupOverrides: { 'Presse Hamer': false },
+  manualProgression: { 'Presse Hamer': true },
 };
 
 describe('own exercises', () => {
@@ -28,6 +29,7 @@ describe('own exercises', () => {
     expect(patch.supersets).toEqual({ 'ppl/Legs': ['Presse Hammer'] });
     expect(patch.ruleOverrides).toEqual({ 'Presse Hammer': { sets: 4, repMin: 8, repMax: 10 } });
     expect(patch.exerciseNotes).toEqual({ 'Presse Hammer': 'siège 4' });
+    expect(patch.manualProgression).toEqual({ 'Presse Hammer': true });
     // Saved sessions under the old name still find it
     expect(findExerciseDef('Presse Hamer', patch.customExercises)?.name).toBe('Presse Hammer');
   });

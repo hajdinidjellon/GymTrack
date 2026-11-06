@@ -1,7 +1,8 @@
 // The user's week: for each day from Monday, the program day done on it, or null for rest.
 import { translatedList } from '@/domain/format';
+import { hasExercises, programDays } from '@/domain/programs';
 import { t } from '@/i18n';
-import type { Workout } from '@/types';
+import type { CustomExercise, Program, SplitId, Workout } from '@/types';
 
 export type Schedule = (string | null)[];
 
@@ -47,18 +48,63 @@ export function validSchedule(schedule: Schedule | undefined, dayNames: string[]
   return trainingCount(schedule) > 0 ? schedule : null;
 }
 
+/**
+ * The sessions a week can hold: the program's days, then the days the user
+ * added to it once they have exercises. A day already in the week stays
+ * offered, so it can be seen and taken off.
+ */
+export function weekSessions(
+  split: SplitId,
+  settings: {
+    customDays?: Record<string, string[]>;
+    customExercises?: CustomExercise[];
+    ownDays?: Record<string, string[]>;
+  },
+  week: Schedule = [],
+): { known: string[]; offered: string[] } {
+  const days = programDays(split, settings.customDays, settings.customExercises, settings.ownDays);
+  return {
+    known: days.map((d) => d.name),
+    offered: days.filter((d) => !d.own || hasExercises(d) || week.includes(d.name)).map((d) => d.name),
+  };
+}
+
 export function trainingCount(schedule: Schedule): number {
   return schedule.filter((name) => name !== null).length;
 }
 
-/** The first session after today, and in how many days. */
-export function nextScheduled(schedule: Schedule, now: Date): { name: string; inDays: number } | null {
+/**
+ * The first session after today, and in how many days. `canDo`: a day that
+ * cannot be done (an own day left empty) is skipped.
+ */
+export function nextScheduled(
+  schedule: Schedule,
+  now: Date,
+  canDo: (name: string) => boolean = () => true,
+): { name: string; inDays: number } | null {
   const today = weekdayIndex(now);
   for (let inDays = 1; inDays <= 7; inDays++) {
     const name = schedule[(today + inDays) % 7];
-    if (name) return { name, inDays };
+    if (name && canDo(name)) return { name, inDays };
   }
   return null;
+}
+
+/**
+ * The program once a day of the week was renamed (`to`) or removed (`to` null):
+ * a rename follows on every weekday, a removal frees its weekdays. A week left
+ * without any session is dropped, the count of sessions stays.
+ */
+export function renameInSchedule(program: Program, from: string, to: string | null): Program {
+  const { schedule } = program;
+  if (!schedule?.includes(from)) return program;
+  const week = schedule.map((name) => (name === from ? to : name));
+  const count = trainingCount(week);
+  if (count === 0) {
+    const { schedule: _gone, ...rest } = program;
+    return rest;
+  }
+  return { ...program, perWeek: count, schedule: week };
 }
 
 /** "demain", "jeudi", "lundi prochain". */

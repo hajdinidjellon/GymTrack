@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, space } from '@/constants/theme';
-import { choosableDays, dayKey, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
+import { choosableDays, dayKey, equipmentShown, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -76,17 +76,23 @@ export default function DayScreen() {
           <Link
             label={t('program.days.remove')}
             onPress={() =>
-              Alert.alert(t('program.days.removeTitle', { name: day.name }), t('program.days.removeText'), [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                  text: t('program.days.removeConfirm'),
-                  style: 'destructive',
-                  onPress: () => {
-                    removeOwnDay(day.split, day.name);
-                    router.back();
+              Alert.alert(
+                t('program.days.removeTitle', { name: day.name }),
+                profile.program.split === day.split && profile.program.schedule?.includes(day.name)
+                  ? t('program.days.removeTextScheduled')
+                  : t('program.days.removeText'),
+                [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  {
+                    text: t('program.days.removeConfirm'),
+                    style: 'destructive',
+                    onPress: () => {
+                      removeOwnDay(day.split, day.name);
+                      router.back();
+                    },
                   },
-                },
-              ])
+                ],
+              )
             }
           />
         </View>
@@ -171,7 +177,7 @@ function ExerciseRow({
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1}>
             {t('program.day.rowDetail', {
-              equipment: t(`program.equipment.${def.equipment}`),
+              equipment: t(`program.equipment.${equipmentShown(def)}`),
               sets: rule.sets,
               min: rule.repMin,
               max: rule.repMax,

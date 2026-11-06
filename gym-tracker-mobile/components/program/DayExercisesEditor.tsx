@@ -117,7 +117,6 @@ export function DayExercisesEditor<T>({
         visible={adding}
         taken={day.exercises.map((e) => e.name)}
         muscle={mainMuscle(day.exercises)}
-        stayOpen
         onPick={(def) => edit([...day.exercises, def])}
         onClose={() => setAdding(false)}
       />

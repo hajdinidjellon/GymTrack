@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, hardShadow } from '@/constants/theme';
-import { splitLegend } from '@/domain/onboarding';
+import { scheduleLegend } from '@/domain/onboarding';
 import { getSplit, SPLITS } from '@/domain/programs';
-import { defaultSchedule, trainingCount, validSchedule, type Schedule } from '@/domain/schedule';
+import { defaultSchedule, trainingCount, validSchedule, weekSessions, type Schedule } from '@/domain/schedule';
 import { t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
@@ -31,12 +31,15 @@ export default function ProgramScreen() {
   const offered = SPLITS.find((s) => s.id === params.split)?.id;
   const [split, setSplit] = useState<SplitId>(offered ?? profile?.program.split ?? 'ppl');
   const [perWeek, setPerWeek] = useState(profile?.program.perWeek ?? 3);
+  const settings = useSettingsStore((s) => s.settings);
   const names = getSplit(split).days.map((d) => d.name);
-  const saved = validSchedule(profile?.program.schedule, names);
+  // The days the user added to the program can be on the week too
+  const saved = validSchedule(profile?.program.schedule, weekSessions(split, settings).known);
   // Une semaine fixe le reste avec le nouveau programme
   const [fixed, setFixed] = useState(!!saved || (!!offered && !!profile?.program.schedule));
   const [schedule, setSchedule] = useState<Schedule>(saved ?? defaultSchedule(names, perWeek));
   const days = trainingCount(schedule);
+  const sessions = weekSessions(split, settings, schedule).offered;
 
   const chooseSplit = (id: SplitId) => {
     setSplit(id);
@@ -150,14 +153,14 @@ export default function ProgramScreen() {
         <StickerCard style={{ marginTop: 16, gap: 16 }}>
           <WeekPicker
             week={schedule}
-            names={names}
+            names={sessions}
             onChange={(week) => {
               buzz('selection');
               setSchedule(week);
             }}
           />
           <Text size={14} color={colors.inkMuted} style={{ lineHeight: 20 }}>
-            {splitLegend(split)}
+            {scheduleLegend(split, sessions)}
           </Text>
         </StickerCard>
       ) : (

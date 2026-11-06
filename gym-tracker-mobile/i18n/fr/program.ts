@@ -5,6 +5,7 @@ export const program = {
     dumbbell: 'Haltères',
     machine: 'Machine',
     bodyweight: 'Poids du corps',
+    kettlebell: 'Kettlebell',
   },
   kind: {
     compound: 'Plusieurs muscles',
@@ -60,6 +61,8 @@ export const program = {
     remove: 'Supprimer la séance',
     removeTitle: 'Supprimer « {name} » ?',
     removeText: 'Elle sort de ton programme. Les séances déjà faites restent dans ton historique.',
+    removeTextScheduled:
+      'Elle sort de ton programme, ses jours de la semaine passent en repos. Les séances déjà faites restent dans ton historique.',
     removeConfirm: 'Supprimer',
     title: 'Mes séances',
     subtitle: 'Choisis les exercices de chaque séance et leur ordre. Le reste, on le calcule.',

@@ -178,6 +178,8 @@ export const plateColors: Record<string, string> = {
   '5': '#FFFFFF',
   '2.5': '#E5484D',
   '1.25': '#C9CFD4',
+  '0.5': '#FFFFFF',
+  '0.25': '#C9CFD4',
 };
 
 export function plateColor(kg: number): string {

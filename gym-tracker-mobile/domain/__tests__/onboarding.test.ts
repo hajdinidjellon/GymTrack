@@ -10,6 +10,7 @@ import {
   sessionNames,
   splitFor,
   weekLegend,
+  scheduleLegend,
 } from '@/domain/onboarding';
 
 describe('splitFor', () => {
@@ -97,5 +98,16 @@ describe('calibrationPreset', () => {
   it('stays inside short preset lists', () => {
     expect(calibrationPreset([10, 20], 'years')).toBe(20);
     expect(calibrationPreset([], 'new')).toBeUndefined();
+  });
+});
+
+describe('scheduleLegend', () => {
+  it('is the program legend without own days', () => {
+    expect(scheduleLegend('ppl', ['Push', 'Pull', 'Legs'])).toBe('A Push · B Pull · C Legs');
+    expect(scheduleLegend('fb', ['Full body A', 'Full body B'])).toContain('full body');
+  });
+
+  it('gives the own days their letter after the program', () => {
+    expect(scheduleLegend('ul', ['Haut', 'Bas', 'Haut B'])).toBe('A Haut · B Bas · C Haut B');
   });
 });

@@ -20,6 +20,7 @@ import type { VoiceCommand } from '@/domain/voiceCommands';
 import * as Session from '@/domain/session';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
+import { sessionEnd } from '@/domain/sessionTime';
 import { nextExerciseLine, nextSetLine, restOverLine } from '@/domain/voiceLines';
 import {
   cancelRestCompleteNotification,
@@ -38,8 +39,13 @@ interface SessionStore {
   activeSession: ActiveSession | null;
 
   startSession: (name: string, exercises: ActiveExercise[]) => void;
-  /** Ends the session and returns what goes into the history. */
-  finishSession: () => Workout | null;
+  /**
+   * Ends the session and returns what goes into the history. It ends now,
+   * or at its last set when it was left open; `end` (epoch ms) sets it by hand.
+   */
+  finishSession: (end?: number) => Workout | null;
+  /** Left open for hours: "Reprendre" keeps it, the question waits. */
+  keepSessionOpen: () => void;
   discardSession: () => void;
 
   updateSet: (exerciseId: string, setIndex: number, patch: Partial<WorkoutSet>) => void;
@@ -57,6 +63,8 @@ interface SessionStore {
   completeRemaining: (exerciseId: string) => void;
   /** How the last validated set felt; the same effort again clears it. */
   rateLastSet: (effort: Effort) => void;
+  /** "RPE précis": the RPE of the set just validated, 6 to 10 by half points. */
+  rateLastSetRpe: (rpe: number) => void;
   /** Takes back the last validated set and cancels its rest. */
   undoLastSet: () => void;
   /** Another exercise instead of this one; the sets already done stay. */
@@ -206,13 +214,15 @@ export const useSessionStore = create<SessionStore>()(
           set({ activeSession: Session.refreshWarmups(session, settings()) });
         },
 
-        finishSession: () => {
+        finishSession: (end) => {
           const session = get().activeSession;
           if (!session) return null;
           get().stopRestTimer();
           set({ activeSession: null });
-          return Session.toWorkout(session, new Date());
+          return Session.toWorkout(session, new Date(end ?? sessionEnd(session, Date.now())));
         },
+
+        keepSessionOpen: () => apply((s) => Session.keepOpen(s, Date.now())),
 
         discardSession: () => {
           get().stopRestTimer();
@@ -272,6 +282,11 @@ export const useSessionStore = create<SessionStore>()(
 
         rateLastSet: (effort) => {
           apply((s) => Session.rateLastSet(s, effort));
+          Haptics.selectionAsync().catch(() => null);
+        },
+
+        rateLastSetRpe: (rpe) => {
+          apply((s) => Session.rateLastSetRpe(s, rpe));
           Haptics.selectionAsync().catch(() => null);
         },
 

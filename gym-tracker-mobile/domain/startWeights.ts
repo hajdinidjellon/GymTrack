@@ -5,11 +5,11 @@
  */
 
 import type { Loading } from '@/domain/loading';
-import { platesForSide } from '@/domain/plates';
+import { emptyBar, platesForSide, type Gym } from '@/domain/plates';
 import type { ExerciseDef } from '@/domain/programs';
-import type { AppSettings, MuscleGroup } from '@/types';
+import type { MuscleGroup } from '@/types';
 
-type Station = 'bar' | 'smith' | 'perSide' | 'cable' | 'stack' | 'dumbbell';
+type Station = 'bar' | 'smith' | 'perSide' | 'cable' | 'stack' | 'dumbbell' | 'kettlebell';
 
 const LOWER: MuscleGroup[] = ['legs', 'glutes', 'calves'];
 
@@ -21,6 +21,7 @@ const PRESETS: Record<Station, { lower: number[]; upper: number[]; isolation: nu
   cable: { lower: [10, 15, 20, 25, 30, 40], upper: [30, 35, 40, 50, 60, 70], isolation: [5, 10, 15, 20, 25, 30] },
   stack: { lower: [20, 30, 40, 50, 60, 80], upper: [20, 30, 40, 50, 60, 70], isolation: [10, 15, 20, 25, 30, 40] },
   dumbbell: { lower: [8, 10, 12, 16, 20, 24], upper: [8, 10, 12, 14, 16, 20], isolation: [4, 6, 8, 10, 12, 14] },
+  kettlebell: { lower: [8, 12, 16, 20, 24, 28], upper: [8, 12, 16, 20, 24, 28], isolation: [4, 6, 8, 12, 16, 20] },
 };
 
 function stationOf(def: Pick<ExerciseDef, 'equipment' | 'plateLoaded' | 'gear'>): Station | null {
@@ -28,9 +29,10 @@ function stationOf(def: Pick<ExerciseDef, 'equipment' | 'plateLoaded' | 'gear'>)
     case 'barbell':
       return 'bar';
     case 'dumbbell':
-      return 'dumbbell';
+      return def.gear === 'kettlebell' ? 'kettlebell' : 'dumbbell';
     case 'machine':
-      return def.gear ?? (def.plateLoaded ? 'perSide' : 'stack');
+      if (def.gear === 'cable' || def.gear === 'smith') return def.gear;
+      return def.plateLoaded ? 'perSide' : 'stack';
     case 'bodyweight':
       return null;
   }
@@ -56,22 +58,17 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  * the bar and the plates that are there, one weight step on a stack or a
  * dumbbell rack. Duplicates are dropped.
  */
-export function fitToGym(
-  presets: number[],
-  loading: Loading,
-  gym: Pick<AppSettings, 'barWeight' | 'plates'>,
-  increment: number,
-): number[] {
+export function fitToGym(presets: number[], loading: Loading, gym: Gym, increment: number): number[] {
   const fit = (p: number): number => {
     if (loading === 'bar') {
-      if (p <= gym.barWeight) return gym.barWeight;
-      return round2(gym.barWeight + 2 * sum(platesForSide((p - gym.barWeight) / 2, gym.plates)));
+      if (p <= emptyBar(gym)) return emptyBar(gym);
+      return round2(emptyBar(gym) + 2 * sum(platesForSide((p - emptyBar(gym)) / 2, gym.plates)));
     }
     if (loading === 'perSide') return round2(sum(platesForSide(p, gym.plates)));
     return increment > 0 ? round2(Math.max(increment, Math.floor(p / increment + 1e-9) * increment)) : p;
   };
   // The empty bar is always offered first on the bar: where a beginner starts
-  const options = loading === 'bar' ? [gym.barWeight, ...presets.map(fit)] : presets.map(fit);
+  const options = loading === 'bar' ? [emptyBar(gym), ...presets.map(fit)] : presets.map(fit);
   return [...new Set(options)].filter((p) => p > 0).sort((a, b) => a - b);
 }
 

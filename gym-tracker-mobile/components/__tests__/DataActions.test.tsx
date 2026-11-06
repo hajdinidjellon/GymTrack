@@ -103,7 +103,7 @@ describe('DataActions', () => {
       [
         'Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE',
         '2024-01-15 18:30:00,Push Day,1h,Bench Press (Barbell),1,80,8,0,0,,,',
-        '2024-01-15 18:30:00,Push Day,1h,Bicep Curl (Dumbbell),1,14,12,0,0,,,',
+        '2024-01-15 18:30:00,Push Day,1h,Bicep Curl (Band),1,14,12,0,0,,,',
         '2024-01-15 18:30:00,Push Day,1h,Running,1,0,0,5,1500,,,',
       ].join('\n'),
     );
