@@ -4,7 +4,6 @@ import {
   answersWeek,
   bodyOf,
   calibrationPreset,
-  remapSchedule,
   experienceTip,
   firstSession,
   goalTip,
@@ -148,19 +147,6 @@ describe('the program picked', () => {
   it('is the one picked, else the one the rhythm gives', () => {
     expect(answersSplit({ perWeek: 4, split: null })).toBe('ul');
     expect(answersSplit({ perWeek: 4, split: 'glutes' })).toBe('glutes');
-  });
-
-  it('puts the new program on the same training days', () => {
-    expect(remapSchedule(['Haut', null, 'Bas', null, 'Haut', 'Bas', null], ['Push', 'Pull', 'Legs'])).toEqual([
-      'Push',
-      null,
-      'Pull',
-      null,
-      'Legs',
-      'Push',
-      null,
-    ]);
-    expect(remapSchedule(['Haut', null, null, null, null, null, null], [])).toEqual(Array(7).fill(null));
   });
 
   it('shows the week, the names and the tips of the program picked', () => {

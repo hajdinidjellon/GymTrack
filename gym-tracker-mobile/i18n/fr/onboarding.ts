@@ -27,6 +27,8 @@ export const onboarding = {
       subtitle: 'Ça règle tes séries et tes reps. Tu pourras changer plus tard.',
     },
     rhythm: {
+      proposed: 'Proposé : {name}',
+      ideal: '{name} est fait pour {n} séances par semaine, mais tu fais comme tu veux.',
       title: 'Combien de séances par semaine ?',
       subtitle: 'Sois réaliste : mieux vaut 3 séances tenues que 5 ratées.',
       perWeek: '{n} séances par semaine',
@@ -58,9 +60,11 @@ export const onboarding = {
       tip: 'Ces réponses ne servent qu’à choisir tes premières charges.',
     },
     program: {
-      title: 'Quel programme ?',
-      subtitle: 'Tu pourras en changer quand tu veux, dans Profil.',
-      advised: 'Conseillé pour {n} séances',
+      title: 'Tu suis déjà un programme ?',
+      subtitle: "Prends celui que tu connais. Pas d'idée ? On te le propose selon ton nombre de séances.",
+      unsure: 'Je ne sais pas encore',
+      unsureSub: 'On choisit pour toi selon ton nombre de séances. Tu pourras changer dans Profil.',
+      ideal: 'Idéal : {n} séances / semaine',
     },
     duration: {
       title: 'Une séance, ça dure combien ?',
