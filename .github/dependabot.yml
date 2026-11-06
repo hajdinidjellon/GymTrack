@@ -26,6 +26,9 @@ updates:
         update-types: [version-update:semver-major, version-update:semver-minor]
       - dependency-name: 'react'
       - dependency-name: 'react-dom'
+      # Pinned by the SDK to the exact version: even a patch fails expo-doctor
+      - dependency-name: 'react-native-worklets'
+      - dependency-name: 'react-native-reanimated'
       # Suivent aussi le SDK : `npx expo install --fix`
       - dependency-name: '@expo/*'
         update-types: [version-update:semver-major, version-update:semver-minor]
