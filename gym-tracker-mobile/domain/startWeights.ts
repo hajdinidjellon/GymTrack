@@ -9,7 +9,7 @@ import { emptyBar, platesForSide, type Gym } from '@/domain/plates';
 import type { ExerciseDef } from '@/domain/programs';
 import type { MuscleGroup } from '@/types';
 
-type Station = 'bar' | 'smith' | 'perSide' | 'cable' | 'stack' | 'dumbbell';
+type Station = 'bar' | 'smith' | 'perSide' | 'cable' | 'stack' | 'dumbbell' | 'kettlebell';
 
 const LOWER: MuscleGroup[] = ['legs', 'glutes', 'calves'];
 
@@ -21,6 +21,7 @@ const PRESETS: Record<Station, { lower: number[]; upper: number[]; isolation: nu
   cable: { lower: [10, 15, 20, 25, 30, 40], upper: [30, 35, 40, 50, 60, 70], isolation: [5, 10, 15, 20, 25, 30] },
   stack: { lower: [20, 30, 40, 50, 60, 80], upper: [20, 30, 40, 50, 60, 70], isolation: [10, 15, 20, 25, 30, 40] },
   dumbbell: { lower: [8, 10, 12, 16, 20, 24], upper: [8, 10, 12, 14, 16, 20], isolation: [4, 6, 8, 10, 12, 14] },
+  kettlebell: { lower: [8, 12, 16, 20, 24, 28], upper: [8, 12, 16, 20, 24, 28], isolation: [4, 6, 8, 12, 16, 20] },
 };
 
 function stationOf(def: Pick<ExerciseDef, 'equipment' | 'plateLoaded' | 'gear'>): Station | null {
@@ -28,9 +29,10 @@ function stationOf(def: Pick<ExerciseDef, 'equipment' | 'plateLoaded' | 'gear'>)
     case 'barbell':
       return 'bar';
     case 'dumbbell':
-      return 'dumbbell';
+      return def.gear === 'kettlebell' ? 'kettlebell' : 'dumbbell';
     case 'machine':
-      return def.gear ?? (def.plateLoaded ? 'perSide' : 'stack');
+      if (def.gear === 'cable' || def.gear === 'smith') return def.gear;
+      return def.plateLoaded ? 'perSide' : 'stack';
     case 'bodyweight':
       return null;
   }

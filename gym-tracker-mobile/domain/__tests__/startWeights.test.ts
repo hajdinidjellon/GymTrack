@@ -20,6 +20,8 @@ describe('startPresets', () => {
     ['a dumbbell press', EXERCISES.dbbench, 8],
     ['lateral raises', EXERCISES.lateral, 4],
     ['goblet squats', EXERCISES.goblet, 8],
+    ['a kettlebell swing, one bell', EXERCISES.swing, 8],
+    ['a kettlebell press', EXERCISES.kbpress, 8],
   ])('starts %s at its own weights', (_, def, lightest) => {
     expect(startPresets(def)).toHaveLength(6);
     expect(first(def)).toBe(lightest);

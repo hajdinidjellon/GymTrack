@@ -9,7 +9,7 @@ import { incrementChoices, loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { bestE1rm, repRecords } from '@/domain/strength';
 import { warmupsOn } from '@/domain/warmup';
-import { defaultIncrementFor, findExerciseDef, ruleFor } from '@/domain/programs';
+import { defaultIncrementFor, equipmentShown, findExerciseDef, ruleFor } from '@/domain/programs';
 import { referenceWeight, workingSets } from '@/domain/progression';
 import {
   exerciseHistory,
@@ -86,8 +86,13 @@ export default function ExerciseScreen() {
   const bodyweight = def.equipment === 'bodyweight';
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
   const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def, ctx.settings.units));
-  const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded, assisted: def.assisted });
-  const equipment = t(`program.equipment.${def.equipment}`);
+  const loading = loadingOf({
+    name: def.name,
+    equipment: def.equipment,
+    plateLoaded: lift.plateLoaded,
+    assisted: def.assisted,
+  });
+  const equipment = t(`program.equipment.${equipmentShown(def)}`);
   const warmups = warmupsOn(def.name, warmupChoice);
   // Only the steps the gym's plates can make
   const steps = incrementChoices(loading, ctx.settings.plates ?? []);

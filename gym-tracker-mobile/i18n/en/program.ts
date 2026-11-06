@@ -6,6 +6,7 @@ export const program: Dictionary['program'] = {
     dumbbell: 'Dumbbells',
     machine: 'Machine',
     bodyweight: 'Bodyweight',
+    kettlebell: 'Kettlebell',
   },
   kind: {
     compound: 'Several muscles',

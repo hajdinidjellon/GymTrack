@@ -65,7 +65,8 @@ A layer never imports a layer above it. Always import with `@/`.
 
 - `progression.ts` — double progression engine (`nextTargets`), lighter comeback after 2+ weeks off. The last set's effort steers the reps: easy = +2, all-out = same target once. Only the planned working sets decide (`readSession`): top sets/singles heavier for fewer reps are kept as is (`SetTarget.top`), bonus sets never block, a max test has no working weight. Deload/comeback never go under the empty bar (`minWeight`) nor to 0; when nothing lighter makes sense, `ease` lowers the reps to what was done. Assisted machines (`assisted`) progress by taking help away.
 - `effort.ts` — "Comment c'était ?" after a set: Facile / Juste bien / À fond, stored as RPE.
-- `programs.ts` — exercise catalog (equipment, old-name aliases), splits, rules per goal.
+- `catalog/` — the exercise catalog, one file per body part (`define.ts` helpers: `withPlates`, `onCable`, `onSmith`, `kettlebell`, `held`), `EXERCISES` and `POPULARITY` (the order every exercise list is offered in, most known first; the user's own exercises before). Names are stored and never renamed: add an alias.
+- `programs.ts` — catalog lookups (search by French, English and old names, `byPopularity`, `alternativesFor`), splits, rules per goal.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
 - `session.ts` — pure transitions of the running session (complete set, rest, to workout).
 - `schemas.ts` — zod schemas; everything read from disk or the cloud is validated here.
@@ -80,7 +81,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `hold.ts` — the timer of a held set (plank…): 3 s countdown, then the hold. Timed exercises (`timed`) count seconds in `reps`, progress by `rule.repStep` (5 s).
 - `strength.ts` — estimated 1RM (Epley, ≤ 12 reps) and records per number of reps, for the exercise page.
 - `backup.ts` — the backup file (JSON, validated on restore), merging sessions by id.
-- `importWorkouts.ts` — Strong and Hevy CSV exports to sessions; names matched to the catalog only when movement and equipment agree.
+- `importWorkouts.ts` — Strong and Hevy CSV exports to sessions; names matched to the catalog from the Hevy and Strong names it knows (`catalog/importNames.ts`), else only when movement and equipment agree (the word in brackets: Barbell, Cable, Smith Machine…).
 - `ownDays.ts` — days the user adds to a program (`settings.ownDays`): named, renamed, removed; an empty one is never the next session (`hasExercises`).
 - `ownExercises.ts` — editing or deleting an own exercise; a rename moves every setting under the name and keeps the old name as an alias.
 - `voiceCommands.ts` — what a few spoken words mean ("fait", "8", "plus tard"…); more than 4 words is never a command.

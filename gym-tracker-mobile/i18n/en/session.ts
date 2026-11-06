@@ -54,6 +54,7 @@ export const session: Dictionary['session'] = {
       dumbbell: 'Dumbbells',
       machine: 'Machine',
       bodyweight: 'Bodyweight',
+      kettlebell: 'Kettlebell',
     },
   },
 
@@ -89,6 +90,7 @@ export const session: Dictionary['session'] = {
 
   picker: {
     suggestions: 'Suggestions',
+    all: 'All exercises, best known first',
     taken: '{name}, already in the workout',
     choose: 'Pick {name}',
     alias: 'Also called {alias}',
