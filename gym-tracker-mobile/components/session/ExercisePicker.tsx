@@ -263,23 +263,29 @@ export function ExercisePicker({
                 />
               </View>
               {!searching ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
+                // Toutes visibles d'un coup, sur deux lignes : rien de caché à faire défiler
+                <View
                   accessibilityRole="tablist"
-                  style={{ flexGrow: 0, marginTop: space.sm }}
-                  contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 4, gap: 8 }}
-                  keyboardShouldPersistTaps="handled"
+                  style={{
+                    flexShrink: 0,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    paddingHorizontal: 20,
+                    marginTop: space.sm,
+                    paddingBottom: 4,
+                  }}
                 >
                   {(['all', ...muscles] as Tab[]).map((item) => (
                     <MuscleTab
                       key={item}
-                      label={item === 'all' ? t('session.picker.allTab') : MUSCLE_LABELS[item]}
+                      label={item === 'all' ? t('session.picker.allTab') : t(`session.picker.tabs.${item}`)}
+                      a11y={item === 'all' ? t('session.picker.allTab') : MUSCLE_LABELS[item]}
                       selected={item === tab}
                       onPress={() => setTab(item)}
                     />
                   ))}
-                </ScrollView>
+                </View>
               ) : null}
               {/* Plus de 200 exercices : la liste ne dessine que ce qui est à l'écran */}
               <FlatList
@@ -302,7 +308,17 @@ export function ExercisePicker({
 }
 
 /** One muscle in the tab row: coral-soft and outlined thicker when it is the one shown. */
-function MuscleTab({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+function MuscleTab({
+  label,
+  a11y,
+  selected,
+  onPress,
+}: {
+  label: string;
+  a11y: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={() => {
@@ -311,10 +327,11 @@ function MuscleTab({ label, selected, onPress }: { label: string; selected: bool
       }}
       accessibilityRole="tab"
       accessibilityState={{ selected }}
-      accessibilityLabel={label}
+      accessibilityLabel={a11y}
+      hitSlop={{ top: 3, bottom: 3 }}
       style={({ pressed }) => ({
-        minHeight: 44,
-        paddingHorizontal: 16,
+        minHeight: 38,
+        paddingHorizontal: 11,
         borderRadius: radius.pill,
         borderWidth: selected ? border.strong : border.base,
         borderColor: colors.outline,
@@ -322,7 +339,7 @@ function MuscleTab({ label, selected, onPress }: { label: string; selected: bool
         justifyContent: 'center',
       })}
     >
-      <Text size={15} weight={selected ? 'black' : 'titleMedium'} numberOfLines={1}>
+      <Text size={14} weight={selected ? 'black' : 'titleMedium'} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
