@@ -19,6 +19,7 @@ async function toRhythm() {
   await tap('Continuer');
   await tap('Continuer');
   await tap('Continuer');
+  await tap('Continuer');
 }
 
 describe('OnboardingFlow', () => {
@@ -36,12 +37,14 @@ describe('OnboardingFlow', () => {
     expect(screen.getByText('Tu soulèves depuis quand ?')).toBeOnTheScreen();
 
     await tap('Continuer');
-    expect(screen.getByText('Combien de séances par semaine ?')).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: '3 séances par semaine' })).toBeSelected();
+    expect(screen.getByText('Tu suis déjà un programme ?')).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: /^Je ne sais pas encore/ })).toBeSelected();
+    expect(screen.getByRole('radio', { name: /^Tout le corps.*Idéal : 2–3 séances/ })).not.toBeSelected();
 
     await tap('Continuer');
-    expect(screen.getByText('Quel programme ?')).toBeOnTheScreen();
-    expect(screen.getByRole('radio', { name: /^Tout le corps.*Conseillé pour 3 séances/ })).toBeSelected();
+    expect(screen.getByText('Combien de séances par semaine ?')).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: '3 séances par semaine' })).toBeSelected();
+    expect(screen.getByText('Proposé : Full body')).toBeOnTheScreen();
 
     await tap('Continuer');
     expect(screen.getByText('Une séance, ça dure combien ?')).toBeOnTheScreen();
@@ -62,7 +65,7 @@ describe('OnboardingFlow', () => {
 
     await toRhythm();
     await fireEvent.press(screen.getByRole('radio', { name: '4 séances par semaine' }));
-    expect(screen.getByText('Haut · Bas')).toBeOnTheScreen();
+    expect(screen.getByText('Proposé : Haut · Bas')).toBeOnTheScreen();
     expect(screen.getByText(/deux fois par semaine/)).toBeOnTheScreen();
   });
 
@@ -76,9 +79,10 @@ describe('OnboardingFlow', () => {
     await tap('Continuer');
     await pick(/Je débute/);
     await tap('Continuer');
-    await pick('5 séances par semaine');
-    await tap('Continuer');
     await pick(/^Fessiers \/ Haut \/ Jambes/);
+    await tap('Continuer');
+    expect(screen.getByText('Fessiers · Haut · Jambes')).toBeOnTheScreen();
+    await pick('5 séances par semaine');
     await tap('Continuer');
     await pick('45 minutes');
     await tap('Continuer');
@@ -167,17 +171,23 @@ describe('OnboardingFlow', () => {
     );
   });
 
-  it('keeps the days picked when the program changes, with the new program on them', async () => {
+  it('fits the rhythm to the program picked, and lets the user train more or less', async () => {
     const { onFinish } = await setup();
-    await toRhythm();
-    await pick('4 séances par semaine');
     await tap('Continuer');
-    expect(screen.getByRole('radio', { name: /^Haut \/ Bas.*Conseillé pour 4 séances/ })).toBeSelected();
+    await tap('Continuer');
+    await tap('Continuer');
     await pick(/^Pousser \/ Tirer \/ Jambes/);
+    await tap('Continuer');
+    // PPL is made for 5 or 6: the rhythm follows
+    expect(screen.getByRole('radio', { name: '5 séances par semaine' })).toBeSelected();
+    expect(screen.getByText('Push · Pull · Legs')).toBeOnTheScreen();
+    expect(screen.queryByText(/est fait pour/)).toBeNull();
+    await pick('3 séances par semaine');
+    expect(screen.getByText(/Pousser \/ Tirer \/ Jambes est fait pour 5–6 séances par semaine/)).toBeOnTheScreen();
     await tap('Passer');
     await tap("Plus tard, voir l'accueil");
     expect(onFinish).toHaveBeenCalledWith(
-      expect.objectContaining({ split: 'ppl', schedule: ['Push', 'Pull', null, 'Legs', 'Push', null, null] }),
+      expect.objectContaining({ split: 'ppl', perWeek: 3, schedule: null }),
       'home',
     );
   });
@@ -223,6 +233,8 @@ describe('OnboardingFlow', () => {
       await tap('Continue');
       expect(screen.getByText('And you?')).toBeOnTheScreen();
       await tap('Continue');
+      await tap('Continue');
+      expect(screen.getByText('Do you already follow a program?')).toBeOnTheScreen();
       await tap('Continue');
       expect(screen.getByText('How many sessions a week?')).toBeOnTheScreen();
       expect(screen.getByRole('radio', { name: '3 sessions a week' })).toBeSelected();

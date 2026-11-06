@@ -28,6 +28,8 @@ export const onboarding: Dictionary['onboarding'] = {
       subtitle: 'It sets your sets and reps. You can change it later.',
     },
     rhythm: {
+      proposed: 'Suggested: {name}',
+      ideal: "{name} is made for {n} sessions a week, but it's up to you.",
       title: 'How many sessions a week?',
       subtitle: 'Be realistic: 3 sessions you stick to beat 5 you skip.',
       perWeek: '{n} sessions a week',
@@ -59,9 +61,11 @@ export const onboarding: Dictionary['onboarding'] = {
       tip: 'These answers are only used to pick your first weights.',
     },
     program: {
-      title: 'Which program?',
-      subtitle: 'You can change it any time, in Profile.',
-      advised: 'Advised for {n} sessions',
+      title: 'Do you already follow a program?',
+      subtitle: 'Pick the one you know. No idea? We suggest one from how often you train.',
+      unsure: "I don't know yet",
+      unsureSub: 'We pick for you from how often you train. You can change it in Profile.',
+      ideal: 'Best at {n} sessions a week',
     },
     duration: {
       title: 'How long is a session?',

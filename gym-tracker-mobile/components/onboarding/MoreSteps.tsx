@@ -8,11 +8,6 @@ import {
   BODY_WEIGHT_START,
   PROGRAM_CHOICES,
   SESSION_MINUTES,
-  answersSplit,
-  answersWeek,
-  remapSchedule,
-  sessionNames,
-  splitFor,
   type OnboardingAnswers,
 } from '@/domain/onboarding';
 import { formatKg } from '@/domain/plates';
@@ -155,33 +150,52 @@ export function AboutStep({ answers, set }: StepProps) {
 
 /** The programs in plain words; the one the rhythm suits is advised and picked first. */
 export function ProgramStep({ answers, set }: StepProps) {
-  const current = answersSplit(answers);
-  const advised = splitFor(answers.perWeek);
-  const pick = (id: SplitId) => {
-    // Same training days, the new program's sessions on them
-    const week = answersWeek(answers);
-    set({ split: id, schedule: answers.schedule ? remapSchedule(week, sessionNames(answers.perWeek, id)) : null });
+  const pick = (id: SplitId | null) => {
+    const program = PROGRAM_CHOICES.find((p) => p.id === id);
+    // Le rythme suit le programme s'il n'est pas fait pour lui ; la semaine se refait
+    const perWeek = !program || program.rhythms.includes(answers.perWeek) ? answers.perWeek : program.rhythms[0]!;
+    set({ split: id, perWeek, schedule: null });
   };
+  const choices = [
+    {
+      id: null,
+      title: t('onboarding.flow.program.unsure'),
+      sub: t('onboarding.flow.program.unsureSub'),
+      badge: null,
+    },
+    ...PROGRAM_CHOICES.map((p) => ({
+      ...p,
+      title: p.title,
+      sub: p.sub,
+      badge: t('onboarding.flow.program.ideal', { n: rhythmsLabel(p.rhythms) }),
+    })),
+  ];
   return (
     <>
       <Question title={t('onboarding.flow.program.title')} subtitle={t('onboarding.flow.program.subtitle')} />
-      <View accessibilityRole="radiogroup" style={{ gap: 14 }}>
-        {PROGRAM_CHOICES.map((p) => {
-          const on = current === p.id;
-          const badge = p.id === advised ? t('onboarding.flow.program.advised', { n: answers.perWeek }) : null;
+      <View accessibilityRole="radiogroup" style={{ gap: 12 }}>
+        {choices.map((p) => {
+          const on = answers.split === p.id;
           return (
             <Choice
-              key={p.id}
+              key={p.id ?? 'unsure'}
               selected={on}
               onPress={() => pick(p.id)}
-              accessibilityLabel={[p.title, p.sub, badge].filter(Boolean).join(', ')}
+              accessibilityLabel={[p.title, p.sub, p.badge].filter(Boolean).join(', ')}
               style={{ padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 }}
             >
               <View style={{ flex: 1, gap: 4 }}>
-                {badge ? (
+                <Text size={20} weight="titleMedium">
+                  {p.title}
+                </Text>
+                <Text size={14} weight="semibold" color={colors.inkMuted}>
+                  {p.sub}
+                </Text>
+                {p.badge ? (
                   <View
                     style={{
                       alignSelf: 'flex-start',
+                      marginTop: 4,
                       paddingHorizontal: 10,
                       paddingVertical: 2,
                       borderRadius: radius.pill,
@@ -191,16 +205,10 @@ export function ProgramStep({ answers, set }: StepProps) {
                     }}
                   >
                     <Text size={13} weight="bold" color={colors.onSun}>
-                      {badge}
+                      {p.badge}
                     </Text>
                   </View>
                 ) : null}
-                <Text size={20} weight="titleMedium">
-                  {p.title}
-                </Text>
-                <Text size={14} weight="semibold" color={colors.inkMuted}>
-                  {p.sub}
-                </Text>
               </View>
               <PickMark on={on} />
             </Choice>
@@ -210,6 +218,10 @@ export function ProgramStep({ answers, set }: StepProps) {
     </>
   );
 }
+
+/** [2, 3] → "2–3", [4] → "4". */
+export const rhythmsLabel = (rhythms: number[]) =>
+  rhythms.length > 1 ? `${rhythms[0]}–${rhythms[rhythms.length - 1]}` : `${rhythms[0]}`;
 
 /** The usual session time: a program day that runs over is cut to fit. */
 export function DurationStep({ answers, set }: StepProps) {

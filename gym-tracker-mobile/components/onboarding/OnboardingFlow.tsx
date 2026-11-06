@@ -8,6 +8,7 @@ import {
   EXPERIENCES,
   GYM_PLATES,
   PER_WEEK_CHOICES,
+  PROGRAM_CHOICES,
   answersWeek,
   experienceTip,
   firstSession,
@@ -18,7 +19,7 @@ import {
   weekLegend,
   type OnboardingAnswers,
 } from '@/domain/onboarding';
-import { defaultSchedule, trainingCount } from '@/domain/schedule';
+import { trainingCount } from '@/domain/schedule';
 import { formatKg } from '@/domain/plates';
 import { dayName, exerciseName, t } from '@/i18n';
 import { planDay } from '@/domain/sessionBuilder';
@@ -36,10 +37,10 @@ import { Barbell } from '@/components/disc/Barbell';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { WeekPicker } from '@/components/program/WeekPicker';
 import { OnboardingHeader, PickMark, Question, Tip } from './OnboardingParts';
-import { AboutStep, ChainPicker, DurationStep, ProgramStep, type StepProps } from './MoreSteps';
+import { AboutStep, ChainPicker, DurationStep, ProgramStep, rhythmsLabel, type StepProps } from './MoreSteps';
 
 const QUESTIONS = 7;
-const RHYTHM = 3;
+const RHYTHM = 4;
 const RECAP = QUESTIONS;
 
 export type FlowEnd = 'session' | 'home';
@@ -88,8 +89,8 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
         {step === 0 ? <GoalStep answers={answers} set={set} /> : null}
         {step === 1 ? <AboutStep answers={answers} set={set} /> : null}
         {step === 2 ? <ExperienceStep answers={answers} set={set} /> : null}
-        {step === 3 ? <RhythmStep answers={answers} set={set} /> : null}
-        {step === 4 ? <ProgramStep answers={answers} set={set} /> : null}
+        {step === 3 ? <ProgramStep answers={answers} set={set} /> : null}
+        {step === 4 ? <RhythmStep answers={answers} set={set} /> : null}
         {step === 5 ? <DurationStep answers={answers} set={set} /> : null}
         {step === 6 ? <GymStep answers={answers} set={set} /> : null}
       </FadeIn>
@@ -150,6 +151,9 @@ function RhythmStep({ answers, set }: StepProps) {
   const names = sessionNames(answers.perWeek, split);
   const week = answersWeek(answers);
   const count = trainingCount(week);
+  // Un programme choisi qui n'est pas fait pour ce rythme : on le dit, sans l'imposer
+  const chosen = PROGRAM_CHOICES.find((p) => p.id === answers.split);
+  const offRhythm = chosen && !chosen.rhythms.includes(answers.perWeek) ? chosen : null;
   return (
     <>
       <Question title={t('onboarding.flow.rhythm.title')} subtitle={t('onboarding.flow.rhythm.subtitle')} />
@@ -160,8 +164,8 @@ function RhythmStep({ answers, set }: StepProps) {
             <Choice
               key={n}
               selected={on}
-              // Un autre rythme, un autre programme : on repart de sa semaine type
-              onPress={() => set({ perWeek: n, split: null, schedule: defaultSchedule(sessionNames(n), n) })}
+              // Un autre rythme : on repart de la semaine type du programme choisi
+              onPress={() => set({ perWeek: n, schedule: null })}
               accessibilityLabel={t('onboarding.flow.rhythm.perWeek', { n })}
               style={{ flex: 1, height: 72, alignItems: 'center', justifyContent: 'center' }}
             >
@@ -172,6 +176,11 @@ function RhythmStep({ answers, set }: StepProps) {
           );
         })}
       </View>
+      {offRhythm ? (
+        <Text size={14} weight="semibold" color={colors.inkMuted} style={{ marginTop: 10, lineHeight: 20 }}>
+          {t('onboarding.flow.rhythm.ideal', { name: offRhythm.title, n: rhythmsLabel(offRhythm.rhythms) })}
+        </Text>
+      ) : null}
 
       <StickerCard style={{ marginTop: 22, gap: 14 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -179,7 +188,9 @@ function RhythmStep({ answers, set }: StepProps) {
             {t('onboarding.flow.rhythm.week')}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
-            {getSplit(split).title}
+            {answers.split
+              ? getSplit(split).title
+              : t('onboarding.flow.rhythm.proposed', { name: getSplit(split).title })}
           </Text>
         </View>
         <WeekPicker week={week} names={names} onChange={(schedule) => set({ schedule })} />

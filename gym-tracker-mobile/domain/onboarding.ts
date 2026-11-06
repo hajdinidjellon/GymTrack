@@ -76,12 +76,6 @@ export function answersSplit(answers: Pick<OnboardingAnswers, 'perWeek' | 'split
   return answers.split ?? splitFor(answers.perWeek);
 }
 
-/** The same training days with another program's sessions, in its order. */
-export function remapSchedule(schedule: Schedule, names: string[]): Schedule {
-  let n = 0;
-  return schedule.map((day) => (day === null || names.length === 0 ? null : names[n++ % names.length]!));
-}
-
 export const PER_WEEK_CHOICES = [2, 3, 4, 5, 6];
 export const BAR_CHOICES = [
   {
