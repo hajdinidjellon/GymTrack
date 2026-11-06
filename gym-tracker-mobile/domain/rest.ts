@@ -20,8 +20,9 @@ export function setSeconds(reps: number): number {
 }
 
 const GAP_MIN = 15; // en dessous : validées d'un coup (« Tout comme prévu »)
-const GAP_MAX = 10 * 60; // au-dessus : téléphone posé, pause, discussion
-export const REST_LIMITS = [30, 360] as const;
+const GAP_MAX = 15 * 60; // au-dessus : téléphone posé, pause, discussion
+/** Up to 10 min: heavy singles and triples need it. */
+export const REST_LIMITS = [30, 600] as const;
 export const REST_STEP = 15;
 /** Samples needed before the habit counts, and how many sessions are looked at. */
 export const LEARN_SAMPLES = 4;

@@ -30,6 +30,24 @@ function session(weight: number, reps: number[], extra: Partial<WorkoutSet>[] = 
 }
 
 const weights = (r: ReturnType<typeof nextTargets>) => r.targets.map((t) => t.weight);
+
+describe('manual mode', () => {
+  it('repeats the last session set by set, top set and back-offs included', () => {
+    const last = session(180, [1, 5, 5, 5], [{ weight: 200 }]);
+    const r = nextTargets([last], rule, { manual: true, now: new Date(2027, 5, 1) });
+    expect(r.decision).toBe('manual');
+    expect(r.targets).toEqual([
+      { weight: 200, reps: 1 },
+      { weight: 180, reps: 5 },
+      { weight: 180, reps: 5 },
+      { weight: 180, reps: 5 },
+    ]);
+  });
+
+  it('asks for a weight the first time, like the automatic mode', () => {
+    expect(nextTargets([], rule, { manual: true }).decision).toBe('calibrate');
+  });
+});
 const reps = (r: ReturnType<typeof nextTargets>) => r.targets.map((t) => t.reps);
 
 beforeEach(() => {

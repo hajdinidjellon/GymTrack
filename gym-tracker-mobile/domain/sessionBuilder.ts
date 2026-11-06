@@ -13,7 +13,8 @@ import {
   type ExerciseSession,
   type ProgressionDecision,
 } from '@/domain/progression';
-import { DEFAULT_BAR, formatKg } from '@/domain/plates';
+import { loadableIncrement, loadableWeight, loadingOf } from '@/domain/loading';
+import { DEFAULT_BAR, emptyBar, formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
 import { trainedOn, validSchedule, weekdayIndex } from '@/domain/schedule';
 import {
@@ -58,6 +59,9 @@ export interface BuildContext {
         | 'supersets'
         | 'ownDays'
         | 'barWeight'
+        | 'plates'
+        | 'collarWeight'
+        | 'manualProgression'
       >
     >;
   workouts: Workout[];
@@ -155,10 +159,15 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   const history = exerciseHistory(def, ctx.workouts);
   const lastRule = history.find((h) => h.rule)?.rule;
   const plateLoaded = isPlateLoaded(def, ctx.settings.plateLoaded);
-  const increment =
+  const loading = loadingOf({ equipment: def.equipment, plateLoaded });
+  const { barWeight, plates, collarWeight } = ctx.settings;
+  const gym = barWeight != null && plates ? { barWeight, plates, collarWeight } : null;
+  const wanted =
     ctx.settings.increments[def.name] ??
     lastRule?.increment ??
     defaultIncrementFor(def, ctx.settings.units, plateLoaded);
+  // Never a step the plates cannot make: 1,25 kg plates make 2,5 on the bar, not 1
+  const increment = gym ? loadableIncrement(loading, wanted, gym.plates) : wanted;
   const rule = withOverride(ruleFor(ctx.profile.goal, def, increment), ctx.settings.ruleOverrides?.[def.name]);
 
   let startWeight: number | undefined;
@@ -168,13 +177,25 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
     if (pr) startWeight = startWeightFromOneRepMax(pr.oneRepMax, increment);
   }
 
-  const { decision, targets, daysOff } = nextTargets(history, rule, {
+  const manual = !!ctx.settings.manualProgression?.[def.name];
+  const result = nextTargets(history, rule, {
     startWeight,
     now: ctx.now,
-    // Never under the empty bar on a barbell lift
-    minWeight: def.equipment === 'barbell' ? (ctx.settings.barWeight ?? DEFAULT_BAR) : undefined,
+    manual,
+    // Never under the empty bar (collars included) on a barbell lift
+    minWeight:
+      def.equipment === 'barbell'
+        ? emptyBar({ barWeight: ctx.settings.barWeight ?? DEFAULT_BAR, collarWeight: ctx.settings.collarWeight })
+        : undefined,
     assisted: def.assisted,
   });
+  const { decision, daysOff } = result;
+  // Never a load the plates cannot make (101,25 kg left by an old 1,25 kg step): the one just under.
+  // In manual mode the user's own loads stay as they are.
+  const targets =
+    gym && decision !== 'manual'
+      ? result.targets.map((tg) => ({ ...tg, weight: loadableWeight(loading, tg.weight, gym) }))
+      : result.targets;
   const lastSession = history.find((h) => mainSets(h.sets).length > 0);
   const last = lastSession ? mainSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
   const rest = planRest(
@@ -279,6 +300,7 @@ export function deltaLabel(
       });
     case 'hold':
     case 'repeat':
+    case 'manual':
       return t('domain.plan.deltaSame');
     case 'deload':
       return t(assisted ? 'domain.plan.deltaMoreHelp' : 'domain.plan.deltaDeload');
@@ -365,6 +387,8 @@ function mainReason(lift: ReasonInput): string {
       return bodyweight ? t('domain.plan.reasonStartBodyweight') : t('domain.plan.reasonStart');
     case 'calibrate':
       return t('domain.plan.reasonCalibrate');
+    case 'manual':
+      return t('domain.plan.reasonManual');
   }
 }
 

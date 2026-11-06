@@ -104,6 +104,7 @@ export default function WorkoutScreen() {
 
 /** "1   80 kg × 10   Juste bien", warm-ups marked and not numbered. */
 function SetLines({ sets, timed, assisted }: { sets: LoggedSet[]; timed?: boolean; assisted?: boolean }) {
+  const preciseRpe = useSettingsStore((s) => s.settings.preciseRpe);
   let n = 0;
   return (
     <View>
@@ -133,7 +134,11 @@ function SetLines({ sets, timed, assisted }: { sets: LoggedSet[]; timed?: boolea
             </Text>
             {s.effort || s.kind === 'failure' ? (
               <Text size={13} weight="semibold" color={colors.inkMuted}>
-                {s.effort ? EFFORT_LABELS[s.effort] : t('history.detail.failure')}
+                {preciseRpe && s.rpe != null
+                  ? t('session.effort.rpe', { rpe: formatKg(s.rpe) })
+                  : s.effort
+                    ? EFFORT_LABELS[s.effort]
+                    : t('history.detail.failure')}
               </Text>
             ) : null}
           </View>

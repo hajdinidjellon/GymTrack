@@ -4,12 +4,25 @@
  */
 
 import { getLocale, listOf, t } from '@/i18n';
+import type { AppSettings } from '@/types';
 
 export const DEFAULT_BAR = 20;
 export const DEFAULT_PLATES = [20, 15, 10, 5, 2.5, 1.25];
-export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
+/** Every plate a gym may have, heaviest first. The change plates (0,5 and 0,25) are off by default. */
+export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25, 0.5, 0.25];
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** The user's gym: bar, plates and, when they use them, the weight of each collar. */
+export type Gym = Pick<AppSettings, 'barWeight' | 'plates'> & Partial<Pick<AppSettings, 'collarWeight'>>;
+
+/** Collars offered in the settings: none, or competition collars (2,5 kg each). */
+export const COLLAR_CHOICES = [0, 2.5];
+
+/** The bar with its two collars on: the lightest load, what the plates go on top of. */
+export function emptyBar(gym: Pick<Gym, 'barWeight' | 'collarWeight'>): number {
+  return round2(gym.barWeight + 2 * (gym.collarWeight ?? 0));
+}
 
 export interface PlateLoad {
   /** Plates on one side, heaviest first. */

@@ -5,7 +5,7 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatClock, formatRest, formatShortDay } from '@/domain/format';
 import { clampRest, REST_STEP } from '@/domain/rest';
-import { loadingOf } from '@/domain/loading';
+import { incrementChoices, loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { bestE1rm, repRecords } from '@/domain/strength';
 import { warmupsOn } from '@/domain/warmup';
@@ -38,8 +38,6 @@ import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 import { exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 
-const STEPS = [1, 1.25, 2, 2.5, 5];
-
 export default function ExerciseScreen() {
   useLocale();
   const { name } = useLocalSearchParams<{ name: string }>();
@@ -49,6 +47,7 @@ export default function ExerciseScreen() {
   const setRestOverride = useSettingsStore((s) => s.setRestOverride);
   const setPlateLoaded = useSettingsStore((s) => s.setPlateLoaded);
   const setWarmups = useSettingsStore((s) => s.setWarmups);
+  const setManualProgression = useSettingsStore((s) => s.setManualProgression);
   const removeCustomExercise = useSettingsStore((s) => s.removeCustomExercise);
   const [editing, setEditing] = useState(false);
   const warmupChoice = useSettingsStore((s) => s.settings);
@@ -90,6 +89,9 @@ export default function ExerciseScreen() {
   const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded, assisted: def.assisted });
   const equipment = t(`program.equipment.${def.equipment}`);
   const warmups = warmupsOn(def.name, warmupChoice);
+  // Only the steps the gym's plates can make
+  const steps = incrementChoices(loading, ctx.settings.plates ?? []);
+  const manual = !!ctx.settings.manualProgression?.[def.name];
 
   return (
     <Screen scroll>
@@ -256,7 +258,15 @@ export default function ExerciseScreen() {
             />
           </View>
         ) : null}
-        {!bodyweight ? (
+        <View style={{ marginTop: 14 }}>
+          <CheckRow
+            label={t('exercise.manual.label')}
+            checked={!manual}
+            onChange={(auto) => setManualProgression(def.name, !auto)}
+            detail={t(manual ? 'exercise.manual.off' : 'exercise.manual.on')}
+          />
+        </View>
+        {!bodyweight && !manual ? (
           <>
             <Text size={16} weight="semibold" color={colors.inkMuted} style={{ marginTop: 14 }}>
               {t('exercise.increment.title')}
@@ -274,7 +284,7 @@ export default function ExerciseScreen() {
                 backgroundColor: colors.paper,
               }}
             >
-              {STEPS.map((v) => {
+              {steps.map((v) => {
                 const on = lift.rule.increment === v;
                 return (
                   <PressableScale

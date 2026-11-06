@@ -149,6 +149,41 @@ describe('planLift', () => {
     expect(deltaLabel(p)).toBe('+5 kg');
   });
 
+  it('never proposes a load the plates cannot make', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 100, [12, 12, 12])])]);
+    c.settings = { ...c.settings, barWeight: 20, plates: [20, 10, 5, 2.5, 1.25] };
+    // 1 kg asked, the smallest plate is 1,25: the bar moves by 2,5
+    c.settings.increments['Développé couché'] = 1;
+    const p = planLift(EXERCISES.bench, c);
+    expect(p.rule.increment).toBe(2.5);
+    expect(p.targets[0]?.weight).toBe(102.5);
+    // With 0,5 kg plates, 1 kg is fine
+    c.settings.plates = [20, 10, 5, 2.5, 1.25, 0.5];
+    expect(planLift(EXERCISES.bench, c).targets[0]?.weight).toBe(101);
+  });
+
+  it('brings a weight the plates cannot make down to the one just under', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 101.25, [9, 9, 9])])]);
+    c.settings = { ...c.settings, barWeight: 20, plates: [20, 10, 5, 2.5, 1.25], collarWeight: 0 };
+    expect(planLift(EXERCISES.bench, c).targets[0]?.weight).toBe(100);
+  });
+
+  it('repeats the last session in manual mode and says so', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 101.25, [12, 12, 12])])]);
+    c.settings = {
+      ...c.settings,
+      barWeight: 20,
+      plates: [20, 10, 5, 2.5, 1.25],
+      manualProgression: { 'Développé couché': true },
+    };
+    const p = planLift(EXERCISES.bench, c);
+    expect(p.decision).toBe('manual');
+    // Never rounded, never moved: the user's own load
+    expect(p.targets.map((x) => x.weight)).toEqual([101.25, 101.25, 101.25]);
+    expect(reasonLabel(p)).toContain('Mode manuel');
+    expect(deltaLabel(p)).toBe(deltaLabel({ ...p, decision: 'repeat' }));
+  });
+
   it('uses the sets and reps the user chose for the exercise', () => {
     const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 60, [8, 8, 8, 8, 8])])]);
     c.settings.ruleOverrides = { 'Développé couché': { sets: 5, repMin: 5, repMax: 8 } };

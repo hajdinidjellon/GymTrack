@@ -17,6 +17,7 @@ type Settings = Pick<
   | 'exerciseNotes'
   | 'plateLoaded'
   | 'warmupOverrides'
+  | 'manualProgression'
 >;
 
 function moveKey<T>(record: Record<string, T>, from: string, to: string | null): Record<string, T> {
@@ -42,6 +43,7 @@ function rekey(settings: Settings, from: string, to: string | null): Partial<App
     exerciseNotes: moveKey(settings.exerciseNotes, from, to),
     plateLoaded: moveKey(settings.plateLoaded, from, to),
     warmupOverrides: moveKey(settings.warmupOverrides, from, to),
+    manualProgression: moveKey(settings.manualProgression, from, to),
   };
 }
 

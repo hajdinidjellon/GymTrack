@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { describeSide, formatKg, loadBar, platesPhrase } from '@/domain/plates';
+import { ALL_PLATES, DEFAULT_PLATES, describeSide, formatKg, loadBar, platesPhrase } from '@/domain/plates';
 
 describe('loadBar', () => {
   it('loads 62.5 kg as 20 + 1.25 per side', () => {
@@ -21,6 +21,16 @@ describe('loadBar', () => {
     const load = loadBar(63, 20, [20, 10, 5, 2.5, 1.25]);
     expect(load.perSide).toEqual([20, 1.25]);
     expect(load.missing).toBe(0.5);
+  });
+
+  it('offers the change plates, off by default', () => {
+    expect(ALL_PLATES).toEqual(expect.arrayContaining([0.5, 0.25]));
+    expect(DEFAULT_PLATES).not.toContain(0.5);
+    expect(DEFAULT_PLATES).not.toContain(0.25);
+  });
+
+  it('loads 101,5 kg with 0,5 and 0,25 plates', () => {
+    expect(loadBar(101.5, 20, ALL_PLATES)).toEqual({ perSide: [25, 15, 0.5, 0.25], missing: 0 });
   });
 
   it('handles a 15 kg bar', () => {

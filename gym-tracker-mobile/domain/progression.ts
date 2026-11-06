@@ -67,7 +67,8 @@ export type ProgressionDecision =
   | 'ease' // failed twice, nothing lighter to load: the reps really done become the target
   | 'comeback' // back after a break: a bit lighter to find the groove again
   | 'start' // no history, starting weight derived from a PR
-  | 'calibrate'; // no history and no PR: the user picks the weight
+  | 'calibrate' // no history and no PR: the user picks the weight
+  | 'manual'; // manual mode: exactly what was done last time, set by set
 
 /** The decisions that ask for more than last time. */
 export function isProgress(decision: ProgressionDecision): boolean {
@@ -280,6 +281,8 @@ export interface TargetOptions {
   minWeight?: number;
   /** Assisted machine: the weight is help, less of it is harder. */
   assisted?: boolean;
+  /** The user follows their own cycle: last session again, set by set. */
+  manual?: boolean;
 }
 
 /**
@@ -310,6 +313,11 @@ export function nextTargets(
     const start = tested > 0 ? startWeightFromOneRepMax(tested, rule.increment) : options.startWeight;
     if (start != null) return { decision: 'start', targets: fill(rule.sets, start, () => rule.repMin) };
     return { decision: 'calibrate', targets: fill(rule.sets, 0, () => rule.repMin) };
+  }
+
+  // Mode manuel : l'utilisateur suit son cycle, on reprend sa dernière séance telle quelle
+  if (options.manual) {
+    return { decision: 'manual', targets: last.sets.map((s) => ({ weight: s.weight, reps: s.reps })) };
   }
 
   const { weight, planned, top } = last.read;
