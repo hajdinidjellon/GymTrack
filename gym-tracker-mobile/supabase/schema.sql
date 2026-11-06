@@ -15,8 +15,16 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+-- The settings that follow the account (program days, sets and reps, plates…); updated_at is when they changed on the phone
+create table if not exists public.user_settings (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
 alter table public.workouts enable row level security;
 alter table public.profiles enable row level security;
+alter table public.user_settings enable row level security;
 
 drop policy if exists "own workouts" on public.workouts;
 create policy "own workouts" on public.workouts
@@ -26,6 +34,12 @@ create policy "own workouts" on public.workouts
 
 drop policy if exists "own profile" on public.profiles;
 create policy "own profile" on public.profiles
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "own settings" on public.user_settings;
+create policy "own settings" on public.user_settings
   for all to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);

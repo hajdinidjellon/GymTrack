@@ -85,12 +85,12 @@ export const profile = {
   },
   account: {
     title: 'Compte',
-    signedIn: 'Connecté : tes séances sont sauvegardées dans ton compte.',
+    signedIn: 'Connecté : tes séances et ton programme sont sauvegardés dans ton compte.',
     local: 'Sans compte : tes séances restent sur ce téléphone.',
     signOut: 'Se déconnecter',
     signIn: 'Créer un compte ou se connecter',
     confirmTitle: 'Se déconnecter ?',
-    confirmText: 'Tes séances sont sauvegardées dans ton compte.',
+    confirmText: 'Tes séances et ton programme sont sauvegardés dans ton compte.',
   },
   row: '{label} : {value}',
 };

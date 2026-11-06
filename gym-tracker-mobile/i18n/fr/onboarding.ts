@@ -88,7 +88,7 @@ export const onboarding = {
     wrongCredentials: 'Pseudo ou mot de passe incorrect.',
     errors: {
       taken: 'Ce pseudo est déjà pris.',
-      confirm: 'Le compte attend une confirmation par mail : désactive « Confirm email » dans Supabase.',
+      confirm: "Impossible de créer un compte pour l'instant. Réessaie un peu plus tard.",
       other: 'Impossible de créer le compte. Vérifie ta connexion et réessaie.',
     },
     creating: 'Création…',
@@ -98,7 +98,7 @@ export const onboarding = {
     noAccount: 'Continuer sans compte',
     signupTitle: 'Ton compte.',
     signinTitle: 'Re-bonjour.',
-    signupSubtitle: 'Tes séances sauvegardées, et retrouvées sur un autre téléphone.',
+    signupSubtitle: 'Tes séances et ton programme sauvegardés, et retrouvés sur un autre téléphone.',
     signinSubtitle: "Ta barre est restée chargée là où tu l'as laissée.",
     username: 'Pseudo',
     password: 'Mot de passe',

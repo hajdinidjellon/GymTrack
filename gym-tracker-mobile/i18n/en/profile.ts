@@ -85,12 +85,12 @@ export const profile: Dictionary['profile'] = {
   },
   account: {
     title: 'Account',
-    signedIn: 'Signed in: your workouts are backed up to your account.',
+    signedIn: 'Signed in: your workouts and your program are backed up to your account.',
     local: 'No account: your workouts stay on this phone.',
     signOut: 'Sign out',
     signIn: 'Create an account or sign in',
     confirmTitle: 'Sign out?',
-    confirmText: 'Your workouts are backed up to your account.',
+    confirmText: 'Your workouts and your program are backed up to your account.',
   },
   row: '{label}: {value}',
 };

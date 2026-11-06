@@ -15,7 +15,7 @@ import type { Workout } from '@/types';
 const DB_NAME = 'gymtrack.db';
 const SCHEMA_VERSION = 3;
 
-export type SyncTable = 'workouts' | 'profiles';
+export type SyncTable = 'workouts' | 'profiles' | 'user_settings';
 export type SyncOperation = 'upsert' | 'delete';
 
 export interface SyncQueueEntry {
@@ -218,8 +218,26 @@ async function enqueueSync(
 export async function getPendingSyncQueue(): Promise<SyncQueueEntry[]> {
   const db = await getDb();
   return db.getAllAsync<SyncQueueEntry>(
-    "SELECT * FROM sync_queue WHERE table_name IN ('workouts', 'profiles') ORDER BY id ASC",
+    "SELECT * FROM sync_queue WHERE table_name IN ('workouts', 'profiles', 'user_settings') ORDER BY id ASC",
   );
+}
+
+/**
+ * The settings go as one snapshot read at push time: a single entry is enough, so a new
+ * one replaces the one waiting. A flush already sending the old one is harmless.
+ */
+export async function enqueueSettingsSync(): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync("DELETE FROM sync_queue WHERE table_name = 'user_settings'");
+    await enqueueSync(db, 'user_settings', 'settings', 'upsert');
+  });
+}
+
+/** The cloud's settings were taken at sign-in: nothing of this phone's left to send. */
+export async function clearSettingsSyncQueue(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync("DELETE FROM sync_queue WHERE table_name = 'user_settings'");
 }
 
 export async function clearSyncQueueEntry(id: number): Promise<void> {

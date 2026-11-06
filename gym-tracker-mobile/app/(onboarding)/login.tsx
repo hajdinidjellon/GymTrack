@@ -81,7 +81,11 @@ export default function Login() {
     }
     // À l'inscription, ça envoie les séances déjà faites sur ce téléphone
     await initialSync().catch(() => null);
-    await Promise.all([useWorkoutStore.getState().loadWorkouts(), useProfileStore.getState().loadProfile()]);
+    await Promise.all([
+      useWorkoutStore.getState().loadWorkouts(),
+      useProfileStore.getState().loadProfile(),
+      useSettingsStore.getState().loadSettings(),
+    ]);
     setBusy(false);
     goOn();
   };
