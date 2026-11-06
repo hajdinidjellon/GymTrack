@@ -33,9 +33,15 @@ describe('voice lines', () => {
   it('announces a set', () => {
     expect(setLine(cursor())).toBe('Série 1. 62,5 kilos, 10 reps.');
     expect(setLine(cursor(active('Dips', [{ weight: 0, reps: 12 }], { equipment: 'bodyweight' })))).toBe(
-      'Série 1. 12 reps.',
+      'Série 1. Poids du corps, 12 reps.',
     );
     expect(restOverLine(cursor())).toBe("C'est reparti. Série 1. 62,5 kilos, 10 reps.");
+  });
+
+  it('says the help of an assisted machine as help', () => {
+    const helped = active('Tractions assistées', [{ weight: 30, reps: 8 }], { equipment: 'machine', assisted: true });
+    expect(setLine(cursor(helped))).toBe("Série 1. 30 kilos d'aide, 8 reps.");
+    expect(platesLine(cursor(helped), gym)).toBeNull();
   });
 
   it('announces a warm-up apart from the working sets, plates first when there is no rest', () => {

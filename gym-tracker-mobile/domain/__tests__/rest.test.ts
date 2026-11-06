@@ -33,6 +33,23 @@ describe('restFor', () => {
     expect(restFor(muscle(EXERCISES.curl), 90)).toBe(90);
     expect(restFor(muscle(EXERCISES.curl), 180, EXERCISES.curl)).toBe(180);
   });
+
+  it.each([
+    ['forme', EXERCISES.squat, 60, 90],
+    ['forme', EXERCISES.curl, 60, 60],
+    ['forme', EXERCISES.curl, 90, 90], // the default is never cut
+    ['force', EXERCISES.legpress, 90, 210],
+    ['force', EXERCISES.curl, 90, 150],
+    ['muscle', EXERCISES.squat, 60, 180],
+  ] as const)('rests per goal: %s, %s, default %p s', (goal, def, defaultRest, seconds) => {
+    expect(restFor(ruleFor(goal, def, 2.5), defaultRest, def, goal)).toBe(seconds);
+  });
+
+  it('plans shorter rests to stay in shape', () => {
+    const rule = ruleFor('forme', EXERCISES.squat, 2.5);
+    expect(planRest(EXERCISES.squat, rule, 60, [], undefined, 'forme').seconds).toBe(90);
+    expect(planRest(EXERCISES.squat, muscle(EXERCISES.squat), 60, []).seconds).toBe(180);
+  });
 });
 
 describe('withRestTaken', () => {
@@ -47,11 +64,16 @@ describe('withRestTaken', () => {
     const sets = withRestTaken([
       set({ doneAt: at(0) }),
       set({ doneAt: at(2) }),
-      set({ doneAt: at(2 + 11 * 60) }),
-      set({ doneAt: at(800), completed: false }),
+      set({ doneAt: at(2 + 16 * 60) }),
+      set({ doneAt: at(2000), completed: false }),
       set(),
     ]);
     expect(sets.map((s) => s.restTaken)).toEqual([undefined, undefined, undefined, undefined, undefined]);
+  });
+
+  it('measures the long rests of heavy work, up to 10 min and more', () => {
+    const sets = withRestTaken([set({ doneAt: at(0) }), set({ doneAt: at(11 * 60) })]);
+    expect(sets[1]!.restTaken).toBeGreaterThan(9 * 60);
   });
 
   it('never gives a negative rest', () => {
@@ -78,7 +100,8 @@ describe('usualRest', () => {
 
   it('stays within limits', () => {
     expect(clampRest(5)).toBe(30);
-    expect(clampRest(900)).toBe(360);
+    expect(clampRest(900)).toBe(600);
+    expect(clampRest(540)).toBe(540);
     expect(clampRest(97)).toBe(90);
   });
 });

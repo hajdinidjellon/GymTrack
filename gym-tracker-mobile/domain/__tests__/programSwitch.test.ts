@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { choosableDays, splitOfDay } from '@/domain/programs';
+import { choosableDays, EXTRA_FULL_BODY, isOffered, OWN_SESSION, splitOfDay } from '@/domain/programs';
 import { latestWorkoutDate, suggestedSplit } from '@/domain/programSwitch';
 import { nextDay, planDay, type BuildContext } from '@/domain/sessionBuilder';
 import { workout } from './fixtures';
@@ -15,9 +15,65 @@ describe('choosableDays', () => {
       ['Legs', 'ppl', false],
       ['Haut', 'ul', true],
       ['Bas', 'ul', true],
-      ['Full body A', 'fb', true],
-      ['Full body B', 'fb', true],
+      ['Full body', 'fb', true],
+      ['Ma séance', 'ppl', true],
     ]);
+  });
+
+  it('offers one full body off program, made of Full body A until the user changes it', () => {
+    const fullBody = choosableDays('ul', {}, []).find((d) => d.name === EXTRA_FULL_BODY);
+    expect(fullBody?.exercises.map((e) => e.name)).toEqual([
+      'Squat',
+      'Développé couché',
+      'Rowing barre',
+      'Développé militaire',
+      'Curl haltères',
+    ]);
+    const changed = choosableDays('ppl', { 'fb/Full body': ['Soulevé de terre', 'Tractions'] }, []).find(
+      (d) => d.name === EXTRA_FULL_BODY,
+    );
+    expect(changed?.exercises.map((e) => e.name)).toEqual(['Soulevé de terre', 'Tractions']);
+  });
+
+  it('keeps Full body A and B in a full body program, and offers the other programs', () => {
+    const days = choosableDays('fb', {}, []);
+    expect(days.map((d) => d.name)).toEqual([
+      'Full body A',
+      'Full body B',
+      'Push',
+      'Pull',
+      'Legs',
+      'Haut',
+      'Bas',
+      'Ma séance',
+    ]);
+  });
+
+  it('still offers the days the user added to the full body program', () => {
+    const days = choosableDays('ppl', {}, [], { fb: ['Bras'] });
+    expect(days.filter((d) => d.split === 'fb').map((d) => d.name)).toEqual(['Full body', 'Bras']);
+  });
+
+  it('offers the own session empty, then with the exercises the user put in it', () => {
+    const empty = choosableDays('ppl', {}, []).find((d) => d.name === OWN_SESSION)!;
+    expect(empty).toMatchObject({ split: 'ppl', extra: true, ownSession: true, exercises: [] });
+    expect(isOffered(empty)).toBe(true);
+    const filled = choosableDays('ppl', { 'ppl/Ma séance': ['Curl marteau'] }, []).find((d) => d.name === OWN_SESSION);
+    expect(filled?.exercises.map((e) => e.name)).toEqual(['Curl marteau']);
+  });
+
+  it('offers only days with exercises, besides the own session', () => {
+    const days = choosableDays('ppl', {}, [], { ppl: ['Épaules'] });
+    const shoulders = days.find((d) => d.name === 'Épaules')!;
+    expect(isOffered(shoulders)).toBe(false);
+    expect(isOffered(days[0]!)).toBe(true);
+  });
+
+  it("does not add the own session over a day of the user's with the same name", () => {
+    const days = choosableDays('ppl', { 'ppl/Ma séance': ['Curl marteau'] }, [], { ppl: ['Ma séance'] });
+    const named = days.filter((d) => d.name === OWN_SESSION);
+    expect(named).toHaveLength(1);
+    expect(named[0]).toMatchObject({ own: true, extra: false });
   });
 
   it('keeps the exercises the user chose for an extra day, under its own program', () => {
@@ -30,6 +86,9 @@ describe('splitOfDay', () => {
   it("finds the program of a day, the user's first", () => {
     expect(splitOfDay('Push', 'ppl')).toBe('ppl');
     expect(splitOfDay('Haut', 'ppl')).toBe('ul');
+    expect(splitOfDay('Full body', 'ppl')).toBe('fb');
+    expect(splitOfDay('Full body', 'fb')).toBe('fb');
+    expect(splitOfDay('Ma séance', 'ppl')).toBeUndefined();
     expect(splitOfDay('Séance', 'ppl')).toBeUndefined();
   });
 });
@@ -70,6 +129,16 @@ describe('suggestedSplit', () => {
   it('offers the other program after three sessions in a row from it', () => {
     const list = [w('2026-10-20', 'Push'), w('2026-10-25', 'Haut'), w('2026-10-27', 'Bas'), w('2026-10-29', 'Haut')];
     expect(suggestedSplit(list, 'ppl')).toBe('ul');
+  });
+
+  it('counts the one-off full body as the full body program', () => {
+    const list = [w('2026-10-25', 'Full body'), w('2026-10-27', 'Full body A'), w('2026-10-29', 'Full body')];
+    expect(suggestedSplit(list, 'ppl')).toBe('fb');
+  });
+
+  it('never offers a program for the sessions the user puts together', () => {
+    const list = [w('2026-10-25', 'Ma séance'), w('2026-10-27', 'Ma séance'), w('2026-10-29', 'Ma séance')];
+    expect(suggestedSplit(list, 'ppl')).toBeNull();
   });
 
   it('needs them all from the same program', () => {

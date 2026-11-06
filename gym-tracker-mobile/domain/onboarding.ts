@@ -1,5 +1,5 @@
 import { translatedList } from '@/domain/format';
-import { DEFAULT_PLATES } from '@/domain/plates';
+import { ALL_PLATES, DEFAULT_PLATES } from '@/domain/plates';
 import { getSplit } from '@/domain/programs';
 import { defaultSchedule, weekdayIndex, type Schedule } from '@/domain/schedule';
 import { dayName, t } from '@/i18n';
@@ -42,7 +42,7 @@ export const BAR_CHOICES = [
   },
 ];
 /** Every plate a gym may have, heaviest first. */
-export const GYM_PLATES = [25, ...DEFAULT_PLATES];
+export const GYM_PLATES = ALL_PLATES;
 
 const experienceDef = (id: Experience, level: number) => ({
   id,
@@ -104,6 +104,13 @@ export function splitLegend(split: SplitId): string {
   return getSplit(split)
     .days.map((d, i) => `${String.fromCharCode(65 + i)} ${dayName(d.name)}`)
     .join(' · ');
+}
+
+/** The legend under a week whose sessions are `names`: the program's, then the user's own days. */
+export function scheduleLegend(split: SplitId, names: string[]): string {
+  const builtIn = getSplit(split).days.length;
+  if (names.length <= builtIn) return splitLegend(split);
+  return names.map((name, i) => `${String.fromCharCode(65 + i)} ${dayName(name)}`).join(' · ');
 }
 
 /** The legend under the example week of a rhythm. */

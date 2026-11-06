@@ -1,13 +1,16 @@
 import { describe, expect, it } from '@jest/globals';
 import { EXERCISES } from '@/domain/programs';
 import {
+  breakDays,
   breakLabel,
+  loadLabel,
   deltaLabel,
   lastTimeLabel,
   newRecords,
   nextDay,
   planDay,
   todayStatus,
+  weekOf,
   planLift,
   reasonLabel,
   supersetGroups,
@@ -91,6 +94,33 @@ describe('nextDay', () => {
       expect(todayStatus(c)).toEqual({ kind: 'done' });
     });
 
+    describe('with own days', () => {
+      const own = (schedule: (string | null)[], workouts: Workout[] = []) => {
+        const c = week(schedule, workouts);
+        c.settings.ownDays = { ppl: ['Push B', 'Vide'] };
+        c.settings.customDays = { 'ppl/Push B': ['Développé incliné haltères', 'Dips'] };
+        return c;
+      };
+
+      it('does an own day planned today', () => {
+        const c = own(['Push', null, 'Push B', null, 'Pull', null, null], [workout('2026-10-26', 'Push', [])]);
+        expect(todayStatus(c)).toEqual({ kind: 'train', name: 'Push B' });
+        expect(nextDay(c).name).toBe('Push B');
+      });
+
+      it('follows the program on an own day left empty, and never announces it', () => {
+        const c = own(['Push', null, 'Vide', 'Vide', 'Pull', null, null], [workout('2026-10-26', 'Push', [])]);
+        expect(todayStatus(c)).toEqual({ kind: 'free' });
+        expect(nextDay(c).name).toBe('Pull');
+        expect(weekOf(c)?.canDo('Vide')).toBe(false);
+        expect(weekOf(c)?.canDo('Push')).toBe(true);
+      });
+
+      it('drops a week with a day removed since', () => {
+        expect(weekOf(own(['Push', null, 'Ancien', null, null, null, null]))).toBeNull();
+      });
+    });
+
     it('ignores a week that no longer fits the program', () => {
       expect(todayStatus(week(['Haut', null, 'Bas', null, null, null, null]))).toEqual({ kind: 'free' });
       expect(todayStatus(ctx())).toEqual({ kind: 'free' });
@@ -112,8 +142,8 @@ describe('planLift', () => {
   it('starts bodyweight lifts right away', () => {
     const p = planLift(EXERCISES.dips, ctx());
     expect(p.decision).toBe('start');
-    expect(targetLabel(p.targets)).toBe('3 × 8');
-    expect(targetLoad(p.targets)).toBe('8 reps');
+    expect(targetLabel(p.targets)).toBe('3 × 8 · Poids du corps');
+    expect(targetLoad(p.targets)).toBe('Poids du corps × 8');
     expect(targetLoad([])).toBe('');
   });
 
@@ -147,6 +177,41 @@ describe('planLift', () => {
     expect(deltaLabel(p)).toBe('+5 kg');
   });
 
+  it('never proposes a load the plates cannot make', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 100, [12, 12, 12])])]);
+    c.settings = { ...c.settings, barWeight: 20, plates: [20, 10, 5, 2.5, 1.25] };
+    // 1 kg asked, the smallest plate is 1,25: the bar moves by 2,5
+    c.settings.increments['Développé couché'] = 1;
+    const p = planLift(EXERCISES.bench, c);
+    expect(p.rule.increment).toBe(2.5);
+    expect(p.targets[0]?.weight).toBe(102.5);
+    // With 0,5 kg plates, 1 kg is fine
+    c.settings.plates = [20, 10, 5, 2.5, 1.25, 0.5];
+    expect(planLift(EXERCISES.bench, c).targets[0]?.weight).toBe(101);
+  });
+
+  it('brings a weight the plates cannot make down to the one just under', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 101.25, [9, 9, 9])])]);
+    c.settings = { ...c.settings, barWeight: 20, plates: [20, 10, 5, 2.5, 1.25], collarWeight: 0 };
+    expect(planLift(EXERCISES.bench, c).targets[0]?.weight).toBe(100);
+  });
+
+  it('repeats the last session in manual mode and says so', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 101.25, [12, 12, 12])])]);
+    c.settings = {
+      ...c.settings,
+      barWeight: 20,
+      plates: [20, 10, 5, 2.5, 1.25],
+      manualProgression: { 'Développé couché': true },
+    };
+    const p = planLift(EXERCISES.bench, c);
+    expect(p.decision).toBe('manual');
+    // Never rounded, never moved: the user's own load
+    expect(p.targets.map((x) => x.weight)).toEqual([101.25, 101.25, 101.25]);
+    expect(reasonLabel(p)).toContain('Mode manuel');
+    expect(deltaLabel(p)).toBe(deltaLabel({ ...p, decision: 'repeat' }));
+  });
+
   it('uses the sets and reps the user chose for the exercise', () => {
     const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 60, [8, 8, 8, 8, 8])])]);
     c.settings.ruleOverrides = { 'Développé couché': { sets: 5, repMin: 5, repMax: 8 } };
@@ -170,7 +235,7 @@ describe('personal touches', () => {
     c.now = new Date('2026-10-22T18:00:00Z');
     const p = planLift(EXERCISES.bench, c);
     expect(p).toMatchObject({ decision: 'comeback', daysOff: 21 });
-    expect(p.targets[0]?.weight).toBe(70);
+    expect(p.targets[0]?.weight).toBe(72.5); // 72 kg, on the nearest step
     expect(deltaLabel(p)).toBe('reprise');
     expect(reasonLabel(p)).toBe(
       '3 semaines sans cet exercice : on reprend un peu plus léger pour retrouver tes marques.',
@@ -190,7 +255,8 @@ describe('personal touches', () => {
     const press = planLift(EXERCISES.chestpress, c);
     expect(press).toMatchObject({ plateLoaded: true, rule: { increment: 2.5 } });
     expect(toActiveExercise(press).plateLoaded).toBe(true);
-    expect(planLift(EXERCISES.pecdeck, c)).toMatchObject({ plateLoaded: false, rule: { increment: 5 } });
+    // A single muscle on a stack moves by 2,5 kg, a big movement by a full stack plate
+    expect(planLift(EXERCISES.pecdeck, c)).toMatchObject({ plateLoaded: false, rule: { increment: 2.5 } });
     expect(toActiveExercise(planLift(EXERCISES.pecdeck, c)).plateLoaded).toBeUndefined();
     c.settings.plateLoaded = { 'Chest press': false };
     expect(planLift(EXERCISES.chestpress, c)).toMatchObject({ plateLoaded: false, rule: { increment: 5 } });
@@ -280,7 +346,29 @@ describe('last time and reason', () => {
         { weight: 0, reps: 12 },
         { weight: 0, reps: 11 },
       ]),
-    ).toBe('12 · 11 reps');
+    ).toBe('Poids du corps × 12 · 11');
+  });
+
+  it('writes bodyweight and assisted loads', () => {
+    expect(loadLabel(0, 12)).toBe('Poids du corps × 12');
+    expect(loadLabel(30, 8, false, true)).toBe('Aide : 30 kg × 8');
+    expect(loadLabel(30, 40, true, true)).toBe('Aide : 30 kg × 40 s');
+    expect(targetLabel([{ weight: 0, reps: 8 }])).toBe('1 × 8 · Poids du corps');
+    expect(targetLabel([{ weight: 0, reps: 30 }], true)).toBe('1 × 30 s');
+    expect(targetLabel([{ weight: 30, reps: 8 }], false, true)).toBe('1 × 8 · Aide : 30 kg');
+    expect(targetLoad([{ weight: 30, reps: 8 }], false, true)).toBe('Aide : 30 kg × 8');
+  });
+
+  it('leaves a kept top set out of the target, and says it is kept', () => {
+    const targets = [
+      { weight: 185, reps: 3, top: true },
+      { weight: 165, reps: 5 },
+      { weight: 165, reps: 5 },
+    ];
+    expect(targetLabel(targets)).toBe('2 × 5 · 165 kg');
+    expect(targetLoad(targets)).toBe('165 kg × 5');
+    const rule = { kind: 'double' as const, sets: 3, repMin: 3, repMax: 5, increment: 2.5 };
+    expect(reasonLabel({ decision: 'add_reps', rule, targets })).toContain('Ton top set reste tel quel');
   });
 
   it.each<[ProgressionDecision, number, string]>([
@@ -290,13 +378,36 @@ describe('last time and reason', () => {
     ['add_two_reps', 60, 'était facile : deux reps de plus'],
     ['hold', 60, 'était à fond : on garde la même cible'],
     ['repeat', 60, 'sous 8 reps'],
-    ['deload', 60, 'on allège de 10 %'],
+    ['deload', 60, "Deux séances de suite sous 8 reps à ce poids : on allège d'environ 10 %"],
+    ['ease', 0, 'on part des reps que tu as vraiment faites'],
     ['start', 60, '70 % de ton record'],
     ['start', 0, 'vise le bas de la fourchette'],
     ['calibrate', 0, 'choisis ta charge'],
   ])('explains %s', (decision, weight, expected) => {
     const rule = { kind: 'double' as const, sets: 3, repMin: 8, repMax: 12, increment: 2.5 };
     expect(reasonLabel({ decision, rule, targets: [{ weight, reps: 8 }] })).toContain(expected);
+  });
+
+  it('explains seconds and assisted machines in their own words', () => {
+    const rule = { kind: 'double' as const, sets: 3, repMin: 30, repMax: 60, increment: 2.5, repStep: 5 };
+    const targets = [{ weight: 10, reps: 30 }];
+    expect(reasonLabel({ decision: 'deload', rule, targets })).toContain('sous 30 s');
+    expect(reasonLabel({ decision: 'ease', rule, targets })).toContain('tenu');
+    const reps = { ...rule, repMin: 8, repMax: 12, repStep: undefined };
+    const def = { name: 'Tractions assistées', assisted: true };
+    expect(reasonLabel({ decision: 'add_weight', rule: reps, targets, def })).toContain("on enlève 2,5 kg d'aide");
+    expect(reasonLabel({ decision: 'deload', rule: reps, targets, def })).toContain("plus d'aide");
+    expect(deltaLabel({ decision: 'add_weight', rule: reps, def })).toBe("−2,5 kg d'aide");
+    expect(deltaLabel({ decision: 'deload', rule: reps, def })).toBe("plus d'aide");
+  });
+
+  it('offers the easier variant when bodyweight reps are lowered', () => {
+    const rule = { kind: 'double' as const, sets: 3, repMin: 8, repMax: 12, increment: 2.5 };
+    const targets = [{ weight: 0, reps: 3 }];
+    expect(reasonLabel({ decision: 'ease', rule, targets, def: EXERCISES.pullup })).toContain(
+      'Essaie plutôt « Tractions assistées »',
+    );
+    expect(reasonLabel({ decision: 'ease', rule, targets, def: EXERCISES.crunch })).not.toContain('Essaie');
   });
 });
 
@@ -314,6 +425,12 @@ describe('newRecords', () => {
     const first = bench('2026-10-10', 65);
     expect(newRecords(first, [first])).toEqual([]);
     expect(newRecords(first, [first, bench('2026-10-03', 65)])).toEqual([]);
+  });
+
+  it('never celebrates more help on an assisted machine', () => {
+    const pull = (date: string, weight: number) => workout(date, 'Pull', [lift('Tractions assistées', weight, [8])]);
+    const today = pull('2026-10-10', 40);
+    expect(newRecords(today, [today, pull('2026-10-03', 30)])).toEqual([]);
   });
 
   it('ignores later sessions and unknown exercises', () => {
@@ -334,6 +451,7 @@ describe('labels', () => {
     ['add_weight', '+2,5 kg'],
     ['repeat', 'même cible'],
     ['deload', 'allégé'],
+    ['ease', 'à ta mesure'],
     ['start', 'départ'],
     ['calibrate', 'à régler'],
   ])('sums up %s', (decision, expected) => {
@@ -409,5 +527,69 @@ describe('supersets', () => {
     expect(plan.links).toEqual(['Développé couché']);
     expect(toActiveExercises(plan).map((e) => e.superset)).toEqual(['Développé couché', 'Développé couché', undefined]);
     expect(planDay(day, c).links).toBeUndefined();
+  });
+});
+
+describe('the engine through planLift', () => {
+  const at = (date: string, name: string, weight: number, reps: number[]) =>
+    workout(date, 'Push', [lift(name, weight, reps)]);
+
+  it('never comes back under the empty bar', () => {
+    const c = { ...ctx([at('2026-09-01', 'Développé couché', 20, [12, 12, 12])]), now: new Date(2026, 9, 15) };
+    c.settings = { ...c.settings, barWeight: 20 };
+    const p = planLift(EXERCISES.bench, c);
+    expect(p.decision).toBe('comeback');
+    expect(p.targets.map((x) => x.weight)).toEqual([20, 20, 20]);
+  });
+
+  it('progresses an assisted machine by taking help away, with no start from a record', () => {
+    const c = ctx([at('2026-10-01', 'Tractions assistées', 30, [12, 12, 12])]);
+    const p = planLift(EXERCISES.assisted, c);
+    expect(p.decision).toBe('add_weight');
+    expect(p.targets[0]?.weight).toBe(25); // one stack plate of help less
+    const first = planLift(EXERCISES.assisted, {
+      ...ctx([], {
+        prs: [{ exercise: 'Tractions assistées', weight: 30, reps: 1, oneRepMax: 30, date: '2026-01-01' }],
+      }),
+    });
+    expect(first.decision).toBe('calibrate');
+    expect(toActiveExercise(p).assisted).toBe(true);
+  });
+
+  it('steps cables by 2,5 kg and rests per goal', () => {
+    const c = ctx([at('2026-10-01', 'Élévations latérales poulie', 10, [12, 12, 12])]);
+    expect(planLift(EXERCISES.cablelateral, c).targets[0]?.weight).toBe(12.5);
+    const forme = ctx([], { goal: 'forme' });
+    forme.settings = { ...forme.settings, defaultRestTime: 60 };
+    expect(planLift(EXERCISES.squat, forme).restTime).toBe(90);
+  });
+
+  it('marks a kept top set as a top set in the logger', () => {
+    const top: Exercise = {
+      ...lift('Développé couché', 100, [3, 10, 10, 10]),
+      sets: [
+        { weight: 120, reps: 3, setType: 'normal', completed: true },
+        ...[10, 10, 10].map((r) => ({ weight: 100, reps: r, setType: 'normal' as const, completed: true })),
+      ],
+    };
+    const active = toActiveExercise(planLift(EXERCISES.bench, ctx([workout('2026-10-01', 'Push', [top])])));
+    expect(active.sets.map((s) => s.setType)).toEqual(['top', 'normal', 'normal']);
+    expect(active.sets[0]?.target).toEqual({ weight: 120, reps: 3 });
+  });
+});
+
+describe('breakDays', () => {
+  const now = new Date('2026-10-26T12:00:00Z');
+  const w = (date: string) => ({ date });
+
+  it("counts the user's own break, not the longest one of a single exercise", () => {
+    const lifts = [{ decision: 'comeback' as const }, { decision: 'add_reps' as const }];
+    expect(breakDays(lifts, [w('2026-10-01T12:00:00Z'), w('2026-09-01T12:00:00Z')], now)).toBe(25);
+  });
+
+  it('says nothing when no lift comes back, or the user trained recently', () => {
+    expect(breakDays([{ decision: 'add_reps' }], [w('2026-10-01')], now)).toBe(0);
+    expect(breakDays([{ decision: 'comeback' }], [w('2026-10-20')], now)).toBe(0);
+    expect(breakDays([{ decision: 'comeback' }], [], now)).toBe(0);
   });
 });

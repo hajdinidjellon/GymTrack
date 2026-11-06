@@ -6,6 +6,7 @@ export const program: Dictionary['program'] = {
     dumbbell: 'Dumbbells',
     machine: 'Machine',
     bodyweight: 'Bodyweight',
+    kettlebell: 'Kettlebell',
   },
   kind: {
     compound: 'Several muscles',
@@ -58,6 +59,8 @@ export const program: Dictionary['program'] = {
     remove: 'Delete the session',
     removeTitle: 'Delete “{name}”?',
     removeText: 'It leaves your program. The sessions already done stay in your history.',
+    removeTextScheduled:
+      'It leaves your program, its days of the week turn to rest. The sessions already done stay in your history.',
     removeConfirm: 'Delete',
     title: 'My sessions',
     subtitle: 'Pick the exercises of each session and their order. We work out the rest.',

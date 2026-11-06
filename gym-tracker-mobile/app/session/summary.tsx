@@ -44,7 +44,7 @@ export default function Summary() {
         lift.decision === 'add_weight' && def.equipment === 'barbell'
           ? t('session.summary.perSideIncrease', { kg: formatKg(lift.rule.increment / 2) })
           : deltaLabel(lift);
-      return [{ name: def.name, label, target: targetLoad(lift.targets, def.timed) }];
+      return [{ name: def.name, label, target: targetLoad(lift.targets, def.timed, def.assisted) }];
     });
   }, [workout, ctx, own]);
 

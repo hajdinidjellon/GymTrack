@@ -75,4 +75,10 @@ describe('repRecords', () => {
   it('is empty at bodyweight', () => {
     expect(repRecords([session('2026-10-01', [[0, 20]])])).toEqual([]);
   });
+
+  it('never counts help on an assisted machine as a record', () => {
+    const helped = [session('2026-10-01', [[40, 8]])];
+    expect(repRecords(helped, true)).toEqual([]);
+    expect(bestE1rm(helped, true)).toBeNull();
+  });
 });

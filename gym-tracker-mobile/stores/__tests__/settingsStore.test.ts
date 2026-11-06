@@ -1,7 +1,18 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISES } from '@/domain/programs';
-import { DEFAULT_SETTINGS, parseSettings, useSettingsStore } from '@/stores/settingsStore';
+import { readSettingsMeta } from '@/services/settingsStorage';
+import { queueSettingsSync } from '@/services/sync';
+import { useProfileStore } from '@/stores/profileStore';
+import { DEFAULT_SETTINGS, parseSettings, SETTINGS_SYNC_DELAY_MS, useSettingsStore } from '@/stores/settingsStore';
+
+const queued = jest.mocked(queueSettingsSync);
+
+jest.mock('@/services/db');
+jest.mock('@/services/sync', () => ({
+  queueSettingsSync: jest.fn(() => Promise.resolve()),
+  flushSyncQueue: jest.fn(() => Promise.resolve()),
+}));
 
 describe('parseSettings', () => {
   it('returns the defaults when nothing is stored or the JSON is broken', () => {
@@ -19,6 +30,12 @@ describe('parseSettings', () => {
       plates: [20, 10],
       defaultRestTime: 90,
     });
+  });
+
+  it('reads the collars, and settings saved before them load without', () => {
+    expect(parseSettings(JSON.stringify({ voice: false })).collarWeight).toBe(0);
+    expect(parseSettings(JSON.stringify({ collarWeight: 2.5 })).collarWeight).toBe(2.5);
+    expect(parseSettings(JSON.stringify({ collarWeight: 40 }))).toEqual(DEFAULT_SETTINGS);
   });
 
   it('migrates the 5 s debug rest of the old version', () => {
@@ -128,6 +145,18 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({});
   });
 
+  it('stores the manual mode per exercise, never the automatic one', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { setManualProgression } = useSettingsStore.getState();
+    setManualProgression('Squat', true);
+    expect(useSettingsStore.getState().settings.manualProgression).toEqual({ Squat: true });
+    setManualProgression('Squat', false);
+    expect(useSettingsStore.getState().settings.manualProgression).toEqual({});
+    expect(parseSettings(JSON.stringify({ manualProgression: { Squat: true } })).manualProgression).toEqual({
+      Squat: true,
+    });
+  });
+
   it('chains and unchains exercises of a day', () => {
     useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
     const { toggleSuperset } = useSettingsStore.getState();
@@ -166,9 +195,91 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: [] });
   });
 
+  it('keeps the fixed week in step with a renamed or removed own day', async () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, ownDays: { ppl: ['Push B'] } } });
+    useProfileStore.setState({
+      profile: {
+        goal: 'muscle',
+        program: { split: 'ppl', perWeek: 2, schedule: ['Push', null, 'Push B', null, null, null, null] },
+        prs: [],
+        bodyStats: [],
+      },
+    });
+    useSettingsStore.getState().renameOwnDay('ppl', 'Push B', 'Push lourd');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(useProfileStore.getState().profile?.program.schedule?.[2]).toBe('Push lourd');
+    // Another program's day of the same name: the week does not move
+    useSettingsStore.getState().removeOwnDay('ul', 'Push lourd');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(useProfileStore.getState().profile?.program.perWeek).toBe(2);
+    useSettingsStore.getState().removeOwnDay('ppl', 'Push lourd');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(useProfileStore.getState().profile?.program).toEqual({
+      split: 'ppl',
+      perWeek: 1,
+      schedule: ['Push', null, null, null, null, null, null],
+    });
+    useProfileStore.setState({ profile: null });
+  });
+
   it('loads what was saved', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();
     expect(useSettingsStore.getState()).toMatchObject({ isLoaded: true, settings: { defaultRestTime: 120 } });
+  });
+});
+
+describe('settings cloud push', () => {
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    await AsyncStorage.clear();
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    queued.mockClear();
+  });
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
+  it('sends a run of changes once, a moment after the last one', async () => {
+    for (let s = 60; s <= 180; s += 10) useSettingsStore.getState().updateSettings({ defaultRestTime: s });
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS - 1);
+    expect(queued).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    expect(queued).toHaveBeenCalledTimes(1);
+  });
+
+  it('stamps the change and marks it waiting, so a closed app sends it at next launch', async () => {
+    useSettingsStore.getState().setRestOverride('Squat', 120);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(await readSettingsMeta()).toEqual({ updatedAt: expect.any(String), pending: true });
+  });
+
+  it("sends nothing for this phone's own settings", () => {
+    useSettingsStore.getState().updateSettings({ theme: 'dark', signedOut: true });
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).not.toHaveBeenCalled();
+  });
+
+  it('sends at launch a change the app was closed on', async () => {
+    await AsyncStorage.setItem('@gymtrack/settings-sync', JSON.stringify({ updatedAt: null, pending: true }));
+    await useSettingsStore.getState().loadSettings();
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends once the settings of an older version, stamped now', async () => {
+    await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ customDays: { 'ppl/Legs': ['Squat'] } }));
+    await useSettingsStore.getState().loadSettings();
+    expect(await readSettingsMeta()).toEqual({ updatedAt: expect.any(String), pending: true });
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends nothing at launch on a fresh install', async () => {
+    await useSettingsStore.getState().loadSettings();
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).not.toHaveBeenCalled();
   });
 });

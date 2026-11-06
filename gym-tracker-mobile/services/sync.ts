@@ -4,16 +4,21 @@
  * 1. Toute écriture va d'abord en local (services/db.ts) avec une entrée dans sync_queue.
  * 2. flushSyncQueue envoie la file vers Supabase. Une entrée n'est retirée
  *    que si Supabase a confirmé : en cas d'erreur on réessaiera au prochain flush.
- * 3. À la connexion : file envoyée, puis tout est relu depuis le cloud (le cloud gagne).
+ * 3. À la connexion : les réglages d'abord (un téléphone neuf prend ceux du cloud, sinon le
+ *    plus récent gagne), puis la file est envoyée et tout le reste relu depuis le cloud
+ *    (le cloud gagne). domain/settings.ts dit quels réglages restent propres au téléphone.
  *
  * L'isolation entre utilisateurs est garantie par les policies RLS côté Supabase ;
  * on filtre quand même par user_id pour ne jamais dépendre d'elles seules.
  */
 
-import { parseList, profileSchema, workoutSchema } from '@/domain/schemas';
+import { parseList, profileSchema, settingsPatchSchema, workoutSchema } from '@/domain/schemas';
+import { applyCloudSettings, hasOwnSettings, pickSettingsSource, syncedSettings } from '@/domain/settings';
 import {
   bulkInsertWorkouts,
+  clearSettingsSyncQueue,
   clearSyncQueueEntry,
+  enqueueSettingsSync,
   getPendingSyncQueue,
   loadProfileLocal,
   loadWorkoutById,
@@ -22,6 +27,7 @@ import {
   type SyncQueueEntry,
 } from '@/services/db';
 import { logger } from '@/services/logger';
+import { readSettingsMeta, readStoredSettings, writeSettings, writeSettingsMeta } from '@/services/settingsStorage';
 import { getCurrentUserId, isSupabaseConfigured, supabase } from '@/services/supabase';
 import type { UserProfile, Workout } from '@/types';
 
@@ -50,9 +56,10 @@ async function runFlush(): Promise<void> {
       await pushEntry(userId, entry);
       await clearSyncQueueEntry(entry.id);
     } catch (error) {
-      // Réseau coupé ou refus serveur : on garde l'entrée et on s'arrête là pour garder l'ordre
+      // Réseau coupé ou refus serveur : on garde l'entrée et on s'arrête là pour garder l'ordre.
+      // Les réglages ne dépendent d'aucune autre entrée : leur refus ne bloque pas les séances.
       logger.warn('sync entry failed, will retry', error);
-      return;
+      if (entry.table_name !== 'user_settings') return;
     }
   }
 }
@@ -72,10 +79,76 @@ async function pushEntry(userId: string, entry: SyncQueueEntry): Promise<void> {
     return;
   }
 
+  if (entry.table_name === 'user_settings') {
+    await pushSettings(userId);
+    return;
+  }
+
   const raw = await loadProfileLocal();
   const profile = profileSchema.safeParse(raw);
   if (!profile.success) return;
   check(await supabase.from('profiles').upsert({ user_id: userId, data: profile.data, updated_at }));
+}
+
+interface SettingsRow {
+  data: unknown;
+  updated_at: string;
+}
+
+async function fetchSettingsRow(userId: string): Promise<SettingsRow | null> {
+  const res = check(
+    await supabase.from('user_settings').select('data, updated_at').eq('user_id', userId).maybeSingle(),
+  );
+  return res.data as SettingsRow | null;
+}
+
+/**
+ * The settings as they are now, stamped with the time they changed on this phone.
+ * A newer copy already in the cloud (from another phone) is left alone.
+ */
+async function pushSettings(userId: string): Promise<void> {
+  const changedAt = (await readSettingsMeta()).updatedAt ?? new Date().toISOString();
+  const cloud = await fetchSettingsRow(userId);
+  if (cloud && Date.parse(cloud.updated_at) > Date.parse(changedAt)) return;
+  const data = syncedSettings(await readStoredSettings());
+  check(await supabase.from('user_settings').upsert({ user_id: userId, data, updated_at: changedAt }));
+}
+
+/**
+ * Settings at sign-in, before the queue goes: the cloud's copy is taken (and this phone's
+ * waiting push dropped), or this phone's copy is queued for the cloud.
+ */
+async function syncSettingsAtSignIn(): Promise<void> {
+  const userId = await getCurrentUserId();
+  if (!userId) return;
+  try {
+    const row = await fetchSettingsRow(userId);
+    const cloud = row ? settingsPatchSchema.safeParse(row.data) : null;
+    if (cloud && !cloud.success) logger.warn('cloud settings skipped: invalid data');
+
+    const local = await readStoredSettings();
+    const meta = await readSettingsMeta();
+    const takeCloud =
+      row &&
+      cloud?.success &&
+      pickSettingsSource({ local, localUpdatedAt: meta.updatedAt, cloudUpdatedAt: row.updated_at }) === 'cloud';
+    if (takeCloud) {
+      await writeSettings(applyCloudSettings(local, cloud.data), { updatedAt: row.updated_at, pending: false });
+      await clearSettingsSyncQueue();
+      return;
+    }
+    // Nothing usable in the cloud, or this phone's copy is newer. A fresh install sends nothing:
+    // its defaults would pass for a choice and win over a real program on the next phone.
+    if (!hasOwnSettings(local)) {
+      await clearSettingsSyncQueue();
+      return;
+    }
+    await enqueueSettingsSync();
+    await writeSettingsMeta({ updatedAt: meta.updatedAt ?? new Date().toISOString(), pending: false });
+  } catch (error) {
+    // Cloud unreachable: the queue's push still checks the cloud's time before writing
+    logger.warn('cloud settings not read', error);
+  }
 }
 
 export interface PullResult {
@@ -111,9 +184,10 @@ export async function pullAllFromCloud(): Promise<PullResult | null> {
   }
 }
 
-/** At sign-in: push what is pending, then take the cloud copy. */
+/** At sign-in: settings sorted out, what is pending pushed, then the cloud copy taken. Reload the stores after. */
 export async function initialSync(): Promise<PullResult | null> {
   if (!isSupabaseConfigured()) return null;
+  await syncSettingsAtSignIn();
   await flushSyncQueue();
   const remote = await pullAllFromCloud();
   if (!remote) return null;
@@ -121,4 +195,12 @@ export async function initialSync(): Promise<PullResult | null> {
   await bulkInsertWorkouts(remote.workouts);
   if (remote.profile) await saveProfileLocal(remote.profile, { sync: false });
   return remote;
+}
+
+/** A settings change, sent once the user stops touching them: the store calls it after a short wait. */
+export async function queueSettingsSync(): Promise<void> {
+  await enqueueSettingsSync();
+  const meta = await readSettingsMeta();
+  await writeSettingsMeta({ ...meta, pending: false });
+  await flushSyncQueue();
 }

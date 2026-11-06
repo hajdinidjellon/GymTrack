@@ -30,4 +30,11 @@ describe('WeekPicker', () => {
     await fireEvent.press(screen.getByRole('radio', { name: 'Legs' }));
     expect(onChange).toHaveBeenCalledWith(['Legs', null, null, null, null, null, null]);
   });
+
+  it('offers the days added to the program after its own', async () => {
+    const onChange = jest.fn();
+    await render(<WeekPicker week={week} names={[...names, 'Push B']} onChange={onChange} />);
+    await fireEvent.press(screen.getByRole('radio', { name: 'Push B' }));
+    expect(onChange).toHaveBeenCalledWith([null, 'Push B', null, 'Legs', null, null, null]);
+  });
 });

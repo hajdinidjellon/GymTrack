@@ -2,10 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 import {
   defaultSchedule,
   nextScheduled,
+  renameInSchedule,
   trainedOn,
   trainingCount,
   validSchedule,
   weekdayIndex,
+  weekSessions,
   whenLabel,
 } from '@/domain/schedule';
 import type { Workout } from '@/types';
@@ -79,4 +81,72 @@ it('trainedOn compares local days', () => {
   const w = { date: new Date(2026, 9, 28, 7).toISOString() } as Workout;
   expect(trainedOn([w], WEDNESDAY)).toBe(true);
   expect(trainedOn([w], new Date(2026, 9, 29, 7))).toBe(false);
+});
+
+describe('nextScheduled with days that cannot be done', () => {
+  it('skips them', () => {
+    const week = ['Push', null, null, 'Vide', 'Legs', null, null];
+    expect(nextScheduled(week, WEDNESDAY, (name) => name !== 'Vide')).toEqual({ name: 'Legs', inDays: 2 });
+  });
+});
+
+describe('weekSessions', () => {
+  const settings = {
+    ownDays: { ppl: ['Push B', 'Vide'], ul: ['Haut B'] },
+    customDays: { 'ppl/Push B': ['Dips'] },
+  };
+
+  it('offers the program days, then the own days with exercises', () => {
+    expect(weekSessions('ppl', settings)).toEqual({
+      known: ['Push', 'Pull', 'Legs', 'Push B', 'Vide'],
+      offered: ['Push', 'Pull', 'Legs', 'Push B'],
+    });
+  });
+
+  it('keeps offering an empty day already in the week', () => {
+    expect(weekSessions('ppl', settings, ['Vide', null, null, null, null, null, null]).offered).toContain('Vide');
+  });
+
+  it('works without any own day', () => {
+    expect(weekSessions('ul', {}).offered).toEqual(['Haut', 'Bas']);
+  });
+});
+
+describe('renameInSchedule', () => {
+  const program = { split: 'ppl' as const, perWeek: 3, schedule: ['Push', null, 'Push B', null, 'Push B', null, null] };
+
+  it('follows a rename on every weekday', () => {
+    expect(renameInSchedule(program, 'Push B', 'Push lourd').schedule).toEqual([
+      'Push',
+      null,
+      'Push lourd',
+      null,
+      'Push lourd',
+      null,
+      null,
+    ]);
+  });
+
+  it('frees the weekdays of a removed day', () => {
+    expect(renameInSchedule(program, 'Push B', null)).toEqual({
+      split: 'ppl',
+      perWeek: 1,
+      schedule: ['Push', null, null, null, null, null, null],
+    });
+  });
+
+  it('drops a week left without any session', () => {
+    expect(
+      renameInSchedule({ ...program, schedule: ['Push B', null, null, null, null, null, null] }, 'Push B', null),
+    ).toEqual({
+      split: 'ppl',
+      perWeek: 3,
+    });
+  });
+
+  it('leaves a program without that day alone', () => {
+    expect(renameInSchedule(program, 'Autre', null)).toBe(program);
+    const free = { split: 'ppl' as const, perWeek: 3 };
+    expect(renameInSchedule(free, 'Push B', 'X')).toBe(free);
+  });
 });

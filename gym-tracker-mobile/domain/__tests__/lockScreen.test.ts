@@ -61,7 +61,7 @@ describe('lockScreenProps', () => {
       '25 kg de chaque côté × 10',
       '20 + 5 par côté',
     ],
-    ['bodyweight', { equipment: 'bodyweight' as const }, 0, '10 reps', ''],
+    ['bodyweight', { equipment: 'bodyweight' as const }, 0, 'Poids du corps × 10', ''],
   ])('reads the load of %s', (_, patch, weight, target, plates) => {
     const s = session([active('a', [{ weight, reps: 10 }], patch)]);
     expect(lockScreenProps(s, gym, NOW)).toMatchObject({ target, plates });
