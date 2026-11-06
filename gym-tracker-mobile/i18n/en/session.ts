@@ -98,6 +98,18 @@ export const session: Dictionary['session'] = {
   },
 
   picker: {
+    tabs: {
+      chest: 'Chest',
+      back: 'Back',
+      shoulders: 'Shoulders',
+      biceps: 'Biceps',
+      triceps: 'Triceps',
+      arms: 'Arms',
+      legs: 'Legs',
+      glutes: 'Glutes',
+      calves: 'Calves',
+      core: 'Abs',
+    },
     allTab: 'All',
     suggestions: 'Suggestions',
     all: 'All exercises, best known first',
