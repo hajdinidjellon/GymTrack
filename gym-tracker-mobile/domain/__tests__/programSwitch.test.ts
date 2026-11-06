@@ -16,6 +16,7 @@ describe('choosableDays', () => {
       ['Haut', 'ul', true],
       ['Bas', 'ul', true],
       ['Full body', 'fb', true],
+      ['Fessiers', 'glutes', true],
       ['Ma séance', 'ppl', true],
     ]);
   });
@@ -45,6 +46,7 @@ describe('choosableDays', () => {
       'Legs',
       'Haut',
       'Bas',
+      'Fessiers',
       'Ma séance',
     ]);
   });

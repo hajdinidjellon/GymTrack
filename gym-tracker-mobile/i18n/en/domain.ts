@@ -141,6 +141,16 @@ export const domain: Dictionary['domain'] = {
     yearsTitle: 'Over a year',
     yearsSub: 'I know my weights',
     legendFullBody: 'A and B: two full body sessions, taking turns',
+    programs: {
+      fbTitle: 'Whole body',
+      fbSub: 'Every session works the whole body. The simplest way to start.',
+      ulTitle: 'Upper / Lower',
+      ulSub: 'One day the upper body, one day the legs.',
+      pplTitle: 'Push / Pull / Legs',
+      pplSub: 'Chest, shoulders and triceps; then back and biceps; then legs.',
+      glutesTitle: 'Glutes / Upper / Legs',
+      glutesSub: 'A session just for the glutes, one for the upper body, one for the legs.',
+    },
     goalTips: {
       muscleLead: 'Good choice.',
       muscle: 'When you hit all your reps, we add weight next session.',
@@ -154,6 +164,7 @@ export const domain: Dictionary['domain'] = {
       fb: "that's full body. The whole body every time, and a rest day in between.",
       ul: 'upper body, then lower body. Each muscle works twice a week.',
       ppl: 'push, pull, legs. Each session hits one muscle group hard.',
+      glutes: 'a glutes session, an upper body one, a legs one. Glutes come first.',
     },
     experienceTips: {
       newLead: "We'll take it easy.",
@@ -169,9 +180,11 @@ export const domain: Dictionary['domain'] = {
     splitPpl: 'Push · Pull · Legs',
     splitUl: 'Upper · Lower',
     splitFb: 'Full body',
+    splitGlutes: 'Glutes · Upper · Legs',
     metaPpl: '3–6 d',
     metaUl: '4 d',
     metaFb: '2–3 d',
+    metaGlutes: '3–5 d',
     muscles: {
       chest: 'Chest',
       back: 'Back',

@@ -6,6 +6,7 @@ import { EXERCISES, POPULARITY, type ExerciseDef } from '@/domain/catalog';
 import { exerciseName, t } from '@/i18n';
 import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
 import type {
+  AppSettings,
   CustomExercise,
   Equipment,
   ExerciseCategory,
@@ -33,6 +34,9 @@ export interface Split {
 }
 
 const E = EXERCISES;
+
+/** The glutes day of the Fessiers program: the only one of it offered off program. */
+export const GLUTES_DAY = 'Fessiers';
 
 export const SPLITS: Split[] = [
   {
@@ -73,6 +77,20 @@ export const SPLITS: Split[] = [
     days: [
       { name: 'Full body A', exercises: [E.squat, E.bench, E.row, E.ohp, E.curl] },
       { name: 'Full body B', exercises: [E.deadlift, E.incline, E.pullup, E.lunge, E.dips] },
+    ],
+  },
+  {
+    id: 'glutes',
+    get title() {
+      return t('domain.programs.splitGlutes');
+    },
+    get meta() {
+      return t('domain.programs.metaGlutes');
+    },
+    days: [
+      { name: GLUTES_DAY, exercises: [E.hipthrust, E.rdl, E.bulgarian, E.abductor, E.glutekick] },
+      { name: 'Haut du corps', exercises: [E.pulldown, E.dbbench, E.seatedrow, E.lateral, E.pushdown] },
+      { name: 'Jambes', exercises: [E.squat, E.legpress, E.legext, E.legcurl, E.calves] },
     ],
   },
 ];
@@ -153,6 +171,8 @@ function extraDaysOf(
   ownDays?: Record<string, string[]>,
 ): ProgramDay[] {
   const days = programDays(other, customDays, own, ownDays);
+  // Its legs and upper days are close to Bas and Haut: only the glutes day is offered
+  if (other === 'glutes') return days.filter((d) => d.name === GLUTES_DAY || d.own);
   if (other !== 'fb') return days;
   const fullBody: ProgramDay = {
     name: EXTRA_FULL_BODY,
@@ -388,11 +408,17 @@ export function defaultIncrementFor(
   def: Pick<ExerciseDef, 'equipment' | 'category' | 'gear'>,
   units: 'kg' | 'lbs',
   plateLoaded = false,
+  /** The gym's steps, when known (`domain/gyms.ts`): 4,5 kg stacks at Basic-Fit. */
+  gym?: Partial<Pick<AppSettings, 'stackStep' | 'cableStep'>>,
 ): number {
   if (def.gear === 'kettlebell') return units === 'lbs' ? 10 : 4;
   if (units === 'lbs') return 5;
   if (def.equipment === 'dumbbell') return 2;
-  if (def.equipment === 'machine' && !plateLoaded && def.gear !== 'cable' && def.category === 'compound') return 5;
+  if (def.equipment === 'machine' && !plateLoaded && def.gear !== 'smith') {
+    if (def.gear === 'cable') return gym?.cableStep ?? 2.5;
+    if (gym?.stackStep) return gym.stackStep;
+    if (def.category === 'compound') return 5;
+  }
   return 2.5;
 }
 

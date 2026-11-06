@@ -106,9 +106,15 @@ export interface BodyStats {
 }
 
 export type Goal = 'muscle' | 'force' | 'forme';
-export type SplitId = 'ppl' | 'ul' | 'fb';
+export type SplitId = 'ppl' | 'ul' | 'fb' | 'glutes';
 /** How long the user has been lifting: sets the first weights to try. */
 export type Experience = 'new' | 'months' | 'years';
+
+/** Asked once, optional: only the first weights offered use it. */
+export type Sex = 'male' | 'female';
+
+/** Age by decade, the youngest group up to 24: "25" is 25 to 34. */
+export type AgeGroup = '16' | '25' | '35' | '45' | '55';
 
 export interface Program {
   split: SplitId;
@@ -122,6 +128,11 @@ export interface UserProfile {
   goal: Goal;
   program: Program;
   experience?: Experience;
+  /** Optional: the user may keep it to themselves. */
+  sex?: Sex;
+  ageGroup?: AgeGroup;
+  /** How long a session usually lasts, in minutes: a longer program day is shortened to fit. */
+  sessionMinutes?: number;
   prs: PersonalRecord[];
   bodyStats: BodyStats[];
 }
@@ -196,6 +207,12 @@ export interface AppSettings {
   ownDays: Record<string, string[]>;
   /** Per program day ("ppl/Push"): the exercises chained with the one after them, as a superset. */
   supersets: Record<string, string[]>;
+  /** The weight step of the machines' weight stacks at the user's gym (4,5 kg at Basic-Fit). Null: per exercise. */
+  stackStep: number | null;
+  /** The weight step of the cables (2,3 kg at Basic-Fit). Null: per exercise. */
+  cableStep: number | null;
+  /** The gym chain picked at first launch, by id (`domain/gyms.ts`). */
+  gymChain: string | null;
   /** The one-time suggestion to add a recovery email was answered (added or declined). */
   recoveryPromptSeen: boolean;
 }

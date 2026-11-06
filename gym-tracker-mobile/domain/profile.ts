@@ -28,6 +28,9 @@ export function normalizeProfile(raw: unknown): UserProfile | null {
     goal: old.goal ?? OLD_GOALS[old.onboarding?.primaryGoal ?? ''] ?? 'muscle',
     program,
     experience: old.experience,
+    sex: old.sex,
+    ageGroup: old.ageGroup,
+    sessionMinutes: old.sessionMinutes,
     prs: old.prs ?? [],
     bodyStats: old.bodyStats ?? [],
   });
