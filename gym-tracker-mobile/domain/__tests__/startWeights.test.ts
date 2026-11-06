@@ -41,6 +41,14 @@ describe('startPresets', () => {
   });
 });
 
+describe('fitToGym with collars', () => {
+  it('starts from the bar and its collars', () => {
+    expect(fitToGym([40, 61], 'bar', { barWeight: 20, plates: [20, 10, 5], collarWeight: 2.5 }, 2.5)).toEqual([
+      25, 35, 55,
+    ]);
+  });
+});
+
 describe('fitToGym on the bar', () => {
   it('always offers the empty bar first', () => {
     expect(fitToGym([40, 60], 'bar', { barWeight: 20, plates: [20, 10, 5] }, 2.5)).toEqual([20, 40, 60]);

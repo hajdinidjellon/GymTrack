@@ -23,6 +23,25 @@ describe('sidePlates', () => {
   });
 });
 
+describe('collars', () => {
+  const comp = { barWeight: 20, plates: [25, 20, 15, 10, 5, 2.5, 1.25, 0.5, 0.25], collarWeight: 2.5 };
+
+  it('takes the bar and both collars off before the plates', () => {
+    // 210 − 20 − 2 × 2,5 = 185, 92,5 per side
+    expect(sidePlates('bar', 210, comp)).toEqual([25, 25, 25, 15, 2.5]);
+    expect(missingPerSide('bar', 210, comp)).toBe(0);
+    expect(loadHint('bar', 25, comp)).toBe('Barre à vide');
+  });
+
+  it('never puts collars on a plate-loaded machine', () => {
+    expect(sidePlates('perSide', 25, comp)).toEqual([25]);
+  });
+
+  it('says a weight under the bar and its collars', () => {
+    expect(loadHint('bar', 22.5, comp)).toBe('Plus léger que la barre et ses colliers (25 kg)');
+  });
+});
+
 describe('loadHint', () => {
   it('says what goes on each side', () => {
     expect(loadHint('bar', 62.5, gym)).toBe('Par côté : 20 + 1,25');

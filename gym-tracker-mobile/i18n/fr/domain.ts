@@ -44,6 +44,7 @@ export const domain = {
     suffixPerSide: 'de chaque côté',
     suffixPerHand: 'par haltère',
     lighterThanBar: 'Plus léger que la barre ({kg} kg)',
+    lighterThanBarCollars: 'Plus léger que la barre et ses colliers ({kg} kg)',
     perSide: 'Par côté : {plates}',
     eachSide: 'De chaque côté : {plates}',
     eachSideAlone: 'De chaque côté',

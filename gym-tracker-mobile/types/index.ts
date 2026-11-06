@@ -154,6 +154,8 @@ export interface AppSettings {
   /** A bell when the rest is over, even with the phone on silent. */
   restBell: boolean;
   barWeight: number;
+  /** Weight of each collar, counted twice on the bar (0: no collars). */
+  collarWeight: number;
   /** Plates the user's gym has, heaviest first. */
   plates: number[];
   /** Per-exercise weight step chosen by the user, keyed by exercise name. */

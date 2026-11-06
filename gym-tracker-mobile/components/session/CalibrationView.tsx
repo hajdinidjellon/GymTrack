@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Keyboard, Pressable, View } from 'react-native';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { loadingOf } from '@/domain/loading';
-import { formatKg } from '@/domain/plates';
+import { emptyBar, formatKg } from '@/domain/plates';
+import { useGym } from '@/hooks/useGym';
 import { calibrationPreset } from '@/domain/onboarding';
 import { nudge } from '@/domain/session';
 import { findExerciseDef } from '@/domain/programs';
@@ -28,11 +29,11 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   // Cable or Smith comes from the catalog; the rest is on the exercise itself
   const gear = findExerciseDef(exercise.name, customExercises)?.gear;
   const experience = useProfileStore((s) => s.profile?.experience);
-  const barWeight = useSettingsStore((s) => s.settings.barWeight);
+  const gym = useGym();
+  const barWeight = emptyBar(gym);
   const step = exercise.rule?.increment ?? 2.5;
-  const plates = useSettingsStore((s) => s.settings.plates);
-  // What the gym can really make: its bar and plates, the machine's weight step
-  const presets = fitToGym(startPresets({ ...exercise, gear }), loading, { barWeight, plates }, step);
+  // What the gym can really make: its bar, collars and plates, the machine's weight step
+  const presets = fitToGym(startPresets({ ...exercise, gear }), loading, gym, step);
   const suggested = calibrationPreset(presets, experience);
   const [weight, setWeight] = useState(() => suggested ?? 20);
   const setStartWeight = useSessionStore((s) => s.setStartWeight);

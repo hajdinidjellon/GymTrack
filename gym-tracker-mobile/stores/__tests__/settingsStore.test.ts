@@ -21,6 +21,12 @@ describe('parseSettings', () => {
     });
   });
 
+  it('reads the collars, and settings saved before them load without', () => {
+    expect(parseSettings(JSON.stringify({ voice: false })).collarWeight).toBe(0);
+    expect(parseSettings(JSON.stringify({ collarWeight: 2.5 })).collarWeight).toBe(2.5);
+    expect(parseSettings(JSON.stringify({ collarWeight: 40 }))).toEqual(DEFAULT_SETTINGS);
+  });
+
   it('migrates the 5 s debug rest of the old version', () => {
     expect(parseSettings(JSON.stringify({ defaultRestTime: 5 })).defaultRestTime).toBe(90);
   });

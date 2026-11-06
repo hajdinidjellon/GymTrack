@@ -61,6 +61,12 @@ export const profile: Dictionary['profile'] = {
     a11y: '{kg} kg plate',
     bar: 'Bar {kg} kg',
     barA11y: '{kg} kilo bar',
+    collars: 'Collars',
+    collarsNone: 'None',
+    collarsKg: '{kg} kg each',
+    collarsA11y: 'Collars of {kg} kilos each',
+    collarsNoneA11y: 'No collars',
+    collarsHint: 'Competition collars: counted in the total, the plates per side take them into account.',
   },
   data: {
     title: 'Your data',

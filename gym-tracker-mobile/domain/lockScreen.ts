@@ -4,11 +4,11 @@
  */
 
 import { LOADING_SUFFIX, loadingOf, sidePlates } from '@/domain/loading';
-import { formatKg } from '@/domain/plates';
+import { formatKg, type Gym } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
 import { setNumber } from '@/domain/warmup';
 import { dayName, exerciseName, t } from '@/i18n';
-import type { ActiveSession, AppSettings } from '@/types';
+import type { ActiveSession } from '@/types';
 
 /** Plain JSON: it crosses to the widget extension. */
 export interface LockScreenProps {
@@ -38,11 +38,7 @@ export interface LockScreenProps {
   done: boolean;
 }
 
-export function lockScreenProps(
-  session: ActiveSession,
-  settings: Pick<AppSettings, 'barWeight' | 'plates'>,
-  now: number,
-): LockScreenProps {
+export function lockScreenProps(session: ActiveSession, settings: Gym, now: number): LockScreenProps {
   const cursor = findCurrent(session.exercises);
   const sets = session.exercises.flatMap((e) => e.sets);
   const common = {

@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   voiceCommands: false,
   restBell: true,
   barWeight: DEFAULT_BAR,
+  collarWeight: 0,
   plates: DEFAULT_PLATES,
   increments: {},
   customDays: {},

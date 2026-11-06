@@ -5,7 +5,9 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
-import { describeSide, loadBar } from '@/domain/plates';
+import { describeSide } from '@/domain/plates';
+import { sidePlates } from '@/domain/loading';
+import { useGym } from '@/hooks/useGym';
 import { choosableDays, type ChoosableDay, hasExercises } from '@/domain/programs';
 import {
   deltaLabel,
@@ -143,11 +145,10 @@ export default function Preview() {
 }
 
 function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; onRemove: () => void }) {
-  const bar = useSettingsStore((s) => s.settings.barWeight);
-  const plates = useSettingsStore((s) => s.settings.plates);
+  const gym = useGym();
   const calibrate = lift.decision === 'calibrate';
   const weight = lift.targets[0]?.weight ?? 0;
-  const perSide = loadBar(weight, bar, plates).perSide;
+  const perSide = sidePlates('bar', weight, gym);
   const showPlates = lift.def.equipment === 'barbell' && !calibrate;
   const progress = isProgress(lift.decision);
 

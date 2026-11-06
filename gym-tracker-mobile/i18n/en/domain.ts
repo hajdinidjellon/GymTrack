@@ -45,6 +45,7 @@ export const domain: Dictionary['domain'] = {
     suffixPerSide: 'per side',
     suffixPerHand: 'each dumbbell',
     lighterThanBar: 'Lighter than the bar ({kg} kg)',
+    lighterThanBarCollars: 'Lighter than the bar and its collars ({kg} kg)',
     perSide: 'Per side: {plates}',
     eachSide: 'Each side: {plates}',
     eachSideAlone: 'Each side',

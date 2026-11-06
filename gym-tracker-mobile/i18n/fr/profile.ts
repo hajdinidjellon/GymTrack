@@ -61,6 +61,12 @@ export const profile = {
     a11y: 'Disque de {kg} kg',
     bar: 'Barre {kg} kg',
     barA11y: 'Barre de {kg} kilos',
+    collars: 'Colliers',
+    collarsNone: 'Sans',
+    collarsKg: '{kg} kg chacun',
+    collarsA11y: 'Colliers de {kg} kilos chacun',
+    collarsNoneA11y: 'Sans colliers',
+    collarsHint: 'Colliers de compétition : comptés dans le total, les disques par côté en tiennent compte.',
   },
   data: {
     title: 'Tes données',
