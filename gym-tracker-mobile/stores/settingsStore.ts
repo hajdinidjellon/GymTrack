@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   voiceCommands: false,
   restBell: true,
   barWeight: DEFAULT_BAR,
+  collarWeight: 0,
   plates: DEFAULT_PLATES,
   increments: {},
   customDays: {},
@@ -41,6 +42,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   programSwitchDismissed: null,
   language: 'auto',
   theme: 'light',
+  manualProgression: {},
+  preciseRpe: false,
   warmups: true,
   warmupOverrides: {},
   supersets: {},
@@ -109,6 +112,8 @@ interface SettingsStore {
   setExerciseNote: (exerciseName: string, text: string) => void;
   /** Plates on each side or a weight stack. The catalog's answer is not stored. */
   setPlateLoaded: (def: ExerciseDef, on: boolean) => void;
+  /** Manual progression on or off for one exercise. Off (automatic) is not stored. */
+  setManualProgression: (exerciseName: string, manual: boolean) => void;
   /** Warm-ups on or off for one exercise. Same as the global choice: nothing is stored. */
   setWarmups: (exerciseName: string, on: boolean) => void;
   /** An exercise the user created, changed (renamed: everything under its name follows). */
@@ -174,6 +179,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   setPlateLoaded: (def, on) => {
     const { [def.name]: _old, ...others } = get().settings.plateLoaded;
     get().updateSettings({ plateLoaded: on === !!def.plateLoaded ? others : { ...others, [def.name]: on } });
+  },
+
+  setManualProgression: (exerciseName, manual) => {
+    const { [exerciseName]: _old, ...others } = get().settings.manualProgression;
+    get().updateSettings({ manualProgression: manual ? { ...others, [exerciseName]: true } : others });
   },
 
   setWarmups: (exerciseName, on) => {

@@ -109,6 +109,10 @@ export const session = {
     firstTime: 'Première fois',
     startBar: "Charge ta barre de départ. Ensuite, on s'occupe de tout.",
     startOther: "Choisis ta charge de départ. Ensuite, on s'occupe de tout.",
+    knowMax: 'Tu connais ton max ?',
+    maxTitle: 'Ton max sur 1 rep',
+    maxInput: 'Ton max en kilos',
+    useMax: 'Partir à 70 % : {kg} kg',
     inputLabel: 'Charge de départ en kilos',
     presetA11y: '{kg} kilos',
     suggested: 'conseillé',
@@ -123,6 +127,8 @@ export const session = {
 
   effort: {
     question: "Comment c'était ?",
+    rpeQuestion: 'RPE de la série ? (10 = plus rien en réserve)',
+    rpe: 'RPE {rpe}',
   },
 
   note: {
@@ -211,6 +217,7 @@ export const session = {
   setView: {
     lastTime: 'Dernière fois',
     why: 'Pourquoi {kg} kg ?',
+    whyAssist: "Pourquoi {kg} kg d'aide ?",
     weightInput: 'Charge en kilos',
     repMinus: 'Moins une rep',
     repPlus: 'Plus une rep',

@@ -1,6 +1,6 @@
 /** Dos : tractions, tirages, rowings, soulevés de terre, lombaires, trapèzes. */
 
-import { ex, held, onCable, onSmith, withPlates, type ExerciseDef } from '@/domain/catalog/define';
+import { ex, held, helped, onCable, onSmith, withPlates, type ExerciseDef } from '@/domain/catalog/define';
 
 export const BACK = {
   pullup: ex('Tractions', 'bodyweight', 'compound', ['back', 'biceps'], ['Tractions pronation', 'Traction']),
@@ -13,7 +13,9 @@ export const BACK = {
     ['back', 'biceps'],
     ['Tractions prise marteau'],
   ),
-  assisted: ex('Tractions assistées', 'machine', 'compound', ['back', 'biceps'], ['Tractions assistées machine']),
+  assisted: helped(
+    ex('Tractions assistées', 'machine', 'compound', ['back', 'biceps'], ['Tractions assistées machine']),
+  ),
   invertedrow: ex('Tractions australiennes', 'bodyweight', 'compound', ['back', 'biceps'], ['Rowing inversé']),
   muscleup: ex('Muscle-up', 'bodyweight', 'compound', ['back', 'triceps', 'chest']),
   pulldown: onCable(

@@ -1,6 +1,6 @@
 /** Pectoraux. */
 
-import { ex, onCable, onSmith, withPlates, type ExerciseDef } from '@/domain/catalog/define';
+import { ex, helped, onCable, onSmith, withPlates, type ExerciseDef } from '@/domain/catalog/define';
 
 export const CHEST = {
   bench: ex('Développé couché', 'barbell', 'compound', ['chest', 'shoulders', 'triceps'], ['Développé couché barre']),
@@ -35,7 +35,7 @@ export const CHEST = {
     ex('Développé incliné machine', 'machine', 'compound', ['chest', 'shoulders'], ['Incline chest press']),
   ),
   dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'triceps'], ['Dips barres parallèles']),
-  assisteddips: ex('Dips assistés', 'machine', 'compound', ['chest', 'triceps'], ['Dips assistés machine']),
+  assisteddips: helped(ex('Dips assistés', 'machine', 'compound', ['chest', 'triceps'], ['Dips assistés machine'])),
   ringdips: ex('Dips anneaux', 'bodyweight', 'compound', ['chest', 'triceps'], ['Dips aux anneaux']),
   pushup: ex('Pompes', 'bodyweight', 'compound', ['chest', 'triceps'], ['Pompe']),
   inclinepushup: ex('Pompes inclinées', 'bodyweight', 'compound', ['chest', 'triceps'], ['Pompes mains surélevées']),

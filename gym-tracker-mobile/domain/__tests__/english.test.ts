@@ -157,7 +157,9 @@ describe('the plan in English', () => {
     expect(reason('add_two_reps')).toBe('Your last set was easy: two more reps per set.');
     expect(reason('hold')).toBe('Your last set was all out: same target to lock it in.');
     expect(reason('repeat')).toBe('A set fell under 8 reps: same target again.');
-    expect(reason('deload')).toBe('Two tough sessions in a row: 10% lighter to bounce back.');
+    expect(reason('deload')).toBe(
+      'Two sessions in a row under 8 reps at this weight: about 10% lighter to bounce back.',
+    );
     expect(reason('comeback', 62.5, 21)).toBe(
       '3 weeks without this exercise: a bit lighter to get back into the groove.',
     );
@@ -175,9 +177,9 @@ describe('the plan in English', () => {
 
   it('reads the targets', () => {
     expect(lastTimeLabel(targets)).toBe('62.5 kg × 10 · 10');
-    expect(lastTimeLabel([{ weight: 0, reps: 12 }])).toBe('12 reps');
+    expect(lastTimeLabel([{ weight: 0, reps: 12 }])).toBe('Bodyweight × 12');
     expect(targetLoad(targets)).toBe('62.5 kg × 10');
-    expect(targetLoad([{ weight: 0, reps: 12 }])).toBe('12 reps');
+    expect(targetLoad([{ weight: 0, reps: 12 }])).toBe('Bodyweight × 12');
   });
 
   it('explains the rest', () => {
@@ -237,7 +239,7 @@ describe('voice, lock screen and notification in English', () => {
       'Set 1. 12 kilos each dumbbell, 10 reps.',
     );
     expect(setLine(cursor(active('Dips', [{ weight: 0, reps: 12 }], { equipment: 'bodyweight' })))).toBe(
-      'Set 1. 12 reps.',
+      'Set 1. Bodyweight, 12 reps.',
     );
     expect(restOverLine(cursor())).toBe("Let's go. Set 1. 62.5 kilos, 10 reps.");
     const bench = active('Développé couché', [{ weight: 0, reps: 8 }], { needsWeight: true });
@@ -261,7 +263,7 @@ describe('voice, lock screen and notification in English', () => {
     const curl = session([active('Curl haltères', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' })]);
     expect(lockScreenProps(curl, gym, 0).target).toBe('12 kg each dumbbell × 10');
     const dips = session([active('Dips', [{ weight: 0, reps: 10 }], { equipment: 'bodyweight' })]);
-    expect(lockScreenProps(dips, gym, 0).target).toBe('10 reps');
+    expect(lockScreenProps(dips, gym, 0).target).toBe('Bodyweight × 10');
     const pick = session([active('Squat', [{ weight: 0, reps: 10 }], { needsWeight: true })]);
     expect(lockScreenProps(pick, gym, 0).target).toBe('Pick your weight in the app');
     const done = session([active('Squat', [{ weight: 60, reps: 10, completed: true }])]);
@@ -274,7 +276,9 @@ describe('voice, lock screen and notification in English', () => {
   it('sums up the next set for the notification', () => {
     const s = session([active('Développé couché', [{ weight: 62.5, reps: 8 }])]);
     expect(nextSetSummary(s, formatKg)).toBe('Bench press · 62.5 kg × 8');
-    expect(nextSetSummary(session([active('Dips', [{ weight: 0, reps: 12 }])]), formatKg)).toBe('Dips · 12 reps');
+    expect(nextSetSummary(session([active('Dips', [{ weight: 0, reps: 12 }])]), formatKg)).toBe(
+      'Dips · bodyweight × 12',
+    );
     expect(nextSetSummary(session([]), formatKg)).toBe('Start your next set.');
   });
 });

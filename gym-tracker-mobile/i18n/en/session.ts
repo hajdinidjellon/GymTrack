@@ -109,6 +109,10 @@ export const session: Dictionary['session'] = {
     firstTime: 'First time',
     startBar: "Load your starting bar. We'll handle the rest.",
     startOther: "Pick your starting weight. We'll handle the rest.",
+    knowMax: 'Know your max?',
+    maxTitle: 'Your one-rep max',
+    maxInput: 'Your max in kilos',
+    useMax: 'Start at 70%: {kg} kg',
     inputLabel: 'Starting weight in kilos',
     presetA11y: '{kg} kilos',
     suggested: 'suggested',
@@ -123,6 +127,8 @@ export const session: Dictionary['session'] = {
 
   effort: {
     question: 'How was it?',
+    rpeQuestion: 'RPE of the set? (10 = nothing left)',
+    rpe: 'RPE {rpe}',
   },
 
   note: {
@@ -211,6 +217,7 @@ export const session: Dictionary['session'] = {
   setView: {
     lastTime: 'Last time',
     why: 'Why {kg} kg?',
+    whyAssist: 'Why {kg} kg of assist?',
     weightInput: 'Weight in kilos',
     repMinus: 'One rep less',
     repPlus: 'One rep more',

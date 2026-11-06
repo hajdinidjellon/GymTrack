@@ -86,6 +86,16 @@ export function dayKey(split: SplitId, day: string): string {
   return `${split}/${day}`;
 }
 
+/** The exercises the user saved for a day, if any. Names no longer in the catalog are skipped. */
+function savedExercises(
+  split: SplitId,
+  name: string,
+  customDays: Record<string, string[]> | undefined,
+  own: CustomExercise[] | undefined,
+): ExerciseDef[] | undefined {
+  return customDays?.[dayKey(split, name)]?.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
+}
+
 /**
  * The days of the program with the user's own exercises when they chose
  * some. Names no longer in the catalog are skipped.
@@ -97,8 +107,7 @@ export function programDays(
   own: CustomExercise[] | undefined,
   ownDays?: Record<string, string[]>,
 ): ProgramDay[] {
-  const exercisesOf = (name: string) =>
-    customDays?.[dayKey(split, name)]?.map((n) => findExerciseDef(n, own)).filter((e): e is ExerciseDef => !!e);
+  const exercisesOf = (name: string) => savedExercises(split, name, customDays, own);
   const days = getSplit(split).days.map((day) => {
     const exercises = exercisesOf(day.name);
     return exercises ? { name: day.name, exercises } : day;
@@ -121,17 +130,42 @@ export function mainMuscle(exercises: ExerciseDef[]): MuscleGroup | undefined {
 /** A day with exercises: the only kind offered as a session. */
 export const hasExercises = (day: ProgramDay): boolean => day.exercises.length > 0;
 
+/** Off program, one full body: Full body A and B only make sense as a pair, in the program itself. */
+export const EXTRA_FULL_BODY = 'Full body';
+
+/** Off program, the session the user puts together themselves. It starts empty. */
+export const OWN_SESSION = 'Ma séance';
+
 /** A day the user can pick: from their program, or from another one for a one-off session. */
 export interface ChoosableDay extends ProgramDay {
   split: SplitId;
   /** Not in the user's program: done once, it does not move the program along. */
   extra: boolean;
+  /** The session the user puts together: offered even before it has exercises. */
+  ownSession?: boolean;
+}
+
+/** What another program offers for a one-off: its days, a single full body instead of A and B. */
+function extraDaysOf(
+  other: SplitId,
+  customDays: Record<string, string[]> | undefined,
+  own: CustomExercise[] | undefined,
+  ownDays?: Record<string, string[]>,
+): ProgramDay[] {
+  const days = programDays(other, customDays, own, ownDays);
+  if (other !== 'fb') return days;
+  const fullBody: ProgramDay = {
+    name: EXTRA_FULL_BODY,
+    exercises: savedExercises(other, EXTRA_FULL_BODY, customDays, own) ?? getSplit('fb').days[0]!.exercises,
+  };
+  return [fullBody, ...days.filter((d) => d.own)];
 }
 
 /**
  * The user's program days, then the days of the other programs (Haut, Bas,
- * Full body…) for the day the plan does not fit. Each keeps the exercises the
- * user chose for it, saved under its own program ("ul/Haut").
+ * Full body…) for the day the plan does not fit, then the user's own session.
+ * Each keeps the exercises the user chose for it, saved under its own program
+ * ("ul/Haut"); the own session under the user's program.
  */
 export function choosableDays(
   split: SplitId,
@@ -140,18 +174,25 @@ export function choosableDays(
   ownDays?: Record<string, string[]>,
 ): ChoosableDay[] {
   const out: ChoosableDay[] = programDays(split, customDays, own, ownDays).map((d) => ({ ...d, split, extra: false }));
+  const add = (day: ChoosableDay) => {
+    if (!out.some((d) => d.name === day.name)) out.push(day);
+  };
   for (const other of SPLITS) {
     if (other.id === split) continue;
-    for (const day of programDays(other.id, customDays, own, ownDays)) {
-      if (!out.some((d) => d.name === day.name)) out.push({ ...day, split: other.id, extra: true });
-    }
+    for (const day of extraDaysOf(other.id, customDays, own, ownDays)) add({ ...day, split: other.id, extra: true });
   }
+  const exercises = savedExercises(split, OWN_SESSION, customDays, own) ?? [];
+  add({ name: OWN_SESSION, exercises, split, extra: true, ownSession: true });
   return out;
 }
+
+/** A day offered as a session: one with exercises, or the own session, to fill in. */
+export const isOffered = (day: ChoosableDay): boolean => hasExercises(day) || !!day.ownSession;
 
 /** The program a day belongs to, the user's own first. */
 export function splitOfDay(name: string, current: SplitId): SplitId | undefined {
   if (getSplit(current).days.some((d) => d.name === name)) return current;
+  if (name === EXTRA_FULL_BODY) return 'fb';
   return SPLITS.find((s) => s.days.some((d) => d.name === name))?.id;
 }
 
@@ -337,25 +378,43 @@ const goalDef = (id: Goal, plates: number[]): GoalDef => ({
 export const GOALS: GoalDef[] = [goalDef('muscle', [10, 5]), goalDef('force', [20, 20]), goalDef('forme', [5])];
 
 /**
- * Default weight step per equipment. Stack machines move by a full stack plate,
- * plate-loaded ones by a small plate on each side, kettlebells by 4 kg.
+ * Default weight step. Big movements on a stack machine move by a full stack
+ * plate (5 kg); cables and single-muscle work on a stack by 2,5 kg, so a
+ * lateral raise never jumps by half. Plate-loaded machines move by a small
+ * plate on each side.
+ * Kettlebells move by 4 kg.
  */
 export function defaultIncrementFor(
-  equipment: Equipment,
+  def: Pick<ExerciseDef, 'equipment' | 'category' | 'gear'>,
   units: 'kg' | 'lbs',
   plateLoaded = false,
-  gear?: ExerciseDef['gear'],
 ): number {
-  if (gear === 'kettlebell') return units === 'lbs' ? 10 : 4;
+  if (def.gear === 'kettlebell') return units === 'lbs' ? 10 : 4;
   if (units === 'lbs') return 5;
-  if (equipment === 'dumbbell') return 2;
-  if (equipment === 'machine' && !plateLoaded) return 5;
+  if (def.equipment === 'dumbbell') return 2;
+  if (def.equipment === 'machine' && !plateLoaded && def.gear !== 'cable' && def.category === 'compound') return 5;
   return 2.5;
 }
 
 /** What the exercise is done with, for its label: a kettlebell is not shown as "Haltères". */
 export function equipmentShown(def: ExerciseDef): Equipment | 'kettlebell' {
   return def.gear === 'kettlebell' ? 'kettlebell' : def.equipment;
+}
+
+/**
+ * An easier exercise for the same movement, for a beginner who cannot reach
+ * the bottom of the range yet: pull-ups → assisted pull-ups, dips → assisted dips.
+ */
+export function easierVariant(def: Pick<ExerciseDef, 'name'>): ExerciseDef | undefined {
+  const E = EXERCISES;
+  const easier: Record<string, ExerciseDef> = {
+    [E.pullup.name]: E.assisted,
+    [E.chinup.name]: E.assisted,
+    [E.widepullup.name]: E.assisted,
+    [E.neutralpullup.name]: E.assisted,
+    [E.dips.name]: E.assisteddips,
+  };
+  return easier[def.name];
 }
 
 /** Loaded with plates on each side: the user's choice, else the catalog's. Machines only. */
@@ -396,20 +455,28 @@ export function withOverride(rule: ProgressionRule, override: RuleOverride | und
   return override ? { ...rule, ...clampRule(override, rule.repStep !== undefined) } : rule;
 }
 
-/** Minimum rest per kind of set, in seconds. */
-export const REST_BY_KIND = { heavy: 240, compound: 180, isolation: 120 } as const;
+/** Minimum rest per goal and kind of set, in seconds. Very heavy sets (5 reps or less) always get 4 min. */
+export const REST_BY_GOAL = {
+  muscle: { heavy: 240, compound: 180, isolation: 120 },
+  force: { heavy: 240, compound: 210, isolation: 150 },
+  forme: { heavy: 240, compound: 90, isolation: 60 },
+} as const satisfies Record<Goal, Record<'heavy' | 'compound' | 'isolation', number>>;
+
+/** The muscle goal's rests, the reference. */
+export const REST_BY_KIND = REST_BY_GOAL.muscle;
 
 /**
- * Rest between sets from the kind of exercise: 4 min for very heavy sets
- * (5 reps or less), 3 min for big movements, 2 min for a single muscle
- * (biceps, triceps, shoulders…). Abs and calves keep the default rest,
- * and the default is never cut.
+ * Rest between sets from the goal and the kind of exercise: 4 min for very
+ * heavy sets (5 reps or less); for big movements 3 min (muscle), 3 min 30
+ * (force), 1 min 30 (forme); for a single muscle 2 min, 2 min 30, 1 min.
+ * Abs and calves keep the default rest, and the default is never cut.
  */
-export function restFor(rule: ProgressionRule, defaultRest: number, def?: ExerciseDef): number {
-  if (rule.repMax <= 5) return Math.max(defaultRest, REST_BY_KIND.heavy);
+export function restFor(rule: ProgressionRule, defaultRest: number, def?: ExerciseDef, goal: Goal = 'muscle'): number {
+  const rests = REST_BY_GOAL[goal];
+  if (rule.repMax <= 5) return Math.max(defaultRest, rests.heavy);
   if (!def) return defaultRest;
-  if (def.category === 'compound') return Math.max(defaultRest, REST_BY_KIND.compound);
+  if (def.category === 'compound') return Math.max(defaultRest, rests.compound);
   const main = def.muscleGroups[0];
   if (main === 'core' || main === 'calves') return defaultRest;
-  return Math.max(defaultRest, REST_BY_KIND.isolation);
+  return Math.max(defaultRest, rests.isolation);
 }

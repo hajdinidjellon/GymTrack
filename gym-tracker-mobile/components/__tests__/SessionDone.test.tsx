@@ -34,6 +34,15 @@ describe('SessionDone', () => {
     expect(onFinish).toHaveBeenCalled();
   });
 
+  it('offers RPE 6 to 10 by half points when "RPE précis" is on', async () => {
+    useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, preciseRpe: true } });
+    await render(<SessionDone onFinish={jest.fn()} />);
+    expect(screen.queryByRole('radio', { name: 'Facile' })).toBeNull();
+    await fireEvent.press(screen.getByRole('radio', { name: 'RPE 8,5' }));
+    expect(sets()[0]!.rpe).toBe(8.5);
+    expect(screen.getByRole('radio', { name: 'RPE 8,5' }).props.accessibilityState).toMatchObject({ checked: true });
+  });
+
   it('takes back the last set, or adds one more', async () => {
     await render(<SessionDone onFinish={jest.fn()} />);
     await fireEvent.press(screen.getByRole('button', { name: '+ Une série de plus' }));

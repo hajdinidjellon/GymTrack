@@ -4,6 +4,7 @@
  */
 
 import {
+  COMEBACK_STEPS,
   nextTargets,
   referenceWeight,
   startWeightFromOneRepMax,
@@ -12,12 +13,14 @@ import {
   type ExerciseSession,
   type ProgressionDecision,
 } from '@/domain/progression';
-import { formatKg } from '@/domain/plates';
+import { loadableIncrement, loadableWeight, loadingOf } from '@/domain/loading';
+import { DEFAULT_BAR, emptyBar, formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
 import { trainedOn, validSchedule, weekdayIndex } from '@/domain/schedule';
 import {
   dayKey,
   defaultIncrementFor,
+  easierVariant,
   isPlateLoaded,
   findExerciseDef,
   getSplit,
@@ -28,7 +31,7 @@ import {
   type ExerciseDef,
   type ProgramDay,
 } from '@/domain/programs';
-import { t } from '@/i18n';
+import { exerciseName, t } from '@/i18n';
 import type {
   ActiveExercise,
   AppSettings,
@@ -48,7 +51,17 @@ export interface BuildContext {
     Partial<
       Pick<
         AppSettings,
-        'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded' | 'supersets' | 'ownDays'
+        | 'customDays'
+        | 'ruleOverrides'
+        | 'restOverrides'
+        | 'customExercises'
+        | 'plateLoaded'
+        | 'supersets'
+        | 'ownDays'
+        | 'barWeight'
+        | 'plates'
+        | 'collarWeight'
+        | 'manualProgression'
       >
     >;
   workouts: Workout[];
@@ -146,23 +159,53 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   const history = exerciseHistory(def, ctx.workouts);
   const lastRule = history.find((h) => h.rule)?.rule;
   const plateLoaded = isPlateLoaded(def, ctx.settings.plateLoaded);
-  const increment =
+  const loading = loadingOf({ equipment: def.equipment, plateLoaded });
+  const { barWeight, plates, collarWeight } = ctx.settings;
+  const gym = barWeight != null && plates ? { barWeight, plates, collarWeight } : null;
+  const wanted =
     ctx.settings.increments[def.name] ??
     lastRule?.increment ??
-    defaultIncrementFor(def.equipment, ctx.settings.units, plateLoaded, def.gear);
+    defaultIncrementFor(def, ctx.settings.units, plateLoaded);
+  // Never a step the plates cannot make: 1,25 kg plates make 2,5 on the bar, not 1
+  const increment = gym ? loadableIncrement(loading, wanted, gym.plates) : wanted;
   const rule = withOverride(ruleFor(ctx.profile.goal, def, increment), ctx.settings.ruleOverrides?.[def.name]);
 
   let startWeight: number | undefined;
   if (def.equipment === 'bodyweight') startWeight = 0;
-  else {
+  else if (!def.assisted) {
     const pr = prFor(def, ctx.profile.prs);
     if (pr) startWeight = startWeightFromOneRepMax(pr.oneRepMax, increment);
   }
 
-  const { decision, targets, daysOff } = nextTargets(history, rule, { startWeight, now: ctx.now });
+  const manual = !!ctx.settings.manualProgression?.[def.name];
+  const result = nextTargets(history, rule, {
+    startWeight,
+    now: ctx.now,
+    manual,
+    // Never under the empty bar (collars included) on a barbell lift
+    minWeight:
+      def.equipment === 'barbell'
+        ? emptyBar({ barWeight: ctx.settings.barWeight ?? DEFAULT_BAR, collarWeight: ctx.settings.collarWeight })
+        : undefined,
+    assisted: def.assisted,
+  });
+  const { decision, daysOff } = result;
+  // Never a load the plates cannot make (101,25 kg left by an old 1,25 kg step): the one just under.
+  // In manual mode the user's own loads stay as they are.
+  const targets =
+    gym && decision !== 'manual'
+      ? result.targets.map((tg) => ({ ...tg, weight: loadableWeight(loading, tg.weight, gym) }))
+      : result.targets;
   const lastSession = history.find((h) => mainSets(h.sets).length > 0);
   const last = lastSession ? mainSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
-  const rest = planRest(def, rule, ctx.settings.defaultRestTime, history, ctx.settings.restOverrides?.[def.name]);
+  const rest = planRest(
+    def,
+    rule,
+    ctx.settings.defaultRestTime,
+    history,
+    ctx.settings.restOverrides?.[def.name],
+    ctx.profile.goal,
+  );
   return {
     def,
     rule,
@@ -224,36 +267,45 @@ export function toActiveExercise(lift: PlannedLift, i = 0): ActiveExercise {
     rule: lift.rule,
     calibration: needsWeight || undefined,
     timed: lift.def.timed || undefined,
+    assisted: lift.def.assisted || undefined,
     needsWeight,
-    lastTime: lift.last.length ? lastTimeLabel(lift.last, lift.def.timed) : undefined,
+    lastTime: lift.last.length ? lastTimeLabel(lift.last, lift.def.timed, lift.def.assisted) : undefined,
     reason: reasonLabel(lift),
     restNote: lift.restNote || undefined,
     sets: lift.targets.map((t) => ({
       weight: t.weight,
       reps: t.reps,
-      setType: 'normal' as const,
+      setType: t.top ? ('top' as const) : ('normal' as const),
       restTime: lift.restTime,
       completed: false,
-      target: t,
+      target: { weight: t.weight, reps: t.reps },
     })),
   };
 }
 
 /** What changed since last time, in a few words. */
-export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string {
+export function deltaLabel(
+  lift: Pick<PlannedLift, 'decision' | 'rule'> & { def?: Pick<ExerciseDef, 'assisted'> },
+): string {
   const seconds = lift.rule.repStep;
+  const assisted = !!lift.def?.assisted;
   switch (lift.decision) {
     case 'add_reps':
       return seconds ? t('domain.plan.deltaSeconds', { s: seconds }) : t('domain.plan.deltaOneRep');
     case 'add_two_reps':
       return seconds ? t('domain.plan.deltaSeconds', { s: seconds * 2 }) : t('domain.plan.deltaTwoReps');
     case 'add_weight':
-      return t('domain.plan.deltaWeight', { kg: formatKg(lift.rule.increment) });
+      return t(assisted ? 'domain.plan.deltaLessHelp' : 'domain.plan.deltaWeight', {
+        kg: formatKg(lift.rule.increment),
+      });
     case 'hold':
     case 'repeat':
+    case 'manual':
       return t('domain.plan.deltaSame');
     case 'deload':
-      return t('domain.plan.deltaDeload');
+      return t(assisted ? 'domain.plan.deltaMoreHelp' : 'domain.plan.deltaDeload');
+    case 'ease':
+      return t('domain.plan.deltaEase');
     case 'comeback':
       return t('domain.plan.deltaComeback');
     case 'start':
@@ -263,27 +315,52 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
   }
 }
 
-/** "62,5 kg × 10", "12 reps", "45 s" or "10 kg × 45 s": one load as it is read in the gym. */
-export function loadLabel(weight: number, reps: number | string, timed = false): string {
-  if (weight > 0)
-    return t(timed ? 'domain.load.kgTimesSeconds' : 'domain.load.kgTimes', { kg: formatKg(weight), reps });
+/**
+ * "62,5 kg × 10", "Poids du corps × 12", "45 s", "10 kg × 45 s" or
+ * "Aide : 30 kg × 8" on an assisted machine: one load as it is read in the gym.
+ */
+export function loadLabel(weight: number, reps: number | string, timed = false, assisted = false): string {
+  const kg = formatKg(weight);
+  if (assisted && weight > 0)
+    return t(timed ? 'domain.load.assistTimesSeconds' : 'domain.load.assistTimes', { kg, reps });
+  if (weight > 0) return t(timed ? 'domain.load.kgTimesSeconds' : 'domain.load.kgTimes', { kg, reps });
   return t(timed ? 'domain.load.seconds' : 'domain.load.reps', { reps });
 }
 
-/** "60 kg × 10 · 10 · 9", "12 · 11 · 10 reps" at bodyweight, "45 · 45 · 40 s" held. */
-export function lastTimeLabel(sets: SetTarget[], timed = false): string {
+/** "60 kg × 10 · 10 · 9", "Poids du corps × 12 · 11 · 10", "45 · 45 · 40 s" held. */
+export function lastTimeLabel(sets: SetTarget[], timed = false, assisted = false): string {
   const reps = sets.map((s) => s.reps).join(' · ');
   const weight = referenceWeight(sets.map((s) => ({ ...s, setType: 'normal' as const })));
-  return loadLabel(weight, reps, timed);
+  return loadLabel(weight, reps, timed, assisted);
 }
 
-/** Why today's target is what it is, in one sentence. */
-export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targets' | 'daysOff'>): string {
+/** The targets of the working sets: the kept top sets left out. */
+function workTargets(targets: SetTarget[]): SetTarget[] {
+  const work = targets.filter((x) => !x.top);
+  return work.length ? work : targets;
+}
+
+type ReasonInput = Pick<PlannedLift, 'decision' | 'rule' | 'targets' | 'daysOff'> & {
+  def?: Pick<ExerciseDef, 'name' | 'assisted'>;
+};
+
+/** Why today's target is what it is, in one sentence; one more when a top set is kept or an easier variant helps. */
+export function reasonLabel(lift: ReasonInput): string {
+  const lines = [mainReason(lift)];
+  if (lift.targets.some((x) => x.top)) lines.push(t('domain.plan.reasonTopKept'));
+  const easier = lift.decision === 'ease' && lift.def ? easierVariant(lift.def) : undefined;
+  if (easier) lines.push(t('domain.plan.reasonEasierVariant', { name: exerciseName(easier.name) }));
+  return lines.join(' ');
+}
+
+function mainReason(lift: ReasonInput): string {
   const { rule } = lift;
-  const bodyweight = (lift.targets[0]?.weight ?? 0) === 0;
+  const bodyweight = (workTargets(lift.targets)[0]?.weight ?? 0) === 0;
+  const assisted = !!lift.def?.assisted;
   const seconds = rule.repStep;
   switch (lift.decision) {
     case 'add_weight':
+      if (assisted) return t('domain.plan.reasonLessHelp', { reps: rule.repMax, kg: formatKg(rule.increment) });
       return t(seconds ? 'domain.plan.reasonAddWeightSeconds' : 'domain.plan.reasonAddWeight', {
         reps: rule.repMax,
         kg: formatKg(rule.increment),
@@ -300,14 +377,35 @@ export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targe
     case 'repeat':
       return t(seconds ? 'domain.plan.reasonRepeatSeconds' : 'domain.plan.reasonRepeat', { reps: rule.repMin });
     case 'deload':
-      return t('domain.plan.reasonDeload');
+      if (assisted) return t('domain.plan.reasonMoreHelp', { reps: rule.repMin });
+      return t(seconds ? 'domain.plan.reasonDeloadSeconds' : 'domain.plan.reasonDeload', { reps: rule.repMin });
+    case 'ease':
+      return t(seconds ? 'domain.plan.reasonEaseSeconds' : 'domain.plan.reasonEase', { reps: rule.repMin });
     case 'comeback':
       return t('domain.plan.reasonComeback', { break: breakLabel(lift.daysOff ?? 14) });
     case 'start':
       return bodyweight ? t('domain.plan.reasonStartBodyweight') : t('domain.plan.reasonStart');
     case 'calibrate':
       return t('domain.plan.reasonCalibrate');
+    case 'manual':
+      return t('domain.plan.reasonManual');
   }
+}
+
+/**
+ * The break the home talks about: the days since the user's last session,
+ * whatever it was, once some lift of today comes back lighter and the break
+ * is long enough for a comeback. 0 otherwise. Each lift keeps its own decision.
+ */
+export function breakDays(
+  lifts: Pick<PlannedLift, 'decision'>[],
+  workouts: Pick<Workout, 'date'>[],
+  now: Date,
+): number {
+  if (!lifts.some((l) => l.decision === 'comeback') || workouts.length === 0) return 0;
+  const latest = Math.max(...workouts.map((w) => new Date(w.date).getTime()));
+  const days = Math.floor((now.getTime() - latest) / (24 * 60 * 60 * 1000));
+  return days >= COMEBACK_STEPS[COMEBACK_STEPS.length - 1]!.days ? days : 0;
 }
 
 /** "2 semaines", "1 mois", "3 mois". */
@@ -316,20 +414,27 @@ export function breakLabel(days: number): string {
   return t('domain.plan.months', { count: Math.floor(days / 30) });
 }
 
-/** "3 × 10 · 62,5 kg", "3 × 13" at bodyweight, "3 × 45 s" held. Uneven reps show the lowest. */
-export function targetLabel(targets: SetTarget[], timed = false): string {
-  const first = targets[0];
+/**
+ * "3 × 10 · 62,5 kg", "3 × 13 · Poids du corps", "3 × 45 s" held, "3 × 8 · Aide : 30 kg".
+ * Uneven reps show the lowest. A kept top set is left out: the working sets are the plan.
+ */
+export function targetLabel(targets: SetTarget[], timed = false, assisted = false): string {
+  const work = workTargets(targets);
+  const first = work[0];
   if (!first) return '';
-  const reps = Math.min(...targets.map((t) => t.reps));
-  const base = `${targets.length} × ${reps}${timed ? ' s' : ''}`;
-  return first.weight > 0 ? `${base} · ${formatKg(first.weight)} kg` : base;
+  const reps = Math.min(...work.map((x) => x.reps));
+  const base = `${work.length} × ${reps}${timed ? ' s' : ''}`;
+  if (first.weight <= 0) return timed ? base : `${base} · ${t('domain.load.bodyweight')}`;
+  const load = assisted ? t('domain.load.assist', { kg: formatKg(first.weight) }) : `${formatKg(first.weight)} kg`;
+  return `${base} · ${load}`;
 }
 
-/** Today's target as it is read in the gym: "62,5 kg × 10", "12 reps" or "45 s" without weight. */
-export function targetLoad(targets: SetTarget[], timed = false): string {
-  const first = targets[0];
+/** Today's target as it is read in the gym: "62,5 kg × 10", "Poids du corps × 12" or "45 s" without weight. */
+export function targetLoad(targets: SetTarget[], timed = false, assisted = false): string {
+  const work = workTargets(targets);
+  const first = work[0];
   if (!first) return '';
-  return loadLabel(first.weight, Math.min(...targets.map((t) => t.reps)), timed);
+  return loadLabel(first.weight, Math.min(...work.map((x) => x.reps)), timed, assisted);
 }
 
 /** How many times the logged weight counts in the total: 2 for both sides or both dumbbells. */
@@ -358,7 +463,8 @@ export function newRecords(workout: Workout, history: Workout[], own: CustomExer
   return workout.exercises.flatMap((exercise) => {
     const def = findExerciseDef(exercise.name, own);
     const now = best(exercise.sets);
-    if (!def || now === 0) return [];
+    // More help on an assisted machine is never a record
+    if (!def || now === 0 || def.assisted) return [];
     const before = history
       .filter((w) => w.id !== workout.id && new Date(w.date) < new Date(workout.date))
       .flatMap((w) => w.exercises.filter((e) => matches(def, e.name)).map((e) => best(e.sets)));
