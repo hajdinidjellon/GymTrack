@@ -45,6 +45,11 @@ export const session = {
     extraSubtitle:
       'Pour une fois : chaque exercice reprend où tu en es. Ton programme reprendra ensuite là où tu l’as laissé.',
     liftA11y: '{name}, {target}, {delta}',
+    shortened: {
+      one: 'Raccourcie pour tenir en {minutes} min : 1 exercice en moins. Tu peux l’ajouter pendant la séance.',
+      other:
+        'Raccourcie pour tenir en {minutes} min : {count} exercices en moins. Tu peux les ajouter pendant la séance.',
+    },
     firstTime: 'première fois',
     weightToPick: 'Charge à choisir',
     perSideA11y: 'Par côté : {plates}',

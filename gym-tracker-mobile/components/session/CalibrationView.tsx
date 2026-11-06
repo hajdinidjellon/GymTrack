@@ -5,7 +5,7 @@ import { loadableWeight, loadingOf } from '@/domain/loading';
 import { START_PERCENT_OF_1RM, startWeightFromOneRepMax } from '@/domain/progression';
 import { emptyBar, formatKg } from '@/domain/plates';
 import { useGym } from '@/hooks/useGym';
-import { calibrationPreset } from '@/domain/onboarding';
+import { bodyOf, calibrationPreset } from '@/domain/onboarding';
 import { nudge } from '@/domain/session';
 import { findExerciseDef } from '@/domain/programs';
 import { fitToGym, startPresets } from '@/domain/startWeights';
@@ -30,12 +30,14 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   // Cable or Smith comes from the catalog; the rest is on the exercise itself
   const gear = findExerciseDef(exercise.name, customExercises)?.gear;
   const experience = useProfileStore((s) => s.profile?.experience);
+  const profile = useProfileStore((s) => s.profile);
   const gym = useGym();
   const barWeight = emptyBar(gym);
   const step = exercise.rule?.increment ?? 2.5;
   // What the gym can really make: its bar, collars and plates, the machine's weight step
   const presets = fitToGym(startPresets({ ...exercise, gear }), loading, gym, step);
-  const suggested = calibrationPreset(presets, experience);
+  // Sex, age and body weight, when the user gave them, move the first weight a step
+  const suggested = calibrationPreset(presets, experience, bodyOf(profile));
   const [weight, setWeight] = useState(() => suggested ?? 20);
   const setStartWeight = useSessionStore((s) => s.setStartWeight);
   // Any weight goes, down to the empty bar; off the bar, anything above zero (a 2,9 kg cable)

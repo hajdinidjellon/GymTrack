@@ -35,6 +35,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   supersets: {},
   ownDays: {},
   recoveryPromptSeen: false,
+  stackStep: null,
+  cableStep: null,
+  gymChain: null,
 };
 
 /**
@@ -76,7 +79,13 @@ export function syncedSettingsChanged(before: AppSettings, after: AppSettings): 
 }
 
 /** Asked by the first-launch questions: a new phone has them too, they say nothing of the user's program. */
-const FIRST_LAUNCH_SETTINGS: readonly (keyof AppSettings)[] = ['barWeight', 'plates'];
+const FIRST_LAUNCH_SETTINGS: readonly (keyof AppSettings)[] = [
+  'barWeight',
+  'plates',
+  'stackStep',
+  'cableStep',
+  'gymChain',
+];
 
 /** The user changed something of their training on this phone (a fresh install has not). */
 export function hasOwnSettings(settings: Partial<AppSettings>): boolean {

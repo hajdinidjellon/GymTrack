@@ -9,6 +9,7 @@ import {
   newRecords,
   nextDay,
   planDay,
+  MIN_LIFTS_TO_FIT,
   todayStatus,
   weekOf,
   planLift,
@@ -312,6 +313,33 @@ describe('planDay', () => {
       restTime: 180,
       target: { weight: 0, reps: 8 },
     });
+  });
+});
+
+describe('the usual session time', () => {
+  const legs = {
+    name: 'Legs',
+    exercises: [EXERCISES.squat, EXERCISES.rdl, EXERCISES.legpress, EXERCISES.legcurl, EXERCISES.calves],
+  };
+
+  it('leaves out the last exercises of a program day that runs over', () => {
+    const full = planDay(legs, ctx());
+    expect(full.dropped).toBeUndefined();
+    const short = planDay(legs, ctx([], { sessionMinutes: 45 }));
+    expect(short.lifts.length).toBeLessThan(full.lifts.length);
+    expect(short.lifts.map((l) => l.def.name)).toEqual(full.lifts.slice(0, short.lifts.length).map((l) => l.def.name));
+    expect(short.dropped).toBe(full.lifts.length - short.lifts.length);
+  });
+
+  it('keeps three exercises at least', () => {
+    expect(planDay(legs, ctx([], { sessionMinutes: 15 })).lifts).toHaveLength(MIN_LIFTS_TO_FIT);
+  });
+
+  it('keeps whole a day the user set up', () => {
+    const own = { ...ctx([], { sessionMinutes: 15 }) };
+    own.settings = { ...own.settings, customDays: { 'ppl/Legs': legs.exercises.map((e) => e.name) } };
+    expect(planDay(legs, own).lifts).toHaveLength(5);
+    expect(planDay({ name: 'Bras', exercises: legs.exercises }, ctx([], { sessionMinutes: 15 })).lifts).toHaveLength(5);
   });
 });
 

@@ -88,6 +88,12 @@ export default function Preview() {
         title={dayName(plan.name)}
         subtitle={t(day.extra ? 'session.preview.extraSubtitle' : 'session.preview.subtitle')}
       />
+      {plan.dropped ? (
+        // Raccourcie pour tenir dans le temps habituel : on le dit, l'exercice peut toujours être ajouté
+        <Text size={14} weight="semibold" color={colors.inkMuted} style={{ marginBottom: space.md }}>
+          {t('session.preview.shortened', { count: plan.dropped, minutes: ctx?.profile.sessionMinutes ?? 0 })}
+        </Text>
+      ) : null}
 
       <Text size={14} weight="bold" color={colors.inkMuted}>
         {t('session.preview.otherDay')}
