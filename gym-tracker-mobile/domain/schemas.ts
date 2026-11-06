@@ -170,6 +170,12 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
   })
   .partial();
 
+/** When the settings last changed on this phone, and whether that change still has to reach the queue. */
+export const settingsSyncMetaSchema = z.object({
+  updatedAt: isoDate.nullable(),
+  pending: z.boolean(),
+});
+
 /** Valid items only. A broken record is skipped, not allowed to crash the app. */
 export function parseList<T>(schema: z.ZodType<T>, items: unknown[]): { valid: T[]; rejected: number } {
   const valid: T[] = [];

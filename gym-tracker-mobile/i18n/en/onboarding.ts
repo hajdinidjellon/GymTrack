@@ -99,7 +99,7 @@ export const onboarding: Dictionary['onboarding'] = {
     noAccount: 'Continue without an account',
     signupTitle: 'Your account.',
     signinTitle: 'Welcome back.',
-    signupSubtitle: 'Your sessions backed up, and there on another phone too.',
+    signupSubtitle: 'Your sessions and your program backed up, and there on another phone too.',
     signinSubtitle: 'Your bar is still loaded right where you left it.',
     username: 'Username',
     password: 'Password',

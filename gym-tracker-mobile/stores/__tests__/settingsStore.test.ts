@@ -1,7 +1,12 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISES } from '@/domain/programs';
-import { DEFAULT_SETTINGS, parseSettings, useSettingsStore } from '@/stores/settingsStore';
+import { readSettingsMeta } from '@/services/settingsStorage';
+import { queueSettingsSync } from '@/services/sync';
+import { DEFAULT_SETTINGS, parseSettings, SETTINGS_SYNC_DELAY_MS, useSettingsStore } from '@/stores/settingsStore';
+
+jest.mock('@/services/sync', () => ({ queueSettingsSync: jest.fn(() => Promise.resolve()) }));
+const queued = jest.mocked(queueSettingsSync);
 
 describe('parseSettings', () => {
   it('returns the defaults when nothing is stored or the JSON is broken', () => {
@@ -170,5 +175,60 @@ describe('settings store', () => {
     await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ defaultRestTime: 120 }));
     await useSettingsStore.getState().loadSettings();
     expect(useSettingsStore.getState()).toMatchObject({ isLoaded: true, settings: { defaultRestTime: 120 } });
+  });
+});
+
+describe('settings cloud push', () => {
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    await AsyncStorage.clear();
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    queued.mockClear();
+  });
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
+  it('sends a run of changes once, a moment after the last one', async () => {
+    for (let s = 60; s <= 180; s += 10) useSettingsStore.getState().updateSettings({ defaultRestTime: s });
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS - 1);
+    expect(queued).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    expect(queued).toHaveBeenCalledTimes(1);
+  });
+
+  it('stamps the change and marks it waiting, so a closed app sends it at next launch', async () => {
+    useSettingsStore.getState().setRestOverride('Squat', 120);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(await readSettingsMeta()).toEqual({ updatedAt: expect.any(String), pending: true });
+  });
+
+  it("sends nothing for this phone's own settings", () => {
+    useSettingsStore.getState().updateSettings({ theme: 'dark', signedOut: true });
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).not.toHaveBeenCalled();
+  });
+
+  it('sends at launch a change the app was closed on', async () => {
+    await AsyncStorage.setItem('@gymtrack/settings-sync', JSON.stringify({ updatedAt: null, pending: true }));
+    await useSettingsStore.getState().loadSettings();
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends once the settings of an older version, stamped now', async () => {
+    await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ customDays: { 'ppl/Legs': ['Squat'] } }));
+    await useSettingsStore.getState().loadSettings();
+    expect(await readSettingsMeta()).toEqual({ updatedAt: expect.any(String), pending: true });
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends nothing at launch on a fresh install', async () => {
+    await useSettingsStore.getState().loadSettings();
+    jest.advanceTimersByTime(SETTINGS_SYNC_DELAY_MS);
+    expect(queued).not.toHaveBeenCalled();
   });
 });

@@ -98,7 +98,7 @@ export const onboarding = {
     noAccount: 'Continuer sans compte',
     signupTitle: 'Ton compte.',
     signinTitle: 'Re-bonjour.',
-    signupSubtitle: 'Tes séances sauvegardées, et retrouvées sur un autre téléphone.',
+    signupSubtitle: 'Tes séances et ton programme sauvegardés, et retrouvés sur un autre téléphone.',
     signinSubtitle: "Ta barre est restée chargée là où tu l'as laissée.",
     username: 'Pseudo',
     password: 'Mot de passe',

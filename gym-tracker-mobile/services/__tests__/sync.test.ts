@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as db from '@/services/db';
 import { supabase } from '@/services/supabase';
-import { flushSyncQueue, initialSync, pullAllFromCloud } from '@/services/sync';
+import * as storage from '@/services/settingsStorage';
+import { flushSyncQueue, initialSync, pullAllFromCloud, queueSettingsSync } from '@/services/sync';
 import type { Workout } from '@/types';
 
 jest.mock('@/services/db');
+jest.mock('@/services/settingsStorage');
 jest.mock('@/services/supabase', () => ({
   supabase: { from: jest.fn() },
   getCurrentUserId: jest.fn(() => Promise.resolve('user-1')),
@@ -12,6 +14,7 @@ jest.mock('@/services/supabase', () => ({
 }));
 
 const mockedDb = jest.mocked(db);
+const mockedStorage = jest.mocked(storage);
 const from = jest.mocked(supabase.from);
 
 type Result = { data?: unknown; error: { message: string } | null };
@@ -51,6 +54,157 @@ const entry = (id: number, operation: 'upsert' | 'delete' = 'upsert') => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockedDb.loadWorkoutById.mockResolvedValue(workout);
+  mockedStorage.readStoredSettings.mockResolvedValue({});
+  mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: null, pending: false });
+});
+
+/** One stand-in per table. */
+function tables(results: Record<string, ReturnType<typeof table>>) {
+  from.mockImplementation(((name: string) => results[name] ?? table({ data: null, error: null })) as never);
+}
+
+const RLS_ERROR = { message: 'new row violates row-level security policy for table "user_settings"' };
+const settingsEntry = (id: number) => ({
+  id,
+  table_name: 'user_settings' as const,
+  record_id: 'settings',
+  operation: 'upsert' as const,
+  created_at: '2026-11-05',
+});
+const OWN = { customDays: { 'ppl/Legs': ['Squat'] }, theme: 'dark' as const };
+
+describe('settings push', () => {
+  it("sends the settings without this phone's own, stamped with the time they changed", async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([settingsEntry(7)]);
+    mockedStorage.readStoredSettings.mockResolvedValue(OWN);
+    mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: '2026-11-05T10:00:00.000Z', pending: false });
+    const settings = table({ data: { updated_at: '2026-11-01T10:00:00+00:00' }, error: null });
+    tables({ user_settings: settings });
+
+    await flushSyncQueue();
+
+    expect(settings.eq).toHaveBeenCalledWith('user_id', 'user-1');
+    expect(settings.upsert).toHaveBeenCalledWith({
+      user_id: 'user-1',
+      data: { customDays: OWN.customDays },
+      updated_at: '2026-11-05T10:00:00.000Z',
+    });
+    expect(mockedDb.clearSyncQueueEntry).toHaveBeenCalledWith(7);
+  });
+
+  it('leaves a newer copy from another phone alone', async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([settingsEntry(7)]);
+    mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: '2026-11-01T10:00:00.000Z', pending: false });
+    const settings = table({ data: { updated_at: '2026-11-05T10:00:00+00:00' }, error: null });
+    tables({ user_settings: settings });
+
+    await flushSyncQueue();
+
+    expect(settings.upsert).not.toHaveBeenCalled();
+    expect(mockedDb.clearSyncQueueEntry).toHaveBeenCalledWith(7);
+  });
+
+  it('keeps a refused settings entry without holding back the sessions', async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([settingsEntry(1), entry(2)]);
+    const workouts = table({ error: null });
+    tables({ user_settings: table({ data: null, error: RLS_ERROR }), workouts });
+
+    await flushSyncQueue();
+
+    expect(mockedDb.clearSyncQueueEntry).not.toHaveBeenCalledWith(1);
+    expect(workouts.upsert).toHaveBeenCalled();
+    expect(mockedDb.clearSyncQueueEntry).toHaveBeenCalledWith(2);
+  });
+
+  it('queues one entry once the user stops, then sends it', async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([]);
+    mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: '2026-11-05T10:00:00.000Z', pending: true });
+
+    await queueSettingsSync();
+
+    expect(mockedDb.enqueueSettingsSync).toHaveBeenCalledTimes(1);
+    expect(mockedStorage.writeSettingsMeta).toHaveBeenCalledWith({
+      updatedAt: '2026-11-05T10:00:00.000Z',
+      pending: false,
+    });
+    expect(mockedDb.getPendingSyncQueue).toHaveBeenCalled();
+  });
+});
+
+describe('settings at sign-in', () => {
+  const cloudRow = (data: unknown, updated_at = '2026-11-03T10:00:00+00:00') =>
+    table({ data: { data, updated_at }, error: null });
+
+  beforeEach(() => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([]);
+  });
+
+  it("takes the cloud's program on a fresh install, keeping the phone's theme", async () => {
+    mockedStorage.readStoredSettings.mockResolvedValue({ theme: 'dark', plates: [20] });
+    mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: '2026-11-05T10:00:00.000Z', pending: true });
+    tables({ user_settings: cloudRow({ customDays: { 'ppl/Legs': ['Squat'] }, plates: [25, 20], theme: 'light' }) });
+
+    await initialSync();
+
+    expect(mockedStorage.writeSettings).toHaveBeenCalledWith(
+      { theme: 'dark', customDays: { 'ppl/Legs': ['Squat'] }, plates: [25, 20] },
+      { updatedAt: '2026-11-03T10:00:00+00:00', pending: false },
+    );
+    expect(mockedDb.clearSettingsSyncQueue).toHaveBeenCalled();
+    expect(mockedDb.enqueueSettingsSync).not.toHaveBeenCalled();
+  });
+
+  it("queues this phone's copy when it is newer", async () => {
+    mockedStorage.readStoredSettings.mockResolvedValue(OWN);
+    mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: '2026-11-05T10:00:00.000Z', pending: false });
+    tables({ user_settings: cloudRow({ voice: false }) });
+
+    await initialSync();
+
+    expect(mockedStorage.writeSettings).not.toHaveBeenCalled();
+    expect(mockedDb.enqueueSettingsSync).toHaveBeenCalled();
+  });
+
+  it("sends this phone's settings to an account that has none, stamped once", async () => {
+    mockedStorage.readStoredSettings.mockResolvedValue(OWN);
+    tables({});
+
+    await initialSync();
+
+    expect(mockedDb.enqueueSettingsSync).toHaveBeenCalled();
+    expect(mockedStorage.writeSettingsMeta).toHaveBeenCalledWith({ updatedAt: expect.any(String), pending: false });
+  });
+
+  it('sends nothing from a fresh install to an account that has none', async () => {
+    tables({});
+
+    await initialSync();
+
+    expect(mockedDb.enqueueSettingsSync).not.toHaveBeenCalled();
+    expect(mockedDb.clearSettingsSyncQueue).toHaveBeenCalled();
+  });
+
+  it("skips invalid cloud settings and keeps this phone's", async () => {
+    mockedStorage.readStoredSettings.mockResolvedValue(OWN);
+    tables({ user_settings: cloudRow({ barWeight: 'heavy' }) });
+
+    await initialSync();
+
+    expect(mockedStorage.writeSettings).not.toHaveBeenCalled();
+    expect(mockedDb.enqueueSettingsSync).toHaveBeenCalled();
+  });
+
+  it('still syncs the sessions when the settings cannot be read (RLS, missing table)', async () => {
+    tables({
+      user_settings: table({ data: null, error: RLS_ERROR }),
+      workouts: table({ data: [{ data: workout }], error: null }),
+    });
+
+    await initialSync();
+
+    expect(mockedStorage.writeSettings).not.toHaveBeenCalled();
+    expect(mockedDb.bulkInsertWorkouts).toHaveBeenCalledWith([workout]);
+  });
 });
 
 describe('flushSyncQueue', () => {
