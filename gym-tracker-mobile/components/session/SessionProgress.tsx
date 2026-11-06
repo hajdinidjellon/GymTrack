@@ -67,7 +67,8 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
             <Pressable
               disabled={!waiting}
               onPress={() => onPick(e.id)}
-              hitSlop={8}
+              // A 44 pt tall touch area, 8 pt wider each side than the pill
+              hitSlop={{ left: 8, right: 8 }}
               accessibilityRole={waiting ? 'button' : 'text'}
               accessibilityLabel={
                 waiting
@@ -76,19 +77,23 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
                       name: exerciseName(e.name),
                     })
               }
-              style={({ pressed }) => pillStyle(finished ? 'finished' : now ? 'current' : 'waiting', pressed)}
+              style={{ height: 44, justifyContent: 'center' }}
             >
-              {finished ? (
-                <Check size={15} color={colors.onSuccess} />
-              ) : (
-                <Text
-                  size={now ? 15 : 13}
-                  maxFontSizeMultiplier={1.3}
-                  weight="black"
-                  color={now ? colors.onCoral : colors.inkFaint}
-                >
-                  {i + 1}
-                </Text>
+              {({ pressed }) => (
+                <View style={pillStyle(finished ? 'finished' : now ? 'current' : 'waiting', pressed)}>
+                  {finished ? (
+                    <Check size={15} color={colors.onSuccess} />
+                  ) : (
+                    <Text
+                      size={now ? 15 : 13}
+                      maxFontSizeMultiplier={1.3}
+                      weight="black"
+                      color={now ? colors.onCoral : colors.inkFaint}
+                    >
+                      {i + 1}
+                    </Text>
+                  )}
+                </View>
               )}
             </Pressable>
           </React.Fragment>

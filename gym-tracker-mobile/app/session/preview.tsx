@@ -27,6 +27,8 @@ import { StickerCard } from '@/components/ui/StickerCard';
 import { Chip, IndexBadge } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { RemoveButton } from '@/components/ui/RemoveButton';
+import { useRemovalUndo } from '@/components/program/useRemovalUndo';
 import { MiniPlates } from '@/components/disc/Barbell';
 import { DayExercisesEditor } from '@/components/program/DayExercisesEditor';
 
@@ -38,6 +40,7 @@ export default function Preview() {
   const ownDays = useSettingsStore((s) => s.settings.ownDays);
   const [picked, setPicked] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const undo = useRemovalUndo();
 
   const splitId = ctx?.profile.program.split;
   // Le programme, puis les séances des autres programmes, pour une fois
@@ -59,12 +62,15 @@ export default function Preview() {
       scroll
       scrollEnabled={!dragging}
       footer={
-        <StickerButton
-          label={t('session.preview.start')}
-          haptic="medium"
-          disabled={plan.lifts.length === 0}
-          onPress={start}
-        />
+        <>
+          {undo.bar}
+          <StickerButton
+            label={t('session.preview.start')}
+            haptic="medium"
+            disabled={plan.lifts.length === 0}
+            onPress={start}
+          />
+        </>
       }
     >
       <BackButton label={t('session.backHome')} />
@@ -132,6 +138,8 @@ export default function Preview() {
         items={plan.lifts}
         keyOf={(lift) => lift.def.name}
         onDragChange={setDragging}
+        onRemoved={undo.onRemoved}
+        onEdited={undo.onEdited}
         renderRow={(lift, i, remove) => (
           <FadeIn index={i + 1}>
             <LiftRow lift={lift} index={i} onRemove={remove} />
@@ -187,26 +195,10 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
             />
           </View>
         )}
-        <Pressable
+        <RemoveButton
           onPress={onRemove}
-          accessibilityRole="button"
           accessibilityLabel={t('session.preview.remove', { name: exerciseName(lift.def.name) })}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            borderWidth: 2,
-            borderColor: colors.outline,
-            backgroundColor: pressed ? colors.coralSoft : colors.card,
-            alignItems: 'center',
-            justifyContent: 'center',
-          })}
-        >
-          <Text size={14} weight="black">
-            ✕
-          </Text>
-        </Pressable>
+        />
       </StickerCard>
     </PressableScale>
   );

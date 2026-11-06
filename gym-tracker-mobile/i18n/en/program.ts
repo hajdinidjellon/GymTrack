@@ -33,6 +33,9 @@ export const program: Dictionary['program'] = {
     saved: 'Your exercises for {day} are saved for next time.',
     howTo: 'Add, remove or move exercises: they’ll be kept for your next {day} sessions.',
     reset: 'Back to the program’s exercises',
+    removed: 'Removed: {name}',
+    undo: 'Undo',
+    undoA11y: 'Put {name} back',
   },
   rule: {
     sets: 'Sets',
