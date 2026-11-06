@@ -171,6 +171,13 @@ export default function Profile() {
             />
           ) : null}
           <Row
+            label={t('profile.during.rpe')}
+            value={settings.preciseRpe ? t('profile.during.rpeOn') : t('profile.during.rpeOff')}
+            on={settings.preciseRpe}
+            onPress={() => updateSettings({ preciseRpe: !settings.preciseRpe })}
+            hint={t('profile.during.rpeHint')}
+          />
+          <Row
             label={t('profile.during.warmups')}
             value={settings.warmups ? t('profile.during.warmupsOn') : t('profile.during.warmupsOff')}
             on={settings.warmups}

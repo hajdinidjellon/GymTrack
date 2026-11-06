@@ -165,6 +165,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     language: z.enum(['auto', 'fr', 'en']),
     theme: z.enum(['auto', 'light', 'dark']),
     manualProgression: z.record(z.string().max(100), z.boolean()),
+    preciseRpe: z.boolean(),
     warmups: z.boolean(),
     warmupOverrides: z.record(z.string().max(100), z.boolean()),
     supersets: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),

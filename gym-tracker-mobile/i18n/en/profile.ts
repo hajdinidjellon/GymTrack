@@ -41,6 +41,10 @@ export const profile: Dictionary['profile'] = {
     commandsDeniedTitle: 'Microphone denied',
     commandsDeniedText: 'Allow the microphone and speech recognition for Okilo in the phone’s Settings.',
     tapToChange: 'Tap to change',
+    rpe: 'Precise RPE',
+    rpeOn: '6 to 10',
+    rpeOff: 'No',
+    rpeHint: 'After a set, an RPE from 6 to 10 instead of Easy / Just right / All out. Tap to change.',
   },
   language: {
     title: 'Language',

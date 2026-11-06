@@ -182,6 +182,8 @@ export interface AppSettings {
   language: 'auto' | 'fr' | 'en';
   /** Light or dark mode. `auto` follows the phone. */
   theme: 'auto' | 'light' | 'dark';
+  /** After a set, the RPE from 6 to 10 by half points instead of the three efforts. Off by default. */
+  preciseRpe: boolean;
   /** Manual progression per exercise name: the targets repeat the last session, the app never changes the weight. */
   manualProgression: Record<string, boolean>;
   /** Warm-up sets computed before the working sets. */

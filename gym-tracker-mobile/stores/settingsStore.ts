@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'auto',
   theme: 'light',
   manualProgression: {},
+  preciseRpe: false,
   warmups: true,
   warmupOverrides: {},
   supersets: {},

@@ -144,6 +144,14 @@ export function rateLastSet(session: ActiveSession, effort: Effort): ActiveSessi
   return updateSet(session, last.exerciseId, last.setIndex, { rpe });
 }
 
+/** The precise RPE of the last validated set. The same value a second time takes it back. */
+export function rateLastSetRpe(session: ActiveSession, rpe: number): ActiveSession {
+  const last = session.lastCompleted;
+  const set = last && findSet(session, last.exerciseId, last.setIndex);
+  if (!last || !set?.completed) return session;
+  return updateSet(session, last.exerciseId, last.setIndex, { rpe: set.rpe === rpe ? undefined : rpe });
+}
+
 /**
  * Removes a set still to do. A validated set stays (undo it first), and an
  * exercise always keeps one working set. A warm-up removed by hand is not

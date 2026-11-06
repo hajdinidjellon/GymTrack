@@ -121,6 +121,8 @@ export const session = {
 
   effort: {
     question: "Comment c'était ?",
+    rpeQuestion: 'RPE de la série ? (10 = plus rien en réserve)',
+    rpe: 'RPE {rpe}',
   },
 
   note: {

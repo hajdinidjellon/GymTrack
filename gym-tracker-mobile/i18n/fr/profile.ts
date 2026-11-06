@@ -41,6 +41,10 @@ export const profile = {
     commandsDeniedTitle: 'Micro refusé',
     commandsDeniedText: 'Autorise le micro et la reconnaissance vocale pour Okilo dans les Réglages du téléphone.',
     tapToChange: 'Touche pour changer',
+    rpe: 'RPE précis',
+    rpeOn: 'De 6 à 10',
+    rpeOff: 'Non',
+    rpeHint: 'Après une série, la note RPE de 6 à 10 au lieu de Facile / Juste bien / À fond. Touche pour changer.',
   },
   language: {
     title: 'Langue',

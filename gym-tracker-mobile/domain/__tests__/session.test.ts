@@ -294,6 +294,23 @@ describe('changing the order', () => {
   });
 });
 
+describe('rateLastSetRpe', () => {
+  const done = () => Session.completeSet(session([bench()]), 'bench', 0);
+  const rpe = (s: ReturnType<typeof session>) => s.exercises[0]!.sets[0]!.rpe;
+
+  it('stores the precise RPE, and takes it back on a second tap', () => {
+    const rated = Session.rateLastSetRpe(done(), 8.5);
+    expect(rpe(rated)).toBe(8.5);
+    expect(rpe(Session.rateLastSetRpe(rated, 9))).toBe(9);
+    expect(rpe(Session.rateLastSetRpe(rated, 8.5))).toBeUndefined();
+  });
+
+  it('does nothing before a set is validated', () => {
+    const fresh = session([bench()]);
+    expect(Session.rateLastSetRpe(fresh, 8)).toBe(fresh);
+  });
+});
+
 describe('rateLastSet', () => {
   const done = () => Session.completeSet(session([bench()]), 'bench', 0);
   const rpe = (s: ReturnType<typeof session>) => s.exercises[0]!.sets[0]!.rpe;

@@ -121,6 +121,8 @@ export const session: Dictionary['session'] = {
 
   effort: {
     question: 'How was it?',
+    rpeQuestion: 'RPE of the set? (10 = nothing left)',
+    rpe: 'RPE {rpe}',
   },
 
   note: {

@@ -24,6 +24,9 @@ export const EFFORT_LABELS: Record<Effort, string> = {
 /** Easy: 4 reps or more left. Good: about 2 left. Max: nothing left. */
 export const EFFORT_RPE: Record<Effort, number> = { easy: 6, good: 8, max: 10 };
 
+/** "RPE précis" (opt-in): 6 to 10 by half points. Progression still reads them as the three efforts. */
+export const RPE_STEPS: readonly number[] = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+
 /** Reads back any RPE, typed by hand or imported, as one of the three efforts. */
 export function effortOf(rpe: number | undefined): Effort | undefined {
   if (rpe == null) return undefined;
