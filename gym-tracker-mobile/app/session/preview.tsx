@@ -6,7 +6,7 @@ import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
 import { describeSide, loadBar } from '@/domain/plates';
-import { choosableDays, type ChoosableDay, hasExercises } from '@/domain/programs';
+import { choosableDays, type ChoosableDay, hasExercises, equipmentShown } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -183,7 +183,9 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
           // Chip sticks to the top of a row on its own: the wrapper centres it
           <View>
             <Chip
-              label={calibrate ? t('session.preview.calibrate') : t(`session.preview.equipment.${lift.def.equipment}`)}
+              label={
+                calibrate ? t('session.preview.calibrate') : t(`session.preview.equipment.${equipmentShown(lift.def)}`)
+              }
             />
           </View>
         )}

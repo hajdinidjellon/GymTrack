@@ -54,6 +54,7 @@ export const session = {
       dumbbell: 'Haltères',
       machine: 'Machine',
       bodyweight: 'Poids du corps',
+      kettlebell: 'Kettlebell',
     },
   },
 
@@ -89,6 +90,7 @@ export const session = {
 
   picker: {
     suggestions: 'Suggestions',
+    all: "Tous les exercices, les plus connus d'abord",
     taken: '{name}, déjà dans la séance',
     choose: 'Choisir {name}',
     alias: 'Aussi appelé {alias}',

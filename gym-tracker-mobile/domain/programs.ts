@@ -2,7 +2,9 @@
  * PROGRAMMES — les séances prêtes à l'emploi et les règles par objectif.
  */
 
+import { EXERCISES, POPULARITY, type ExerciseDef } from '@/domain/catalog';
 import { exerciseName, t } from '@/i18n';
+import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
 import type {
   CustomExercise,
   Equipment,
@@ -14,158 +16,7 @@ import type {
   SplitId,
 } from '@/types';
 
-export interface ExerciseDef extends CustomExercise {
-  /**
-   * Other names of the very same exercise (old names, English names). Never a
-   * variant: an alias blocks creating an exercise of that name.
-   */
-  aliases?: string[];
-  /** Created by the user. */
-  custom?: boolean;
-  /** A machine loaded with plates on each side, like a Hammer Strength press. */
-  plateLoaded?: boolean;
-  /** A cable station or a Smith machine: the usual weights differ from a stack machine's. */
-  gear?: 'cable' | 'smith';
-}
-
-const ex = (
-  name: string,
-  equipment: Equipment,
-  category: ExerciseCategory,
-  muscleGroups: MuscleGroup[],
-  aliases?: string[],
-): ExerciseDef => ({ name, equipment, category, muscleGroups, aliases });
-
-const withPlates = (def: ExerciseDef): ExerciseDef => ({ ...def, plateLoaded: true });
-const onCable = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'cable' });
-const onSmith = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'smith' });
-const held = (def: ExerciseDef): ExerciseDef => ({ ...def, timed: true });
-
-export const EXERCISES = {
-  // Pectoraux
-  bench: ex('Développé couché', 'barbell', 'compound', ['chest', 'shoulders', 'triceps'], ['Développé couché barre']),
-  dbbench: ex('Développé couché haltères', 'dumbbell', 'compound', ['chest', 'shoulders', 'triceps']),
-  smithbench: onSmith(
-    ex('Développé couché Smith', 'machine', 'compound', ['chest', 'shoulders', 'triceps'], ['Smith bench']),
-  ),
-  inclinebar: ex('Développé incliné barre', 'barbell', 'compound', ['chest', 'shoulders', 'triceps']),
-  incline: ex('Développé incliné haltères', 'dumbbell', 'compound', ['chest', 'shoulders']),
-  inclinesmith: onSmith(ex('Développé incliné Smith', 'machine', 'compound', ['chest', 'shoulders'])),
-  decline: ex('Développé décliné', 'barbell', 'compound', ['chest', 'triceps']),
-  convergent: withPlates(
-    ex(
-      'Développé convergent machine',
-      'machine',
-      'compound',
-      ['chest', 'shoulders', 'triceps'],
-      ['Bench press convergent', 'Chest press convergente'],
-    ),
-  ),
-  chestpress: withPlates(ex('Chest press', 'machine', 'compound', ['chest', 'triceps'], ['Développé assis machine'])),
-  inclinemachine: withPlates(ex('Développé incliné machine', 'machine', 'compound', ['chest', 'shoulders'])),
-  dips: ex('Dips', 'bodyweight', 'compound', ['chest', 'triceps']),
-  pushup: ex('Pompes', 'bodyweight', 'compound', ['chest', 'triceps']),
-  fly: onCable(ex('Écarté poulie', 'machine', 'isolation', ['chest'], ['Crossover poulie'])),
-  lowfly: onCable(ex('Écarté poulie basse', 'machine', 'isolation', ['chest'])),
-  pecdeck: ex('Pec deck', 'machine', 'isolation', ['chest'], ['Butterfly']),
-  dbfly: ex('Écarté haltères', 'dumbbell', 'isolation', ['chest']),
-
-  // Dos
-  pullup: ex('Tractions', 'bodyweight', 'compound', ['back', 'biceps'], ['Tractions pronation']),
-  chinup: ex('Tractions supination', 'bodyweight', 'compound', ['back', 'biceps'], ['Chin-up']),
-  assisted: ex('Tractions assistées', 'machine', 'compound', ['back', 'biceps']),
-  pulldown: onCable(
-    ex('Tirage vertical', 'machine', 'compound', ['back', 'biceps'], ['Tirage vertical poulie', 'Lat pulldown']),
-  ),
-  closepulldown: onCable(ex('Tirage vertical prise serrée', 'machine', 'compound', ['back', 'biceps'])),
-  row: ex('Rowing barre', 'barbell', 'compound', ['back', 'biceps']),
-  pendlay: ex('Rowing Pendlay', 'barbell', 'compound', ['back', 'biceps']),
-  dbrow: ex('Rowing haltère', 'dumbbell', 'compound', ['back', 'biceps']),
-  seatedrow: onCable(ex('Rowing assis poulie', 'machine', 'compound', ['back', 'biceps'])),
-  machinerow: withPlates(ex('Rowing machine', 'machine', 'compound', ['back', 'biceps'], ['Low row'])),
-  tbar: withPlates(ex('Rowing T-bar', 'machine', 'compound', ['back', 'biceps'])),
-  deadlift: ex('Soulevé de terre', 'barbell', 'compound', ['back', 'legs', 'glutes']),
-  pullover: onCable(ex('Pull-over poulie', 'machine', 'isolation', ['back'])),
-  shrug: ex('Shrugs haltères', 'dumbbell', 'isolation', ['back'], ['Shrugs']),
-  backext: ex('Extensions lombaires', 'bodyweight', 'isolation', ['back', 'glutes']),
-
-  // Épaules
-  ohp: ex('Développé militaire', 'barbell', 'compound', ['shoulders', 'triceps'], ['Développé militaire barre']),
-  dbpress: ex(
-    'Développé épaules haltères',
-    'dumbbell',
-    'compound',
-    ['shoulders', 'triceps'],
-    ['Développé haltères assis'],
-  ),
-  shoulderpress: withPlates(ex('Shoulder press machine', 'machine', 'compound', ['shoulders', 'triceps'])),
-  arnold: ex('Développé Arnold', 'dumbbell', 'compound', ['shoulders', 'triceps']),
-  lateral: ex('Élévations latérales', 'dumbbell', 'isolation', ['shoulders'], ['Élévations latérales haltères']),
-  cablelateral: onCable(ex('Élévations latérales poulie', 'machine', 'isolation', ['shoulders'])),
-  machinelateral: ex('Élévations latérales machine', 'machine', 'isolation', ['shoulders']),
-  frontraise: ex('Élévations frontales', 'dumbbell', 'isolation', ['shoulders']),
-  reardelt: ex('Oiseau haltères', 'dumbbell', 'isolation', ['shoulders']),
-  reversepec: ex('Reverse pec deck', 'machine', 'isolation', ['shoulders', 'back']),
-  facepull: onCable(ex('Face pull', 'machine', 'isolation', ['shoulders', 'back'], ['Face pulls'])),
-  uprightrow: ex('Rowing menton', 'barbell', 'compound', ['shoulders', 'back']),
-
-  // Biceps
-  curl: ex('Curl haltères', 'dumbbell', 'isolation', ['biceps']),
-  barcurl: ex('Curl barre', 'barbell', 'isolation', ['biceps']),
-  ezcurl: ex('Curl barre EZ', 'barbell', 'isolation', ['biceps']),
-  hammer: ex('Curl marteau', 'dumbbell', 'isolation', ['biceps']),
-  inclinecurl: ex('Curl incliné haltères', 'dumbbell', 'isolation', ['biceps']),
-  preacher: ex('Curl pupitre', 'machine', 'isolation', ['biceps'], ['Larry Scott']),
-  cablecurl: onCable(ex('Curl poulie', 'machine', 'isolation', ['biceps'])),
-
-  // Triceps
-  pushdown: onCable(ex('Extension triceps poulie', 'machine', 'isolation', ['triceps'], ['Pushdown'])),
-  overhead: onCable(ex('Extension triceps nuque poulie', 'machine', 'isolation', ['triceps'])),
-  dbext: ex('Extension triceps haltère', 'dumbbell', 'isolation', ['triceps']),
-  skull: ex('Barre au front', 'barbell', 'isolation', ['triceps'], ['Skull crusher']),
-  closegrip: ex('Développé couché prise serrée', 'barbell', 'compound', ['triceps', 'chest']),
-  dipsmachine: ex('Dips machine', 'machine', 'compound', ['triceps', 'chest']),
-  kickback: ex('Kickback triceps', 'dumbbell', 'isolation', ['triceps']),
-
-  // Jambes
-  squat: ex('Squat', 'barbell', 'compound', ['legs', 'glutes'], ['Squat barre']),
-  frontsquat: ex('Squat avant', 'barbell', 'compound', ['legs', 'glutes'], ['Front squat']),
-  smithsquat: onSmith(ex('Squat Smith', 'machine', 'compound', ['legs', 'glutes'])),
-  hacksquat: withPlates(ex('Hack squat', 'machine', 'compound', ['legs', 'glutes'])),
-  pendulum: withPlates(ex('Pendulum squat', 'machine', 'compound', ['legs', 'glutes'])),
-  goblet: ex('Goblet squat', 'dumbbell', 'compound', ['legs', 'glutes']),
-  legpress: withPlates(ex('Presse à cuisses', 'machine', 'compound', ['legs', 'glutes'], ['Leg press'])),
-  lunge: ex('Fentes haltères', 'dumbbell', 'compound', ['legs', 'glutes']),
-  bulgarian: ex('Fentes bulgares', 'dumbbell', 'compound', ['legs', 'glutes']),
-  rdl: ex('Soulevé de terre roumain', 'barbell', 'compound', ['legs', 'glutes', 'back']),
-  dbrdl: ex('Soulevé de terre roumain haltères', 'dumbbell', 'compound', ['legs', 'glutes', 'back']),
-  sumo: ex('Soulevé de terre sumo', 'barbell', 'compound', ['legs', 'glutes', 'back']),
-  legext: ex('Leg extension', 'machine', 'isolation', ['legs']),
-  legcurl: ex('Leg curl', 'machine', 'isolation', ['legs'], ['Leg curl couché']),
-  seatedlegcurl: ex('Leg curl assis', 'machine', 'isolation', ['legs']),
-  adductor: ex('Adducteurs machine', 'machine', 'isolation', ['legs']),
-
-  // Fessiers
-  hipthrust: ex('Hip thrust', 'barbell', 'compound', ['glutes', 'legs']),
-  hipthrustmachine: withPlates(ex('Hip thrust machine', 'machine', 'compound', ['glutes', 'legs'])),
-  abductor: ex('Abducteurs machine', 'machine', 'isolation', ['glutes']),
-  glutekick: onCable(ex('Kickback fessier poulie', 'machine', 'isolation', ['glutes'])),
-
-  // Mollets
-  calves: ex('Mollets debout', 'machine', 'isolation', ['calves'], ['Mollets debout machine']),
-  seatedcalves: ex('Mollets assis', 'machine', 'isolation', ['calves']),
-  presscalves: ex('Mollets à la presse', 'machine', 'isolation', ['calves']),
-
-  // Abdos
-  cablecrunch: onCable(ex('Crunch poulie', 'machine', 'isolation', ['core'])),
-  crunch: ex('Crunch', 'bodyweight', 'isolation', ['core']),
-  legraise: ex('Relevés de jambes', 'bodyweight', 'isolation', ['core']),
-  abwheel: ex('Roue abdominale', 'bodyweight', 'isolation', ['core']),
-  plank: held(ex('Gainage', 'bodyweight', 'isolation', ['core'], ['Planche'])),
-  sideplank: held(ex('Gainage latéral', 'bodyweight', 'isolation', ['core'], ['Planche latérale'])),
-  wallsit: held(ex('Chaise', 'bodyweight', 'isolation', ['legs'], ['Chaise contre le mur'])),
-  deadhang: held(ex('Suspension barre', 'bodyweight', 'isolation', ['back'])),
-} satisfies Record<string, ExerciseDef>;
+export { EXERCISES, POPULARITY, type ExerciseDef, type ExerciseKey } from '@/domain/catalog';
 
 export interface ProgramDay {
   name: string;
@@ -350,12 +201,20 @@ export function allExercises(own: CustomExercise[] = []): ExerciseDef[] {
   return [...Object.values(EXERCISES), ...own.map((e) => ({ ...e, custom: true }))];
 }
 
-/** The whole catalog grouped by main muscle, in the order of MUSCLE_LABELS. */
-export function catalogByMuscle(own: CustomExercise[] = []): { muscle: MuscleGroup; exercises: ExerciseDef[] }[] {
-  const all = allExercises(own);
-  return (Object.keys(MUSCLE_LABELS) as MuscleGroup[])
-    .map((muscle) => ({ muscle, exercises: all.filter((e) => e.muscleGroups[0] === muscle) }))
-    .filter((g) => g.exercises.length > 0);
+const RANK = new Map<string, number>(POPULARITY.map((key, i) => [EXERCISES[key].name, i]));
+
+/**
+ * From the most known to the least known (`POPULARITY`). The user's own
+ * exercises come first: they made them, they know them. Stable otherwise.
+ */
+export function byPopularity(list: ExerciseDef[]): ExerciseDef[] {
+  const rank = (e: ExerciseDef) => (e.custom ? -1 : (RANK.get(e.name) ?? POPULARITY.length));
+  return [...list].sort((a, b) => rank(a) - rank(b));
+}
+
+/** The whole catalog and the user's own, most known first: the list the pickers offer. */
+export function exercisesByPopularity(own: CustomExercise[] = []): ExerciseDef[] {
+  return byPopularity(allExercises(own));
 }
 
 export function findExerciseDef(name: string, own: CustomExercise[] = []): ExerciseDef | undefined {
@@ -375,16 +234,22 @@ export function searchKey(text: string): string {
 }
 
 /**
- * Exercises whose name (or old name) contains every typed word. In English,
- * the English name counts too: the French one stays findable.
+ * Exercises whose name, English name or old name contains every typed word,
+ * most known first. "Butterfly", "Lat pulldown" or "tirage" all find theirs.
  */
 export function searchExercises(query: string, own: CustomExercise[] = []): ExerciseDef[] {
   const words = searchKey(query).split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
-  return allExercises(own).filter((e) => {
-    const names = [exerciseName(e.name), e.name, ...(e.aliases ?? [])].map(searchKey).join(' ');
+  return exercisesByPopularity(own).filter((e) => {
+    const names = [exerciseName(e.name), ...namesOf(e)].map(searchKey).join(' ');
     return words.every((w) => names.includes(w));
   });
+}
+
+/** Every name an exercise is known by: French, English, old names. Gym-goers in France say "Leg curl" too. */
+export function namesOf(def: ExerciseDef): string[] {
+  const english = EXERCISE_NAMES_EN[def.name];
+  return [def.name, ...(english && english !== def.name ? [english] : []), ...(def.aliases ?? [])];
 }
 
 const hasWords = (text: string, words: string[]) => words.every((w) => searchKey(text).includes(w));
@@ -398,14 +263,15 @@ export function aliasMatch(def: ExerciseDef, query: string): string | undefined 
   const words = searchKey(query).split(/\s+/).filter(Boolean);
   const shown = exerciseName(def.name);
   if (words.length === 0 || hasWords(shown, words)) return undefined;
-  const others = shown === def.name ? (def.aliases ?? []) : [def.name, ...(def.aliases ?? [])];
-  return others.find((a) => hasWords(a, words));
+  return namesOf(def)
+    .filter((n) => n !== shown)
+    .find((a) => hasWords(a, words));
 }
 
-/** Other exercises for the same main muscle, to swap when the machine is taken. */
+/** Other exercises for the same main muscle, most known first: to swap when the machine is taken. */
 export function alternativesFor(def: ExerciseDef, own: CustomExercise[] = []): ExerciseDef[] {
   const main = def.muscleGroups[0];
-  return allExercises(own).filter((e) => e.name !== def.name && e.muscleGroups[0] === main);
+  return exercisesByPopularity(own).filter((e) => e.name !== def.name && e.muscleGroups[0] === main);
 }
 
 /** Close enough to share sets and reps: same main muscle, same kind of movement, both loaded or both bodyweight. */
@@ -430,9 +296,10 @@ export function makeCustomExercise(
   const name = input.name.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
   if (!name) return { error: t('domain.programs.nameEmpty') };
   const lower = name.toLowerCase();
-  // The name shown in the current language counts too: "Bench press" is taken in English
+  // The English name counts in both languages: "Bench press" is taken
   const existing =
-    findExerciseDef(name, own) ?? allExercises(own).find((e) => exerciseName(e.name).toLowerCase() === lower);
+    findExerciseDef(name, own) ??
+    allExercises(own).find((e) => [exerciseName(e.name), ...namesOf(e)].some((n) => n.toLowerCase() === lower));
   if (existing) {
     const shown = exerciseName(existing.name);
     return shown.toLowerCase() === lower
@@ -471,13 +338,24 @@ export const GOALS: GoalDef[] = [goalDef('muscle', [10, 5]), goalDef('force', [2
 
 /**
  * Default weight step per equipment. Stack machines move by a full stack plate,
- * plate-loaded ones by a small plate on each side.
+ * plate-loaded ones by a small plate on each side, kettlebells by 4 kg.
  */
-export function defaultIncrementFor(equipment: Equipment, units: 'kg' | 'lbs', plateLoaded = false): number {
+export function defaultIncrementFor(
+  equipment: Equipment,
+  units: 'kg' | 'lbs',
+  plateLoaded = false,
+  gear?: ExerciseDef['gear'],
+): number {
+  if (gear === 'kettlebell') return units === 'lbs' ? 10 : 4;
   if (units === 'lbs') return 5;
   if (equipment === 'dumbbell') return 2;
   if (equipment === 'machine' && !plateLoaded) return 5;
   return 2.5;
+}
+
+/** What the exercise is done with, for its label: a kettlebell is not shown as "Haltères". */
+export function equipmentShown(def: ExerciseDef): Equipment | 'kettlebell' {
+  return def.gear === 'kettlebell' ? 'kettlebell' : def.equipment;
 }
 
 /** Loaded with plates on each side: the user's choice, else the catalog's. Machines only. */

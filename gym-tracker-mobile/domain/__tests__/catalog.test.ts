@@ -4,11 +4,13 @@ import {
   aliasMatch,
   allExercises,
   alternativesFor,
-  catalogByMuscle,
+  byPopularity,
   clampRule,
   dayKey,
   defaultIncrementFor,
   EXERCISES,
+  equipmentShown,
+  exercisesByPopularity,
   findDay,
   findExerciseDef,
   getSplit,
@@ -17,6 +19,7 @@ import {
   searchExercises,
   searchKey,
   similarExercises,
+  POPULARITY,
   programDays,
   restFor,
   ruleFor,
@@ -24,6 +27,7 @@ import {
   withOverride,
 } from '@/domain/programs';
 import { findCurrent } from '@/domain/sessionCursor';
+import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
 import { active } from './fixtures';
 
 describe('programs', () => {
@@ -109,12 +113,18 @@ describe('choosing a session', () => {
     expect(days[2]?.exercises).toEqual([EXERCISES.squat, EXERCISES.hipthrust]);
   });
 
-  it('groups the whole catalog by main muscle, without empty groups', () => {
-    const groups = catalogByMuscle();
-    expect(groups[0]?.muscle).toBe('chest');
-    expect(groups.flatMap((g) => g.exercises)).toHaveLength(Object.keys(EXERCISES).length);
-    expect(groups.some((g) => g.muscle === 'arms')).toBe(false);
-    expect(groups.map((g) => g.muscle)).toContain('biceps');
+  it('lists the whole catalog from the most known to the least known', () => {
+    const names = exercisesByPopularity().map((e) => e.name);
+    expect(names).toHaveLength(Object.keys(EXERCISES).length);
+    expect(names.slice(0, 5)).toEqual([
+      'Développé couché',
+      'Squat',
+      'Soulevé de terre',
+      'Tirage vertical',
+      'Curl haltères',
+    ]);
+    expect(names.indexOf('Pec deck')).toBeLessThan(names.indexOf('Pull-over machine'));
+    expect(names.at(-1)).toBe('Arraché');
   });
 });
 
@@ -162,13 +172,21 @@ describe('catalog', () => {
 
   it('finds an exercise from a few letters, accents or not', () => {
     expect(searchExercises('hack').map((e) => e.name)).toEqual(['Hack squat']);
-    expect(searchExercises('ecarte poulie').map((e) => e.name)).toEqual(['Écarté poulie', 'Écarté poulie basse']);
-    expect(searchExercises('smith').length).toBe(3);
+    // "Oiseau poulie" is also called "Écarté inversé poulie"
+    expect(searchExercises('ecarte poulie').map((e) => e.name)).toEqual([
+      'Écarté poulie',
+      'Oiseau poulie',
+      'Écarté poulie basse',
+      'Écarté poulie haute',
+    ]);
+    expect(searchExercises('smith').map((e) => e.name)).toEqual(
+      expect.arrayContaining(['Squat Smith', 'Développé couché Smith', 'Hip thrust Smith']),
+    );
     expect(searchExercises('  ')).toEqual([]);
   });
 
   it('tells which other name the search found an exercise under', () => {
-    expect(searchExercises('lat pulldown').map((e) => e.name)).toEqual(['Tirage vertical']);
+    expect(searchExercises('lat pulldown')[0]?.name).toBe('Tirage vertical');
     expect(aliasMatch(EXERCISES.pulldown, 'lat pull')).toBe('Lat pulldown');
     expect(aliasMatch(EXERCISES.pulldown, 'tirage')).toBeUndefined();
     expect(aliasMatch(EXERCISES.squat, '  ')).toBeUndefined();
@@ -176,7 +194,7 @@ describe('catalog', () => {
 
   it('lets the user create a variant that is not the same exercise', () => {
     const input = { equipment: 'machine' as const, category: 'compound' as const, muscle: 'back' as const };
-    for (const name of ['Tirage horizontal', 'Dips triceps', 'Rowing convergent', 'Curl haltères alternés']) {
+    for (const name of ['Tirage incliné', 'Dips triceps', 'Rowing convergent', 'Curl haltères alternés']) {
       expect(makeCustomExercise({ ...input, name })).toMatchObject({ name });
     }
   });
@@ -196,11 +214,8 @@ describe('own exercises', () => {
     expect(allExercises(own).at(-1)).toMatchObject({ name: 'Écarté Panatta', custom: true });
     expect(findExerciseDef(' écarté PANATTA ', own)).toMatchObject({ name: 'Écarté Panatta' });
     expect(findExerciseDef('Écarté Panatta')).toBeUndefined();
-    expect(
-      catalogByMuscle(own)
-        .find((g) => g.muscle === 'chest')
-        ?.exercises.map((e) => e.name),
-    ).toContain('Écarté Panatta');
+    expect(exercisesByPopularity(own)[0]?.name).toBe('Écarté Panatta');
+    expect(alternativesFor(EXERCISES.pecdeck, own)[0]?.name).toBe('Écarté Panatta');
     expect(programDays('ppl', { 'ppl/Push': ['Écarté Panatta'] }, own)[0]?.exercises[0]?.name).toBe('Écarté Panatta');
   });
 
@@ -229,6 +244,53 @@ describe('own exercises', () => {
     );
     expect(names).not.toContain('Développé couché');
     expect(names).not.toContain('Squat');
+  });
+});
+
+describe('popularity', () => {
+  it('ranks every catalog exercise exactly once', () => {
+    expect([...POPULARITY].sort()).toEqual(Object.keys(EXERCISES).sort());
+  });
+
+  it('sorts any list most known first, the unknown ones last', () => {
+    const stranger = { ...EXERCISES.squat, name: 'Inconnu' };
+    const sorted = byPopularity([EXERCISES.snatch, stranger, EXERCISES.squat, EXERCISES.bench]);
+    expect(sorted.map((e) => e.name)).toEqual(['Développé couché', 'Squat', 'Arraché', 'Inconnu']);
+  });
+
+  it('offers the swaps for the same muscle, most known first', () => {
+    const names = alternativesFor(EXERCISES.legpress).map((e) => e.name);
+    expect(names.slice(0, 3)).toEqual(['Squat', 'Leg extension', 'Leg curl']);
+  });
+
+  it('finds an exercise by its English name, in French too', () => {
+    expect(searchExercises('deadlift')[0]?.name).toBe('Soulevé de terre');
+    expect(aliasMatch(EXERCISES.deadlift, 'deadlift')).toBe('Deadlift');
+    expect(searchExercises('lat pulldown')[0]?.name).toBe('Tirage vertical');
+    const input = { equipment: 'barbell' as const, category: 'isolation' as const, muscle: 'biceps' as const };
+    expect(makeCustomExercise({ ...input, name: 'Wrist curl' })).toEqual({
+      error: 'Il existe déjà sous le nom « Curl poignets ».',
+    });
+  });
+
+  it('never gives two exercises the same name, English names included', () => {
+    const owner = new Map<string, string>();
+    for (const def of Object.values(EXERCISES)) {
+      const english = EXERCISE_NAMES_EN[def.name] ?? '';
+      for (const key of new Set([def.name, english, ...(def.aliases ?? [])].map(searchKey))) {
+        expect([key, owner.get(key) ?? def.name]).toEqual([key, def.name]);
+        owner.set(key, def.name);
+      }
+    }
+  });
+});
+
+describe('kettlebells', () => {
+  it('are shown as kettlebells and move by 4 kg', () => {
+    expect(equipmentShown(EXERCISES.swing)).toBe('kettlebell');
+    expect(equipmentShown(EXERCISES.curl)).toBe('dumbbell');
+    expect(defaultIncrementFor('dumbbell', 'kg', false, 'kettlebell')).toBe(4);
+    expect(defaultIncrementFor('dumbbell', 'lbs', false, 'kettlebell')).toBe(10);
   });
 });
 

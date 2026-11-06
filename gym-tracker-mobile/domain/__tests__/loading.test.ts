@@ -7,6 +7,8 @@ describe('loadingOf', () => {
   it.each([
     [{ equipment: 'barbell' as const }, 'bar'],
     [{ equipment: 'dumbbell' as const }, 'perHand'],
+    [{ equipment: 'dumbbell' as const, name: 'Curl haltères' }, 'perHand'],
+    [{ equipment: 'dumbbell' as const, name: 'Kettlebell swing' }, 'stack'],
     [{ equipment: 'machine' as const, plateLoaded: true }, 'perSide'],
     [{ equipment: 'machine' as const }, 'stack'],
     [{ equipment: 'bodyweight' as const }, 'stack'],
@@ -56,6 +58,7 @@ describe('loadFactor', () => {
     expect(factor('Curl haltères')).toBe(2);
     expect(factor('Squat')).toBe(1);
     expect(factor('Pec deck')).toBe(1);
+    expect(factor('Kettlebell swing')).toBe(1);
     expect(factor('Inconnu')).toBe(1);
     expect(loadFactor({ ...settings, plateLoaded: { 'Presse à cuisses': false } })('Presse à cuisses')).toBe(1);
   });

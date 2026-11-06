@@ -85,7 +85,7 @@ describe('catalogMatch', () => {
   it('keeps unknown or unsure names out of the catalog', () => {
     expect(catalogMatch('Bicep Curl (Dumbbell)')).toBeUndefined();
     expect(catalogMatch('Squat (Kettlebell)')).toBeUndefined();
-    expect(catalogMatch('Squat (Dumbbell)')).toBeUndefined();
+    expect(catalogMatch('Squat (Band)')).toBeUndefined();
     expect(catalogMatch('Zercher thing')).toBeUndefined();
   });
 

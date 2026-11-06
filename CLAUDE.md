@@ -65,7 +65,8 @@ A layer never imports a layer above it. Always import with `@/`.
 
 - `progression.ts` — double progression engine (`nextTargets`), lighter comeback after 2+ weeks off. The last set's effort steers the reps: easy = +2, all-out = same target once.
 - `effort.ts` — "Comment c'était ?" after a set: Facile / Juste bien / À fond, stored as RPE.
-- `programs.ts` — exercise catalog (equipment, old-name aliases), splits, rules per goal.
+- `catalog/` — the exercise catalog, one file per body part (`define.ts` helpers: `withPlates`, `onCable`, `onSmith`, `kettlebell`, `held`), `EXERCISES` and `POPULARITY` (the order every exercise list is offered in, most known first; the user's own exercises before). Names are stored and never renamed: add an alias.
+- `programs.ts` — catalog lookups (search by French, English and old names, `byPopularity`, `alternativesFor`), splits, rules per goal.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
 - `session.ts` — pure transitions of the running session (complete set, rest, to workout).
 - `schemas.ts` — zod schemas; everything read from disk or the cloud is validated here.

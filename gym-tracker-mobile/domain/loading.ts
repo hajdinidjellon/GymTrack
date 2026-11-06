@@ -1,6 +1,7 @@
 /**
  * CHARGE — what the weight on screen counts: the whole bar, each side of a
- * plate-loaded machine, each dumbbell, or the stack.
+ * plate-loaded machine, each dumbbell, or the stack (and a kettlebell: one
+ * weight, nothing to split).
  */
 
 import { describeSide, formatKg, loadBar, platesForSide } from '@/domain/plates';
@@ -11,9 +12,12 @@ import type { ActiveExercise, AppSettings } from '@/types';
 
 export type Loading = 'bar' | 'perSide' | 'perHand' | 'stack';
 
-export function loadingOf(exercise: Pick<ActiveExercise, 'equipment' | 'plateLoaded'>): Loading {
+const isKettlebell = (name: string | undefined) => !!name && findExerciseDef(name)?.gear === 'kettlebell';
+
+export function loadingOf(exercise: Pick<ActiveExercise, 'equipment' | 'plateLoaded'> & { name?: string }): Loading {
   if (exercise.equipment === 'barbell') return 'bar';
-  if (exercise.equipment === 'dumbbell') return 'perHand';
+  // One kettlebell: the weight is the bell, like a stack
+  if (exercise.equipment === 'dumbbell') return isKettlebell(exercise.name) ? 'stack' : 'perHand';
   if (exercise.equipment === 'machine' && exercise.plateLoaded) return 'perSide';
   return 'stack';
 }
@@ -90,6 +94,7 @@ export function loadFactor(
   return (name) => {
     const def = findExerciseDef(name, settings.customExercises);
     if (!def) return 1;
-    return def.equipment === 'dumbbell' || isPlateLoaded(def, settings.plateLoaded) ? 2 : 1;
+    const twoDumbbells = def.equipment === 'dumbbell' && def.gear !== 'kettlebell';
+    return twoDumbbells || isPlateLoaded(def, settings.plateLoaded) ? 2 : 1;
   };
 }

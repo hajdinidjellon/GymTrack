@@ -149,7 +149,7 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   const increment =
     ctx.settings.increments[def.name] ??
     lastRule?.increment ??
-    defaultIncrementFor(def.equipment, ctx.settings.units, plateLoaded);
+    defaultIncrementFor(def.equipment, ctx.settings.units, plateLoaded, def.gear);
   const rule = withOverride(ruleFor(ctx.profile.goal, def, increment), ctx.settings.ruleOverrides?.[def.name]);
 
   let startWeight: number | undefined;
