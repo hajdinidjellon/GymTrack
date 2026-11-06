@@ -106,6 +106,13 @@ export function splitLegend(split: SplitId): string {
     .join(' · ');
 }
 
+/** The legend under a week whose sessions are `names`: the program's, then the user's own days. */
+export function scheduleLegend(split: SplitId, names: string[]): string {
+  const builtIn = getSplit(split).days.length;
+  if (names.length <= builtIn) return splitLegend(split);
+  return names.map((name, i) => `${String.fromCharCode(65 + i)} ${dayName(name)}`).join(' · ');
+}
+
 /** The legend under the example week of a rhythm. */
 export function weekLegend(perWeek: number): string {
   return splitLegend(splitFor(perWeek));

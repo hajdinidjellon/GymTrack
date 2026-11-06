@@ -16,14 +16,13 @@ import {
 import { loadableIncrement, loadableWeight, loadingOf } from '@/domain/loading';
 import { DEFAULT_BAR, emptyBar, formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
-import { trainedOn, validSchedule, weekdayIndex } from '@/domain/schedule';
+import { trainedOn, validSchedule, weekdayIndex, type Schedule } from '@/domain/schedule';
 import {
   dayKey,
   defaultIncrementFor,
   easierVariant,
   isPlateLoaded,
   findExerciseDef,
-  getSplit,
   hasExercises,
   programDays,
   ruleFor,
@@ -119,25 +118,44 @@ export function exerciseHistory(
  */
 export type TodayStatus = { kind: 'free' } | { kind: 'train'; name: string } | { kind: 'rest' } | { kind: 'done' };
 
-export function todayStatus(ctx: BuildContext): TodayStatus {
-  const names = getSplit(ctx.profile.program.split).days.map((d) => d.name);
-  const schedule = validSchedule(ctx.profile.program.schedule, names);
-  const now = ctx.now ?? new Date();
-  // Already trained today, fixed week or not: no other session "du jour"
-  if (trainedOn(ctx.workouts, now)) return { kind: 'done' };
-  if (!schedule) return { kind: 'free' };
-  const name = schedule[weekdayIndex(now)];
-  return name ? { kind: 'train', name } : { kind: 'rest' };
-}
-
-/** Today's session from the week, else the day after the last one done, in program order. */
-export function nextDay(ctx: BuildContext): ProgramDay {
-  const all = programDays(
+function programDaysOf(ctx: BuildContext): ProgramDay[] {
+  return programDays(
     ctx.profile.program.split,
     ctx.settings.customDays,
     ctx.settings.customExercises,
     ctx.settings.ownDays,
   );
+}
+
+/**
+ * The user's fixed week, if it fits the program: its days and the days the
+ * user added to it. `canDo` tells the days that can be done today: an own day
+ * left empty cannot, the program days then follow each other on it.
+ */
+export function weekOf(ctx: BuildContext): { schedule: Schedule; canDo: (name: string) => boolean } | null {
+  const days = programDaysOf(ctx);
+  const schedule = validSchedule(
+    ctx.profile.program.schedule,
+    days.map((d) => d.name),
+  );
+  if (!schedule) return null;
+  return { schedule, canDo: (name) => days.some((d) => d.name === name && (!d.own || hasExercises(d))) };
+}
+
+export function todayStatus(ctx: BuildContext): TodayStatus {
+  const week = weekOf(ctx);
+  const now = ctx.now ?? new Date();
+  // Already trained today, fixed week or not: no other session "du jour"
+  if (trainedOn(ctx.workouts, now)) return { kind: 'done' };
+  if (!week) return { kind: 'free' };
+  const name = week.schedule[weekdayIndex(now)];
+  if (!name) return { kind: 'rest' };
+  return week.canDo(name) ? { kind: 'train', name } : { kind: 'free' };
+}
+
+/** Today's session from the week, else the day after the last one done, in program order. */
+export function nextDay(ctx: BuildContext): ProgramDay {
+  const all = programDaysOf(ctx);
   // An empty day (just created) is never the next session
   const filled = all.filter(hasExercises);
   const days = filled.length ? filled : all;

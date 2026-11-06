@@ -3,10 +3,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISES } from '@/domain/programs';
 import { readSettingsMeta } from '@/services/settingsStorage';
 import { queueSettingsSync } from '@/services/sync';
+import { useProfileStore } from '@/stores/profileStore';
 import { DEFAULT_SETTINGS, parseSettings, SETTINGS_SYNC_DELAY_MS, useSettingsStore } from '@/stores/settingsStore';
 
-jest.mock('@/services/sync', () => ({ queueSettingsSync: jest.fn(() => Promise.resolve()) }));
 const queued = jest.mocked(queueSettingsSync);
+
+jest.mock('@/services/db');
+jest.mock('@/services/sync', () => ({
+  queueSettingsSync: jest.fn(() => Promise.resolve()),
+  flushSyncQueue: jest.fn(() => Promise.resolve()),
+}));
 
 describe('parseSettings', () => {
   it('returns the defaults when nothing is stored or the JSON is broken', () => {
@@ -187,6 +193,33 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: ['Delts'] });
     removeOwnDay('ppl', 'Delts');
     expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: [] });
+  });
+
+  it('keeps the fixed week in step with a renamed or removed own day', async () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, ownDays: { ppl: ['Push B'] } } });
+    useProfileStore.setState({
+      profile: {
+        goal: 'muscle',
+        program: { split: 'ppl', perWeek: 2, schedule: ['Push', null, 'Push B', null, null, null, null] },
+        prs: [],
+        bodyStats: [],
+      },
+    });
+    useSettingsStore.getState().renameOwnDay('ppl', 'Push B', 'Push lourd');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(useProfileStore.getState().profile?.program.schedule?.[2]).toBe('Push lourd');
+    // Another program's day of the same name: the week does not move
+    useSettingsStore.getState().removeOwnDay('ul', 'Push lourd');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(useProfileStore.getState().profile?.program.perWeek).toBe(2);
+    useSettingsStore.getState().removeOwnDay('ppl', 'Push lourd');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(useProfileStore.getState().profile?.program).toEqual({
+      split: 'ppl',
+      perWeek: 1,
+      schedule: ['Push', null, null, null, null, null, null],
+    });
+    useProfileStore.setState({ profile: null });
   });
 
   it('loads what was saved', async () => {
