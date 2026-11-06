@@ -19,7 +19,7 @@ npm run format       # Prettier
 npm test             # Jest: "domain" project (Node) + "app" project (jest-expo)
 ```
 
-CI: `.github/workflows/mobile-ci.yml` (quality, iOS bundle export, npm audit + gitleaks).
+CI: `.github/workflows/` — `ci.yml` (lint, types, tests, expo-doctor, iOS and Android bundles, native fingerprint on PRs; `CI ok` is the required check), `security.yml` (CodeQL, npm audit, dependency review, gitleaks), `pr.yml` (conventional title, labels, actionlint), `release.yml` (tag `v*` → GitHub release + EAS build). Actions pinned by SHA.
 Branches, commits and PRs: see `CONTRIBUTING.md`.
 
 ## Product
@@ -134,5 +134,5 @@ Base components in `components/ui/` (`StickerButton`, `StickerCard`, `Chip`, `Ch
 - TypeScript strict with `noUncheckedIndexedAccess`.
 - Code in English; comments short, in plain French or English, only where they help.
 - Supabase is optional at runtime — `isSupabaseConfigured()` guards cloud calls. Data isolation relies on RLS.
-- `jest-expo` needs `expo-modules-core` hoisted: it is a devDependency on purpose.
+- `jest-expo` needs `expo-modules-core` hoisted: `expo` brings it at the top of `node_modules`. Never add it to package.json (expo-doctor fails in CI); native peer dependencies (`expo-asset` for `expo-audio`) are installed directly.
 - App name: Okilo. Bundle identifier and Android package: `app.okilo`, App Group `group.app.okilo`, URL scheme `okilo://`. The EAS slug and the storage names (`gymtrack.db`, `@gymtrack/settings`, `users.gymtrack.app`) keep the first name on purpose: changing them would unlink EAS or lose data. Backups saved as `gymtrack` still restore.

@@ -1,0 +1,14 @@
+name: Setup mobile
+description: Node from .nvmrc, npm cache, clean install of gym-tracker-mobile
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: gym-tracker-mobile/.nvmrc
+        cache: npm
+        cache-dependency-path: gym-tracker-mobile/package-lock.json
+    - name: Install dependencies
+      shell: bash
+      working-directory: gym-tracker-mobile
+      run: npm ci --no-audit --no-fund

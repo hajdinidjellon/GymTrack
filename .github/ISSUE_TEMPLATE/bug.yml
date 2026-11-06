@@ -1,0 +1,38 @@
+name: Bug
+description: Quelque chose ne marche pas comme prévu
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Ce qui se passe
+      description: Ce que tu as vu à l'écran, et ce que tu attendais.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pour le reproduire
+      placeholder: |
+        1. Lancer la séance du jour
+        2. Valider la 2e série
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Sur
+      options: [iPhone (Expo Go), iPhone (TestFlight / App Store), Android, Les deux]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de l'app
+      placeholder: 1.0.0 (Réglages iPhone → Okilo, ou TestFlight)
+  - type: textarea
+    id: screens
+    attributes:
+      label: Captures ou vidéo
+      description: Glisse-les ici. Pas de donnée perso visible.

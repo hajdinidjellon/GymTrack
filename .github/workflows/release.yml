@@ -1,0 +1,87 @@
+name: Release
+
+# git tag v1.2.0 && git push origin v1.2.0 (once app.json and package.json say 1.2.0)
+on:
+  push:
+    tags: ['v*.*.*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: gym-tracker-mobile
+
+jobs:
+  verify:
+    name: Version matches the tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          app=$(jq -r .expo.version app.json)
+          pkg=$(jq -r .version package.json)
+          echo "tag=$TAG app.json=$app package.json=$pkg"
+          if [ "v$app" != "$TAG" ] || [ "v$pkg" != "$TAG" ]; then
+            echo "::error::The tag $TAG does not match app.json ($app) and package.json ($pkg)."
+            exit 1
+          fi
+
+  github-release:
+    name: GitHub release
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      # Notes grouped by label (.github/release.yml), from the PR titles since the last tag
+      - working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Okilo $TAG" --generate-notes --verify-tag
+
+  store-build:
+    name: Store build (EAS)
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Waits for a click in GitHub (Settings → Environments → production → required reviewer)
+    environment: production
+    steps:
+      - name: EXPO_TOKEN configured
+        id: token
+        working-directory: .
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::notice::No EXPO_TOKEN secret: the store build is skipped. Add it in Settings → Environments → production."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.token.outputs.ok == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.token.outputs.ok == 'true'
+        uses: ./.github/actions/setup-mobile
+      - if: steps.token.outputs.ok == 'true'
+        uses: expo/expo-github-action@9da89d3617bb88139671bad31b09c65714c2ee06 # 9.0.1
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      # The build runs on Expo's servers: --no-wait keeps GitHub minutes for nothing else
+      - if: steps.token.outputs.ok == 'true'
+        run: eas build --platform ios --profile production --auto-submit --non-interactive --no-wait
