@@ -40,24 +40,38 @@ export function SetView({ cursor, footer }: Props) {
   const addDropSet = useSessionStore((s) => s.addDropSet);
   const toggleFailure = useSessionStore((s) => s.toggleFailure);
 
-  /** Long press on a set: a drop set after it, or "jusqu'à l'échec". */
-  const openSetMenu = (i: number) => {
+  /** "⋯" or a long press on a set: a drop set after it, "jusqu'à l'échec", or delete it. */
+  const openSetMenu = (i: number, deletable: boolean) => {
     const target = exercise.sets[i];
     if (!target) return;
-    const { drop, n } = setNumber(exercise.sets, i);
+    const { warmup, drop, n } = setNumber(exercise.sets, i);
     const buttons: AlertButton[] = [];
-    if (target.weight > 0)
+    if (target.weight > 0 && !warmup)
       buttons.push({ text: t('session.setMenu.addDrop'), onPress: () => addDropSet(exercise.id, i) });
-    if (!drop) {
+    if (!drop && !warmup) {
       const failure = target.setType === 'failure';
       buttons.push({
         text: t(failure ? 'session.setMenu.normal' : 'session.setMenu.failure'),
         onPress: () => toggleFailure(exercise.id, i),
       });
     }
+    if (deletable)
+      buttons.push({
+        text: t(warmup ? 'session.setMenu.deleteWarmup' : 'session.setMenu.delete'),
+        style: 'destructive',
+        onPress: () => removeSet(exercise.id, i),
+      });
     if (buttons.length === 0) return;
     buttons.push({ text: t('common.cancel'), style: 'cancel' });
-    Alert.alert(drop ? t('session.setMenu.titleDrop') : t('session.setMenu.title', { n }), undefined, buttons);
+    Alert.alert(
+      warmup
+        ? t('session.setMenu.titleWarmup')
+        : drop
+          ? t('session.setMenu.titleDrop')
+          : t('session.setMenu.title', { n }),
+      undefined,
+      buttons,
+    );
   };
   const [missed, setMissed] = useState(false);
 
@@ -189,7 +203,7 @@ export function SetView({ cursor, footer }: Props) {
             exercise={exercise}
             current={setIndex}
             onRemove={(i) => removeSet(exercise.id, i)}
-            onLongPress={openSetMenu}
+            onMenu={openSetMenu}
           />
           <Pressable
             onPress={() => addSet(exercise.id)}
@@ -197,11 +211,11 @@ export function SetView({ cursor, footer }: Props) {
             accessibilityLabel={t('session.setView.addSetA11y')}
             style={({ pressed }) => ({
               marginTop: 8,
-              height: 48,
+              minHeight: 48,
               borderRadius: radius.row,
               borderWidth: border.base,
               borderStyle: 'dashed',
-              borderColor: pressed ? colors.outlineStrong : colors.line,
+              borderColor: pressed ? colors.outlineStrong : colors.outlineSoft,
               alignItems: 'center',
               justifyContent: 'center',
             })}
@@ -229,6 +243,7 @@ export function SetView({ cursor, footer }: Props) {
                 label={t('session.setView.skipWarmup')}
                 variant="secondary"
                 size="small"
+                style={{ marginBottom: space.sm }}
                 onPress={() => {
                   Keyboard.dismiss();
                   skipWarmups(exercise.id);
@@ -236,9 +251,11 @@ export function SetView({ cursor, footer }: Props) {
               />
             ) : remaining > 1 && started ? (
               <StickerButton
+                // Set apart from Valider: a tap a little too high must not validate every set
                 label={t('session.setView.allAsPlanned', { count: remaining })}
                 variant="secondary"
                 size="small"
+                style={{ marginBottom: space.sm }}
                 onPress={() => {
                   Keyboard.dismiss();
                   completeRemaining(exercise.id);

@@ -33,6 +33,9 @@ export const program = {
     saved: 'Tes exercices pour {day} sont enregistrés pour les prochaines fois.',
     howTo: 'Ajoute, retire ou déplace des exercices : ils seront gardés pour tes prochaines séances {day}.',
     reset: 'Revenir aux exercices du programme',
+    removed: 'Retiré : {name}',
+    undo: 'Annuler',
+    undoA11y: 'Remettre {name}',
   },
   rule: {
     sets: 'Séries',

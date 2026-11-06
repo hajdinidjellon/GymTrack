@@ -255,7 +255,7 @@ function LevelBars({ level, on }: { level: number; on: boolean }) {
             borderRadius: 3,
             backgroundColor: i < level ? colors.ink : 'transparent',
             borderWidth: i < level ? 0 : 2,
-            borderColor: colors.line,
+            borderColor: colors.outlineSoft,
             borderStyle: 'dashed',
           }}
         />
@@ -284,7 +284,8 @@ function GymStep({ answers, set }: StepProps) {
             accessibilityLabel={t('onboarding.flow.gym.barLabel', { kg: b.kg, label: b.label })}
             style={{
               flex: 1,
-              height: 60,
+              minHeight: 60,
+              flexWrap: 'wrap',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',

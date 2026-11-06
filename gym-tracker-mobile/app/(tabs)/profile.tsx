@@ -218,10 +218,10 @@ export default function Profile() {
                 // On the outer view: the three bars share the whole width
                 containerStyle={{ flex: 1 }}
                 style={{
-                  height: 48,
+                  minHeight: 48,
                   borderRadius: radius.pill,
                   borderWidth: on ? border.strong : border.base,
-                  borderColor: on ? colors.outlineStrong : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                   backgroundColor: on ? colors.coralSoft : colors.card,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -252,10 +252,10 @@ export default function Profile() {
                 }
                 containerStyle={{ flex: 1 }}
                 style={{
-                  height: 44,
+                  minHeight: 44,
                   borderRadius: radius.pill,
                   borderWidth: on ? border.strong : border.base,
-                  borderColor: on ? colors.outlineStrong : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                   backgroundColor: on ? colors.coralSoft : colors.card,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -292,7 +292,7 @@ export default function Profile() {
                   gap: 4,
                   backgroundColor: on ? colors.card : 'transparent',
                   borderWidth: border.base,
-                  borderColor: on ? colors.outlineStrong : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                   borderStyle: on ? 'solid' : 'dashed',
                   ...(on ? hardShadow(2) : {}),
                 }}
@@ -557,7 +557,7 @@ function Row({ label, value, onPress, chevron, last, hint, on }: RowProps) {
       accessibilityLabel={toggle ? label : t('profile.row', { label, value })}
       accessibilityHint={hint}
       style={({ pressed }) => ({
-        height: 56,
+        minHeight: 56,
         gap: 16,
         paddingHorizontal: 18,
         flexDirection: 'row',

@@ -114,7 +114,7 @@ export function ExercisePicker({
           paddingVertical: 8,
           borderRadius: radius.row,
           borderWidth: border.base,
-          borderColor: added ? colors.line : colors.outlineStrong,
+          borderColor: added ? colors.outlineSoft : colors.outlineStrong,
           backgroundColor: pressed ? colors.coralSoft : colors.card,
           flexDirection: 'row',
           alignItems: 'center',
@@ -158,7 +158,7 @@ export function ExercisePicker({
         borderRadius: radius.row,
         borderWidth: border.base,
         borderStyle: 'dashed',
-        borderColor: pressed ? colors.outlineStrong : colors.line,
+        borderColor: pressed ? colors.outlineStrong : colors.outlineSoft,
         alignItems: 'center',
         justifyContent: 'center',
       })}
@@ -222,6 +222,7 @@ export function ExercisePicker({
               {/* Marge sur un cadre : sur iOS, une marge sur le TextInput décale son texte vers le bas */}
               <View style={{ paddingHorizontal: 24, marginTop: space.md }}>
                 <TextInput
+                  maxFontSizeMultiplier={1.5}
                   value={query}
                   onChangeText={setQuery}
                   placeholder={t('session.picker.searchPlaceholder')}
@@ -230,7 +231,7 @@ export function ExercisePicker({
                   autoCorrect={false}
                   accessibilityLabel={t('session.picker.searchA11y')}
                   style={{
-                    height: 52,
+                    minHeight: 52,
                     paddingHorizontal: 16,
                     paddingVertical: 0,
                     borderRadius: radius.row,

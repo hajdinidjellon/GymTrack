@@ -16,9 +16,21 @@ function tracking(size: number) {
   return size >= 40 ? -size * 0.02 : 0;
 }
 
+/**
+ * How far the phone's text size can grow a text. Reading text grows the most;
+ * titles and the big numbers are already large, they grow a little so they
+ * still fit a small screen (iPhone SE) at the largest sizes.
+ */
+export function maxScaleFor(size: number): number {
+  if (size >= 28) return 1.2;
+  if (size >= 20) return 1.35;
+  return 1.7;
+}
+
 export function Text({ size = 17, weight = 'regular', color = colors.ink, align, style, ...rest }: Props) {
   return (
     <RNText
+      maxFontSizeMultiplier={maxScaleFor(size)}
       {...rest}
       style={[
         {

@@ -41,7 +41,7 @@ export function EffortPicker() {
                 accessibilityLabel={t('session.effort.rpe', { rpe: formatKg(value) })}
                 style={({ pressed }) => ({
                   flex: 1,
-                  height: 40,
+                  minHeight: 44,
                   borderRadius: radius.sm,
                   borderWidth: selected ? border.strong : border.base,
                   borderColor: colors.outline,
@@ -77,7 +77,7 @@ export function EffortPicker() {
               accessibilityState={{ checked: selected }}
               style={({ pressed }) => ({
                 flex: 1,
-                height: 44,
+                minHeight: 44,
                 borderRadius: radius.pill,
                 borderWidth: selected ? border.strong : border.base,
                 borderColor: colors.outline,

@@ -43,7 +43,9 @@ export function OnboardingHeader({
       {step != null ? (
         <View
           accessible
+          accessibilityRole="progressbar"
           accessibilityLabel={t('onboarding.header.progress', { n: step + 1, total })}
+          accessibilityValue={{ min: 1, max: total, now: step + 1 }}
           style={{ flex: 1, flexDirection: 'row', gap: 6 }}
         >
           {Array.from({ length: total }, (_, i) => (
@@ -54,7 +56,7 @@ export function OnboardingHeader({
                 height: 12,
                 borderRadius: 6,
                 borderWidth: border.base,
-                borderColor: i <= step ? colors.outlineStrong : colors.line,
+                borderColor: i <= step ? colors.outlineStrong : colors.outlineSoft,
                 borderStyle: i <= step ? 'solid' : 'dashed',
                 backgroundColor: i < step ? colors.success : i === step ? colors.coral : 'transparent',
               }}
@@ -125,7 +127,7 @@ export function PickMark({ on }: { on: boolean }) {
         height: 30,
         borderRadius: 15,
         borderWidth: border.base,
-        borderColor: on ? colors.outline : colors.line,
+        borderColor: on ? colors.outline : colors.outlineSoft,
         borderStyle: on ? 'solid' : 'dashed',
         backgroundColor: on ? colors.coral : 'transparent',
         alignItems: 'center',

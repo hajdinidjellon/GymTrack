@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { colors } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { alternativesFor, dayKey, findExerciseDef, choosableDays, type ExerciseDef } from '@/domain/programs';
@@ -46,21 +46,26 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={t('session.add.a11y')}
-        hitSlop={8}
-        style={({ pressed }) => ({
-          width: 38,
-          height: 38,
-          borderRadius: 19,
-          borderWidth: 2,
-          borderColor: colors.outline,
-          backgroundColor: pressed ? colors.coralSoft : 'transparent',
-          alignItems: 'center',
-          justifyContent: 'center',
-        })}
+        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
       >
-        <Text size={24} weight="black" style={{ lineHeight: 26 }}>
-          +
-        </Text>
+        {({ pressed }) => (
+          <View
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              borderWidth: 2,
+              borderColor: colors.outline,
+              backgroundColor: pressed ? colors.coralSoft : 'transparent',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text size={24} weight="black" maxFontSizeMultiplier={1.2} style={{ lineHeight: 26 }}>
+              +
+            </Text>
+          </View>
+        )}
       </Pressable>
       <ExercisePicker
         visible={open}

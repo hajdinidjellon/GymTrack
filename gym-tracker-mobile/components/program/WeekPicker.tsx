@@ -67,7 +67,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                   height: 30,
                   borderRadius: 15,
                   borderWidth: border.base,
-                  borderColor: name ? colors.outlineStrong : on ? colors.onCoral : colors.line,
+                  borderColor: name ? colors.outlineStrong : on ? colors.onCoral : colors.outlineSoft,
                   borderStyle: name ? 'solid' : 'dashed',
                   backgroundColor: name ? colors.coralSoft : 'transparent',
                   alignItems: 'center',
@@ -75,7 +75,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                 }}
               >
                 {name ? (
-                  <Text size={15} weight="titleMedium">
+                  <Text size={15} weight="titleMedium" maxFontSizeMultiplier={1.3}>
                     {sessionLetter(name, names)}
                   </Text>
                 ) : null}
@@ -113,7 +113,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                   justifyContent: 'center',
                   gap: 5,
                   borderWidth: on ? border.strong : border.base,
-                  borderColor: on ? colors.outlineStrong : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                   borderStyle: name === null && !on ? 'dashed' : 'solid',
                   backgroundColor: on || pressed ? colors.coralSoft : 'transparent',
                   ...(on ? hardShadow(2) : {}),

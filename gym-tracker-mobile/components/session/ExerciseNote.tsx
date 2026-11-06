@@ -18,6 +18,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
   if (draft !== null) {
     return (
       <TextInput
+        maxFontSizeMultiplier={1.5}
         value={draft}
         onChangeText={setDraft}
         onBlur={() => {
@@ -58,7 +59,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
         borderRadius: radius.input,
         borderWidth: border.base,
         borderStyle: note ? 'solid' : 'dashed',
-        borderColor: note || pressed ? colors.outlineStrong : colors.line,
+        borderColor: note || pressed ? colors.outlineStrong : colors.outlineSoft,
         backgroundColor: note ? colors.card : 'transparent',
       })}
     >
