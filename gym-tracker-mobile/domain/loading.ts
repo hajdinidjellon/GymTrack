@@ -37,6 +37,50 @@ export function sidePlates(loading: Loading, weight: number, gym: Gym): number[]
   return [];
 }
 
+const sum = (list: number[]) => list.reduce((a, b) => a + b, 0);
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** The heaviest weight at or under `weight` the gym's bar, collars and plates really make. Off the plates: as is. */
+export function loadableWeight(loading: Loading, weight: number, gym: Gym): number {
+  if (loading === 'bar') {
+    const bar = emptyBar(gym);
+    return weight <= bar ? weight : round2(bar + 2 * sum(platesForSide((weight - bar) / 2, gym.plates)));
+  }
+  if (loading === 'perSide') return weight <= 0 ? weight : round2(sum(platesForSide(weight, gym.plates)));
+  return weight;
+}
+
+/** Weight steps offered for an exercise, lightest first. */
+export const INCREMENT_STEPS = [0.5, 1, 1.25, 2, 2.5, 5];
+const STACK_STEPS = [1, 1.25, 2, 2.5, 5];
+
+/**
+ * A step the plates can make: on the bar, the same plates on both sides
+ * (1,25 kg plates make 2,5, not 1); on a machine, plates on each side.
+ */
+export function isLoadableStep(loading: Loading, step: number, plates: number[]): boolean {
+  if (loading !== 'bar' && loading !== 'perSide') return true;
+  const side = loading === 'bar' ? step / 2 : step;
+  return Math.abs(sum(platesForSide(side, plates)) - side) < 1e-6;
+}
+
+/** The steps offered on the exercise page: only the ones the plates can make, five at most. */
+export function incrementChoices(loading: Loading, plates: number[]): number[] {
+  if (loading !== 'bar' && loading !== 'perSide') return STACK_STEPS;
+  const loadable = INCREMENT_STEPS.filter((s) => isLoadableStep(loading, s, plates));
+  if (loadable.length) return loadable.slice(-5);
+  // Only big plates: the smallest one on each side
+  const smallest = plates.length ? Math.min(...plates) : 2.5;
+  return [loading === 'bar' ? 2 * smallest : smallest];
+}
+
+/** The step itself when the plates make it, else the next one they make (1,25 → 2,5 on the bar). */
+export function loadableIncrement(loading: Loading, step: number, plates: number[]): number {
+  if (isLoadableStep(loading, step, plates)) return step;
+  const choices = incrementChoices(loading, plates);
+  return choices.find((s) => s >= step) ?? choices[choices.length - 1]!;
+}
+
 /**
  * What the gym's plates cannot make on each side: 62,5 kg on a 20 kg bar
  * without 1,25 kg plates leaves 1,25 per side out. 0 when it loads exactly.

@@ -12,6 +12,7 @@ import {
   type ExerciseSession,
   type ProgressionDecision,
 } from '@/domain/progression';
+import { loadableIncrement, loadableWeight, loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { planRest, type RestSource } from '@/domain/rest';
 import { trainedOn, validSchedule, weekdayIndex } from '@/domain/schedule';
@@ -48,7 +49,16 @@ export interface BuildContext {
     Partial<
       Pick<
         AppSettings,
-        'customDays' | 'ruleOverrides' | 'restOverrides' | 'customExercises' | 'plateLoaded' | 'supersets' | 'ownDays'
+        | 'customDays'
+        | 'ruleOverrides'
+        | 'restOverrides'
+        | 'customExercises'
+        | 'plateLoaded'
+        | 'supersets'
+        | 'ownDays'
+        | 'barWeight'
+        | 'plates'
+        | 'collarWeight'
       >
     >;
   workouts: Workout[];
@@ -146,10 +156,15 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   const history = exerciseHistory(def, ctx.workouts);
   const lastRule = history.find((h) => h.rule)?.rule;
   const plateLoaded = isPlateLoaded(def, ctx.settings.plateLoaded);
-  const increment =
+  const loading = loadingOf({ equipment: def.equipment, plateLoaded });
+  const { barWeight, plates, collarWeight } = ctx.settings;
+  const gym = barWeight != null && plates ? { barWeight, plates, collarWeight } : null;
+  const wanted =
     ctx.settings.increments[def.name] ??
     lastRule?.increment ??
     defaultIncrementFor(def.equipment, ctx.settings.units, plateLoaded);
+  // Never a step the plates cannot make: 1,25 kg plates make 2,5 on the bar, not 1
+  const increment = gym ? loadableIncrement(loading, wanted, gym.plates) : wanted;
   const rule = withOverride(ruleFor(ctx.profile.goal, def, increment), ctx.settings.ruleOverrides?.[def.name]);
 
   let startWeight: number | undefined;
@@ -159,7 +174,12 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
     if (pr) startWeight = startWeightFromOneRepMax(pr.oneRepMax, increment);
   }
 
-  const { decision, targets, daysOff } = nextTargets(history, rule, { startWeight, now: ctx.now });
+  const result = nextTargets(history, rule, { startWeight, now: ctx.now });
+  const { decision, daysOff } = result;
+  // Never a load the plates cannot make (101,25 kg left by an old 1,25 kg step): the one just under
+  const targets = gym
+    ? result.targets.map((tg) => ({ ...tg, weight: loadableWeight(loading, tg.weight, gym) }))
+    : result.targets;
   const lastSession = history.find((h) => mainSets(h.sets).length > 0);
   const last = lastSession ? mainSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
   const rest = planRest(def, rule, ctx.settings.defaultRestTime, history, ctx.settings.restOverrides?.[def.name]);

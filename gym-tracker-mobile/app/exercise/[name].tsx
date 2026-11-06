@@ -5,7 +5,7 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { formatClock, formatRest, formatShortDay } from '@/domain/format';
 import { clampRest, REST_STEP } from '@/domain/rest';
-import { loadingOf } from '@/domain/loading';
+import { incrementChoices, loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
 import { bestE1rm, repRecords } from '@/domain/strength';
 import { warmupsOn } from '@/domain/warmup';
@@ -36,8 +36,6 @@ import { CheckRow } from '@/components/ui/CheckRow';
 import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 import { exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
-
-const STEPS = [1, 1.25, 2, 2.5, 5];
 
 export default function ExerciseScreen() {
   useLocale();
@@ -89,6 +87,8 @@ export default function ExerciseScreen() {
   const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded });
   const equipment = t(`program.equipment.${def.equipment}`);
   const warmups = warmupsOn(def.name, warmupChoice);
+  // Only the steps the gym's plates can make
+  const steps = incrementChoices(loading, ctx.settings.plates ?? []);
 
   return (
     <Screen scroll>
@@ -271,7 +271,7 @@ export default function ExerciseScreen() {
                 backgroundColor: colors.paper,
               }}
             >
-              {STEPS.map((v) => {
+              {steps.map((v) => {
                 const on = lift.rule.increment === v;
                 return (
                   <PressableScale
