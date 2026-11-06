@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Keyboard, Pressable, View } from 'react-native';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
-import { loadingOf } from '@/domain/loading';
+import { loadableWeight, loadingOf } from '@/domain/loading';
+import { START_PERCENT_OF_1RM, startWeightFromOneRepMax } from '@/domain/progression';
 import { emptyBar, formatKg } from '@/domain/plates';
 import { useGym } from '@/hooks/useGym';
 import { calibrationPreset } from '@/domain/onboarding';
@@ -40,6 +41,18 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   // Any weight goes, down to the empty bar; off the bar, anything above zero (a 2,9 kg cable)
   const allowed = (w: number) => (loading === 'bar' ? w >= barWeight : w > 0);
   const perSide = useSidePlates(loading, weight);
+  const addPR = useProfileStore((s) => s.addPR);
+  // "Tu connais ton max ?": on the bar, for those who already train
+  const asksMax = loading === 'bar' && (experience === 'months' || experience === 'years');
+  const [maxOpen, setMaxOpen] = useState(false);
+  const [max, setMax] = useState(() => Math.round((suggested ?? 60) / START_PERCENT_OF_1RM / 5) * 5);
+  const fromMax = Math.max(barWeight, loadableWeight('bar', startWeightFromOneRepMax(max, step), gym));
+  const useMax = () => {
+    Keyboard.dismiss();
+    setWeight(fromMax);
+    setMaxOpen(false);
+    void addPR({ exercise: exercise.name, weight: max, reps: 1, oneRepMax: max, date: new Date().toISOString() });
+  };
 
   const pick = (w: number) => {
     Keyboard.dismiss();
@@ -142,6 +155,42 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
             );
           })}
         </View>
+
+        {asksMax && !maxOpen ? (
+          <Pressable
+            onPress={() => setMaxOpen(true)}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={{ alignSelf: 'center' }}
+          >
+            <Text size={15} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
+              {t('session.calibration.knowMax')}
+            </Text>
+          </Pressable>
+        ) : null}
+        {asksMax && maxOpen ? (
+          <StickerCard style={{ paddingHorizontal: 12, paddingVertical: 12, gap: space.sm }}>
+            <Text size={15} weight="black">
+              {t('session.calibration.maxTitle')}
+            </Text>
+            <Stepper
+              value={formatKg(max)}
+              unit="kg"
+              onMinus={() => setMax((m) => Math.max(barWeight, nudge(m, -2.5)))}
+              onPlus={() => setMax((m) => nudge(m, 2.5))}
+              minusLabel={t('session.weightMinus', { kg: formatKg(2.5) })}
+              plusLabel={t('session.weightPlus', { kg: formatKg(2.5) })}
+              onChange={(typed) => setMax(Math.max(barWeight, typed))}
+              inputLabel={t('session.calibration.maxInput')}
+            />
+            <StickerButton
+              label={t('session.calibration.useMax', { kg: formatKg(fromMax) })}
+              variant="secondary"
+              size="small"
+              onPress={useMax}
+            />
+          </StickerCard>
+        ) : null}
       </View>
 
       <StickerButton
