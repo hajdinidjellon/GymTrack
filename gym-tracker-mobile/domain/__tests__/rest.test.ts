@@ -33,6 +33,23 @@ describe('restFor', () => {
     expect(restFor(muscle(EXERCISES.curl), 90)).toBe(90);
     expect(restFor(muscle(EXERCISES.curl), 180, EXERCISES.curl)).toBe(180);
   });
+
+  it.each([
+    ['forme', EXERCISES.squat, 60, 90],
+    ['forme', EXERCISES.curl, 60, 60],
+    ['forme', EXERCISES.curl, 90, 90], // the default is never cut
+    ['force', EXERCISES.legpress, 90, 210],
+    ['force', EXERCISES.curl, 90, 150],
+    ['muscle', EXERCISES.squat, 60, 180],
+  ] as const)('rests per goal: %s, %s, default %p s', (goal, def, defaultRest, seconds) => {
+    expect(restFor(ruleFor(goal, def, 2.5), defaultRest, def, goal)).toBe(seconds);
+  });
+
+  it('plans shorter rests to stay in shape', () => {
+    const rule = ruleFor('forme', EXERCISES.squat, 2.5);
+    expect(planRest(EXERCISES.squat, rule, 60, [], undefined, 'forme').seconds).toBe(90);
+    expect(planRest(EXERCISES.squat, muscle(EXERCISES.squat), 60, []).seconds).toBe(180);
+  });
 });
 
 describe('withRestTaken', () => {

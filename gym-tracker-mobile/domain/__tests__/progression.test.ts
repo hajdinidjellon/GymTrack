@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import {
+  comebackWeight,
   defaultRule,
   deloadWeight,
+  isFailedSession,
+  moreHelp,
+  readSession,
+  workingWeight,
   isProgress,
   nextTargets,
   referenceWeight,
@@ -131,8 +136,43 @@ describe('failed sets', () => {
   it('always deloads by at least one increment', () => {
     expect(deloadWeight(100, 2.5)).toBe(90);
     expect(deloadWeight(52.5, 2.5)).toBe(47.5);
-    expect(deloadWeight(20, 5)).toBe(15); // 18 rounds to 20, forced down to 15
-    expect(deloadWeight(5, 5)).toBe(0);
+    expect(deloadWeight(20, 5)).toBe(15); // 18 rounds to 20, forced down to 15 (-25 %)
+  });
+
+  it.each([
+    // weight, step, bar, expected
+    [5, 5, undefined, 5], // never 0
+    [6, 2, undefined, 6], // 4 kg would be -33 %
+    [10, 2, undefined, 8], // 9 rounds to 10, one step down is -20 %
+    [20, 2, undefined, 18],
+    [20, 2.5, 20, 20], // never under the empty bar
+    [22.5, 2.5, 20, 20],
+    [100, 2.5, 20, 90],
+    [15, 2.5, 20, 12.5], // lighter than the bar already (EZ bar): the bar is no floor
+    [50, 0, undefined, 45],
+  ])('deloads %p kg (step %p, bar %p) to %p', (weight, step, bar, expected) => {
+    expect(deloadWeight(weight, step, bar)).toBe(expected);
+  });
+
+  it('starts from the reps really done when nothing lighter makes sense', () => {
+    const dumbbells = { ...rule, increment: 2 };
+    const r = nextTargets([session(6, [8, 7, 6]), session(6, [8, 6, 5])], dumbbells);
+    expect(r.decision).toBe('ease');
+    expect(weights(r)).toEqual([6, 6, 6]);
+    expect(reps(r)).toEqual([8, 6, 5]);
+  });
+
+  it('then builds up from the lowered targets instead of repeating them forever', () => {
+    const lowered = [8, 6, 5].map((t) => ({ target: { weight: 6, reps: t } }));
+    const r = nextTargets([session(6, [8, 6, 5], lowered)], { ...rule, increment: 2 });
+    expect(r.decision).toBe('add_reps');
+    expect(reps(r)).toEqual([9, 7, 6]);
+  });
+
+  it('never deloads under the empty bar', () => {
+    const r = nextTargets([session(20, [6, 6, 5]), session(20, [6, 5, 5])], rule, { minWeight: 20 });
+    expect(r.decision).toBe('ease');
+    expect(weights(r)).toEqual([20, 20, 20]);
   });
 
   it('does not deload when the two failures were at different weights', () => {
@@ -228,11 +268,25 @@ describe('bodyweight (weight 0)', () => {
     expect(reps(r)).toEqual([13, 14, 13]);
   });
 
-  it('retries instead of deloading after two failures', () => {
-    const r = nextTargets([session(0, [8, 7, 6]), session(0, [8, 7, 7])], rule);
+  it('retries once after a failure', () => {
+    const r = nextTargets([session(0, [8, 7, 6])], rule);
     expect(r.decision).toBe('repeat');
-    expect(weights(r)).toEqual([0, 0, 0]);
     expect(reps(r)).toEqual([8, 8, 8]);
+  });
+
+  it('lowers the target to what was done after two failures, never under 1', () => {
+    const r = nextTargets([session(0, [3, 2, 1]), session(0, [3, 2, 0])], rule);
+    expect(r.decision).toBe('ease');
+    expect(weights(r)).toEqual([0, 0, 0]);
+    expect(reps(r)).toEqual([3, 2, 1]);
+  });
+
+  it('progresses from the lowered target, one rep at a time', () => {
+    const lowered = [3, 2, 1].map((t) => ({ target: { weight: 0, reps: t } }));
+    const r = nextTargets([session(0, [3, 2, 1], lowered)], rule);
+    expect(r.decision).toBe('add_reps');
+    expect(reps(r)).toEqual([4, 3, 2]);
+    expect(isFailedSession(session(0, [3, 1, 1], lowered).sets, rule)).toBe(true);
   });
 });
 
@@ -288,6 +342,16 @@ describe('coming back after a break', () => {
     expect(weights(r)).toEqual([50, 50, 50]);
   });
 
+  it('rounds to the nearest step, never under the bar nor to 0', () => {
+    expect(comebackWeight(20, 0.9, 2.5, 20)).toBe(20);
+    expect(comebackWeight(52.5, 0.9, 2.5, 20)).toBe(47.5);
+    expect(comebackWeight(6, 0.9, 2)).toBe(6);
+    expect(comebackWeight(2, 0.8, 2.5)).toBe(2);
+    const r = nextTargets([session(20, [10, 10, 10])], rule, { now: daysLater(40), minWeight: 20 });
+    expect(r.decision).toBe('comeback');
+    expect(weights(r)).toEqual([20, 20, 20]);
+  });
+
   it('never comes back at 0 kg on a weight lighter than one step', () => {
     const r = nextTargets([session(2, [10, 10, 10])], rule, { now: daysLater(40) });
     expect(r.decision).toBe('comeback');
@@ -331,5 +395,113 @@ describe('drop sets', () => {
     expect(done.decision).toBe('add_weight');
     const short = nextTargets([session(60, [10, 9, 8, 4], [{}, {}, {}, drop])], rule);
     expect(short.decision).toBe('add_reps');
+  });
+});
+
+describe('top sets and singles', () => {
+  const force: ProgressionRule = { kind: 'double', sets: 5, repMin: 3, repMax: 5, increment: 2.5 };
+  const singles = () => session(195, [1, 1, 1], [{}, { weight: 202.5 }, { weight: 207.5 }]);
+
+  it('finds no working weight in singles at rising weights', () => {
+    expect(workingWeight(singles().sets, force)).toBeNull();
+    expect(readSession(singles().sets, force)).toBeNull();
+  });
+
+  it('never turns a max test into the next working weight', () => {
+    const before = session(170, [5, 5, 5, 5, 4]);
+    const r = nextTargets([before, singles()], force);
+    expect(r.decision).toBe('add_reps');
+    expect(weights(r)).toEqual([170, 170, 170, 170, 170]);
+    expect(reps(r)).toEqual([5, 5, 5, 5, 5]);
+  });
+
+  it('starts at 70 % of the best single when the max test is all there is', () => {
+    const r = nextTargets([singles()], force);
+    expect(r.decision).toBe('start');
+    expect(weights(r)).toEqual([145, 145, 145, 145, 145]);
+  });
+
+  it('counts the break from the max test', () => {
+    const before = session(170, [5, 5, 5, 5, 5]);
+    const test = singles();
+    const now = new Date(new Date(test.date).getTime() + 3 * 24 * 60 * 60 * 1000);
+    expect(nextTargets([before, test], force, { now }).decision).toBe('add_weight');
+  });
+
+  it('keeps a top set as it was, and lets the back-off sets decide', () => {
+    const top = session(165, [3, 5, 5, 5], [{ weight: 185 }]);
+    const r = nextTargets([top], { ...force, sets: 4 });
+    expect(r.decision).toBe('add_weight');
+    expect(r.targets).toEqual([
+      { weight: 185, reps: 3, top: true },
+      { weight: 167.5, reps: 3 },
+      { weight: 167.5, reps: 3 },
+      { weight: 167.5, reps: 3 },
+    ]);
+  });
+
+  it('never counts a top set under the range as a failed session', () => {
+    const top = session(100, [3, 10, 10, 10], [{ weight: 120 }]);
+    const r = nextTargets([top], rule);
+    expect(r.decision).toBe('add_reps');
+    expect(r.targets.filter((x) => !x.top).map((x) => x.weight)).toEqual([100, 100]);
+  });
+
+  it('recognises a set marked as a top set, and drops it once the working weight catches up', () => {
+    const marked = session(60, [12, 12, 12], [{ weight: 62.5, setType: 'top' }]);
+    const r = nextTargets([marked], rule);
+    expect(r.decision).toBe('add_weight');
+    expect(r.targets.some((x) => x.top)).toBe(false);
+  });
+
+  it('takes the easier weight on a tie when no set reached the range', () => {
+    expect(workingWeight(session(100, [6, 6, 5, 5], [{}, {}, { weight: 105 }, { weight: 105 }]).sets, rule)).toBe(100);
+    expect(workingWeight([], rule)).toBeNull();
+  });
+});
+
+describe('bonus sets past the plan', () => {
+  it('never cancel the progression', () => {
+    const r = nextTargets([session(40, [12, 12, 12, 7])], rule);
+    expect(r.decision).toBe('add_weight');
+    expect(weights(r)).toEqual([42.5, 42.5, 42.5]);
+  });
+});
+
+describe('"+2 reps" only when the targets move by two', () => {
+  it('falls back to one rep when capped at the top of the range', () => {
+    const r = nextTargets([session(60, [11, 12], [{}, { rpe: 6 }])], rule);
+    expect(r.decision).toBe('add_reps');
+    expect(reps(r)).toEqual([12, 12, 8]);
+  });
+});
+
+describe('assisted machine (less help is harder)', () => {
+  const assisted = { assisted: true };
+
+  it('takes help away at the top of the range', () => {
+    const r = nextTargets([session(30, [12, 12, 12])], rule, assisted);
+    expect(r.decision).toBe('add_weight');
+    expect(weights(r)).toEqual([27.5, 27.5, 27.5]);
+  });
+
+  it('adds help after two failures, and more after a break', () => {
+    const r = nextTargets([session(30, [6, 6, 5]), session(30, [6, 5, 5])], rule, assisted);
+    expect(r.decision).toBe('deload');
+    expect(weights(r)).toEqual([32.5, 32.5, 32.5]);
+    const now = new Date(2027, 0, 1);
+    expect(weights(nextTargets([session(30, [10, 10, 10])], rule, { ...assisted, now }))).toEqual([35, 35, 35]);
+    expect(moreHelp(0, 0.9, 5)).toBe(5);
+  });
+
+  it('never counts a set with more help as progress', () => {
+    const r = nextTargets([session(30, [12, 12, 12], [{}, {}, { weight: 35 }])], rule, assisted);
+    expect(r.decision).toBe('add_reps');
+    expect(reps(r)).toEqual([12, 12, 12]);
+  });
+
+  it('never starts from a max test', () => {
+    const test = session(30, [1, 1], [{}, { weight: 20 }]);
+    expect(nextTargets([test], rule, assisted).decision).toBe('calibrate');
   });
 });

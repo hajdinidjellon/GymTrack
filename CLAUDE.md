@@ -63,7 +63,7 @@ A layer never imports a layer above it. Always import with `@/`.
 
 ### Domain (`domain/`)
 
-- `progression.ts` — double progression engine (`nextTargets`), lighter comeback after 2+ weeks off. The last set's effort steers the reps: easy = +2, all-out = same target once.
+- `progression.ts` — double progression engine (`nextTargets`), lighter comeback after 2+ weeks off. The last set's effort steers the reps: easy = +2, all-out = same target once. Only the planned working sets decide (`readSession`): top sets/singles heavier for fewer reps are kept as is (`SetTarget.top`), bonus sets never block, a max test has no working weight. Deload/comeback never go under the empty bar (`minWeight`) nor to 0; when nothing lighter makes sense, `ease` lowers the reps to what was done. Assisted machines (`assisted`) progress by taking help away.
 - `effort.ts` — "Comment c'était ?" after a set: Facile / Juste bien / À fond, stored as RPE.
 - `programs.ts` — exercise catalog (equipment, old-name aliases), splits, rules per goal.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
