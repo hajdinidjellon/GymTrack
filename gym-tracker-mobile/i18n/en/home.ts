@@ -27,6 +27,8 @@ export const home: Dictionary['home'] = {
     emptyBar: 'Empty bar',
     noExercises: 'No exercises in this workout yet.',
     addExercises: 'Add exercises',
+    ownSessionEmpty: 'Put your workout together: add the exercises you want to do. It will be waiting next time.',
+    ownSessionAdd: 'Pick my exercises',
     firstSession: 'First workout: you pick your starting weight on each exercise, then we work out the rest.',
   },
   lift: {
@@ -54,8 +56,9 @@ export const home: Dictionary['home'] = {
     a11yPlanned: '{name} workout, planned for today',
     planned: 'planned',
     extraLabel: 'Or, just this once, off program',
-    extraLink: 'A session from another program, just this once?',
+    extraLink: 'Something else, just this once?',
     a11yExtra: '{name} workout, off program',
+    a11yOwn: 'My workout, put together yourself, off program',
   },
   switch: {
     title: 'Changed your program?',
