@@ -9,6 +9,7 @@ import { formatKg } from '@/domain/plates';
 import { allExercises } from '@/domain/programs';
 import { usualRest } from '@/domain/rest';
 import { exerciseHistory, weightHistory } from '@/domain/sessionBuilder';
+import { LEFT_OPEN_MINUTES } from '@/domain/sessionTime';
 import { exerciseName, listOf, t } from '@/i18n';
 import type { CustomExercise, Workout } from '@/types';
 
@@ -79,7 +80,8 @@ function duration(workouts: Workout[]): Insight | null {
   const minutes = workouts
     .slice(0, 5)
     .map((w) => w.duration ?? 0)
-    .filter((m) => m >= 10);
+    // A session forgotten open (saved before the end was capped) tells nothing of the usual length
+    .filter((m) => m >= 10 && m <= LEFT_OPEN_MINUTES);
   if (minutes.length < INSIGHTS_AFTER) return null;
   const mean = Math.round(minutes.reduce((a, b) => a + b, 0) / minutes.length / 5) * 5;
   return {

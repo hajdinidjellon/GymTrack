@@ -33,6 +33,9 @@ export const domain: Dictionary['domain'] = {
     seconds: '{s} s',
     minutes: '{m} min',
     minutesSeconds: '{m} min {s} s',
+    hoursMinutes: '{h} h {m}',
+    yesterdayAt: 'yesterday at {time}',
+    dayAt: '{day} at {time}',
   },
 
   load: {

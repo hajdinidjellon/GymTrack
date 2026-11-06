@@ -68,6 +68,14 @@ export const session: Dictionary['session'] = {
     lifted: 'You lifted',
     plates: { one: "that's {n} 20 kg plate", other: "that's {n} 20 kg plates" },
     duration: 'duration',
+    end: 'Ended: {time}',
+    endEdit: 'change',
+    endEditA11y: 'Change the end time',
+    endEarlier: '− 5 min',
+    endLater: '+ 5 min',
+    endEarlierA11y: 'End 5 minutes earlier',
+    endLaterA11y: 'End 5 minutes later',
+    endDone: 'OK',
     setsDone: { one: 'set done', other: 'sets done' },
     records: { one: 'record', other: 'records' },
     nextTime: 'Next time',
@@ -174,6 +182,24 @@ export const session: Dictionary['session'] = {
   running: {
     title: 'Workout in progress',
     progress: { one: '{done} / {count} set done', other: '{done} / {count} sets done' },
+  },
+
+  stale: {
+    title: 'Your {name} workout was left open',
+    lastSet: {
+      one: 'Last set {when}. Your logged set is not in your history yet.',
+      other: 'Last set {when}. Your {count} logged sets are not in your history yet.',
+    },
+    noSet: 'Started {when}, no set logged.',
+    finishAt: 'Finish at {time}',
+    resume: 'Resume the workout',
+    delete: 'Delete the workout',
+    deleteTitle: 'Delete the workout?',
+    deleteText: {
+      one: 'Your logged set will be erased, nothing will be saved.',
+      other: 'Your {count} logged sets will be erased, nothing will be saved.',
+    },
+    deleteConfirm: 'Delete',
   },
 
   done: {

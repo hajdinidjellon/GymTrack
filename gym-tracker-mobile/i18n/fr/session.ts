@@ -68,6 +68,14 @@ export const session = {
     lifted: 'Tu as soulevé',
     plates: { one: 'soit {n} disque de 20 kg', other: 'soit {n} disques de 20 kg' },
     duration: 'durée',
+    end: 'Fin : {time}',
+    endEdit: 'modifier',
+    endEditA11y: 'Modifier l’heure de fin',
+    endEarlier: '− 5 min',
+    endLater: '+ 5 min',
+    endEarlierA11y: 'Fin 5 minutes plus tôt',
+    endLaterA11y: 'Fin 5 minutes plus tard',
+    endDone: 'OK',
     setsDone: { one: 'série validée', other: 'séries validées' },
     records: { one: 'record', other: 'records' },
     nextTime: 'La prochaine fois',
@@ -174,6 +182,24 @@ export const session = {
   running: {
     title: 'Séance en cours',
     progress: { one: '{done} / {count} série validée', other: '{done} / {count} séries validées' },
+  },
+
+  stale: {
+    title: 'Ta séance {name} est restée ouverte',
+    lastSet: {
+      one: 'Dernière série {when}. Ta série validée n’est pas encore dans ton historique.',
+      other: 'Dernière série {when}. Tes {count} séries validées ne sont pas encore dans ton historique.',
+    },
+    noSet: 'Lancée {when}, aucune série validée.',
+    finishAt: 'Terminer à {time}',
+    resume: 'Reprendre la séance',
+    delete: 'Supprimer la séance',
+    deleteTitle: 'Supprimer la séance ?',
+    deleteText: {
+      one: 'Ta série validée sera effacée, rien ne sera enregistré.',
+      other: 'Tes {count} séries validées seront effacées, rien ne sera enregistré.',
+    },
+    deleteConfirm: 'Supprimer',
   },
 
   done: {

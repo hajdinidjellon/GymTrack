@@ -174,6 +174,26 @@ describe('end of session', () => {
     store().discardSession();
     expect(store().finishSession()).toBeNull();
   });
+
+  it('ends a session left open at its last set, not hours later', () => {
+    const started = Date.parse(session().startedAt);
+    jest.setSystemTime(started + 40 * 60_000);
+    store().completeSet('bench', 0);
+    jest.setSystemTime(started + 5 * 3600_000);
+    const workout = store().finishSession();
+    expect(workout?.duration).toBe(40);
+    // The validation time is kept for the timeline
+    expect(workout?.exercises[0]!.sets[0]!.doneAt).toBe(started + 40 * 60_000);
+  });
+
+  it('ends at the time asked, and keeps a session open on purpose', () => {
+    const started = Date.parse(session().startedAt);
+    store().completeSet('bench', 0);
+    jest.setSystemTime(started + 3 * 3600_000);
+    store().keepSessionOpen();
+    expect(session().keptOpenAt).toBe(started + 3 * 3600_000);
+    expect(store().finishSession(started + 25 * 60_000)?.duration).toBe(25);
+  });
 });
 
 describe('swapping an exercise', () => {

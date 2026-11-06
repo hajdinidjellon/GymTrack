@@ -21,6 +21,7 @@ import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Chip } from '@/components/ui/Chip';
 import { Sparkle } from '@/components/ui/Sparkle';
 import { StatTile } from '@/components/stats/StatTile';
+import { EndTimeEditor } from '@/components/session/EndTimeEditor';
 
 export default function Summary() {
   useLocale();
@@ -127,6 +128,7 @@ export default function Summary() {
           highlight={records.length > 0}
         />
       </View>
+      <EndTimeEditor workout={workout} onChange={(w) => void useWorkoutStore.getState().addWorkout(w)} />
 
       {next.length ? (
         <>

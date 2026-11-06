@@ -375,8 +375,11 @@ export function doLater(session: ActiveSession, exerciseId: string): ActiveSessi
   return leaveSuperset(moved, exerciseId);
 }
 
-/** What goes into the history: only exercises with at least one validated set. */
-export function toWorkout(session: ActiveSession, now: Date): Workout {
+/**
+ * What goes into the history: only exercises with at least one validated set.
+ * `end`: when the session ended (see `sessionEnd`, a session left open ends at its last set).
+ */
+export function toWorkout(session: ActiveSession, end: Date): Workout {
   return {
     id: session.workoutId,
     date: session.startedAt,
@@ -400,10 +403,15 @@ export function toWorkout(session: ActiveSession, now: Date): Workout {
           sets: withRestTaken(exercise.sets),
         }),
       ),
-    duration: Math.round((now.getTime() - new Date(session.startedAt).getTime()) / 60000),
+    duration: Math.max(0, Math.round((end.getTime() - new Date(session.startedAt).getTime()) / 60000)),
     feeling: 3,
     completed: true,
   };
+}
+
+/** Left open, then resumed on purpose: the question waits for a new long break. */
+export function keepOpen(session: ActiveSession, now: number): ActiveSession {
+  return { ...session, keptOpenAt: now };
 }
 
 /** Body of the "rest over" notification: what to do next. */

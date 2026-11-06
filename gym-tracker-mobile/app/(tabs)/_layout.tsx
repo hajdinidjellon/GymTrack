@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Redirect, router } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { colors } from '@/constants/theme';
+import { isStale } from '@/domain/sessionTime';
 import { TabBar } from '@/components/navigation/TabBar';
 import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
@@ -19,7 +20,9 @@ export default function TabsLayout() {
   useEffect(() => {
     if (resumeChecked || !hasProfile || signedOut) return;
     resumeChecked = true;
-    if (useSessionStore.getState().activeSession) router.push('/session');
+    const session = useSessionStore.getState().activeSession;
+    // Left open for hours: the home asks what to do with it instead
+    if (session && !isStale(session, Date.now())) router.push('/session');
   }, [hasProfile, signedOut]);
 
   if (!hasProfile || signedOut) return <Redirect href="/welcome" />;

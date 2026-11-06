@@ -32,6 +32,9 @@ export const domain = {
     seconds: '{s} s',
     minutes: '{m} min',
     minutesSeconds: '{m} min {s}',
+    hoursMinutes: '{h} h {m}',
+    yesterdayAt: 'hier à {time}',
+    dayAt: '{day} à {time}',
   },
 
   load: {
