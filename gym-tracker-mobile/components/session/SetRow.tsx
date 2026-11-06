@@ -24,12 +24,14 @@ interface Props {
   timed?: boolean;
   /** Its kind, when not a plain set: named instead of numbered. */
   kind?: 'drop' | 'failure';
-  /** Long press: the set's menu (drop set, failure). */
-  onLongPress?: () => void;
+  /** The set's menu (drop set, failure, delete): the "⋯" button, a long press, or VoiceOver's actions. */
+  onMenu?: () => void;
+  /** Deleting it straight away from VoiceOver's actions (the swipe is out of reach there). */
+  onDelete?: () => void;
 }
 
-/** One line of the sets table: Série | kg | reps | mark. The current one is circled. */
-export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, onLongPress }: Props) {
+/** One line of the sets table: Série | kg | reps | mark | ⋯. The current one is circled. */
+export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, onMenu, onDelete }: Props) {
   const current = state === 'current';
   const done = state === 'done';
   const color = done ? colors.successText : state === 'upcoming' ? colors.inkMuted : colors.ink;
@@ -54,16 +56,24 @@ export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, 
         ? t('session.setRow.failureShort')
         : null;
 
+  const actions = [
+    ...(onMenu ? [{ name: 'menu', label: t('session.setRow.menuA11y') }] : []),
+    ...(onDelete ? [{ name: 'delete', label: t('session.setRow.deleteAction') }] : []),
+  ];
+
   return (
     <Pressable
-      onLongPress={onLongPress}
+      onLongPress={onMenu}
       delayLongPress={350}
-      disabled={!onLongPress}
+      disabled={!onMenu}
       accessible
       accessibilityLabel={label}
-      accessibilityHint={onLongPress ? t('session.setRow.menuHint') : undefined}
-      accessibilityActions={onLongPress ? [{ name: 'longpress' }] : undefined}
-      onAccessibilityAction={onLongPress ? () => onLongPress() : undefined}
+      accessibilityHint={onMenu ? t('session.setRow.menuHint') : undefined}
+      accessibilityActions={actions.length ? actions : undefined}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'delete') onDelete?.();
+        else onMenu?.();
+      }}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -109,6 +119,34 @@ export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, 
           />
         ) : null}
       </View>
+      {onMenu ? <MenuButton onPress={onMenu} /> : <View style={{ width: MENU_WIDTH }} />}
+    </Pressable>
+  );
+}
+
+const MENU_WIDTH = 30;
+
+/** "⋯" at the end of the row: the set's options, in plain sight (the swipe and the long press are hidden). */
+function MenuButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('session.setRow.menuA11y')}
+      hitSlop={{ top: 6, bottom: 6, left: 4, right: 10 }}
+      style={({ pressed }) => ({
+        width: MENU_WIDTH,
+        minHeight: 40,
+        marginRight: -6,
+        borderRadius: radius.sm,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: pressed ? colors.card : 'transparent',
+      })}
+    >
+      <Text size={20} weight="black" color={colors.inkMuted} maxFontSizeMultiplier={1.2}>
+        ⋯
+      </Text>
     </Pressable>
   );
 }
@@ -145,12 +183,12 @@ interface TableProps {
   current: number;
   /** Sets still to do can be swiped away. */
   onRemove?: (setIndex: number) => void;
-  /** Long press on a set: its menu. */
-  onLongPress?: (setIndex: number) => void;
+  /** A set's menu: "⋯", a long press. `deletable`: it can be deleted from there. */
+  onMenu?: (setIndex: number, deletable: boolean) => void;
 }
 
 /** Every set of the exercise. Column headers are the only capitals of the app. */
-export function SetsTable({ exercise, current, onRemove, onLongPress }: TableProps) {
+export function SetsTable({ exercise, current, onRemove, onMenu }: TableProps) {
   const noWeight = exercise.equipment === 'bodyweight';
   // A warm-up or a drop can always go; the last working set stays
   const canRemove = (i: number) =>
@@ -162,10 +200,14 @@ export function SetsTable({ exercise, current, onRemove, onLongPress }: TablePro
         {noWeight ? null : <Header label={t('session.setRow.headerKg')} center />}
         <Header label={t(exercise.timed ? 'session.setRow.headerSeconds' : 'session.setRow.headerReps')} center />
         <View style={{ width: 44 }} />
+        <View style={{ width: MENU_WIDTH }} />
       </View>
       <View style={{ gap: 4 }}>
         {exercise.sets.map((s, i) => {
           const { warmup, drop, n } = setNumber(exercise.sets, i);
+          const deletable = canRemove(i) && !s.completed;
+          // A warm-up has nothing but "delete" in its menu
+          const menu = onMenu && (!warmup || deletable);
           return (
             <SwipeToDelete
               key={`${i}-${exercise.sets.length}`}
@@ -176,7 +218,7 @@ export function SetsTable({ exercise, current, onRemove, onLongPress }: TablePro
                     ? t('session.setRow.deleteDropA11y')
                     : t('session.setRow.deleteA11y', { n })
               }
-              onDelete={canRemove(i) && !s.completed ? () => onRemove!(i) : undefined}
+              onDelete={deletable ? () => onRemove!(i) : undefined}
             >
               <SetRow
                 index={n}
@@ -186,7 +228,8 @@ export function SetsTable({ exercise, current, onRemove, onLongPress }: TablePro
                 warmup={warmup}
                 timed={exercise.timed}
                 kind={s.setType === 'drop' || s.setType === 'failure' ? s.setType : undefined}
-                onLongPress={onLongPress && !warmup ? () => onLongPress(i) : undefined}
+                onMenu={menu && onMenu ? () => onMenu(i, deletable) : undefined}
+                onDelete={deletable ? () => onRemove!(i) : undefined}
                 state={s.completed ? 'done' : i === current ? 'current' : 'upcoming'}
               />
             </SwipeToDelete>

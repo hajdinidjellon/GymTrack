@@ -28,6 +28,7 @@ export const session: Dictionary['session'] = {
     dropSet: 'Drop set',
     nextDropSet: 'Next: drop set',
     dropDone: 'Drop set done',
+    batchDone: { one: '{count} set done', other: '{count} sets done' },
     listening: 'Mic on · say “done”, “8” or “later”',
     superset: 'Superset with {name} · no rest in between',
   },
@@ -160,6 +161,7 @@ export const session: Dictionary['session'] = {
     weightToSet: 'Weight to set',
     skip: 'Skip rest',
     undoA11y: 'Undo the last set',
+    undoBatchA11y: { one: 'Undo the set just done', other: 'Undo the {count} sets just done' },
     undo: '{label} · undo',
   },
 
@@ -201,7 +203,9 @@ export const session: Dictionary['session'] = {
     failureShort: 'Fail',
     a11yDrop: 'Drop set, {kg} kilos, {reps} reps, {state}',
     a11yFailure: 'Set {index} to failure, {kg} kilos, {reps} reps, {state}',
-    menuHint: 'Long press: drop set or failure',
+    menuHint: 'Options: drop set, failure, delete',
+    menuA11y: 'Set options',
+    deleteAction: 'Delete',
     deleteWarmupA11y: 'Delete this warm-up',
     deleteDropA11y: 'Delete this drop set',
   },
@@ -216,7 +220,7 @@ export const session: Dictionary['session'] = {
     missed: 'Missed the set? Log the reps you did',
     addSetA11y: 'Add a set',
     addSet: '+ Add a set',
-    swipeHint: 'Swipe a set left to delete it, long press for a drop set',
+    swipeHint: 'Tap ⋯ on a set to delete it or add a drop set',
     allAsPlanned: { one: 'All as planned · {count} set', other: 'All as planned · {count} sets' },
     validateA11y: 'Log the set',
     warmupHint: "Warm-up · doesn't count in your stats",
@@ -230,9 +234,12 @@ export const session: Dictionary['session'] = {
   setMenu: {
     title: 'Set {n}',
     titleDrop: 'Drop set',
+    titleWarmup: 'Warm-up',
     addDrop: 'Add a drop set after',
     failure: 'To failure',
     normal: 'Normal set',
+    delete: 'Delete the set',
+    deleteWarmup: 'Delete the warm-up',
   },
 
   hold: {

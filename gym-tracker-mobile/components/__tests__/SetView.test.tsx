@@ -222,6 +222,7 @@ describe('SetView set menu', () => {
     expect((buttons as AlertButton[]).map((b) => b.text)).toEqual([
       'Ajouter une dégressive après',
       'Jusqu’à l’échec',
+      'Supprimer la série',
       'Annuler',
     ]);
     await act(() => (buttons as AlertButton[])[0]!.onPress!());
@@ -240,6 +241,58 @@ describe('SetView set menu', () => {
     expect(alert.mock.calls.at(-1)![0]).toBe('Série dégressive');
     expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).toEqual([
       'Ajouter une dégressive après',
+      'Supprimer la série',
+      'Annuler',
+    ]);
+    alert.mockRestore();
+  });
+
+  it("opens the same menu from a visible '⋯' on every set", async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    const dots = screen.getAllByLabelText('Options de la série');
+    expect(dots).toHaveLength(2);
+    await fireEvent.press(dots[1]!);
+    expect(alert.mock.calls.at(-1)![0]).toBe('Série 2');
+    const del = (alert.mock.calls.at(-1)![2] as AlertButton[]).find((b) => b.text === 'Supprimer la série')!;
+    expect(del.style).toBe('destructive');
+    await act(() => del.onPress!());
+    expect(sets()).toHaveLength(1);
+    alert.mockRestore();
+  });
+
+  it('never offers to delete the last working set', async () => {
+    useSessionStore.getState().removeSet('bench', 1);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    await fireEvent.press(screen.getByLabelText('Options de la série'));
+    expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).not.toContain('Supprimer la série');
+    alert.mockRestore();
+  });
+
+  it("reaches the menu and the delete from VoiceOver's actions", async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    const row = screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, à venir');
+    expect(row.props.accessibilityActions.map((a: { name: string }) => a.name)).toEqual(['menu', 'delete']);
+    await fireEvent(row, 'accessibilityAction', { nativeEvent: { actionName: 'menu' } });
+    expect(alert).toHaveBeenCalled();
+    await fireEvent(row, 'accessibilityAction', { nativeEvent: { actionName: 'delete' } });
+    expect(sets()).toHaveLength(1);
+    alert.mockRestore();
+  });
+
+  it('offers only the delete on a warm-up', async () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: true } });
+    useSessionStore
+      .getState()
+      .startSession('Push', [{ ...bench, sets: [{ ...bench.sets[0]!, setType: 'warmup' as const }, ...bench.sets] }]);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderCurrentSet();
+    await fireEvent.press(screen.getAllByLabelText('Options de la série')[0]!);
+    expect(alert.mock.calls.at(-1)![0]).toBe('Échauffement');
+    expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).toEqual([
+      "Supprimer l'échauffement",
       'Annuler',
     ]);
     alert.mockRestore();

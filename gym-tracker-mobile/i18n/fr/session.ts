@@ -27,6 +27,7 @@ export const session = {
     dropSet: 'Série dégressive',
     nextDropSet: 'Ensuite : série dégressive',
     dropDone: 'Dégressive validée',
+    batchDone: { one: '{count} série validée', other: '{count} séries validées' },
     listening: 'Micro ouvert · dis « fait », « 8 » ou « plus tard »',
     superset: 'En superset avec {name} · sans repos entre les deux',
   },
@@ -160,6 +161,7 @@ export const session = {
     weightToSet: 'Charge à régler',
     skip: 'Passer le repos',
     undoA11y: 'Annuler la dernière série',
+    undoBatchA11y: { one: 'Annuler la série validée', other: 'Annuler les {count} séries validées' },
     undo: '{label} · annuler',
   },
 
@@ -201,7 +203,9 @@ export const session = {
     failureShort: 'Échec',
     a11yDrop: 'Dégressive, {kg} kilos, {reps} reps, {state}',
     a11yFailure: 'Série {index} jusqu’à l’échec, {kg} kilos, {reps} reps, {state}',
-    menuHint: 'Appui long : dégressive ou échec',
+    menuHint: 'Options : dégressive, échec, supprimer',
+    menuA11y: 'Options de la série',
+    deleteAction: 'Supprimer',
     deleteWarmupA11y: 'Supprimer cet échauffement',
     deleteDropA11y: 'Supprimer cette dégressive',
   },
@@ -216,7 +220,7 @@ export const session = {
     missed: 'Série ratée ? Note les reps faites',
     addSetA11y: 'Ajouter une série',
     addSet: '+ Ajouter une série',
-    swipeHint: 'Glisse une série à gauche pour la supprimer, appui long pour une dégressive',
+    swipeHint: 'Touche ⋯ sur une série pour la supprimer ou ajouter une dégressive',
     allAsPlanned: { one: 'Tout comme prévu · {count} série', other: 'Tout comme prévu · {count} séries' },
     validateA11y: 'Valider la série',
     warmupHint: 'Échauffement · ne compte pas dans tes stats',
@@ -230,9 +234,12 @@ export const session = {
   setMenu: {
     title: 'Série {n}',
     titleDrop: 'Série dégressive',
+    titleWarmup: 'Échauffement',
     addDrop: 'Ajouter une dégressive après',
     failure: 'Jusqu’à l’échec',
     normal: 'Série normale',
+    delete: 'Supprimer la série',
+    deleteWarmup: "Supprimer l'échauffement",
   },
 
   hold: {
