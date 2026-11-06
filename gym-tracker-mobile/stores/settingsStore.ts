@@ -28,7 +28,13 @@ function scheduleSettingsSync(): void {
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncTimer = null;
-    queueSettingsSync().catch((error: unknown) => logger.warn('settings not queued for sync', error));
+    const failed = (error: unknown) => logger.warn('settings not queued for sync', error);
+    // Never a crash from a timer: whatever goes wrong here is only logged
+    try {
+      queueSettingsSync().catch(failed);
+    } catch (error) {
+      failed(error);
+    }
   }, SETTINGS_SYNC_DELAY_MS);
 }
 
