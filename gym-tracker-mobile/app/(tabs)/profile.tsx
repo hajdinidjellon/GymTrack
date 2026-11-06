@@ -355,6 +355,14 @@ export default function Profile() {
           <Text size={15} color={colors.inkMuted} style={{ lineHeight: 21 }}>
             {signedIn ? t('profile.account.signedIn') : t('profile.account.local')}
           </Text>
+          {signedIn ? (
+            <StickerButton
+              label={t('profile.account.manage')}
+              variant="secondary"
+              size="small"
+              onPress={() => router.push('/account')}
+            />
+          ) : null}
           <StickerButton
             label={signedIn ? t('profile.account.signOut') : t('profile.account.signIn')}
             variant="secondary"

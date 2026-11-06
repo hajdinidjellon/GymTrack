@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   warmupOverrides: {},
   supersets: {},
   ownDays: {},
+  recoveryPromptSeen: false,
 };
 
 /**

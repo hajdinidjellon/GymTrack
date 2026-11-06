@@ -49,6 +49,7 @@ import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 import { WeekStrip } from '@/components/stats/WeekStrip';
 import { RunningCard } from '@/components/session/RunningCard';
+import { RecoveryEmailPrompt } from '@/components/account/RecoveryEmailPrompt';
 import { DayPicker } from '@/components/program/DayPicker';
 
 function start(plan: PlannedDay) {
@@ -142,6 +143,7 @@ export default function Today() {
       <FadeIn index={3}>
         <LastWorkout />
       </FadeIn>
+      {running ? null : <RecoveryEmailPrompt />}
     </Screen>
   );
 }

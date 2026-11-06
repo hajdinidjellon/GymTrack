@@ -87,6 +87,7 @@ export const profile = {
     title: 'Compte',
     signedIn: 'Connecté : tes séances et ton programme sont sauvegardés dans ton compte.',
     local: 'Sans compte : tes séances restent sur ce téléphone.',
+    manage: 'Email et code de récupération',
     signOut: 'Se déconnecter',
     signIn: 'Créer un compte ou se connecter',
     confirmTitle: 'Se déconnecter ?',

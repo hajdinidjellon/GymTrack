@@ -1,4 +1,5 @@
 import type { Dictionary } from '@/i18n/fr';
+import { account } from './account';
 import { common } from './common';
 import { data } from './data';
 import { domain } from './domain';
@@ -13,6 +14,7 @@ import { session } from './session';
 import { ui } from './ui';
 
 export const en: Dictionary = {
+  account,
   common,
   data,
   domain,
