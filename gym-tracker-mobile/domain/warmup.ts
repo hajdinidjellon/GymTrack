@@ -58,6 +58,7 @@ export function roundWarmupLoad(loading: Loading, raw: number, gym: Gym, step: n
       return sum(platesForSide(raw, gym.plates));
     case 'perHand':
     case 'stack':
+    case 'assist':
       return roundDownToIncrement(raw, step);
   }
 }
@@ -77,8 +78,9 @@ function plan(exercise: ActiveExercise, warm: boolean, loading: Loading, working
 export function warmupSets(exercise: ActiveExercise, warm: boolean, gym: Gym): WorkoutSet[] {
   const first = exercise.sets.find((s) => !isWarmup(s));
   const working = first?.weight ?? 0;
-  if (!first || exercise.needsWeight || exercise.equipment === 'bodyweight' || exercise.timed || working <= 0)
-    return [];
+  // Less help is harder: an assisted machine has nothing lighter to warm up with
+  const none = exercise.needsWeight || exercise.equipment === 'bodyweight' || exercise.timed || exercise.assisted;
+  if (!first || none || working <= 0) return [];
   const loading = loadingOf(exercise);
   if (loading === 'bar' && working <= emptyBar(gym)) return [];
   const step = exercise.rule?.increment ?? 2.5;

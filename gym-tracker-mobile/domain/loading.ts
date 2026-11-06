@@ -1,6 +1,6 @@
 /**
  * CHARGE — what the weight on screen counts: the whole bar, each side of a
- * plate-loaded machine, each dumbbell, or the stack.
+ * plate-loaded machine, each dumbbell, the stack, or the help of an assisted machine.
  */
 
 import { describeSide, emptyBar, formatKg, loadBar, platesForSide, type Gym } from '@/domain/plates';
@@ -9,10 +9,11 @@ import type { LoadFactor } from '@/domain/sessionBuilder';
 import { t } from '@/i18n';
 import type { ActiveExercise, AppSettings } from '@/types';
 
-export type Loading = 'bar' | 'perSide' | 'perHand' | 'stack';
+export type Loading = 'bar' | 'perSide' | 'perHand' | 'stack' | 'assist';
 
-export function loadingOf(exercise: Pick<ActiveExercise, 'equipment' | 'plateLoaded'>): Loading {
+export function loadingOf(exercise: Pick<ActiveExercise, 'equipment' | 'plateLoaded' | 'assisted'>): Loading {
   if (exercise.equipment === 'barbell') return 'bar';
+  if (exercise.assisted) return 'assist';
   if (exercise.equipment === 'dumbbell') return 'perHand';
   if (exercise.equipment === 'machine' && exercise.plateLoaded) return 'perSide';
   return 'stack';
@@ -28,6 +29,9 @@ export const LOADING_SUFFIX: Record<Loading, string | null> = {
     return t('domain.load.suffixPerHand');
   },
   stack: null,
+  get assist() {
+    return t('domain.load.suffixAssist');
+  },
 };
 
 /** Plates to put on one side, heaviest first. Empty off the bar and the plate-loaded machines. */
@@ -115,6 +119,8 @@ export function loadHint(loading: Loading, weight: number, gym: Gym): string | n
       return t('domain.load.perHand');
     case 'stack':
       return null;
+    case 'assist':
+      return t('domain.load.assistHint');
   }
 }
 

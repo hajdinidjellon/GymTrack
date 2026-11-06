@@ -215,6 +215,7 @@ export const session = {
   setView: {
     lastTime: 'Dernière fois',
     why: 'Pourquoi {kg} kg ?',
+    whyAssist: "Pourquoi {kg} kg d'aide ?",
     weightInput: 'Charge en kilos',
     repMinus: 'Moins une rep',
     repPlus: 'Plus une rep',

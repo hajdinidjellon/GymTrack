@@ -19,6 +19,7 @@ describe('loadingOf', () => {
     [{ equipment: 'machine' as const, plateLoaded: true }, 'perSide'],
     [{ equipment: 'machine' as const }, 'stack'],
     [{ equipment: 'bodyweight' as const }, 'stack'],
+    [{ equipment: 'machine' as const, assisted: true }, 'assist'],
   ])('%o counts as %s', (exercise, loading) => {
     expect(loadingOf(exercise)).toBe(loading);
   });
@@ -111,6 +112,7 @@ describe('loadHint', () => {
   it('says a dumbbell weight is per dumbbell, and nothing for a stack', () => {
     expect(loadHint('perHand', 12, gym)).toBe('Par haltère');
     expect(loadHint('stack', 40, gym)).toBeNull();
+    expect(loadHint('assist', 30, gym)).toBe("Moins d'aide = plus dur");
   });
 });
 

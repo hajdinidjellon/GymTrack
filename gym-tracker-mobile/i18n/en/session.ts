@@ -215,6 +215,7 @@ export const session: Dictionary['session'] = {
   setView: {
     lastTime: 'Last time',
     why: 'Why {kg} kg?',
+    whyAssist: 'Why {kg} kg of assist?',
     weightInput: 'Weight in kilos',
     repMinus: 'One rep less',
     repPlus: 'One rep more',

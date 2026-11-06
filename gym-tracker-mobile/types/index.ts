@@ -67,6 +67,8 @@ export interface ProgressionRule {
 export interface SetTarget {
   weight: number;
   reps: number;
+  /** A top set kept as it was done last time (heavier, fewer reps): it never steers the progression. */
+  top?: boolean;
 }
 
 export interface Workout {
@@ -209,6 +211,8 @@ export interface ActiveExercise extends Exercise {
   needsWeight: boolean;
   /** Plate-loaded machine: the weight is what goes on each side. */
   plateLoaded?: boolean;
+  /** Assisted machine: the weight is help, less of it is harder. */
+  assisted?: boolean;
   /** "60 kg × 10 · 10 · 9": the last session, shown while logging. */
   lastTime?: string;
   /** Why today's target is what it is. */

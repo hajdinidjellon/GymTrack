@@ -14,6 +14,7 @@ import { referenceWeight, workingSets } from '@/domain/progression';
 import {
   exerciseHistory,
   lastTimeLabel,
+  loadLabel,
   planLift,
   reasonLabel,
   targetLoad,
@@ -80,12 +81,12 @@ export default function ExerciseScreen() {
   const target = lift.targets[0];
   const fullHistory = exerciseHistory(def, ctx.workouts);
   const history = fullHistory.slice(0, 5);
-  const strongest = def.timed ? null : bestE1rm(fullHistory);
-  const records = def.timed ? [] : repRecords(fullHistory);
+  const strongest = def.timed ? null : bestE1rm(fullHistory, def.assisted);
+  const records = def.timed ? [] : repRecords(fullHistory, def.assisted);
   const bodyweight = def.equipment === 'bodyweight';
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
-  const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def.equipment, ctx.settings.units));
-  const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded });
+  const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def, ctx.settings.units));
+  const loading = loadingOf({ equipment: def.equipment, plateLoaded: lift.plateLoaded, assisted: def.assisted });
   const equipment = t(`program.equipment.${def.equipment}`);
   const warmups = warmupsOn(def.name, warmupChoice);
   // Only the steps the gym's plates can make
@@ -125,7 +126,9 @@ export default function ExerciseScreen() {
           {t('exercise.nextTarget')}
         </Text>
         <Text size={34} weight="black" style={{ lineHeight: 42 }}>
-          {lift.decision === 'calibrate' ? t('exercise.toCalibrate') : targetLoad(lift.targets, def.timed)}
+          {lift.decision === 'calibrate'
+            ? t('exercise.toCalibrate')
+            : targetLoad(lift.targets, def.timed, def.assisted)}
         </Text>
         <View
           style={{
@@ -145,7 +148,7 @@ export default function ExerciseScreen() {
         </View>
         {lift.last.length ? (
           <Text size={15} style={{ marginTop: 8 }}>
-            {t('exercise.lastTime', { last: lastTimeLabel(lift.last, def.timed) })}
+            {t('exercise.lastTime', { last: lastTimeLabel(lift.last, def.timed, def.assisted) })}
           </Text>
         ) : null}
         {lift.decision !== 'calibrate' && target && target.weight > 0 ? (
@@ -386,9 +389,7 @@ export default function ExerciseScreen() {
                     {formatShortDay(h.date)}
                   </Text>
                   <Text size={18} weight="black">
-                    {w > 0 ? t('exercise.history.weight', { kg: formatKg(w) }) : ''}
-                    {sets.map((s) => s.reps).join(' · ')}
-                    {def.timed ? ' s' : ''}
+                    {loadLabel(w, sets.map((s) => s.reps).join(' · '), def.timed, def.assisted)}
                   </Text>
                 </View>
               );

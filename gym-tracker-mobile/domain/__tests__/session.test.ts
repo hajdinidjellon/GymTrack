@@ -70,6 +70,23 @@ describe('sets', () => {
     expect(Session.completeSet(missed, 'bench', 0).exercises[0]!.sets[1]).toMatchObject({ weight: 62.5, reps: 10 });
   });
 
+  it('never carries a top set over to the back-off sets, nor onto a top set', () => {
+    const plan = active('bench', [
+      { weight: 120, reps: 3 },
+      { weight: 100, reps: 8 },
+    ]);
+    plan.sets[0] = { ...plan.sets[0]!, setType: 'top' };
+    const done = Session.completeSet(session([plan]), 'bench', 0);
+    expect(done.exercises[0]!.sets[1]).toMatchObject({ weight: 100, reps: 8 });
+    const back = active('bench', [
+      { weight: 100, reps: 8 },
+      { weight: 120, reps: 3 },
+    ]);
+    back.sets[1] = { ...back.sets[1]!, setType: 'top' };
+    const changed = Session.updateSet(session([back]), 'bench', 0, { weight: 105 });
+    expect(Session.completeSet(changed, 'bench', 0).exercises[0]!.sets[1]).toMatchObject({ weight: 120, reps: 3 });
+  });
+
   it('carries the weight and reps really done over to the next sets', () => {
     const changed = Session.updateSet(session([bench()]), 'bench', 0, { weight: 100, reps: 8 });
     const s = Session.completeSet(changed, 'bench', 0);
@@ -359,7 +376,7 @@ describe('nextSetSummary', () => {
   it('describes the next set for the rest notification', () => {
     expect(Session.nextSetSummary(session([bench()]), formatKg)).toBe('bench · 60 kg × 10');
     const pullups = active('pullup', [{ weight: 0, reps: 8 }]);
-    expect(Session.nextSetSummary(session([pullups]), formatKg)).toBe('pullup · 8 reps');
+    expect(Session.nextSetSummary(session([pullups]), formatKg)).toBe('pullup · poids du corps × 8');
     expect(Session.nextSetSummary(Session.completeRemaining(session([bench()]), 'bench'), formatKg)).toBe(
       'Lance ta prochaine série.',
     );
