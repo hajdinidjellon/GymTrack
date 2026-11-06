@@ -177,11 +177,12 @@ describe('timing the sets', () => {
     expect(all.exercises[0]!.sets.map((s) => s.doneAt)).toEqual([1000, 5000]);
   });
 
-  it('saves the rest really taken, without the timestamps', () => {
+  it('saves the rest really taken, and when each set was validated', () => {
     const s = Session.completeSet(Session.completeSet(session([bench()]), 'bench', 0, 0), 'bench', 1, 150_000);
     const sets = Session.toWorkout(s, new Date('2026-10-20T19:00:00Z')).exercises[0]!.sets;
     expect(sets.map((x) => x.restTaken)).toEqual([undefined, 110]);
-    expect(sets[1]).not.toHaveProperty('doneAt');
+    // Kept for the timeline of the past session
+    expect(sets[1]).toHaveProperty('doneAt');
   });
 });
 

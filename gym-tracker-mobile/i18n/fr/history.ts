@@ -4,8 +4,13 @@ export const history = {
   subtitle: 'Tout ce que tu as fait, séance par séance.',
   empty: 'Pas encore de séance. Ta première apparaîtra ici.',
   rowA11y: '{name}, {date}, {sets}, {kg} kilos soulevés',
+  timeline: {
+    start: 'Début',
+    end: 'Fin',
+    total: 'Durée',
+    a11y: 'De {start} à {end}, {total}',
+  },
   detail: {
-    minutes: '{n} min',
     lifted: '{kg} kg soulevés',
     record: 'Record · {name} {kg} kg',
     warmup: 'échauff.',

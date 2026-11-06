@@ -35,7 +35,8 @@ export const clampRest = (s: number) => Math.max(REST_LIMITS[0], Math.min(REST_L
  * and gaps that are too short or too long tell nothing.
  */
 export function withRestTaken(sets: WorkoutSet[]): WorkoutSet[] {
-  return sets.map(({ doneAt, restTaken: _old, ...set }, i) => {
+  return sets.map(({ restTaken: _old, ...set }, i) => {
+    const { doneAt } = set;
     const before = sets[i - 1]?.doneAt;
     if (doneAt == null || before == null || !set.completed) return set;
     const gap = (doneAt - before) / 1000;

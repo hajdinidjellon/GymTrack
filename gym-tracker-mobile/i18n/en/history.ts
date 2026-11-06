@@ -5,8 +5,13 @@ export const history: Dictionary['history'] = {
   subtitle: 'Everything you did, workout by workout.',
   empty: 'No workout yet. Your first one will show up here.',
   rowA11y: '{name}, {date}, {sets}, {kg} kilos lifted',
+  timeline: {
+    start: 'Start',
+    end: 'End',
+    total: 'Duration',
+    a11y: 'From {start} to {end}, {total}',
+  },
   detail: {
-    minutes: '{n} min',
     lifted: '{kg} kg lifted',
     record: 'Record · {name} {kg} kg',
     warmup: 'warm-up',

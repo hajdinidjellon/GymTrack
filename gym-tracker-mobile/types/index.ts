@@ -26,7 +26,7 @@ export interface WorkoutSet {
   restTime?: number;
   /** Seconds really rested before this set, measured from the validations. */
   restTaken?: number;
-  /** When the set was validated (epoch ms). Running session only, not saved in the history. */
+  /** When the set was validated (epoch ms). Kept in the history: the session's timeline. */
   doneAt?: number;
   /** What the progression engine asked for when this set was logged. */
   target?: SetTarget;
@@ -225,4 +225,6 @@ export interface ActiveSession {
   restDuration: number | null;
   /** The last validation, to undo it. `batch`: every set "Tout comme prévu" validated at once. */
   lastCompleted: { exerciseId: string; setIndex: number; batch?: number[] } | null;
+  /** Left open for hours, then "Reprendre" on purpose (epoch ms): not asked again right away. */
+  keptOpenAt?: number;
 }

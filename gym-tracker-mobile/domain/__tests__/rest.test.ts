@@ -39,7 +39,8 @@ describe('withRestTaken', () => {
   it('measures the rest between two validations, minus the set itself', () => {
     const sets = withRestTaken([set({ doneAt: at(0) }), set({ doneAt: at(150) }), set({ doneAt: at(300) })]);
     expect(sets.map((s) => s.restTaken)).toEqual([undefined, 150 - setSeconds(10), 150 - setSeconds(10)]);
-    expect(sets.some((s) => 'doneAt' in s)).toBe(false);
+    // The validation times stay: the past session's timeline reads them
+    expect(sets.every((s) => 'doneAt' in s)).toBe(true);
   });
 
   it('ignores sets validated together, long breaks and sets not done', () => {

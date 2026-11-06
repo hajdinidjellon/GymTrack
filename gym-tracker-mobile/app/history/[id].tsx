@@ -7,6 +7,7 @@ import { formatDay, formatThousands } from '@/domain/format';
 import { loggedExercises, setsDone, type LoggedSet } from '@/domain/history';
 import { formatKg } from '@/domain/plates';
 import { loadLabel, newRecords, tonnage } from '@/domain/sessionBuilder';
+import { timeline } from '@/domain/sessionTime';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -20,6 +21,7 @@ import { Chip } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { Text } from '@/components/ui/Text';
 import { ChevronRight } from '@/components/ui/icons';
+import { SessionTimeline } from '@/components/stats/SessionTimeline';
 import { dayName, exerciseName, t } from '@/i18n';
 
 /** One past session: what was done on each exercise, set by set. */
@@ -44,6 +46,7 @@ export default function WorkoutScreen() {
 
   const exercises = loggedExercises(workout);
   const records = newRecords(workout, workouts, own);
+  const time = timeline(workout);
 
   return (
     <Screen scroll>
@@ -53,7 +56,6 @@ export default function WorkoutScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: space.lg }}>
           <Chip label={t('common.exercises', { count: exercises.length })} />
           <Chip label={t('common.sets', { count: setsDone(workout) })} />
-          {workout.duration ? <Chip label={t('history.detail.minutes', { n: workout.duration })} /> : null}
           <Chip label={t('history.detail.lifted', { kg: formatThousands(tonnage(workout, factor)) })} />
           {records.map((r) => (
             <Chip
@@ -63,6 +65,11 @@ export default function WorkoutScreen() {
             />
           ))}
         </View>
+        {time && time.minutes > 0 ? (
+          <View style={{ marginBottom: space.lg }}>
+            <SessionTimeline timeline={time} />
+          </View>
+        ) : null}
       </FadeIn>
 
       <View style={{ gap: 12 }}>

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
-import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
+import { formatDay, formatShortDay, formatThousands, formatTime } from '@/domain/format';
 import { setsDone } from '@/domain/history';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
@@ -25,6 +25,7 @@ import { weekStreak, workoutsThisWeek } from '@/domain/week';
 import { type ChoosableDay, choosableDays, getSplit, hasExercises } from '@/domain/programs';
 import { latestWorkoutDate, suggestedSplit, SWITCH_AFTER } from '@/domain/programSwitch';
 import { nextScheduled, validSchedule, whenLabel } from '@/domain/schedule';
+import { isStale, lastSetAt } from '@/domain/sessionTime';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
@@ -48,6 +49,15 @@ import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 import { WeekStrip } from '@/components/stats/WeekStrip';
 import { RunningCard } from '@/components/session/RunningCard';
+import { StaleCard } from '@/components/session/StaleCard';
+
+/** A session left open, saved as ending at its last set. */
+async function finishAt(end: number) {
+  const workout = useSessionStore.getState().finishSession(end);
+  if (!workout || workout.exercises.length === 0) return;
+  await useWorkoutStore.getState().addWorkout(workout);
+  router.push({ pathname: '/session/summary', params: { id: workout.id } });
+}
 
 function start(plan: PlannedDay) {
   useSessionStore.getState().startSession(plan.name, toActiveExercises(plan));
@@ -83,6 +93,10 @@ export default function Today() {
   }, [ctx, picked]);
   const active = useSessionStore((s) => s.activeSession);
   const running = !!active;
+  // Forgotten open for hours: asked, never silently resumed
+  const now = new Date().getTime();
+  const stale = !!active && isStale(active, now);
+  const lastSet = active ? lastSetAt(active.exercises) : null;
   const perWeek = useProfileStore((s) => s.profile?.program.perWeek ?? 3);
   const streak = weekStreak(workouts, perWeek);
 
@@ -91,7 +105,16 @@ export default function Today() {
       tabs
       scroll
       footer={
-        running ? (
+        stale ? (
+          lastSet != null ? (
+            <StickerButton
+              label={t('session.stale.finishAt', { time: formatTime(lastSet) })}
+              testID="finish-stale-session"
+              haptic="medium"
+              onPress={() => void finishAt(lastSet)}
+            />
+          ) : null
+        ) : running ? (
           <StickerButton
             label={t('home.resume')}
             testID="resume-session"
@@ -114,7 +137,19 @@ export default function Today() {
         <WeekCard />
       </FadeIn>
       {running ? null : <SwitchCard />}
-      {active ? (
+      {active && stale ? (
+        <FadeIn index={2}>
+          <StaleCard
+            session={active}
+            now={now}
+            onResume={() => {
+              useSessionStore.getState().keepSessionOpen();
+              router.push('/session');
+            }}
+            onDelete={() => useSessionStore.getState().discardSession()}
+          />
+        </FadeIn>
+      ) : active ? (
         <FadeIn index={2}>
           <RunningCard session={active} />
         </FadeIn>

@@ -41,6 +41,12 @@ describe('insights', () => {
     });
   });
 
+  it('leaves out the sessions forgotten open from the usual length', () => {
+    const weeks = threeWeeks().map((w, i) => (i % 3 === 0 ? { ...w, duration: 400 } : w));
+    const found = insights(weeks, { perWeek: 3, now });
+    expect(found.find((i) => i.id === 'duration')?.text).toBe('Tes séances durent environ 50 min.');
+  });
+
   it('stays quiet when there is no clear habit', () => {
     const mixed = [
       workout(on(10, 5, 8), 'A', [lift('Squat', 60, [10])]),
