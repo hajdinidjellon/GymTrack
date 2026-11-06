@@ -31,7 +31,7 @@ export function EffortPicker() {
               accessibilityState={{ checked: selected }}
               style={({ pressed }) => ({
                 flex: 1,
-                height: 44,
+                minHeight: 44,
                 borderRadius: radius.pill,
                 borderWidth: selected ? border.strong : border.base,
                 borderColor: colors.outline,

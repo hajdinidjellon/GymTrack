@@ -196,7 +196,7 @@ export function SetView({ cursor, footer }: Props) {
             accessibilityLabel={t('session.setView.addSetA11y')}
             style={({ pressed }) => ({
               marginTop: 8,
-              height: 48,
+              minHeight: 48,
               borderRadius: radius.row,
               borderWidth: border.base,
               borderStyle: 'dashed',

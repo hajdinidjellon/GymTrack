@@ -187,8 +187,10 @@ export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpan
       accessibilityRole="button"
       accessibilityLabel={t('session.rest.miniA11y', { count: left })}
       style={({ pressed }) => ({
-        height: 60,
+        minHeight: 60,
         paddingHorizontal: 18,
+        paddingVertical: 6,
+        gap: 8,
         borderRadius: radius.pill,
         borderWidth: border.strong,
         borderColor: colors.outline,
@@ -198,13 +200,13 @@ export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpan
         justifyContent: 'space-between',
       })}
     >
-      <Text size={16} weight="titleMedium">
+      <Text size={16} weight="titleMedium" numberOfLines={1} style={{ flexShrink: 1 }}>
         {t('session.rest.title')}
       </Text>
       <Text size={28} weight="black">
         {clock}
       </Text>
-      <Text size={14} weight="bold" style={{ textDecorationLine: 'underline' }}>
+      <Text size={14} weight="bold" numberOfLines={1} style={{ flexShrink: 1, textDecorationLine: 'underline' }}>
         {t('session.rest.expand')}
       </Text>
     </Pressable>

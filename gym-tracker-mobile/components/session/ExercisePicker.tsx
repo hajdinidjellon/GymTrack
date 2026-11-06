@@ -167,6 +167,7 @@ export function ExercisePicker({
               {/* Marge sur un cadre : sur iOS, une marge sur le TextInput décale son texte vers le bas */}
               <View style={{ marginTop: space.md }}>
                 <TextInput
+                  maxFontSizeMultiplier={1.5}
                   value={query}
                   onChangeText={setQuery}
                   placeholder={t('session.picker.searchPlaceholder')}
@@ -175,7 +176,7 @@ export function ExercisePicker({
                   autoCorrect={false}
                   accessibilityLabel={t('session.picker.searchA11y')}
                   style={{
-                    height: 52,
+                    minHeight: 52,
                     paddingHorizontal: 16,
                     paddingVertical: 0,
                     borderRadius: radius.row,

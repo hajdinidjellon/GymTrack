@@ -119,7 +119,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
                   // Three per row: 30 % plus the gaps leaves no room for a fourth
                   flexBasis: '30%',
                   flexGrow: 1,
-                  height: 64,
+                  minHeight: 64,
                   borderRadius: radius.row,
                   alignItems: 'center',
                   justifyContent: 'center',

@@ -50,7 +50,7 @@ export function DayExercisesEditor<T>({ split, day, items, keyOf, renderRow, onD
         accessibilityRole="button"
         accessibilityLabel={t('program.editor.add')}
         style={({ pressed }) => ({
-          height: 56,
+          minHeight: 56,
           borderRadius: radius.row,
           borderWidth: border.base,
           borderStyle: 'dashed',

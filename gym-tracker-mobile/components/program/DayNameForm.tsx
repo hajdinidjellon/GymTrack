@@ -22,6 +22,7 @@ export function DayNameForm({ initial = '', submitLabel, onSubmit, onCancel }: P
   return (
     <StickerCard style={{ gap: space.sm }}>
       <TextInput
+        maxFontSizeMultiplier={1.5}
         value={name}
         onChangeText={(text) => {
           setName(text);
@@ -35,7 +36,7 @@ export function DayNameForm({ initial = '', submitLabel, onSubmit, onCancel }: P
         onSubmitEditing={() => setError(onSubmit(name))}
         accessibilityLabel={t('program.days.nameA11y')}
         style={{
-          height: 54,
+          minHeight: 54,
           paddingHorizontal: 16,
           paddingVertical: 0,
           borderRadius: radius.row,

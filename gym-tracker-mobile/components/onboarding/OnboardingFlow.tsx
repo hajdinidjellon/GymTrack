@@ -284,7 +284,8 @@ function GymStep({ answers, set }: StepProps) {
             accessibilityLabel={t('onboarding.flow.gym.barLabel', { kg: b.kg, label: b.label })}
             style={{
               flex: 1,
-              height: 60,
+              minHeight: 60,
+              flexWrap: 'wrap',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',

@@ -178,6 +178,7 @@ function Field({ label, value, onChangeText, placeholder, kind }: FieldProps) {
       {/* L'ombre dure est portée par le cadre : TextInput ne la prend pas */}
       <View style={{ borderRadius: radius.input, ...hardShadow(2) }}>
         <TextInput
+          maxFontSizeMultiplier={1.5}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -189,7 +190,7 @@ function Field({ label, value, onChangeText, placeholder, kind }: FieldProps) {
           textContentType={CONTENT_TYPE[kind]}
           secureTextEntry={kind === 'password' || kind === 'newPassword'}
           style={{
-            height: 60,
+            minHeight: 60,
             borderRadius: radius.input,
             borderWidth: border.base,
             borderColor: colors.outline,

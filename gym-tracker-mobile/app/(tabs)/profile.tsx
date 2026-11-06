@@ -211,7 +211,7 @@ export default function Profile() {
                 // On the outer view: the three bars share the whole width
                 containerStyle={{ flex: 1 }}
                 style={{
-                  height: 48,
+                  minHeight: 48,
                   borderRadius: radius.pill,
                   borderWidth: on ? border.strong : border.base,
                   borderColor: on ? colors.outlineStrong : colors.line,
@@ -505,7 +505,7 @@ function Row({ label, value, onPress, chevron, last, hint, on }: RowProps) {
       accessibilityLabel={toggle ? label : t('profile.row', { label, value })}
       accessibilityHint={hint}
       style={({ pressed }) => ({
-        height: 56,
+        minHeight: 56,
         gap: 16,
         paddingHorizontal: 18,
         flexDirection: 'row',

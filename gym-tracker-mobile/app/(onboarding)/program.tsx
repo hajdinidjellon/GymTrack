@@ -93,7 +93,10 @@ export default function ProgramScreen() {
             onPress={() => chooseSplit(s.id)}
             accessibilityLabel={`${s.title}, ${s.meta}`}
             style={{
-              height: 74,
+              minHeight: 74,
+              paddingVertical: 10,
+              flexWrap: 'wrap',
+              columnGap: 12,
               paddingHorizontal: 22,
               flexDirection: 'row',
               alignItems: 'center',

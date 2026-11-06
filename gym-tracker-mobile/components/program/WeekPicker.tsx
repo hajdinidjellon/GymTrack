@@ -73,7 +73,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                 }}
               >
                 {name ? (
-                  <Text size={15} weight="titleMedium">
+                  <Text size={15} weight="titleMedium" maxFontSizeMultiplier={1.3}>
                     {sessionLetter(name, names)}
                   </Text>
                 ) : null}

@@ -91,7 +91,13 @@ export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
               })}
             >
               <Icon color={tint} size={20} />
-              <Text size={12} weight={focused ? 'black' : 'semibold'} color={tint} numberOfLines={1}>
+              <Text
+                size={12}
+                maxFontSizeMultiplier={1.3}
+                weight={focused ? 'black' : 'semibold'}
+                color={tint}
+                numberOfLines={1}
+              >
                 {label}
               </Text>
             </Pressable>

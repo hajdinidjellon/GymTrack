@@ -23,6 +23,7 @@ interface Props {
   haptic?: HapticKind;
 }
 
+// Minimum heights: with a large text size the button grows instead of cutting its label
 const HEIGHT: Record<Size, number> = { xl: 76, large: 60, small: 48 };
 const FONT: Record<Size, number> = { xl: 24, large: 18, small: 15 };
 
@@ -64,8 +65,9 @@ export function StickerButton({
       }}
       style={({ pressed }) => [
         {
-          height: HEIGHT[size],
+          minHeight: HEIGHT[size],
           paddingHorizontal: 20,
+          paddingVertical: 8,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
@@ -90,7 +92,8 @@ export function StickerButton({
         weight={ghost ? 'bold' : 'titleMedium'}
         size={FONT[size]}
         color={ghost ? colors.inkMuted : primary ? colors.onCoral : colors.ink}
-        style={ghost ? { textDecorationLine: 'underline' } : undefined}
+        align="center"
+        style={[{ flexShrink: 1 }, ghost ? { textDecorationLine: 'underline' } : null]}
       >
         {label}
       </Text>

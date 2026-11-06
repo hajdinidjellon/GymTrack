@@ -51,7 +51,12 @@ export function WeekStrip({ days }: { days: WeekDay[] }) {
             {d.done ? (
               <Check size={18} color={colors.card} />
             ) : (
-              <Text size={13} weight="bold" color={d.today ? colors.onDayToday : colors.inkFaint}>
+              <Text
+                size={13}
+                maxFontSizeMultiplier={1.3}
+                weight="bold"
+                color={d.today ? colors.onDayToday : colors.inkFaint}
+              >
                 {d.date.getDate()}
               </Text>
             )}

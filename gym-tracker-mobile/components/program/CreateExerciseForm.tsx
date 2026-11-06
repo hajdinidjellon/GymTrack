@@ -58,6 +58,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', ed
           {t('program.create.name')}
         </Text>
         <TextInput
+          maxFontSizeMultiplier={1.5}
           value={name}
           onChangeText={(text) => {
             setName(text);
@@ -70,7 +71,7 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', ed
           returnKeyType="done"
           accessibilityLabel={t('program.create.nameA11y')}
           style={{
-            height: 54,
+            minHeight: 54,
             paddingHorizontal: 16,
             paddingVertical: 0,
             borderRadius: radius.row,

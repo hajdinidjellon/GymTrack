@@ -18,6 +18,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
   if (draft !== null) {
     return (
       <TextInput
+        maxFontSizeMultiplier={1.5}
         value={draft}
         onChangeText={setDraft}
         onBlur={() => {

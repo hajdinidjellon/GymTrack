@@ -283,7 +283,7 @@ export default function ExerciseScreen() {
                     accessibilityLabel={t('exercise.increment.a11y', { kg: formatKg(v) })}
                     containerStyle={{ flex: 1 }}
                     style={{
-                      height: 44,
+                      minHeight: 44,
                       borderRadius: radius.pill,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -364,7 +364,7 @@ export default function ExerciseScreen() {
                 <View
                   key={h.date}
                   style={{
-                    height: 52,
+                    minHeight: 52,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',

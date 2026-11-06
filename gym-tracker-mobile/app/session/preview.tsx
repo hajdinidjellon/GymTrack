@@ -107,7 +107,7 @@ export default function Preview() {
                 { name: dayName(d.name) },
               )}
               style={{
-                height: 44,
+                minHeight: 44,
                 paddingHorizontal: 18,
                 borderRadius: radius.pill,
                 borderWidth: on ? border.strong : border.base,

@@ -93,7 +93,7 @@ export default function DaysScreen() {
             onPress={() => setAdding(true)}
             accessibilityRole="button"
             style={({ pressed }) => ({
-              height: 56,
+              minHeight: 56,
               borderRadius: radius.row,
               borderWidth: border.base,
               borderStyle: 'dashed',

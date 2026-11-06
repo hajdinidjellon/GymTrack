@@ -81,7 +81,12 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
               {finished ? (
                 <Check size={15} color={colors.onSuccess} />
               ) : (
-                <Text size={now ? 15 : 13} weight="black" color={now ? colors.onCoral : colors.inkFaint}>
+                <Text
+                  size={now ? 15 : 13}
+                  maxFontSizeMultiplier={1.3}
+                  weight="black"
+                  color={now ? colors.onCoral : colors.inkFaint}
+                >
                   {i + 1}
                 </Text>
               )}
