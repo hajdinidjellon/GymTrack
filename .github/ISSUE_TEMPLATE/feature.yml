@@ -1,0 +1,21 @@
+name: Idée
+description: Une fonctionnalité ou une amélioration
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Le besoin
+      description: Ce qui manque ou ce qui coûte des taps aujourd'hui, du point de vue de la personne à la salle.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: L'idée
+      description: Ce que l'app ferait, écran par écran si possible.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Ce qu'on fait sans
+      description: Comment on s'en sort aujourd'hui (autre app, carnet, rien).

@@ -1,0 +1,13 @@
+# Release notes sections, from the labels set by labeler.yml (branch prefix) and Dependabot
+changelog:
+  categories:
+    - title: Nouveautés
+      labels: [feature]
+    - title: Corrections
+      labels: [bug]
+    - title: Sous le capot
+      labels: [refactor, chore, ci]
+    - title: Dépendances
+      labels: [dependencies]
+    - title: Autres changements
+      labels: ['*']

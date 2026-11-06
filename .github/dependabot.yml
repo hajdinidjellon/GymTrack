@@ -5,7 +5,15 @@ updates:
     directory: /gym-tracker-mobile
     schedule:
       interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Paris
     open-pull-requests-limit: 3
+    # Conventional title, so the PR passes the title check
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+    labels: [dependencies]
     groups:
       dependencies:
         patterns: ['*']
@@ -26,7 +34,14 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: '@babel/*'
         update-types: [version-update:semver-major]
+  # Actions are pinned by commit SHA: Dependabot moves the SHA and the version comment together
   - package-ecosystem: github-actions
-    directory: /
+    directories: [/, /.github/actions/*]
     schedule:
       interval: monthly
+    commit-message:
+      prefix: ci(deps)
+    labels: [dependencies, ci]
+    groups:
+      actions:
+        patterns: ['*']
