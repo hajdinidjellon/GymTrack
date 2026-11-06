@@ -14,6 +14,7 @@ import { useLocale } from '@/hooks/useLocale';
 import { localeTag, t, type LanguageSetting } from '@/i18n';
 import { hasSession, signOut } from '@/services/supabase';
 import { speak } from '@/services/speech';
+import { voiceHelloLine } from '@/domain/voiceLines';
 import { playRestBell } from '@/services/sound';
 import { useProfileStore } from '@/stores/profileStore';
 import { REST_CHOICES, useSettingsStore } from '@/stores/settingsStore';
@@ -63,7 +64,7 @@ export default function Profile() {
   const toggleVoice = () => {
     const voice = !settings.voice;
     updateSettings({ voice });
-    if (voice) speak(t('profile.during.voiceHello'));
+    if (voice) speak(voiceHelloLine());
   };
 
   const toggleVoiceCommands = async () => {

@@ -124,7 +124,7 @@ describe('rest timer', () => {
     // La voix attend la fin de la cloche
     expect(Speech.speak).not.toHaveBeenCalledWith(expect.stringContaining("C'est reparti"), expect.anything());
     jest.advanceTimersByTime(900);
-    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Série 2. 60 kilos, 10 reps.", expect.anything());
+    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Dernière série ! 60 kilos, 10 reps.", expect.anything());
   });
 
   it('stays silent with the bell off, and the notification too', () => {
@@ -133,7 +133,7 @@ describe('rest timer', () => {
     expect(scheduleRestCompleteNotification).toHaveBeenLastCalledWith(120, 'bench · 60 kg × 10', false);
     jest.advanceTimersByTime(120_000);
     expect(playRestBell).not.toHaveBeenCalled();
-    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Série 2. 60 kilos, 10 reps.", expect.anything());
+    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Dernière série ! 60 kilos, 10 reps.", expect.anything());
   });
 
   it('adds time to the current rest', () => {
@@ -416,5 +416,22 @@ describe('a rest that ends while the phone sleeps', () => {
 describe('notification permission', () => {
   it('is asked when a session starts, not when the app opens', () => {
     expect(requestPermissions).toHaveBeenCalled();
+  });
+});
+
+describe('voice cues', () => {
+  it('says how many sets are left when the rest starts', () => {
+    store().completeSet('bench', 0);
+    expect(Speech.speak).toHaveBeenLastCalledWith('Plus qu’une série !', expect.anything());
+  });
+
+  it('ends the session out loud', () => {
+    store().completeRemaining('bench');
+    store().stopRestTimer();
+    store().completeSet('ohp', 0);
+    expect(Speech.speak).toHaveBeenLastCalledWith(
+      expect.stringContaining('Séance terminée'),
+      expect.anything(),
+    );
   });
 });

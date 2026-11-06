@@ -261,6 +261,12 @@ export const domain = {
     note: 'Note : {note}.',
     restOver: "C'est reparti. {set}",
     holdGo: "C'est parti.",
+    lastLoad: 'Dernière série ! {load}, {reps} reps.',
+    lastLoadSeconds: 'Dernière série ! {load}, {reps} secondes.',
+    lastReps: 'Dernière série ! {reps} reps.',
+    lastSeconds: 'Dernière série ! {reps} secondes.',
+    setsLeft: { one: 'Plus qu’une série !', other: 'Plus que {count} séries.' },
+    sessionDone: 'Séance terminée. Énorme travail aujourd’hui !',
   },
 
   notifications: {

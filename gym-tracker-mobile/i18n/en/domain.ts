@@ -262,6 +262,12 @@ export const domain: Dictionary['domain'] = {
     note: 'Note: {note}.',
     restOver: "Let's go. {set}",
     holdGo: "Let's go.",
+    lastLoad: 'Last set! {load}, {reps} reps.',
+    lastLoadSeconds: 'Last set! {load}, {reps} seconds.',
+    lastReps: 'Last set! {reps} reps.',
+    lastSeconds: 'Last set! {reps} seconds.',
+    setsLeft: { one: 'One set left!', other: '{count} sets left.' },
+    sessionDone: 'Workout done. Huge work today!',
   },
 
   notifications: {

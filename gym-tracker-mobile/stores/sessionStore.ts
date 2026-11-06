@@ -20,7 +20,14 @@ import type { VoiceCommand } from '@/domain/voiceCommands';
 import * as Session from '@/domain/session';
 import { formatKg } from '@/domain/plates';
 import { findCurrent } from '@/domain/sessionCursor';
-import { nextExerciseLine, nextSetLine, restOverLine } from '@/domain/voiceLines';
+import {
+  holdGoLine,
+  nextExerciseLine,
+  nextSetLine,
+  restOverLine,
+  sessionDoneLine,
+  setsLeftLine,
+} from '@/domain/voiceLines';
 import {
   cancelRestCompleteNotification,
   requestPermissions,
@@ -29,7 +36,6 @@ import {
 import { speak } from '@/services/speech';
 import { playRestBell, REST_BELL_MS } from '@/services/sound';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { t } from '@/i18n';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
 type NudgeField = 'weight' | 'reps';
@@ -103,6 +109,10 @@ function clearRestEndTimeout() {
 /** Past this, a rest end the phone delivers late (app asleep) stays quiet: the notification already rang. */
 const LATE_MS = 2000;
 
+/** Sets validated so far: picks which recorded variant of a line is said. */
+const doneSets = (session: ActiveSession) =>
+  session.exercises.reduce((n, e) => n + e.sets.filter((x) => x.completed).length, 0);
+
 function armRestEnd(ms: number) {
   clearRestEndTimeout();
   const due = Date.now() + ms;
@@ -118,8 +128,9 @@ function armRestEnd(ms: number) {
 
     const session = useSessionStore.getState().activeSession;
     const next = session && findCurrent(session.exercises);
-    if (!next || next.exercise.needsWeight || !voice) return;
-    const line = restOverLine(next);
+    if (!session || !next || next.exercise.needsWeight || !voice) return;
+    // Une autre façon de dire « C'est reparti » à chaque série
+    const line = restOverLine(next, doneSets(session));
     // La voix attend la fin des coups de cloche
     if (restBell) restBellVoice = setTimeout(() => speak(line), REST_BELL_MS);
     else speak(line);
@@ -133,7 +144,11 @@ function armRestEnd(ms: number) {
 function afterSet(previousExerciseId: string, restSeconds: number) {
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
   const session = useSessionStore.getState().activeSession;
-  if (!session || Session.isDone(session)) return;
+  if (!session) return;
+  if (Session.isDone(session)) {
+    if (settings().voice) speak(sessionDoneLine(doneSets(session)));
+    return;
+  }
 
   const { restTimerEnabled, voice } = settings();
   const rests = restSeconds > 0;
@@ -143,6 +158,11 @@ function afterSet(previousExerciseId: string, restSeconds: number) {
   if (!next || !voice) return;
   if (next.exercise.id !== previousExerciseId) speak(nextExerciseLine(next, settings()));
   else if (!rests) speak(nextSetLine(next, settings()));
+  else {
+    // Pendant le repos : combien de séries il reste sur cet exercice
+    const left = setsLeftLine(next.exercise);
+    if (left) speak(left);
+  }
 }
 
 /**
@@ -300,7 +320,7 @@ export const useSessionStore = create<SessionStore>()(
 
         holdStarted: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => null);
-          if (settings().voice) speak(t('domain.voice.holdGo'));
+          if (settings().voice) speak(holdGoLine());
         },
 
         finishHold: (exerciseId, setIndex, seconds, reached) => {

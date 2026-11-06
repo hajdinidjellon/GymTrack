@@ -16,6 +16,8 @@ jest.mock('expo-haptics', () => ({
 
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));
 jest.mock('@/services/sound', () => ({ playRestBell: jest.fn(), REST_BELL_MS: 900 }));
+// La voix enregistrée a ses propres tests : ailleurs, c'est la voix du téléphone
+jest.mock('@/services/voicePack', () => ({ hasClips: jest.fn(() => false), playClips: jest.fn(), stopClips: jest.fn() }));
 
 // Les tests lisent les textes français, quelle que soit la langue de la machine
 jest.mock('@/services/locale', () => ({ deviceLocaleTag: () => 'fr-FR' }));
