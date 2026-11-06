@@ -26,6 +26,12 @@ describe('parseSettings', () => {
     });
   });
 
+  it('reads the collars, and settings saved before them load without', () => {
+    expect(parseSettings(JSON.stringify({ voice: false })).collarWeight).toBe(0);
+    expect(parseSettings(JSON.stringify({ collarWeight: 2.5 })).collarWeight).toBe(2.5);
+    expect(parseSettings(JSON.stringify({ collarWeight: 40 }))).toEqual(DEFAULT_SETTINGS);
+  });
+
   it('migrates the 5 s debug rest of the old version', () => {
     expect(parseSettings(JSON.stringify({ defaultRestTime: 5 })).defaultRestTime).toBe(90);
   });
@@ -131,6 +137,18 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({ Squat: false });
     setWarmups('Squat', true);
     expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({});
+  });
+
+  it('stores the manual mode per exercise, never the automatic one', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { setManualProgression } = useSettingsStore.getState();
+    setManualProgression('Squat', true);
+    expect(useSettingsStore.getState().settings.manualProgression).toEqual({ Squat: true });
+    setManualProgression('Squat', false);
+    expect(useSettingsStore.getState().settings.manualProgression).toEqual({});
+    expect(parseSettings(JSON.stringify({ manualProgression: { Squat: true } })).manualProgression).toEqual({
+      Squat: true,
+    });
   });
 
   it('chains and unchains exercises of a day', () => {

@@ -41,6 +41,10 @@ export const profile = {
     commandsDeniedTitle: 'Micro refusé',
     commandsDeniedText: 'Autorise le micro et la reconnaissance vocale pour Okilo dans les Réglages du téléphone.',
     tapToChange: 'Touche pour changer',
+    rpe: 'RPE précis',
+    rpeOn: 'De 6 à 10',
+    rpeOff: 'Non',
+    rpeHint: 'Après une série, la note RPE de 6 à 10 au lieu de Facile / Juste bien / À fond. Touche pour changer.',
   },
   language: {
     title: 'Langue',
@@ -61,6 +65,12 @@ export const profile = {
     a11y: 'Disque de {kg} kg',
     bar: 'Barre {kg} kg',
     barA11y: 'Barre de {kg} kilos',
+    collars: 'Colliers',
+    collarsNone: 'Sans',
+    collarsKg: '{kg} kg chacun',
+    collarsA11y: 'Colliers de {kg} kilos chacun',
+    collarsNoneA11y: 'Sans colliers',
+    collarsHint: 'Colliers de compétition : comptés dans le total, les disques par côté en tiennent compte.',
   },
   data: {
     title: 'Tes données',

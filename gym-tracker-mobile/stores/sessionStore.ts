@@ -57,6 +57,8 @@ interface SessionStore {
   completeRemaining: (exerciseId: string) => void;
   /** How the last validated set felt; the same effort again clears it. */
   rateLastSet: (effort: Effort) => void;
+  /** "RPE précis": the RPE of the set just validated, 6 to 10 by half points. */
+  rateLastSetRpe: (rpe: number) => void;
   /** Takes back the last validated set and cancels its rest. */
   undoLastSet: () => void;
   /** Another exercise instead of this one; the sets already done stay. */
@@ -272,6 +274,11 @@ export const useSessionStore = create<SessionStore>()(
 
         rateLastSet: (effort) => {
           apply((s) => Session.rateLastSet(s, effort));
+          Haptics.selectionAsync().catch(() => null);
+        },
+
+        rateLastSetRpe: (rpe) => {
+          apply((s) => Session.rateLastSetRpe(s, rpe));
           Haptics.selectionAsync().catch(() => null);
         },
 

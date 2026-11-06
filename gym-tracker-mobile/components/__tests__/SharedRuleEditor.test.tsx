@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { EXERCISES } from '@/domain/programs';
+import { EXERCISES, similarExercises } from '@/domain/programs';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { SharedRuleEditor } from '@/components/program/SharedRuleEditor';
 
@@ -31,7 +31,8 @@ describe('SharedRuleEditor', () => {
 
   it('hides the choice when no similar exercise is on the same rule', async () => {
     const mine = { sets: 5, repMin: 3, repMax: 5 };
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, ruleOverrides: { Pompes: mine } } });
+    const ruleOverrides = Object.fromEntries(similarExercises(EXERCISES.dips).map((e) => [e.name, mine]));
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, ruleOverrides } });
     await render(<SharedRuleEditor def={EXERCISES.dips} goal="muscle" base={base} />);
     expect(screen.queryByRole('checkbox')).toBeNull();
   });

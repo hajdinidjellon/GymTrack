@@ -29,8 +29,12 @@ export interface StrengthBest {
 const oldestFirst = (history: ExerciseSession[]) =>
   [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-/** The best estimate ever, and the set behind it. The first one to reach it keeps it. */
-export function bestE1rm(history: ExerciseSession[]): StrengthBest | null {
+/**
+ * The best estimate ever, and the set behind it. The first one to reach it keeps it.
+ * None on an assisted machine: more help is never more strength.
+ */
+export function bestE1rm(history: ExerciseSession[], assisted = false): StrengthBest | null {
+  if (assisted) return null;
   let best: StrengthBest | null = null;
   for (const session of oldestFirst(history)) {
     for (const set of mainSets(session.sets)) {
@@ -52,9 +56,10 @@ export interface RepRecord {
 /**
  * The heaviest weight lifted for at least N reps, for each N of REP_BUCKETS.
  * A record a higher rep count already beats is left out: 80 kg × 10 says
- * more than 80 kg × 5.
+ * more than 80 kg × 5. None on an assisted machine: more help is never a record.
  */
-export function repRecords(history: ExerciseSession[]): RepRecord[] {
+export function repRecords(history: ExerciseSession[], assisted = false): RepRecord[] {
+  if (assisted) return [];
   const sessions = oldestFirst(history);
   const records = REP_BUCKETS.flatMap((reps) => {
     let best: RepRecord | null = null;
