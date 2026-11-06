@@ -11,6 +11,8 @@ const PLATE: Record<string, [number, number]> = {
   '5': [68, 13],
   '2.5': [54, 11],
   '1.25': [44, 9],
+  '0.5': [36, 7],
+  '0.25': [30, 6],
 };
 
 export function plateSize(kg: number, scale = 1): { height: number; width: number } {

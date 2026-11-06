@@ -7,7 +7,8 @@ import { getLocale, listOf, t } from '@/i18n';
 
 export const DEFAULT_BAR = 20;
 export const DEFAULT_PLATES = [20, 15, 10, 5, 2.5, 1.25];
-export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
+/** Every plate a gym may have, heaviest first. The change plates (0,5 and 0,25) are off by default. */
+export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25, 0.5, 0.25];
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
