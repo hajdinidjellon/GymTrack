@@ -5,7 +5,7 @@
  */
 
 import { LOADING_SUFFIX, loadingOf, missingPerSide, sidePlates, type Loading } from '@/domain/loading';
-import { formatKg } from '@/domain/plates';
+import { formatKg, type Gym } from '@/domain/plates';
 import type { Cursor } from '@/domain/sessionCursor';
 import { clipIds, joinSpoken, spoken, type Spoken } from '@/domain/voiceClips';
 import { isWarmup, setNumber } from '@/domain/warmup';
@@ -38,7 +38,7 @@ function platesClips(perSide: number[]): string[] | null {
 }
 
 /** "Mets 20 et 1,25 de chaque côté." For the bar and the plate-loaded machines only. */
-export function platesLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeight' | 'plates'>): Spoken | null {
+export function platesLine(cursor: Cursor, settings: Gym): Spoken | null {
   const loading = loadingOf(cursor.exercise);
   if (loading !== 'bar' && loading !== 'perSide') return null;
   const perSide = sidePlates(loading, cursor.set.weight, settings);
@@ -55,6 +55,7 @@ const SUFFIX_CLIP: Record<Loading, string | null> = {
   perSide: clipIds.perSide(),
   perHand: clipIds.perHand(),
   stack: null,
+  assist: clipIds.assist(),
 };
 
 /** The last working set of the exercise: said « Dernière série ! » instead of its number. */
@@ -82,7 +83,8 @@ export function setLine(cursor: Cursor): Spoken {
       : timed
         ? 'domain.voice.setSeconds'
         : 'domain.voice.setReps';
-    return spoken(t(key, { n, reps: set.reps }), all([head, count]));
+    // « Poids du corps » before the reps; a hold just says its seconds
+    return spoken(t(key, { n, reps: set.reps }), all(timed ? [head, count] : [head, clipIds.bodyweight(), count]));
   }
   const load = `${kilos(set.weight)}${suffix ? ` ${suffix}` : ''}`;
   const key = warmup
@@ -104,15 +106,12 @@ export function setLine(cursor: Cursor): Spoken {
 }
 
 /** Straight to the next set, no rest in between (warm-ups): the plates first, then the set. */
-export function nextSetLine(cursor: Cursor, settings: Pick<AppSettings, 'barWeight' | 'plates'>): Spoken {
+export function nextSetLine(cursor: Cursor, settings: Gym): Spoken {
   return joinSpoken(platesLine(cursor, settings), setLine(cursor));
 }
 
 /** Said while resting, as soon as the next set is a new exercise. The user's note on it comes last. */
-export function nextExerciseLine(
-  cursor: Cursor,
-  settings: Pick<AppSettings, 'barWeight' | 'plates'> & Partial<Pick<AppSettings, 'exerciseNotes'>>,
-): Spoken {
+export function nextExerciseLine(cursor: Cursor, settings: Gym & Partial<Pick<AppSettings, 'exerciseNotes'>>): Spoken {
   const { name, needsWeight } = cursor.exercise;
   const what = needsWeight
     ? spoken(t('domain.voice.pickStart'), [clipIds.pickStart()])
@@ -120,7 +119,9 @@ export function nextExerciseLine(
   const note = settings.exerciseNotes?.[name]?.replace(/[.!?…]+$/, '');
   const head = spoken(t('domain.voice.nextExercise', { name: exerciseName(name) }), all([clipIds.nextExercise(name)]));
   const line = joinSpoken(head, what);
-  return note ? { ...line, text: `${line.text} ${t('domain.voice.note', { note })}`, tail: t('domain.voice.note', { note }) } : line;
+  return note
+    ? { ...line, text: `${line.text} ${t('domain.voice.note', { note })}`, tail: t('domain.voice.note', { note }) }
+    : line;
 }
 
 /** The end of a rest. `variant` picks one of the recorded ways to say « C'est reparti ». */

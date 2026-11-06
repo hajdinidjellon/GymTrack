@@ -12,7 +12,7 @@ module.exports = defineConfig([
   expoConfig,
   prettier,
   {
-    ignores: ['node_modules/**', '.expo/**', 'dist/**', 'coverage/**', 'expo-env.d.ts'],
+    ignores: ['node_modules/**', '.expo/**', 'dist/**', 'coverage/**', 'expo-env.d.ts', 'supabase/functions/**'],
   },
   {
     files: ['**/*.ts', '**/*.tsx'],

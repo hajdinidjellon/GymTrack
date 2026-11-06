@@ -58,7 +58,7 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
         accessibilityLabel={t('session.swap.a11y', { name: exerciseName(exercise.name) })}
         hitSlop={8}
         style={({ pressed }) => ({
-          height: 36,
+          minHeight: 36,
           paddingHorizontal: 12,
           borderRadius: radius.pill,
           borderWidth: border.base,

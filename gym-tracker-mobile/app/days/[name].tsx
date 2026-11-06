@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, space } from '@/constants/theme';
-import { choosableDays, dayKey, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
+import { choosableDays, dayKey, equipmentShown, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -10,6 +10,8 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BackButton } from '@/components/ui/BackButton';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { RemoveButton } from '@/components/ui/RemoveButton';
+import { useRemovalUndo } from '@/components/program/useRemovalUndo';
 import { IndexBadge } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { DayExercisesEditor } from '@/components/program/DayExercisesEditor';
@@ -32,6 +34,7 @@ export default function DayScreen() {
   const [renaming, setRenaming] = useState(false);
   const renameOwnDay = useSettingsStore((s) => s.renameOwnDay);
   const removeOwnDay = useSettingsStore((s) => s.removeOwnDay);
+  const undo = useRemovalUndo();
   if (!profile) return null;
 
   // Une séance hors programme se règle aussi, sous son propre programme
@@ -48,7 +51,7 @@ export default function DayScreen() {
   }
 
   return (
-    <Screen scroll scrollEnabled={!dragging}>
+    <Screen scroll scrollEnabled={!dragging} footer={undo.bar}>
       <BackButton />
       <ScreenHeader eyebrow={t('program.days.title')} title={dayName(day.name)} subtitle={t('program.day.subtitle')} />
       {day.own && renaming ? (
@@ -73,17 +76,23 @@ export default function DayScreen() {
           <Link
             label={t('program.days.remove')}
             onPress={() =>
-              Alert.alert(t('program.days.removeTitle', { name: day.name }), t('program.days.removeText'), [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                  text: t('program.days.removeConfirm'),
-                  style: 'destructive',
-                  onPress: () => {
-                    removeOwnDay(day.split, day.name);
-                    router.back();
+              Alert.alert(
+                t('program.days.removeTitle', { name: day.name }),
+                profile.program.split === day.split && profile.program.schedule?.includes(day.name)
+                  ? t('program.days.removeTextScheduled')
+                  : t('program.days.removeText'),
+                [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  {
+                    text: t('program.days.removeConfirm'),
+                    style: 'destructive',
+                    onPress: () => {
+                      removeOwnDay(day.split, day.name);
+                      router.back();
+                    },
                   },
-                },
-              ])
+                ],
+              )
             }
           />
         </View>
@@ -94,6 +103,8 @@ export default function DayScreen() {
         items={day.exercises}
         keyOf={(def) => def.name}
         onDragChange={setDragging}
+        onRemoved={undo.onRemoved}
+        onEdited={undo.onEdited}
         renderRow={(def, i, remove) => {
           const key = dayKey(day.split, day.name);
           const next = day.exercises[i + 1];
@@ -166,7 +177,7 @@ function ExerciseRow({
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1}>
             {t('program.day.rowDetail', {
-              equipment: t(`program.equipment.${def.equipment}`),
+              equipment: t(`program.equipment.${equipmentShown(def)}`),
               sets: rule.sets,
               min: rule.repMin,
               max: rule.repMax,
@@ -186,7 +197,7 @@ function ExerciseRow({
               paddingHorizontal: 10,
               borderRadius: 16,
               borderWidth: border.base - 0.5,
-              borderColor: linked ? colors.outlineStrong : colors.line,
+              borderColor: linked ? colors.outlineStrong : colors.outlineSoft,
               borderStyle: linked ? 'solid' : 'dashed',
               backgroundColor: linked || pressed ? colors.coralSoft : 'transparent',
               alignItems: 'center',
@@ -198,26 +209,7 @@ function ExerciseRow({
             </Text>
           </Pressable>
         ) : null}
-        <Pressable
-          onPress={onRemove}
-          accessibilityRole="button"
-          accessibilityLabel={t('program.day.remove', { name: label })}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            borderWidth: border.base - 0.5,
-            borderColor: colors.outline,
-            backgroundColor: pressed ? colors.coralSoft : colors.card,
-            alignItems: 'center',
-            justifyContent: 'center',
-          })}
-        >
-          <Text size={14} weight="black">
-            ✕
-          </Text>
-        </Pressable>
+        <RemoveButton onPress={onRemove} accessibilityLabel={t('program.day.remove', { name: label })} />
       </StickerCard>
     </PressableScale>
   );

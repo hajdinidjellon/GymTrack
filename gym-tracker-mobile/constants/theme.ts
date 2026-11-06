@@ -18,7 +18,7 @@ export interface Palette {
   /** Main text. */
   ink: string;
   inkMuted: string;
-  /** Third level of text: labels, units. Only on 13 px and up. */
+  /** Third level of text: labels, units. 4.5:1 on paper, card and inset; not on the coral tints. */
   inkFaint: string;
   /** Sticker outlines: the ink in light mode, black at night. */
   outline: string;
@@ -28,7 +28,9 @@ export interface Palette {
   frame: string;
   /** The ink line around drawings (plates, bar, logo, sparkles): dark in both modes. */
   drawn: string;
-  /** Dashed outlines of empty or upcoming things, separators. */
+  /** Outline of what can be tapped but is not chosen, or is still to come (dashed): 3:1 at least on paper, card and inset. */
+  outlineSoft: string;
+  /** Separators and decorations only: too faint to mark something that can be tapped. */
   line: string;
   /** Behind bottom sheets. */
   scrim: string;
@@ -73,11 +75,12 @@ export const lightPalette: Palette = {
   inset: '#FFFFFF',
   ink: '#1F1A17',
   inkMuted: '#6B5F57',
-  inkFaint: '#8C8078',
+  inkFaint: '#7A6E66',
   outline: '#1F1A17',
   outlineStrong: '#1F1A17',
   frame: '#1F1A17',
   drawn: '#1F1A17',
+  outlineSoft: '#9A8A7C',
   line: '#D9CCBF',
   scrim: 'rgba(31, 26, 23, 0.45)',
   shadow: '#1F1A17',
@@ -112,12 +115,13 @@ export const darkPalette: Palette = {
   card: '#112637',
   inset: '#1A3A52',
   ink: '#DCE6EA',
-  inkMuted: '#9FB6C2',
+  inkMuted: '#B4C8D2',
   inkFaint: '#8FA8B5',
   outline: '#02090D',
   outlineStrong: '#02090D',
   frame: '#02090D',
   drawn: '#02090D',
+  outlineSoft: '#6A94AD',
   line: '#23465E',
   scrim: 'rgba(0, 0, 0, 0.6)',
   shadow: '#02090D',
@@ -174,6 +178,8 @@ export const plateColors: Record<string, string> = {
   '5': '#FFFFFF',
   '2.5': '#E5484D',
   '1.25': '#C9CFD4',
+  '0.5': '#FFFFFF',
+  '0.25': '#C9CFD4',
 };
 
 export function plateColor(kg: number): string {

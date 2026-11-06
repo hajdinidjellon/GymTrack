@@ -35,7 +35,7 @@ describe('speech', () => {
     expect(Speech.speak).toHaveBeenCalledWith('Note : siège cran 4.', expect.anything());
   });
 
-  it("falls back to the phone voice for the whole line when a clip is missing", () => {
+  it('falls back to the phone voice for the whole line when a clip is missing', () => {
     jest.mocked(hasClips).mockReturnValue(false);
     speak(line);
     expect(playClips).not.toHaveBeenCalled();

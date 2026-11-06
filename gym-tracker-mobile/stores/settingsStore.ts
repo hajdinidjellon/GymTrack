@@ -1,51 +1,44 @@
 /**
- * SETTINGS STORE — AsyncStorage (compatible Expo Go)
+ * SETTINGS STORE — AsyncStorage (compatible Expo Go), sent to the cloud a moment after the last change.
  */
 
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cleanNote } from '@/domain/notes';
 import { addOwnDay, removeOwnDay, renameOwnDay } from '@/domain/ownDays';
 import { removeOwnExercise, updateOwnExercise } from '@/domain/ownExercises';
-import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
 import type { ExerciseDef } from '@/domain/programs';
 import { applyRule } from '@/domain/ruleSync';
+import { renameInSchedule } from '@/domain/schedule';
 import { settingsPatchSchema } from '@/domain/schemas';
+import { DEFAULT_SETTINGS, hasOwnSettings, syncedSettingsChanged } from '@/domain/settings';
 import { resolveLocale, setLocale } from '@/i18n';
 import { deviceLocaleTag } from '@/services/locale';
 import { logger } from '@/services/logger';
+import { readSettingsMeta, readSettingsRaw, writeSettings, writeSettingsMeta } from '@/services/settingsStorage';
+import { queueSettingsSync } from '@/services/sync';
+import { useProfileStore } from '@/stores/profileStore';
 import type { AppSettings, CustomExercise, Goal, RuleOverride, SplitId } from '@/types';
 
-// Kept from the app's first name: a new key would reset everyone's settings.
-const SETTINGS_KEY = '@gymtrack/settings';
+export { DEFAULT_SETTINGS };
 
-export const DEFAULT_SETTINGS: AppSettings = {
-  units: 'kg',
-  defaultRestTime: 90,
-  restTimerEnabled: true,
-  notifications: true,
-  voice: true,
-  voiceCommands: false,
-  restBell: true,
-  barWeight: DEFAULT_BAR,
-  plates: DEFAULT_PLATES,
-  increments: {},
-  customDays: {},
-  ruleOverrides: {},
-  restOverrides: {},
-  customExercises: [],
-  exerciseNotes: {},
-  plateLoaded: {},
-  countBothSides: false,
-  signedOut: false,
-  programSwitchDismissed: null,
-  language: 'auto',
-  theme: 'light',
-  warmups: true,
-  warmupOverrides: {},
-  supersets: {},
-  ownDays: {},
-};
+/** A slider or a run of taps sends one push, this long after the last change. */
+export const SETTINGS_SYNC_DELAY_MS = 2000;
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSettingsSync(): void {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncTimer = null;
+    const failed = (error: unknown) => logger.warn('settings not queued for sync', error);
+    // Never a crash from a timer: whatever goes wrong here is only logged
+    try {
+      queueSettingsSync().catch(failed);
+    } catch (error) {
+      failed(error);
+    }
+  }, SETTINGS_SYNC_DELAY_MS);
+}
 
 export const REST_CHOICES = [60, 90, 120, 180];
 
@@ -68,18 +61,24 @@ export function parseSettings(raw: string | null): AppSettings {
 
 async function loadSettings(): Promise<AppSettings> {
   try {
-    return parseSettings(await AsyncStorage.getItem(SETTINGS_KEY));
+    return parseSettings(await readSettingsRaw());
   } catch (error) {
     logger.warn('settings unreadable, using defaults', error);
     return DEFAULT_SETTINGS;
   }
 }
 
-async function persistSettings(settings: AppSettings): Promise<void> {
-  try {
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch (error) {
-    logger.warn('settings not saved', error);
+/**
+ * A change not queued yet (app closed during the wait) goes now. Settings from before the
+ * cloud kept them have no time: they are this phone's, stamped now and sent once.
+ */
+async function resumeSettingsSync(settings: AppSettings): Promise<void> {
+  const meta = await readSettingsMeta();
+  if (meta.pending) {
+    scheduleSettingsSync();
+  } else if (!meta.updatedAt && hasOwnSettings(settings)) {
+    await writeSettingsMeta({ updatedAt: new Date().toISOString(), pending: true });
+    scheduleSettingsSync();
   }
 }
 
@@ -109,6 +108,8 @@ interface SettingsStore {
   setExerciseNote: (exerciseName: string, text: string) => void;
   /** Plates on each side or a weight stack. The catalog's answer is not stored. */
   setPlateLoaded: (def: ExerciseDef, on: boolean) => void;
+  /** Manual progression on or off for one exercise. Off (automatic) is not stored. */
+  setManualProgression: (exerciseName: string, manual: boolean) => void;
   /** Warm-ups on or off for one exercise. Same as the global choice: nothing is stored. */
   setWarmups: (exerciseName: string, on: boolean) => void;
   /** An exercise the user created, changed (renamed: everything under its name follows). */
@@ -123,6 +124,14 @@ interface SettingsStore {
   toggleSuperset: (key: string, exerciseName: string) => void;
 }
 
+/** The fixed week follows a day renamed (or removed: its weekdays turn to rest). */
+function followInWeek(split: SplitId, from: string, to: string | null): void {
+  const profile = useProfileStore.getState().profile;
+  if (!profile || profile.program.split !== split) return;
+  const program = renameInSchedule(profile.program, from, to);
+  if (program !== profile.program) void useProfileStore.getState().updateProfile({ program });
+}
+
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   isLoaded: false,
@@ -131,15 +140,21 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const settings = await loadSettings();
     applyLanguage(settings);
     set({ settings, isLoaded: true });
+    await resumeSettingsSync(settings).catch((error: unknown) => logger.warn('settings sync not resumed', error));
   },
 
   updateSettings: (patch) => {
-    set((s) => {
-      const updated = { ...s.settings, ...patch };
-      applyLanguage(updated);
-      void persistSettings(updated);
-      return { settings: updated };
-    });
+    const before = get().settings;
+    const updated = { ...before, ...patch };
+    applyLanguage(updated);
+    set({ settings: updated });
+    // Only what the cloud keeps is stamped and sent: a theme change stays on this phone
+    if (syncedSettingsChanged(before, updated)) {
+      void writeSettings(updated, { updatedAt: new Date().toISOString(), pending: true });
+      scheduleSettingsSync();
+    } else {
+      void writeSettings(updated);
+    }
   },
 
   setIncrement: (exerciseName, increment) => {
@@ -176,6 +191,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     get().updateSettings({ plateLoaded: on === !!def.plateLoaded ? others : { ...others, [def.name]: on } });
   },
 
+  setManualProgression: (exerciseName, manual) => {
+    const { [exerciseName]: _old, ...others } = get().settings.manualProgression;
+    get().updateSettings({ manualProgression: manual ? { ...others, [exerciseName]: true } : others });
+  },
+
   setWarmups: (exerciseName, on) => {
     const { warmupOverrides, warmups } = get().settings;
     const { [exerciseName]: _old, ...others } = warmupOverrides;
@@ -191,8 +211,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   addOwnDay: (split, name) => get().updateSettings(addOwnDay(get().settings, split, name)),
-  renameOwnDay: (split, from, to) => get().updateSettings(renameOwnDay(get().settings, split, from, to)),
-  removeOwnDay: (split, name) => get().updateSettings(removeOwnDay(get().settings, split, name)),
+  renameOwnDay: (split, from, to) => {
+    get().updateSettings(renameOwnDay(get().settings, split, from, to));
+    followInWeek(split, from, to);
+  },
+  removeOwnDay: (split, name) => {
+    get().updateSettings(removeOwnDay(get().settings, split, name));
+    followInWeek(split, name, null);
+  },
 
   toggleSuperset: (key, exerciseName) => {
     const { [key]: current = [], ...others } = get().settings.supersets;

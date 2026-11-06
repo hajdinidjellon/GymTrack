@@ -5,8 +5,10 @@ import { border, colors, radius, space } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
-import { describeSide, loadBar } from '@/domain/plates';
-import { choosableDays, type ChoosableDay, hasExercises } from '@/domain/programs';
+import { describeSide } from '@/domain/plates';
+import { sidePlates } from '@/domain/loading';
+import { useGym } from '@/hooks/useGym';
+import { choosableDays, type ChoosableDay, hasExercises, equipmentShown } from '@/domain/programs';
 import {
   deltaLabel,
   nextDay,
@@ -27,6 +29,8 @@ import { StickerCard } from '@/components/ui/StickerCard';
 import { Chip, IndexBadge } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { RemoveButton } from '@/components/ui/RemoveButton';
+import { useRemovalUndo } from '@/components/program/useRemovalUndo';
 import { MiniPlates } from '@/components/disc/Barbell';
 import { DayExercisesEditor } from '@/components/program/DayExercisesEditor';
 
@@ -38,6 +42,7 @@ export default function Preview() {
   const ownDays = useSettingsStore((s) => s.settings.ownDays);
   const [picked, setPicked] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const undo = useRemovalUndo();
 
   const splitId = ctx?.profile.program.split;
   // Le programme, puis les séances des autres programmes, pour une fois
@@ -59,12 +64,15 @@ export default function Preview() {
       scroll
       scrollEnabled={!dragging}
       footer={
-        <StickerButton
-          label={t('session.preview.start')}
-          haptic="medium"
-          disabled={plan.lifts.length === 0}
-          onPress={start}
-        />
+        <>
+          {undo.bar}
+          <StickerButton
+            label={t('session.preview.start')}
+            haptic="medium"
+            disabled={plan.lifts.length === 0}
+            onPress={start}
+          />
+        </>
       }
     >
       <BackButton label={t('session.backHome')} />
@@ -107,7 +115,7 @@ export default function Preview() {
                 { name: dayName(d.name) },
               )}
               style={{
-                height: 44,
+                minHeight: 44,
                 paddingHorizontal: 18,
                 borderRadius: radius.pill,
                 borderWidth: on ? border.strong : border.base,
@@ -132,6 +140,8 @@ export default function Preview() {
         items={plan.lifts}
         keyOf={(lift) => lift.def.name}
         onDragChange={setDragging}
+        onRemoved={undo.onRemoved}
+        onEdited={undo.onEdited}
         renderRow={(lift, i, remove) => (
           <FadeIn index={i + 1}>
             <LiftRow lift={lift} index={i} onRemove={remove} />
@@ -143,11 +153,10 @@ export default function Preview() {
 }
 
 function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; onRemove: () => void }) {
-  const bar = useSettingsStore((s) => s.settings.barWeight);
-  const plates = useSettingsStore((s) => s.settings.plates);
+  const gym = useGym();
   const calibrate = lift.decision === 'calibrate';
   const weight = lift.targets[0]?.weight ?? 0;
-  const perSide = loadBar(weight, bar, plates).perSide;
+  const perSide = sidePlates('bar', weight, gym);
   const showPlates = lift.def.equipment === 'barbell' && !calibrate;
   const progress = isProgress(lift.decision);
 
@@ -158,7 +167,9 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
       accessibilityRole="button"
       accessibilityLabel={t('session.preview.liftA11y', {
         name: exerciseName(lift.def.name),
-        target: calibrate ? t('session.preview.firstTime') : targetLabel(lift.targets, lift.def.timed),
+        target: calibrate
+          ? t('session.preview.firstTime')
+          : targetLabel(lift.targets, lift.def.timed, lift.def.assisted),
         delta: deltaLabel(lift),
       })}
     >
@@ -170,7 +181,9 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1} style={{ flexShrink: 1 }}>
-              {calibrate ? t('session.preview.weightToPick') : targetLabel(lift.targets, lift.def.timed)}
+              {calibrate
+                ? t('session.preview.weightToPick')
+                : targetLabel(lift.targets, lift.def.timed, lift.def.assisted)}
             </Text>
             {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
           </View>
@@ -183,30 +196,16 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
           // Chip sticks to the top of a row on its own: the wrapper centres it
           <View>
             <Chip
-              label={calibrate ? t('session.preview.calibrate') : t(`session.preview.equipment.${lift.def.equipment}`)}
+              label={
+                calibrate ? t('session.preview.calibrate') : t(`session.preview.equipment.${equipmentShown(lift.def)}`)
+              }
             />
           </View>
         )}
-        <Pressable
+        <RemoveButton
           onPress={onRemove}
-          accessibilityRole="button"
           accessibilityLabel={t('session.preview.remove', { name: exerciseName(lift.def.name) })}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            borderWidth: 2,
-            borderColor: colors.outline,
-            backgroundColor: pressed ? colors.coralSoft : colors.card,
-            alignItems: 'center',
-            justifyContent: 'center',
-          })}
-        >
-          <Text size={14} weight="black">
-            ✕
-          </Text>
-        </Pressable>
+        />
       </StickerCard>
     </PressableScale>
   );

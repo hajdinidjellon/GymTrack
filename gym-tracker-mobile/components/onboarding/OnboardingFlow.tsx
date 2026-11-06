@@ -255,7 +255,7 @@ function LevelBars({ level, on }: { level: number; on: boolean }) {
             borderRadius: 3,
             backgroundColor: i < level ? colors.ink : 'transparent',
             borderWidth: i < level ? 0 : 2,
-            borderColor: colors.line,
+            borderColor: colors.outlineSoft,
             borderStyle: 'dashed',
           }}
         />
@@ -284,7 +284,8 @@ function GymStep({ answers, set }: StepProps) {
             accessibilityLabel={t('onboarding.flow.gym.barLabel', { kg: b.kg, label: b.label })}
             style={{
               flex: 1,
-              height: 60,
+              minHeight: 60,
+              flexWrap: 'wrap',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
@@ -317,7 +318,7 @@ function GymStep({ answers, set }: StepProps) {
           {t('onboarding.flow.gym.platesCount', { n: answers.plates.length, total: GYM_PLATES.length })}
         </Text>
       </View>
-      <StickerCard style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 }}>
+      <StickerCard style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 12 }}>
         {GYM_PLATES.map((kg) => {
           const on = answers.plates.includes(kg);
           return (
@@ -327,7 +328,8 @@ function GymStep({ answers, set }: StepProps) {
               accessibilityRole="checkbox"
               accessibilityState={{ checked: on }}
               accessibilityLabel={t('onboarding.flow.gym.plateLabel', { kg: formatKg(kg) })}
-              style={({ pressed }) => ({ width: '25%', alignItems: 'center', gap: 4, opacity: pressed ? 0.7 : 1 })}
+              // Five per row: the nine plates fit on two rows
+              style={({ pressed }) => ({ width: '20%', alignItems: 'center', gap: 4, opacity: pressed ? 0.7 : 1 })}
             >
               <PlateFace kg={kg} size={62} off={!on} />
               <Text size={13} weight="bold" color={on ? colors.ink : colors.inkMuted}>

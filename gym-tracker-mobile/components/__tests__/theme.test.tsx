@@ -67,6 +67,61 @@ describe('dark mode', () => {
   });
 });
 
+/** WCAG contrast ratio of two #RRGGBB colours, from 1 to 21. */
+function contrast(a: string, b: string): number {
+  const luminance = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    const [r, g, bl] = [n >> 16, (n >> 8) & 255, n & 255].map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * bl!;
+  };
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi! + 0.05) / (lo! + 0.05);
+}
+
+describe('contrast', () => {
+  it('measures like WCAG', () => {
+    expect(contrast('#000000', '#FFFFFF')).toBeCloseTo(21, 5);
+    expect(contrast('#FFFFFF', '#FFFFFF')).toBe(1);
+  });
+
+  for (const [mode, p] of [
+    ['light', lightPalette],
+    ['dark', darkPalette],
+  ] as const) {
+    it(`keeps every text readable (4.5:1) in ${mode} mode`, () => {
+      const text: (keyof typeof p)[] = ['ink', 'inkMuted', 'inkFaint', 'successText', 'danger'];
+      for (const fg of text)
+        for (const bg of ['paper', 'card', 'inset'] as const) {
+          expect([fg, bg, contrast(p[fg], p[bg]) >= 4.5]).toEqual([fg, bg, true]);
+        }
+      const filled: [keyof typeof p, keyof typeof p][] = [
+        ['ink', 'coralSoft'],
+        ['inkMuted', 'coralSoft'],
+        ['inkMuted', 'successSoft'],
+        ['successText', 'successSoft'],
+        ['onCoral', 'coral'],
+        ['onSun', 'sun'],
+        ['onSunPanel', 'sunPanel'],
+        ['onDayToday', 'dayToday'],
+      ];
+      for (const [fg, bg] of filled) expect([fg, bg, contrast(p[fg], p[bg]) >= 4.5]).toEqual([fg, bg, true]);
+    });
+
+    it(`outlines what can be tapped at 3:1 at least in ${mode} mode`, () => {
+      // At night the stickers keep their black outline: they stand out by their fill and their ledge
+      const borders =
+        mode === 'light' ? (['outline', 'outlineStrong', 'outlineSoft'] as const) : (['outlineSoft'] as const);
+      for (const border of borders)
+        for (const bg of ['paper', 'card', 'inset'] as const) {
+          expect([border, bg, contrast(p[border], p[bg]) >= 3]).toEqual([border, bg, true]);
+        }
+    });
+  }
+});
+
 describe('Bleu nuit at night', () => {
   it('sits the stickers on a ledge and sinks them straight down', () => {
     expect(hardShadow(5).boxShadow).toBe(`5px 5px 0px ${lightPalette.shadow}`);

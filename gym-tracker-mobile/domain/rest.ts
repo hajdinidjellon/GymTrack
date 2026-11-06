@@ -3,15 +3,16 @@
  *
  * Dans l'ordre : le choix de l'utilisateur, puis ce qu'il prend vraiment
  * d'habitude (mesuré entre deux validations) quand c'est plus long, puis le
- * type d'exercice : 4 min en très lourd, 3 min sur les gros mouvements,
- * 2 min sur un seul muscle.
+ * type d'exercice selon l'objectif : 4 min en très lourd, 3 min sur les gros
+ * mouvements et 2 min sur un seul muscle (muscle), plus en force, et des
+ * repos courts pour rester en forme (1 min 30, 1 min).
  * Logique pure.
  */
 
 import { formatRest } from '@/domain/format';
 import { restFor, type ExerciseDef } from '@/domain/programs';
 import { t } from '@/i18n';
-import type { ProgressionRule, WorkoutSet } from '@/types';
+import type { Goal, ProgressionRule, WorkoutSet } from '@/types';
 
 /** Rough time to do a set, taken off the gap between two validations. */
 export function setSeconds(reps: number): number {
@@ -19,8 +20,9 @@ export function setSeconds(reps: number): number {
 }
 
 const GAP_MIN = 15; // en dessous : validées d'un coup (« Tout comme prévu »)
-const GAP_MAX = 10 * 60; // au-dessus : téléphone posé, pause, discussion
-export const REST_LIMITS = [30, 360] as const;
+const GAP_MAX = 15 * 60; // au-dessus : téléphone posé, pause, discussion
+/** Up to 10 min: heavy singles and triples need it. */
+export const REST_LIMITS = [30, 600] as const;
 export const REST_STEP = 15;
 /** Samples needed before the habit counts, and how many sessions are looked at. */
 export const LEARN_SAMPLES = 4;
@@ -35,7 +37,8 @@ export const clampRest = (s: number) => Math.max(REST_LIMITS[0], Math.min(REST_L
  * and gaps that are too short or too long tell nothing.
  */
 export function withRestTaken(sets: WorkoutSet[]): WorkoutSet[] {
-  return sets.map(({ doneAt, restTaken: _old, ...set }, i) => {
+  return sets.map(({ restTaken: _old, ...set }, i) => {
+    const { doneAt } = set;
     const before = sets[i - 1]?.doneAt;
     if (doneAt == null || before == null || !set.completed) return set;
     const gap = (doneAt - before) / 1000;
@@ -73,8 +76,9 @@ export function planRest(
   defaultRest: number,
   history: { sets: WorkoutSet[] }[],
   own?: number,
+  goal: Goal = 'muscle',
 ): PlannedRest {
-  const base = restFor(rule, defaultRest, def);
+  const base = restFor(rule, defaultRest, def, goal);
   if (own != null) return { seconds: clampRest(own), source: 'own', note: t('domain.rest.own') };
 
   const usual = usualRest(history);

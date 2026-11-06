@@ -66,7 +66,9 @@
           "microphonePermission": "Okilo écoute tes commandes pendant la séance (« fait », « 8 », « plus tard ») quand tu les actives.",
           "speechRecognitionPermission": "Okilo reconnaît tes commandes sur le téléphone, rien n'est envoyé."
         }
-      ]
+      ],
+      "expo-sqlite",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

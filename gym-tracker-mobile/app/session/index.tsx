@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '@/constants/theme';
@@ -111,13 +111,23 @@ export default function SessionScreen() {
       )
     : null;
   const lastDone = doneExercise ? setNumber(doneExercise.sets, last.setIndex) : null;
+  // "Tout comme prévu" validated several sets at once: the undo says so, and undoes them all
+  const batch = last?.batch && last.batch.length > 1 ? last.batch.length : 0;
 
   // Pendant le repos, le bas de l'écran garde le minuteur en petit ; en grand, il s'ouvre au milieu
   const rest = resting ? <RestMini restEndsAt={session.restEndsAt!} onExpand={() => setMinimized(false)} /> : null;
 
   return (
     <Screen style={{ paddingBottom: Math.max(insets.bottom, space.lg) + space.sm }}>
-      <View style={{ height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View
+        style={{
+          minHeight: 44,
+          gap: space.sm,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         <Text size={16} weight="black" numberOfLines={1} style={{ flex: 1 }}>
           {dayName(session.name)}
           <Text size={15} weight="bold" color={colors.inkMuted}>
@@ -200,32 +210,48 @@ export default function SessionScreen() {
       )}
 
       <Modal visible={resting && !minimized} transparent animationType="fade" onRequestClose={() => setMinimized(true)}>
-        <View style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'center', padding: space.gutter }}>
-          <Pressable
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
-            onPress={() => setMinimized(true)}
-            accessibilityLabel={t('session.rest.minimizeA11y')}
-          />
-          {resting ? (
-            <RestView
-              next={cursor}
-              restEndsAt={session.restEndsAt!}
-              total={session.restDuration ?? 90}
-              doneLabel={
-                lastDone
-                  ? lastDone.warmup
-                    ? t('session.logger.warmupDone')
-                    : lastDone.drop
-                      ? t('session.logger.dropDone')
-                      : t('session.logger.setDone', { n: lastDone.n })
-                  : undefined
-              }
-              rateable={isRateable(session)}
-              note={doneExercise?.restNote}
-              doneExerciseId={last?.exerciseId}
-              onMinimize={() => setMinimized(true)}
+        <View style={{ flex: 1, backgroundColor: colors.scrim }}>
+          {/* Large text on a small phone: the popup scrolls instead of being cut */}
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: 'center',
+              paddingHorizontal: space.gutter,
+              paddingTop: insets.top + space.md,
+              paddingBottom: insets.bottom + space.md,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            <Pressable
+              style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+              onPress={() => setMinimized(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t('session.rest.minimizeA11y')}
             />
-          ) : null}
+            {resting ? (
+              <RestView
+                next={cursor}
+                restEndsAt={session.restEndsAt!}
+                total={session.restDuration ?? 90}
+                doneLabel={
+                  batch
+                    ? t('session.logger.batchDone', { count: batch })
+                    : lastDone
+                      ? lastDone.warmup
+                        ? t('session.logger.warmupDone')
+                        : lastDone.drop
+                          ? t('session.logger.dropDone')
+                          : t('session.logger.setDone', { n: lastDone.n })
+                      : undefined
+                }
+                undoA11y={batch ? t('session.rest.undoBatchA11y', { count: batch }) : undefined}
+                rateable={isRateable(session)}
+                note={doneExercise?.restNote}
+                doneExerciseId={last?.exerciseId}
+                onMinimize={() => setMinimized(true)}
+              />
+            ) : null}
+          </ScrollView>
         </View>
       </Modal>
     </Screen>

@@ -34,6 +34,7 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
         </Arrow>
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 }}>
           <TextInput
+            maxFontSizeMultiplier={1.2}
             value={draft ?? value}
             onFocus={() => setDraft('')}
             onEndEditing={() => setDraft(null)}
@@ -79,7 +80,7 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
             alignSelf: 'center',
             marginTop: 6,
             paddingHorizontal: 22,
-            height: 40,
+            minHeight: 44,
             borderRadius: 20,
             borderWidth: border.base,
             borderColor: colors.outline,

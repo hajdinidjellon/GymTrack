@@ -7,6 +7,8 @@ import { Text } from '@/components/ui/Text';
 export function StatTile({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
   return (
     <View
+      accessible
+      accessibilityLabel={`${value}, ${label}`}
       style={{
         flex: 1,
         minWidth: 0,
@@ -30,7 +32,7 @@ export function StatTile({ value, label, highlight }: { value: string; label: st
       >
         {value}
       </Text>
-      <Text size={13} weight="semibold" color={highlight ? colors.ink : colors.inkMuted} numberOfLines={1}>
+      <Text size={13} weight="semibold" color={highlight ? colors.ink : colors.inkMuted} numberOfLines={2}>
         {label}
       </Text>
     </View>

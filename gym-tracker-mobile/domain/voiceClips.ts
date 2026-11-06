@@ -61,6 +61,8 @@ export const clipIds = {
   weight: (kg: number) => (isRecordedWeight(kg) ? `kg-${key(kg)}` : null),
   perSide: () => 'per-side',
   perHand: () => 'per-hand',
+  assist: () => 'assist',
+  bodyweight: () => 'bodyweight',
   reps: (n: number) => (n >= 1 && n <= VOICE_RANGES.reps ? `reps-${n}` : null),
   seconds: (n: number) => ((VOICE_RANGES.seconds as readonly number[]).includes(n) ? `sec-${n}` : null),
   /** One kind of plate on one side: « vingt », « deux fois vingt »; the last one after « et ». */
@@ -145,6 +147,8 @@ export function voiceInventory(): { id: string; text: string }[] {
   }
   add(clipIds.perSide(), 'de chaque côté,');
   add(clipIds.perHand(), 'par haltère,');
+  add(clipIds.assist(), "d'aide,");
+  add(clipIds.bodyweight(), 'Poids du corps,');
   for (let n = 1; n <= VOICE_RANGES.reps; n++) add(clipIds.reps(n), n === 1 ? 'une rep.' : `${frenchNumber(n)} reps.`);
   for (const n of VOICE_RANGES.seconds) add(clipIds.seconds(n), `${frenchNumber(n)} secondes.`);
   for (const [plate, words] of Object.entries(PLATE_WORDS)) {

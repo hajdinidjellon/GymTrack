@@ -28,6 +28,7 @@ export const session: Dictionary['session'] = {
     dropSet: 'Drop set',
     nextDropSet: 'Next: drop set',
     dropDone: 'Drop set done',
+    batchDone: { one: '{count} set done', other: '{count} sets done' },
     listening: 'Mic on · say “done”, “8” or “later”',
     superset: 'Superset with {name} · no rest in between',
   },
@@ -54,6 +55,7 @@ export const session: Dictionary['session'] = {
       dumbbell: 'Dumbbells',
       machine: 'Machine',
       bodyweight: 'Bodyweight',
+      kettlebell: 'Kettlebell',
     },
   },
 
@@ -67,6 +69,14 @@ export const session: Dictionary['session'] = {
     lifted: 'You lifted',
     plates: { one: "that's {n} 20 kg plate", other: "that's {n} 20 kg plates" },
     duration: 'duration',
+    end: 'Ended: {time}',
+    endEdit: 'change',
+    endEditA11y: 'Change the end time',
+    endEarlier: '− 5 min',
+    endLater: '+ 5 min',
+    endEarlierA11y: 'End 5 minutes earlier',
+    endLaterA11y: 'End 5 minutes later',
+    endDone: 'OK',
     setsDone: { one: 'set done', other: 'sets done' },
     records: { one: 'record', other: 'records' },
     nextTime: 'Next time',
@@ -89,6 +99,7 @@ export const session: Dictionary['session'] = {
 
   picker: {
     suggestions: 'Suggestions',
+    all: 'All exercises, best known first',
     taken: '{name}, already in the workout',
     choose: 'Pick {name}',
     alias: 'Also called {alias}',
@@ -107,6 +118,10 @@ export const session: Dictionary['session'] = {
     firstTime: 'First time',
     startBar: "Load your starting bar. We'll handle the rest.",
     startOther: "Pick your starting weight. We'll handle the rest.",
+    knowMax: 'Know your max?',
+    maxTitle: 'Your one-rep max',
+    maxInput: 'Your max in kilos',
+    useMax: 'Start at 70%: {kg} kg',
     inputLabel: 'Starting weight in kilos',
     presetA11y: '{kg} kilos',
     suggested: 'suggested',
@@ -121,6 +136,8 @@ export const session: Dictionary['session'] = {
 
   effort: {
     question: 'How was it?',
+    rpeQuestion: 'RPE of the set? (10 = nothing left)',
+    rpe: 'RPE {rpe}',
   },
 
   note: {
@@ -160,12 +177,31 @@ export const session: Dictionary['session'] = {
     weightToSet: 'Weight to set',
     skip: 'Skip rest',
     undoA11y: 'Undo the last set',
+    undoBatchA11y: { one: 'Undo the set just done', other: 'Undo the {count} sets just done' },
     undo: '{label} · undo',
   },
 
   running: {
     title: 'Workout in progress',
     progress: { one: '{done} / {count} set done', other: '{done} / {count} sets done' },
+  },
+
+  stale: {
+    title: 'Your {name} workout was left open',
+    lastSet: {
+      one: 'Last set {when}. Your logged set is not in your history yet.',
+      other: 'Last set {when}. Your {count} logged sets are not in your history yet.',
+    },
+    noSet: 'Started {when}, no set logged.',
+    finishAt: 'Finish at {time}',
+    resume: 'Resume the workout',
+    delete: 'Delete the workout',
+    deleteTitle: 'Delete the workout?',
+    deleteText: {
+      one: 'Your logged set will be erased, nothing will be saved.',
+      other: 'Your {count} logged sets will be erased, nothing will be saved.',
+    },
+    deleteConfirm: 'Delete',
   },
 
   done: {
@@ -201,7 +237,9 @@ export const session: Dictionary['session'] = {
     failureShort: 'Fail',
     a11yDrop: 'Drop set, {kg} kilos, {reps} reps, {state}',
     a11yFailure: 'Set {index} to failure, {kg} kilos, {reps} reps, {state}',
-    menuHint: 'Long press: drop set or failure',
+    menuHint: 'Options: drop set, failure, delete',
+    menuA11y: 'Set options',
+    deleteAction: 'Delete',
     deleteWarmupA11y: 'Delete this warm-up',
     deleteDropA11y: 'Delete this drop set',
   },
@@ -209,6 +247,7 @@ export const session: Dictionary['session'] = {
   setView: {
     lastTime: 'Last time',
     why: 'Why {kg} kg?',
+    whyAssist: 'Why {kg} kg of assist?',
     weightInput: 'Weight in kilos',
     repMinus: 'One rep less',
     repPlus: 'One rep more',
@@ -216,7 +255,7 @@ export const session: Dictionary['session'] = {
     missed: 'Missed the set? Log the reps you did',
     addSetA11y: 'Add a set',
     addSet: '+ Add a set',
-    swipeHint: 'Swipe a set left to delete it, long press for a drop set',
+    swipeHint: 'Tap ⋯ on a set to delete it or add a drop set',
     allAsPlanned: { one: 'All as planned · {count} set', other: 'All as planned · {count} sets' },
     validateA11y: 'Log the set',
     warmupHint: "Warm-up · doesn't count in your stats",
@@ -230,9 +269,12 @@ export const session: Dictionary['session'] = {
   setMenu: {
     title: 'Set {n}',
     titleDrop: 'Drop set',
+    titleWarmup: 'Warm-up',
     addDrop: 'Add a drop set after',
     failure: 'To failure',
     normal: 'Normal set',
+    delete: 'Delete the set',
+    deleteWarmup: 'Delete the warm-up',
   },
 
   hold: {

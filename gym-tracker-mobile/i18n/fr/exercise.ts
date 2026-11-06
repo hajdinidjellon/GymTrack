@@ -30,6 +30,11 @@ export const exercise = {
     on: 'Le poids se compte de chaque côté.',
     off: 'Le poids se lit sur la pile de la machine.',
   },
+  manual: {
+    label: 'Progression automatique',
+    on: 'L’app calcule ta prochaine charge et tes reps.',
+    off: 'Tu suis ton cycle : l’app reprend ta dernière séance série par série et ne touche pas à la charge.',
+  },
   warmups: {
     label: "Séries d'échauffement",
     on: 'Calculées avant tes séries, avec les disques. Hors stats.',

@@ -19,9 +19,13 @@ const cursor = (ex = active('Squat', [{ weight: 62.5, reps: 10 }])) => findCurre
 describe('voice lines', () => {
   it('says the plates per side', () => {
     expect(platesLine(cursor(), gym)).toHaveProperty('text', 'Mets 20 et 1,25 de chaque côté.');
-    expect(platesLine(cursor(active('Squat', [{ weight: 30, reps: 5 }])), gym)).toHaveProperty('text', 'Mets 5 de chaque côté.');
+    expect(platesLine(cursor(active('Squat', [{ weight: 30, reps: 5 }])), gym)).toHaveProperty(
+      'text',
+      'Mets 5 de chaque côté.',
+    );
     expect(platesLine(cursor(active('Squat', [{ weight: 20, reps: 5 }])), gym)).toHaveProperty('text', 'Barre à vide.');
-    expect(platesLine(cursor(), { barWeight: 20, plates: [20, 10, 5, 2.5] })).toHaveProperty('text', 
+    expect(platesLine(cursor(), { barWeight: 20, plates: [20, 10, 5, 2.5] })).toHaveProperty(
+      'text',
       'Mets 20 de chaque côté. Il manque 1,25 de chaque côté.',
     );
   });
@@ -42,10 +46,20 @@ describe('voice lines', () => {
 
   it('announces a set', () => {
     expect(setLine(cursor())).toHaveProperty('text', 'Série 1. 62,5 kilos, 10 reps.');
-    expect(setLine(cursor(active('Dips', [{ weight: 0, reps: 12 }], { equipment: 'bodyweight' })))).toHaveProperty('text', 
-      'Série 1. 12 reps.',
+    expect(setLine(cursor(active('Dips', [{ weight: 0, reps: 12 }], { equipment: 'bodyweight' })))).toHaveProperty(
+      'text',
+      'Série 1. Poids du corps, 12 reps.',
     );
     expect(restOverLine(cursor())).toHaveProperty('text', "C'est reparti. Série 1. 62,5 kilos, 10 reps.");
+  });
+
+  it('says the help of an assisted machine as help', () => {
+    const helped = active('Tractions assistées', [{ weight: 30, reps: 8 }], { equipment: 'machine', assisted: true });
+    expect(setLine(cursor(helped))).toEqual({
+      text: "Série 1. 30 kilos d'aide, 8 reps.",
+      clips: ['set-1', 'kg-30', 'assist', 'reps-8'],
+    });
+    expect(platesLine(cursor(helped), gym)).toBeNull();
   });
 
   it('announces a warm-up apart from the working sets, plates first when there is no rest', () => {
@@ -55,7 +69,10 @@ describe('voice lines', () => {
       { weight: 40, reps: 5, setType: 'warmup' },
     );
     expect(setLine(cursor(squat))).toHaveProperty('text', 'Échauffement 2. 40 kilos, 5 reps.');
-    expect(nextSetLine(cursor(squat), gym)).toHaveProperty('text', 'Mets 10 de chaque côté. Échauffement 2. 40 kilos, 5 reps.');
+    expect(nextSetLine(cursor(squat), gym)).toHaveProperty(
+      'text',
+      'Mets 10 de chaque côté. Échauffement 2. 40 kilos, 5 reps.',
+    );
     const curl = active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' });
     expect(nextSetLine(cursor(curl), gym)).toHaveProperty('text', 'Série 1. 12 kilos par haltère, 10 reps.');
   });
@@ -68,18 +85,26 @@ describe('voice lines', () => {
   });
 
   it('announces the next exercise with what to load', () => {
-    expect(nextExerciseLine(cursor(), gym)).toHaveProperty('text', 'Prochain exercice : Squat. Mets 20 et 1,25 de chaque côté.');
+    expect(nextExerciseLine(cursor(), gym)).toHaveProperty(
+      'text',
+      'Prochain exercice : Squat. Mets 20 et 1,25 de chaque côté.',
+    );
     const curl = active('Curl', [{ weight: 12, reps: 10 }], { equipment: 'dumbbell' });
-    expect(nextExerciseLine(cursor(curl), gym)).toHaveProperty('text', 
+    expect(nextExerciseLine(cursor(curl), gym)).toHaveProperty(
+      'text',
       'Prochain exercice : Curl. Série 1. 12 kilos par haltère, 10 reps.',
     );
     const fresh = active('Row', [{ weight: 0, reps: 8 }], { needsWeight: true });
-    expect(nextExerciseLine(cursor(fresh), gym)).toHaveProperty('text', 'Prochain exercice : Row. Choisis ta charge de départ.');
+    expect(nextExerciseLine(cursor(fresh), gym)).toHaveProperty(
+      'text',
+      'Prochain exercice : Row. Choisis ta charge de départ.',
+    );
   });
 
   it('reads the note on the exercise last', () => {
     const notes = { exerciseNotes: { Squat: 'pieds écartés.' } };
-    expect(nextExerciseLine(cursor(), { ...gym, ...notes })).toHaveProperty('text', 
+    expect(nextExerciseLine(cursor(), { ...gym, ...notes })).toHaveProperty(
+      'text',
       'Prochain exercice : Squat. Mets 20 et 1,25 de chaque côté. Note : pieds écartés.',
     );
   });
@@ -134,7 +159,7 @@ describe('recorded voice clips', () => {
     expect(line.tail).toBe('Note : pieds écartés.');
   });
 
-  it('says « C\'est reparti » a different way from one set to the next', () => {
+  it("says « C'est reparti » a different way from one set to the next", () => {
     expect(restOverLine(cursor(), 0).clips?.[0]).toBe('rest-over-1');
     expect(restOverLine(cursor(), 4).clips?.[0]).toBe('rest-over-2');
   });
@@ -152,10 +177,20 @@ describe('sets left and the last set', () => {
     const line = setLine(cursor(three()));
     expect(line.text).toBe('Dernière série ! 100 kilos, 5 reps.');
     expect(line.clips?.[0]).toMatch(/^last-set-/);
-    const dips = active('Dips', [{ weight: 0, reps: 12, completed: true }, { weight: 0, reps: 12 }], {
-      equipment: 'bodyweight',
+    const dips = active(
+      'Dips',
+      [
+        { weight: 0, reps: 12, completed: true },
+        { weight: 0, reps: 12 },
+      ],
+      {
+        equipment: 'bodyweight',
+      },
+    );
+    expect(setLine(cursor(dips))).toEqual({
+      text: 'Dernière série ! Poids du corps, 12 reps.',
+      clips: [expect.stringMatching(/^last-set-/), 'bodyweight', 'reps-12'],
     });
-    expect(setLine(cursor(dips)).text).toBe('Dernière série ! 12 reps.');
   });
 
   it('does not call a single set « the last »', () => {

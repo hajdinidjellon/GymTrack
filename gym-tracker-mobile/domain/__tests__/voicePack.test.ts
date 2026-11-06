@@ -1,9 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
-import { writeFileSync } from 'node:fs';
 import manifest from '@/assets/voice/fr/manifest.json';
 import { voiceInventory } from '@/domain/voiceClips';
 
 const recorded: Record<string, string> = manifest;
+
+// Only used to hand the list to the recording script (no Node types in this app)
+const { writeFileSync } = require('fs') as { writeFileSync: (path: string, data: string) => void };
 
 describe('voice pack', () => {
   const inventory = voiceInventory();

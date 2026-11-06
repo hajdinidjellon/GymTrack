@@ -8,7 +8,7 @@ import { Text } from '@/components/ui/Text';
 
 interface Props {
   week: Schedule;
-  /** The program's sessions, in order: A, B, C. */
+  /** The program's sessions in order (A, B, C), then the user's own days (D, E…). */
   names: string[];
   onChange: (week: Schedule) => void;
 }
@@ -22,6 +22,8 @@ export function WeekPicker({ week, names, onChange }: Props) {
   const [open, setOpen] = useState(() => Math.max(0, week.findIndex(Boolean)));
   const current = week[open] ?? null;
   const choose = (name: string | null) => onChange(week.map((n, i) => (i === open ? name : n)));
+  // Plus de 3 séances (jours ajoutés) : les choix passent sur plusieurs lignes, 3 par ligne
+  const wrap = names.length > 3;
 
   return (
     <View style={{ gap: 14 }}>
@@ -65,7 +67,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                   height: 30,
                   borderRadius: 15,
                   borderWidth: border.base,
-                  borderColor: name ? colors.outlineStrong : on ? colors.onCoral : colors.line,
+                  borderColor: name ? colors.outlineStrong : on ? colors.onCoral : colors.outlineSoft,
                   borderStyle: name ? 'solid' : 'dashed',
                   backgroundColor: name ? colors.coralSoft : 'transparent',
                   alignItems: 'center',
@@ -73,7 +75,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                 }}
               >
                 {name ? (
-                  <Text size={15} weight="titleMedium">
+                  <Text size={15} weight="titleMedium" maxFontSizeMultiplier={1.3}>
                     {sessionLetter(name, names)}
                   </Text>
                 ) : null}
@@ -87,8 +89,11 @@ export function WeekPicker({ week, names, onChange }: Props) {
         <Text size={16} weight="titleMedium">
           {t('onboarding.flow.rhythm.sessionOf', { weekday: WEEKDAY_NAMES[open]! })}
         </Text>
-        {/* Toutes les séances sur une ligne : chacune prend la même place */}
-        <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 6 }}>
+        {/* Les séances sur une ligne, chacune la même place ; au-delà de 3, sur plusieurs lignes */}
+        <View
+          accessibilityRole="radiogroup"
+          style={{ flexDirection: 'row', flexWrap: wrap ? 'wrap' : 'nowrap', gap: 6 }}
+        >
           {[null, ...names].map((name) => {
             const on = current === name;
             return (
@@ -99,7 +104,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={name ? dayName(name) : t('onboarding.flow.rhythm.restChoice')}
                 style={({ pressed }) => ({
-                  flex: 1,
+                  ...(wrap ? { flexBasis: '30%', flexGrow: 1 } : { flex: 1 }),
                   minHeight: 42,
                   paddingHorizontal: 6,
                   borderRadius: 21,
@@ -108,7 +113,7 @@ export function WeekPicker({ week, names, onChange }: Props) {
                   justifyContent: 'center',
                   gap: 5,
                   borderWidth: on ? border.strong : border.base,
-                  borderColor: on ? colors.outlineStrong : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                   borderStyle: name === null && !on ? 'dashed' : 'solid',
                   backgroundColor: on || pressed ? colors.coralSoft : 'transparent',
                   ...(on ? hardShadow(2) : {}),

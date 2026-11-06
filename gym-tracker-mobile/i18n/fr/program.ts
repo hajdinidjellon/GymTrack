@@ -5,6 +5,7 @@ export const program = {
     dumbbell: 'Haltères',
     machine: 'Machine',
     bodyweight: 'Poids du corps',
+    kettlebell: 'Kettlebell',
   },
   kind: {
     compound: 'Plusieurs muscles',
@@ -32,6 +33,9 @@ export const program = {
     saved: 'Tes exercices pour {day} sont enregistrés pour les prochaines fois.',
     howTo: 'Ajoute, retire ou déplace des exercices : ils seront gardés pour tes prochaines séances {day}.',
     reset: 'Revenir aux exercices du programme',
+    removed: 'Retiré : {name}',
+    undo: 'Annuler',
+    undoA11y: 'Remettre {name}',
   },
   rule: {
     sets: 'Séries',
@@ -57,6 +61,8 @@ export const program = {
     remove: 'Supprimer la séance',
     removeTitle: 'Supprimer « {name} » ?',
     removeText: 'Elle sort de ton programme. Les séances déjà faites restent dans ton historique.',
+    removeTextScheduled:
+      'Elle sort de ton programme, ses jours de la semaine passent en repos. Les séances déjà faites restent dans ton historique.',
     removeConfirm: 'Supprimer',
     title: 'Mes séances',
     subtitle: 'Choisis les exercices de chaque séance et leur ordre. Le reste, on le calcule.',

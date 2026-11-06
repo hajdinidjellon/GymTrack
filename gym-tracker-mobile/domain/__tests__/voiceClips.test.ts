@@ -67,7 +67,18 @@ describe('voice inventory', () => {
 
   it('holds what the lines ask for', () => {
     const ids = new Set(inventory.map((c) => c.id));
-    for (const id of ['set-1', 'last-set-3', 'kg-62.5', 'kg-101.25', 'reps-1', 'sec-600', 'plate-and-4x0.25', 'next-squat', 'done-3', 'hello'])
+    for (const id of [
+      'set-1',
+      'last-set-3',
+      'kg-62.5',
+      'kg-101.25',
+      'reps-1',
+      'sec-600',
+      'plate-and-4x0.25',
+      'next-squat',
+      'done-3',
+      'hello',
+    ])
       expect(ids).toContain(id);
   });
 

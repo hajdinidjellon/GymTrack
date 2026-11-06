@@ -22,6 +22,8 @@ interface Props {
   total: number;
   /** "Développé couché · série 2 validée", with an undo next to it. */
   doneLabel?: string;
+  /** What the undo undoes, for VoiceOver, when it is more than the last set. */
+  undoA11y?: string;
   /** The set just done can get its "Comment c'était ?" (not a warm-up). */
   rateable?: boolean;
   /** Shrinks the popup to a small bar at the bottom. */
@@ -38,6 +40,7 @@ export function RestView({
   restEndsAt,
   total,
   doneLabel,
+  undoA11y,
   rateable = true,
   onMinimize,
   note,
@@ -127,7 +130,7 @@ export function RestView({
             <Text size={22} weight="black" numberOfLines={1}>
               {next.exercise.needsWeight
                 ? t('session.rest.weightToSet')
-                : loadLabel(next.set.weight, next.set.reps, next.exercise.timed)}
+                : loadLabel(next.set.weight, next.set.reps, next.exercise.timed, next.exercise.assisted)}
             </Text>
           </View>
           {perSide.length > 0 && !next.exercise.needsWeight ? <MiniPlates perSide={perSide} /> : null}
@@ -139,7 +142,7 @@ export function RestView({
         <Pressable
           onPress={undoLastSet}
           accessibilityRole="button"
-          accessibilityLabel={t('session.rest.undoA11y')}
+          accessibilityLabel={undoA11y ?? t('session.rest.undoA11y')}
           hitSlop={8}
           style={{ alignSelf: 'center' }}
         >
@@ -187,8 +190,10 @@ export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpan
       accessibilityRole="button"
       accessibilityLabel={t('session.rest.miniA11y', { count: left })}
       style={({ pressed }) => ({
-        height: 60,
+        minHeight: 60,
         paddingHorizontal: 18,
+        paddingVertical: 6,
+        gap: 8,
         borderRadius: radius.pill,
         borderWidth: border.strong,
         borderColor: colors.outline,
@@ -198,13 +203,13 @@ export function RestMini({ restEndsAt, onExpand }: { restEndsAt: number; onExpan
         justifyContent: 'space-between',
       })}
     >
-      <Text size={16} weight="titleMedium">
+      <Text size={16} weight="titleMedium" numberOfLines={1} style={{ flexShrink: 1 }}>
         {t('session.rest.title')}
       </Text>
       <Text size={28} weight="black">
         {clock}
       </Text>
-      <Text size={14} weight="bold" style={{ textDecorationLine: 'underline' }}>
+      <Text size={14} weight="bold" numberOfLines={1} style={{ flexShrink: 1, textDecorationLine: 'underline' }}>
         {t('session.rest.expand')}
       </Text>
     </Pressable>

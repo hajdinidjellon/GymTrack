@@ -124,7 +124,10 @@ describe('rest timer', () => {
     // La voix attend la fin de la cloche
     expect(Speech.speak).not.toHaveBeenCalledWith(expect.stringContaining("C'est reparti"), expect.anything());
     jest.advanceTimersByTime(900);
-    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Dernière série ! 60 kilos, 10 reps.", expect.anything());
+    expect(Speech.speak).toHaveBeenLastCalledWith(
+      "C'est reparti. Dernière série ! 60 kilos, 10 reps.",
+      expect.anything(),
+    );
   });
 
   it('stays silent with the bell off, and the notification too', () => {
@@ -133,7 +136,10 @@ describe('rest timer', () => {
     expect(scheduleRestCompleteNotification).toHaveBeenLastCalledWith(120, 'bench · 60 kg × 10', false);
     jest.advanceTimersByTime(120_000);
     expect(playRestBell).not.toHaveBeenCalled();
-    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Dernière série ! 60 kilos, 10 reps.", expect.anything());
+    expect(Speech.speak).toHaveBeenLastCalledWith(
+      "C'est reparti. Dernière série ! 60 kilos, 10 reps.",
+      expect.anything(),
+    );
   });
 
   it('adds time to the current rest', () => {
@@ -173,6 +179,26 @@ describe('end of session', () => {
   it('returns nothing when no session is running', () => {
     store().discardSession();
     expect(store().finishSession()).toBeNull();
+  });
+
+  it('ends a session left open at its last set, not hours later', () => {
+    const started = Date.parse(session().startedAt);
+    jest.setSystemTime(started + 40 * 60_000);
+    store().completeSet('bench', 0);
+    jest.setSystemTime(started + 5 * 3600_000);
+    const workout = store().finishSession();
+    expect(workout?.duration).toBe(40);
+    // The validation time is kept for the timeline
+    expect(workout?.exercises[0]!.sets[0]!.doneAt).toBe(started + 40 * 60_000);
+  });
+
+  it('ends at the time asked, and keeps a session open on purpose', () => {
+    const started = Date.parse(session().startedAt);
+    store().completeSet('bench', 0);
+    jest.setSystemTime(started + 3 * 3600_000);
+    store().keepSessionOpen();
+    expect(session().keptOpenAt).toBe(started + 3 * 3600_000);
+    expect(store().finishSession(started + 25 * 60_000)?.duration).toBe(25);
   });
 });
 
@@ -429,9 +455,6 @@ describe('voice cues', () => {
     store().completeRemaining('bench');
     store().stopRestTimer();
     store().completeSet('ohp', 0);
-    expect(Speech.speak).toHaveBeenLastCalledWith(
-      expect.stringContaining('Séance terminée'),
-      expect.anything(),
-    );
+    expect(Speech.speak).toHaveBeenLastCalledWith(expect.stringContaining('Séance terminée'), expect.anything());
   });
 });

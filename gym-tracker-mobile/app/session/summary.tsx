@@ -21,6 +21,7 @@ import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Chip } from '@/components/ui/Chip';
 import { Sparkle } from '@/components/ui/Sparkle';
 import { StatTile } from '@/components/stats/StatTile';
+import { EndTimeEditor } from '@/components/session/EndTimeEditor';
 
 export default function Summary() {
   useLocale();
@@ -43,7 +44,7 @@ export default function Summary() {
         lift.decision === 'add_weight' && def.equipment === 'barbell'
           ? t('session.summary.perSideIncrease', { kg: formatKg(lift.rule.increment / 2) })
           : deltaLabel(lift);
-      return [{ name: def.name, label, target: targetLoad(lift.targets, def.timed) }];
+      return [{ name: def.name, label, target: targetLoad(lift.targets, def.timed, def.assisted) }];
     });
   }, [workout, ctx, own]);
 
@@ -127,6 +128,7 @@ export default function Summary() {
           highlight={records.length > 0}
         />
       </View>
+      <EndTimeEditor workout={workout} onChange={(w) => void useWorkoutStore.getState().addWorkout(w)} />
 
       {next.length ? (
         <>

@@ -6,6 +6,7 @@ export const program: Dictionary['program'] = {
     dumbbell: 'Dumbbells',
     machine: 'Machine',
     bodyweight: 'Bodyweight',
+    kettlebell: 'Kettlebell',
   },
   kind: {
     compound: 'Several muscles',
@@ -33,6 +34,9 @@ export const program: Dictionary['program'] = {
     saved: 'Your exercises for {day} are saved for next time.',
     howTo: 'Add, remove or move exercises: they’ll be kept for your next {day} sessions.',
     reset: 'Back to the program’s exercises',
+    removed: 'Removed: {name}',
+    undo: 'Undo',
+    undoA11y: 'Put {name} back',
   },
   rule: {
     sets: 'Sets',
@@ -58,6 +62,8 @@ export const program: Dictionary['program'] = {
     remove: 'Delete the session',
     removeTitle: 'Delete “{name}”?',
     removeText: 'It leaves your program. The sessions already done stay in your history.',
+    removeTextScheduled:
+      'It leaves your program, its days of the week turn to rest. The sessions already done stay in your history.',
     removeConfirm: 'Delete',
     title: 'My sessions',
     subtitle: 'Pick the exercises of each session and their order. We work out the rest.',

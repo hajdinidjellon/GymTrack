@@ -18,8 +18,9 @@ export function Chip({ label, tone = 'neutral', icon }: { label: string; tone?: 
   return (
     <View
       style={{
-        height: 28,
+        minHeight: 28,
         paddingHorizontal: 10,
+        paddingVertical: 2,
         borderRadius: radius.pill,
         borderWidth: 2,
         borderColor: colors.frame,
@@ -53,7 +54,7 @@ export function IndexBadge({ value }: { value: number }) {
         justifyContent: 'center',
       }}
     >
-      <Text size={14} weight="black">
+      <Text size={14} weight="black" maxFontSizeMultiplier={1.3}>
         {value}
       </Text>
     </View>
