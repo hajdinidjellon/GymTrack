@@ -98,6 +98,7 @@ export const session: Dictionary['session'] = {
   },
 
   picker: {
+    allTab: 'All',
     suggestions: 'Suggestions',
     all: 'All exercises, best known first',
     taken: '{name}, already in the workout',
