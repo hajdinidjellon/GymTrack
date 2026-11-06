@@ -81,7 +81,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `hold.ts` — the timer of a held set (plank…): 3 s countdown, then the hold. Timed exercises (`timed`) count seconds in `reps`, progress by `rule.repStep` (5 s).
 - `strength.ts` — estimated 1RM (Epley, ≤ 12 reps) and records per number of reps, for the exercise page.
 - `backup.ts` — the backup file (JSON, validated on restore), merging sessions by id.
-- `importWorkouts.ts` — Strong and Hevy CSV exports to sessions; names matched to the catalog only when movement and equipment agree.
+- `importWorkouts.ts` — Strong and Hevy CSV exports to sessions; names matched to the catalog from the Hevy and Strong names it knows (`catalog/importNames.ts`), else only when movement and equipment agree (the word in brackets: Barbell, Cable, Smith Machine…).
 - `ownDays.ts` — days the user adds to a program (`settings.ownDays`): named, renamed, removed; an empty one is never the next session (`hasExercises`).
 - `ownExercises.ts` — editing or deleting an own exercise; a rename moves every setting under the name and keeps the old name as an alias.
 - `voiceCommands.ts` — what a few spoken words mean ("fait", "8", "plus tard"…); more than 4 words is never a command.

@@ -1,4 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
+import { HEVY_NAMES, STRONG_NAMES } from '@/domain/catalog/importNames';
+import { EXERCISES, type ExerciseDef } from '@/domain/programs';
 import {
   catalogMatch,
   importWorkouts,
@@ -15,7 +17,7 @@ const STRONG = [
   '2024-01-15 18:30:00,"Push Day",1h 5m,Bench Press (Barbell),1,80,8,0,0,,,8',
   '2024-01-15 18:30:00,"Push Day",1h 5m,Bench Press (Barbell),2,80,7,0,0,"felt ""heavy""",,',
   '2024-01-15 18:30:00,"Push Day",1h 5m,Bench Press (Barbell),Rest Timer,0,0,0,90,,,',
-  '2024-01-15 18:30:00,"Push Day",1h 5m,Bicep Curl (Dumbbell),1,14,12,0,0,,,',
+  '2024-01-15 18:30:00,"Push Day",1h 5m,Bicep Curl (Band),1,14,12,0,0,,,',
   '2024-01-15 18:30:00,"Push Day",1h 5m,Plank,1,0,0,0,60,,,',
   '2024-01-15 18:30:00,"Push Day",1h 5m,Running,1,0,0,5,1500,,,',
   '2024-01-17 19:00:00,"Legs",45m,Squat (Barbell),1,100,5,0,0,,,',
@@ -83,10 +85,76 @@ describe('catalogMatch', () => {
   });
 
   it('keeps unknown or unsure names out of the catalog', () => {
-    expect(catalogMatch('Bicep Curl (Dumbbell)')).toBeUndefined();
     expect(catalogMatch('Squat (Kettlebell)')).toBeUndefined();
     expect(catalogMatch('Squat (Band)')).toBeUndefined();
+    expect(catalogMatch('Bench Press (Cable)')).toBeUndefined();
+    expect(catalogMatch('Box Squat (Barbell)')).toBeUndefined();
     expect(catalogMatch('Zercher thing')).toBeUndefined();
+  });
+
+  it.each([
+    // Hevy
+    ['Butterfly (Pec Deck)', 'Pec deck'],
+    ['Incline Bench Press (Dumbbell)', 'Développé incliné haltères'],
+    ['Incline Bench Press (Smith Machine)', 'Développé incliné Smith'],
+    ['Bicep Curl (Dumbbell)', 'Curl haltères'],
+    ['Chest Fly (Dumbbell)', 'Écarté haltères'],
+    ['Cable Fly Crossovers', 'Écarté poulie'],
+    ['Triceps Rope Pushdown', 'Extension triceps corde'],
+    ['Seated Cable Row - V Grip (Cable)', 'Rowing assis poulie'],
+    ['Rear Delt Reverse Fly (Dumbbell)', 'Oiseau haltères'],
+    ['Rear Delt Reverse Fly (Machine)', 'Reverse pec deck'],
+    ['Iso-Lateral Chest Press (Machine)', 'Développé convergent machine'],
+    ['Lat Pulldown (Machine)', 'Tirage vertical machine'],
+    ['Straight Arm Lat Pulldown (Cable)', 'Pull-over poulie'],
+    ['Leg Press Horizontal (Machine)', 'Presse à cuisses horizontale'],
+    ['Hip Abduction (Machine)', 'Abducteurs machine'],
+    ['Seated Shoulder Press (Machine)', 'Shoulder press machine'],
+    ['Romanian Deadlift (Dumbbell)', 'Soulevé de terre roumain haltères'],
+    ['Kettlebell Swing', 'Kettlebell swing'],
+    ['Farmers Walk', 'Marche du fermier'],
+    ['Chest Dip (Assisted)', 'Dips assistés'],
+    ['Squat (Dumbbell)', 'Squat haltères'],
+    // Strong
+    ['Seated Row (Cable)', 'Rowing assis poulie'],
+    ['Triceps Pushdown (Cable - Straight Bar)', 'Extension triceps poulie'],
+    ['Bent Over One Arm Row (Dumbbell)', 'Rowing haltère'],
+    ['Pec Deck (Machine)', 'Pec deck'],
+    ['Reverse Fly (Machine)', 'Reverse pec deck'],
+    ["Knee Raise (Captain's Chair)", 'Relevés de jambes chaise romaine'],
+    ['Calf Press on Leg Press', 'Mollets à la presse'],
+    ['Lat Pulldown - Wide Grip (Cable)', 'Tirage vertical'],
+    // Case, plurals and punctuation do not matter
+    ['bicep curls (dumbbell)', 'Curl haltères'],
+    ['Toes-To-Bar', 'Toes to bar'],
+  ])('knows %s', (raw, name) => {
+    expect(catalogMatch(raw)?.name).toBe(name);
+  });
+
+  it('reads the equipment in brackets for the names it does not list', () => {
+    expect(catalogMatch('Hip Thrust (Smith Machine)')?.name).toBe('Hip thrust Smith');
+    expect(catalogMatch('Dips (Machine)')?.name).toBe('Dips machine');
+    expect(catalogMatch('Pull-ups (Assisted)')?.name).toBe('Tractions assistées');
+    expect(catalogMatch('Dips (Weighted)')?.name).toBe('Dips');
+    expect(catalogMatch('Squat (Smith)')?.name).toBe('Squat Smith');
+    expect(catalogMatch('Turkish Get-Up (Kettlebell)')?.name).toBe('Turkish get-up');
+    expect(catalogMatch('Smith Squat (Cable)')).toBeUndefined();
+    expect(catalogMatch('Squat (Dumbbells)')?.name).toBe('Squat haltères');
+  });
+
+  it('only maps a Hevy or Strong name to the same kind of equipment', () => {
+    const kind: Record<string, (d: ExerciseDef) => boolean> = {
+      barbell: (d) => d.equipment === 'barbell' || d.name === 'Rowing T-bar',
+      dumbbell: (d) => d.equipment === 'dumbbell',
+      cable: (d) => d.gear === 'cable',
+      smith: (d) => d.gear === 'smith',
+      machine: (d) => d.equipment === 'machine',
+    };
+    for (const [raw, key] of Object.entries({ ...HEVY_NAMES, ...STRONG_NAMES })) {
+      const word = raw.match(/\(([A-Za-z]+)/)?.[1]?.toLowerCase() ?? '';
+      const fits = kind[word];
+      if (fits) expect([raw, fits(EXERCISES[key])]).toEqual([raw, true]);
+    }
   });
 
   it('finds the exercises the user created', () => {
@@ -116,7 +184,7 @@ describe('importWorkouts from Strong', () => {
     const push = result.workouts[0]!;
     expect(push.date).toBe(new Date(2024, 0, 15, 18, 30).toISOString());
     expect(push.duration).toBe(65);
-    expect(push.exercises.map((e) => e.name)).toEqual(['Développé couché', 'Bicep Curl (Dumbbell)', 'Gainage']);
+    expect(push.exercises.map((e) => e.name)).toEqual(['Développé couché', 'Bicep Curl (Band)', 'Gainage']);
     expect(push.exercises[2]).toMatchObject({ timed: true, sets: [{ weight: 0, reps: 60, setType: 'normal' }] });
     expect(push.exercises[0]).not.toHaveProperty('timed');
     expect(push.exercises[0]!.sets).toEqual([
