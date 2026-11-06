@@ -16,6 +16,7 @@ import {
   todayStatus,
   tonnage,
   toActiveExercises,
+  weekOf,
   type PlannedDay,
   type PlannedLift,
 } from '@/domain/sessionBuilder';
@@ -24,7 +25,7 @@ import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
 import { type ChoosableDay, choosableDays, getSplit, hasExercises } from '@/domain/programs';
 import { latestWorkoutDate, suggestedSplit, SWITCH_AFTER } from '@/domain/programSwitch';
-import { nextScheduled, validSchedule, whenLabel } from '@/domain/schedule';
+import { nextScheduled, whenLabel } from '@/domain/schedule';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
 import { dayName, exerciseName, t } from '@/i18n';
@@ -405,15 +406,10 @@ function LastWorkout() {
 
 /** A day off in the user's week, or the session already done today. Training anyway is one tap away. */
 function RestCard({ done, days, onChoose }: { done: boolean; days: ChoosableDay[]; onChoose: (name: string) => void }) {
-  const profile = useProfileStore((s) => s.profile);
+  const ctx = useBuildContext();
   const now = new Date();
-  const schedule = profile
-    ? validSchedule(
-        profile.program.schedule,
-        getSplit(profile.program.split).days.map((d) => d.name),
-      )
-    : null;
-  const next = schedule ? nextScheduled(schedule, now) : null;
+  const week = ctx ? weekOf(ctx) : null;
+  const next = week ? nextScheduled(week.schedule, now, week.canDo) : null;
 
   return (
     <>

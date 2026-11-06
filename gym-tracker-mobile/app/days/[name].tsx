@@ -73,17 +73,23 @@ export default function DayScreen() {
           <Link
             label={t('program.days.remove')}
             onPress={() =>
-              Alert.alert(t('program.days.removeTitle', { name: day.name }), t('program.days.removeText'), [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                  text: t('program.days.removeConfirm'),
-                  style: 'destructive',
-                  onPress: () => {
-                    removeOwnDay(day.split, day.name);
-                    router.back();
+              Alert.alert(
+                t('program.days.removeTitle', { name: day.name }),
+                profile.program.split === day.split && profile.program.schedule?.includes(day.name)
+                  ? t('program.days.removeTextScheduled')
+                  : t('program.days.removeText'),
+                [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  {
+                    text: t('program.days.removeConfirm'),
+                    style: 'destructive',
+                    onPress: () => {
+                      removeOwnDay(day.split, day.name);
+                      router.back();
+                    },
                   },
-                },
-              ])
+                ],
+              )
             }
           />
         </View>

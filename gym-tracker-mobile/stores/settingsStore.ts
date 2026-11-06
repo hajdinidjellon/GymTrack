@@ -10,10 +10,12 @@ import { removeOwnExercise, updateOwnExercise } from '@/domain/ownExercises';
 import { DEFAULT_BAR, DEFAULT_PLATES } from '@/domain/plates';
 import type { ExerciseDef } from '@/domain/programs';
 import { applyRule } from '@/domain/ruleSync';
+import { renameInSchedule } from '@/domain/schedule';
 import { settingsPatchSchema } from '@/domain/schemas';
 import { resolveLocale, setLocale } from '@/i18n';
 import { deviceLocaleTag } from '@/services/locale';
 import { logger } from '@/services/logger';
+import { useProfileStore } from '@/stores/profileStore';
 import type { AppSettings, CustomExercise, Goal, RuleOverride, SplitId } from '@/types';
 
 // Kept from the app's first name: a new key would reset everyone's settings.
@@ -123,6 +125,14 @@ interface SettingsStore {
   toggleSuperset: (key: string, exerciseName: string) => void;
 }
 
+/** The fixed week follows a day renamed (or removed: its weekdays turn to rest). */
+function followInWeek(split: SplitId, from: string, to: string | null): void {
+  const profile = useProfileStore.getState().profile;
+  if (!profile || profile.program.split !== split) return;
+  const program = renameInSchedule(profile.program, from, to);
+  if (program !== profile.program) void useProfileStore.getState().updateProfile({ program });
+}
+
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   settings: DEFAULT_SETTINGS,
   isLoaded: false,
@@ -191,8 +201,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   addOwnDay: (split, name) => get().updateSettings(addOwnDay(get().settings, split, name)),
-  renameOwnDay: (split, from, to) => get().updateSettings(renameOwnDay(get().settings, split, from, to)),
-  removeOwnDay: (split, name) => get().updateSettings(removeOwnDay(get().settings, split, name)),
+  renameOwnDay: (split, from, to) => {
+    get().updateSettings(renameOwnDay(get().settings, split, from, to));
+    followInWeek(split, from, to);
+  },
+  removeOwnDay: (split, name) => {
+    get().updateSettings(removeOwnDay(get().settings, split, name));
+    followInWeek(split, name, null);
+  },
 
   toggleSuperset: (key, exerciseName) => {
     const { [key]: current = [], ...others } = get().settings.supersets;

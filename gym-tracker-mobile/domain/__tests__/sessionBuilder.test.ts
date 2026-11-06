@@ -8,6 +8,7 @@ import {
   nextDay,
   planDay,
   todayStatus,
+  weekOf,
   planLift,
   reasonLabel,
   supersetGroups,
@@ -89,6 +90,33 @@ describe('nextDay', () => {
     it('is done once a session is saved today', () => {
       const c = week(['Push', null, 'Legs', null, 'Pull', null, null], [workout(wednesday.toISOString(), 'Legs', [])]);
       expect(todayStatus(c)).toEqual({ kind: 'done' });
+    });
+
+    describe('with own days', () => {
+      const own = (schedule: (string | null)[], workouts: Workout[] = []) => {
+        const c = week(schedule, workouts);
+        c.settings.ownDays = { ppl: ['Push B', 'Vide'] };
+        c.settings.customDays = { 'ppl/Push B': ['Développé incliné haltères', 'Dips'] };
+        return c;
+      };
+
+      it('does an own day planned today', () => {
+        const c = own(['Push', null, 'Push B', null, 'Pull', null, null], [workout('2026-10-26', 'Push', [])]);
+        expect(todayStatus(c)).toEqual({ kind: 'train', name: 'Push B' });
+        expect(nextDay(c).name).toBe('Push B');
+      });
+
+      it('follows the program on an own day left empty, and never announces it', () => {
+        const c = own(['Push', null, 'Vide', 'Vide', 'Pull', null, null], [workout('2026-10-26', 'Push', [])]);
+        expect(todayStatus(c)).toEqual({ kind: 'free' });
+        expect(nextDay(c).name).toBe('Pull');
+        expect(weekOf(c)?.canDo('Vide')).toBe(false);
+        expect(weekOf(c)?.canDo('Push')).toBe(true);
+      });
+
+      it('drops a week with a day removed since', () => {
+        expect(weekOf(own(['Push', null, 'Ancien', null, null, null, null]))).toBeNull();
+      });
     });
 
     it('ignores a week that no longer fits the program', () => {
