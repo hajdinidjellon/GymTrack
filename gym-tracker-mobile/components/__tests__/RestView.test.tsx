@@ -124,6 +124,23 @@ describe('RestView', () => {
     expect(session().exercises[0]!.sets[0]!.completed).toBe(false);
   });
 
+  it('says and undoes every set "Tout comme prévu" validated', async () => {
+    useSessionStore.getState().completeRemaining('squat');
+    const s = session();
+    await render(
+      <RestView
+        next={findCurrent(s.exercises)}
+        restEndsAt={s.restEndsAt ?? Date.now() + 60_000}
+        total={120}
+        doneLabel="2 séries validées"
+        undoA11y="Annuler les 2 séries validées"
+      />,
+    );
+    expect(screen.getByText('2 séries validées · annuler')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Annuler les 2 séries validées' }));
+    expect(session().exercises[0]!.sets.map((set) => set.completed)).toEqual([true, false, false]);
+  });
+
   it('shrinks the rest, with no second button doing the same as "Passer le repos"', async () => {
     await renderRest();
     await fireEvent.press(screen.getByRole('button', { name: 'Réduire le minuteur' }));

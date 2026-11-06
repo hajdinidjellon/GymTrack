@@ -22,6 +22,8 @@ interface Props {
   total: number;
   /** "Développé couché · série 2 validée", with an undo next to it. */
   doneLabel?: string;
+  /** What the undo undoes, for VoiceOver, when it is more than the last set. */
+  undoA11y?: string;
   /** The set just done can get its "Comment c'était ?" (not a warm-up). */
   rateable?: boolean;
   /** Shrinks the popup to a small bar at the bottom. */
@@ -38,6 +40,7 @@ export function RestView({
   restEndsAt,
   total,
   doneLabel,
+  undoA11y,
   rateable = true,
   onMinimize,
   note,
@@ -139,7 +142,7 @@ export function RestView({
         <Pressable
           onPress={undoLastSet}
           accessibilityRole="button"
-          accessibilityLabel={t('session.rest.undoA11y')}
+          accessibilityLabel={undoA11y ?? t('session.rest.undoA11y')}
           hitSlop={8}
           style={{ alignSelf: 'center' }}
         >

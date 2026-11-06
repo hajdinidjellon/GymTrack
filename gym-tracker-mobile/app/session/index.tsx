@@ -111,6 +111,8 @@ export default function SessionScreen() {
       )
     : null;
   const lastDone = doneExercise ? setNumber(doneExercise.sets, last.setIndex) : null;
+  // "Tout comme prévu" validated several sets at once: the undo says so, and undoes them all
+  const batch = last?.batch && last.batch.length > 1 ? last.batch.length : 0;
 
   // Pendant le repos, le bas de l'écran garde le minuteur en petit ; en grand, il s'ouvre au milieu
   const rest = resting ? <RestMini restEndsAt={session.restEndsAt!} onExpand={() => setMinimized(false)} /> : null;
@@ -232,14 +234,17 @@ export default function SessionScreen() {
                 restEndsAt={session.restEndsAt!}
                 total={session.restDuration ?? 90}
                 doneLabel={
-                  lastDone
-                    ? lastDone.warmup
-                      ? t('session.logger.warmupDone')
-                      : lastDone.drop
-                        ? t('session.logger.dropDone')
-                        : t('session.logger.setDone', { n: lastDone.n })
-                    : undefined
+                  batch
+                    ? t('session.logger.batchDone', { count: batch })
+                    : lastDone
+                      ? lastDone.warmup
+                        ? t('session.logger.warmupDone')
+                        : lastDone.drop
+                          ? t('session.logger.dropDone')
+                          : t('session.logger.setDone', { n: lastDone.n })
+                      : undefined
                 }
+                undoA11y={batch ? t('session.rest.undoBatchA11y', { count: batch }) : undefined}
                 rateable={isRateable(session)}
                 note={doneExercise?.restNote}
                 doneExerciseId={last?.exerciseId}

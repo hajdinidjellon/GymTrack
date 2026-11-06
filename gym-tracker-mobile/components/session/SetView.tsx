@@ -242,6 +242,7 @@ export function SetView({ cursor, footer }: Props) {
                 label={t('session.setView.skipWarmup')}
                 variant="secondary"
                 size="small"
+                style={{ marginBottom: space.sm }}
                 onPress={() => {
                   Keyboard.dismiss();
                   skipWarmups(exercise.id);
@@ -249,9 +250,11 @@ export function SetView({ cursor, footer }: Props) {
               />
             ) : remaining > 1 && started ? (
               <StickerButton
+                // Set apart from Valider: a tap a little too high must not validate every set
                 label={t('session.setView.allAsPlanned', { count: remaining })}
                 variant="secondary"
                 size="small"
+                style={{ marginBottom: space.sm }}
                 onPress={() => {
                   Keyboard.dismiss();
                   completeRemaining(exercise.id);
