@@ -1,7 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  answersSplit,
   answersWeek,
+  bodyOf,
   calibrationPreset,
+  remapSchedule,
   experienceTip,
   firstSession,
   goalTip,
@@ -95,6 +98,18 @@ describe('calibrationPreset', () => {
     expect(calibrationPreset(presets, undefined)).toBe(40);
   });
 
+  it('starts a step lighter for a woman, a light body or 55 and over, a step heavier for a heavy body', () => {
+    expect(calibrationPreset(presets, 'months', { sex: 'female' })).toBe(30);
+    expect(calibrationPreset(presets, 'months', { sex: 'male' })).toBe(40);
+    expect(calibrationPreset(presets, 'years', { ageGroup: '55', bodyWeight: 55 })).toBe(30);
+    expect(calibrationPreset(presets, 'years', { bodyWeight: 100 })).toBe(60);
+    expect(calibrationPreset(presets, 'new', { sex: 'female' })).toBe(20);
+  });
+
+  it('never starts a beginner above the second preset', () => {
+    expect(calibrationPreset(presets, 'new', { bodyWeight: 120 })).toBe(30);
+  });
+
   it('stays inside short preset lists', () => {
     expect(calibrationPreset([10, 20], 'years')).toBe(20);
     expect(calibrationPreset([], 'new')).toBeUndefined();
@@ -109,5 +124,57 @@ describe('scheduleLegend', () => {
 
   it('gives the own days their letter after the program', () => {
     expect(scheduleLegend('ul', ['Haut', 'Bas', 'Haut B'])).toBe('A Haut · B Bas · C Haut B');
+  });
+});
+
+describe('bodyOf', () => {
+  it('reads the sex, the age group and the latest body weight, when given', () => {
+    expect(
+      bodyOf({
+        sex: 'female',
+        ageGroup: '35',
+        bodyStats: [
+          { date: '2026-01-01T00:00:00.000Z', weight: 70 },
+          { date: '2026-06-01T00:00:00.000Z', weight: 66 },
+        ],
+      }),
+    ).toEqual({ sex: 'female', ageGroup: '35', bodyWeight: 66 });
+    expect(bodyOf({ bodyStats: [] })).toEqual({});
+    expect(bodyOf(null)).toEqual({});
+  });
+});
+
+describe('the program picked', () => {
+  it('is the one picked, else the one the rhythm gives', () => {
+    expect(answersSplit({ perWeek: 4, split: null })).toBe('ul');
+    expect(answersSplit({ perWeek: 4, split: 'glutes' })).toBe('glutes');
+  });
+
+  it('puts the new program on the same training days', () => {
+    expect(remapSchedule(['Haut', null, 'Bas', null, 'Haut', 'Bas', null], ['Push', 'Pull', 'Legs'])).toEqual([
+      'Push',
+      null,
+      'Pull',
+      null,
+      'Legs',
+      'Push',
+      null,
+    ]);
+    expect(remapSchedule(['Haut', null, null, null, null, null, null], [])).toEqual(Array(7).fill(null));
+  });
+
+  it('shows the week, the names and the tips of the program picked', () => {
+    expect(answersWeek({ perWeek: 3, schedule: null, split: 'glutes' })).toEqual([
+      'Fessiers',
+      null,
+      'Haut du corps',
+      null,
+      'Jambes',
+      null,
+      null,
+    ]);
+    expect(sessionNames(3, 'glutes')).toEqual(['Fessiers', 'Haut du corps', 'Jambes']);
+    expect(weekLegend(3, 'glutes')).toBe('A Fessiers · B Haut du corps · C Jambes');
+    expect(rhythmTip(3, 3, 'glutes')[1]).toContain('fessiers');
   });
 });

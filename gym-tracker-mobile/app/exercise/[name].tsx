@@ -85,7 +85,7 @@ export default function ExerciseScreen() {
   const records = def.timed ? [] : repRecords(fullHistory, def.assisted);
   const bodyweight = def.equipment === 'bodyweight';
   const weights = weightHistory(def, ctx.workouts).map((p) => p.weight);
-  const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def, ctx.settings.units));
+  const base = ruleFor(ctx.profile.goal, def, defaultIncrementFor(def, ctx.settings.units, false, ctx.settings));
   const loading = loadingOf({
     name: def.name,
     equipment: def.equipment,

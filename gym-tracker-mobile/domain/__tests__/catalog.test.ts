@@ -59,6 +59,18 @@ describe('programs', () => {
     expect(defaultIncrementFor(E.legext, 'kg')).toBe(2.5);
   });
 
+  it("follows the steps of the user's gym on stacks and cables, never on plates or dumbbells", () => {
+    const E = EXERCISES;
+    const basicFit = { stackStep: 4.5, cableStep: 2.3 };
+    expect(defaultIncrementFor(E.legext, 'kg', false, basicFit)).toBe(4.5);
+    expect(defaultIncrementFor(E.dipsmachine, 'kg', false, basicFit)).toBe(4.5);
+    expect(defaultIncrementFor(E.pulldown, 'kg', false, basicFit)).toBe(2.3);
+    expect(defaultIncrementFor(E.legpress, 'kg', true, basicFit)).toBe(2.5);
+    expect(defaultIncrementFor(E.smithsquat, 'kg', false, basicFit)).toBe(2.5);
+    expect(defaultIncrementFor(E.curl, 'kg', false, basicFit)).toBe(2);
+    expect(defaultIncrementFor(E.legext, 'kg', false, { stackStep: null, cableStep: null })).toBe(2.5);
+  });
+
   it('offers an easier variant of the hard bodyweight lifts', () => {
     const E = EXERCISES;
     expect(easierVariant(E.pullup)).toBe(E.assisted);

@@ -110,11 +110,14 @@ export const profileSchema: z.ZodType<UserProfile> = z.object({
   name: z.string().max(100).optional(),
   goal: z.enum(['muscle', 'force', 'forme']),
   program: z.object({
-    split: z.enum(['ppl', 'ul', 'fb']),
+    split: z.enum(['ppl', 'ul', 'fb', 'glutes']),
     perWeek: z.number().int().min(1).max(7),
     schedule: z.array(z.string().max(60).nullable()).length(7).optional(),
   }),
   experience: z.enum(['new', 'months', 'years']).optional(),
+  sex: z.enum(['male', 'female']).optional(),
+  ageGroup: z.enum(['16', '25', '35', '45', '55']).optional(),
+  sessionMinutes: z.number().int().min(15).max(240).optional(),
   prs: z.array(prSchema).max(500),
   bodyStats: z
     .array(
@@ -171,6 +174,9 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     supersets: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),
     ownDays: z.record(z.string().max(10), z.array(z.string().max(100)).max(14)),
     recoveryPromptSeen: z.boolean(),
+    stackStep: z.number().positive().max(20).nullable(),
+    cableStep: z.number().positive().max(20).nullable(),
+    gymChain: z.string().max(40).nullable(),
   })
   .partial();
 

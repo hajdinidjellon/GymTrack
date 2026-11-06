@@ -140,6 +140,16 @@ export const domain = {
     yearsTitle: "Plus d'un an",
     yearsSub: 'Je connais mes charges',
     legendFullBody: 'A et B : deux séances full body qui alternent',
+    programs: {
+      fbTitle: 'Tout le corps',
+      fbSub: 'Chaque séance fait travailler tout le corps. Le plus simple pour débuter.',
+      ulTitle: 'Haut / Bas',
+      ulSub: 'Un jour le haut du corps, un jour les jambes.',
+      pplTitle: 'Pousser / Tirer / Jambes',
+      pplSub: 'Pecs, épaules et triceps ; puis dos et biceps ; puis jambes.',
+      glutesTitle: 'Fessiers / Haut / Jambes',
+      glutesSub: 'Une séance rien que pour les fessiers, une pour le haut, une pour les jambes.',
+    },
     goalTips: {
       muscleLead: 'Bon choix.',
       muscle: 'Quand tu fais toutes tes reps, on ajoute du poids à la séance suivante.',
@@ -153,6 +163,7 @@ export const domain = {
       fb: "c'est du full body. Tout le corps à chaque fois, et un jour de repos entre deux.",
       ul: 'haut du corps, puis bas du corps. Chaque muscle travaille deux fois par semaine.',
       ppl: 'pousser, tirer, jambes. Chaque séance vise un groupe de muscles à fond.',
+      glutes: 'une séance fessiers, une haut du corps, une jambes. Les fessiers passent en premier.',
     },
     experienceTips: {
       newLead: 'On y va doucement.',
@@ -168,9 +179,11 @@ export const domain = {
     splitPpl: 'Push · Pull · Legs',
     splitUl: 'Haut · Bas',
     splitFb: 'Full body',
+    splitGlutes: 'Fessiers · Haut · Jambes',
     metaPpl: '3–6 j',
     metaUl: '4 j',
     metaFb: '2–3 j',
+    metaGlutes: '3–5 j',
     muscles: {
       chest: 'Pectoraux',
       back: 'Dos',

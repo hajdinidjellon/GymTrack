@@ -254,5 +254,8 @@ export const EXERCISE_NAMES_EN: Record<string, string> = {
 export const DAY_NAMES_EN: Record<string, string> = {
   Haut: 'Upper',
   Bas: 'Lower',
+  Fessiers: 'Glutes',
+  'Haut du corps': 'Upper body',
+  Jambes: 'Legs',
   'Ma séance': 'My workout',
 };

@@ -23,6 +23,7 @@ import {
   easierVariant,
   isPlateLoaded,
   findExerciseDef,
+  getSplit,
   hasExercises,
   programDays,
   ruleFor,
@@ -45,7 +46,7 @@ import type {
 } from '@/types';
 
 export interface BuildContext {
-  profile: Pick<UserProfile, 'goal' | 'program' | 'prs'>;
+  profile: Pick<UserProfile, 'goal' | 'program' | 'prs'> & Partial<Pick<UserProfile, 'sessionMinutes'>>;
   settings: Pick<AppSettings, 'units' | 'defaultRestTime' | 'increments'> &
     Partial<
       Pick<
@@ -61,6 +62,8 @@ export interface BuildContext {
         | 'plates'
         | 'collarWeight'
         | 'manualProgression'
+        | 'stackStep'
+        | 'cableStep'
       >
     >;
   workouts: Workout[];
@@ -91,6 +94,8 @@ export interface PlannedDay {
   minutes: number;
   /** Exercises chained with the one after them (superset). */
   links?: string[];
+  /** Exercises of the program day left out to fit the user's usual session time. */
+  dropped?: number;
 }
 
 function matches(def: ExerciseDef, name: string): boolean {
@@ -183,7 +188,7 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   const wanted =
     ctx.settings.increments[def.name] ??
     lastRule?.increment ??
-    defaultIncrementFor(def, ctx.settings.units, plateLoaded);
+    defaultIncrementFor(def, ctx.settings.units, plateLoaded, ctx.settings);
   // Never a step the plates cannot make: 1,25 kg plates make 2,5 on the bar, not 1
   const increment = gym ? loadableIncrement(loading, wanted, gym.plates) : wanted;
   const rule = withOverride(ruleFor(ctx.profile.goal, def, increment), ctx.settings.ruleOverrides?.[def.name]);
@@ -238,12 +243,45 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
   };
 }
 
+/** ~40 s per set plus its rest. */
+const liftSeconds = (l: PlannedLift) => l.targets.length * (40 + l.restTime);
+
+/** Never fewer exercises than this to fit the time: a session of two exercises is not one. */
+export const MIN_LIFTS_TO_FIT = 3;
+
+/**
+ * The lifts that fit in the user's usual session time: the last ones of a
+ * program day go first. A day the user set up themselves stays whole.
+ */
+export function fitToTime(lifts: PlannedLift[], minutes: number | undefined): PlannedLift[] {
+  if (!minutes) return lifts;
+  const kept = [...lifts];
+  const total = () => kept.reduce((sum, l) => sum + liftSeconds(l), 0);
+  while (kept.length > MIN_LIFTS_TO_FIT && total() > minutes * 60) kept.pop();
+  return kept;
+}
+
+/** The program's own list for the day, untouched by the user. */
+function isProgramDay(day: ProgramDay & { split?: SplitId }, ctx: BuildContext): boolean {
+  const split = day.split ?? ctx.profile.program.split;
+  if (ctx.settings.customDays?.[dayKey(split, day.name)]) return false;
+  const builtIn = getSplit(split).days.find((d) => d.name === day.name);
+  return !!builtIn && builtIn.exercises.length === day.exercises.length;
+}
+
 export function planDay(day: ProgramDay & { split?: SplitId }, ctx: BuildContext): PlannedDay {
-  const lifts = day.exercises.map((def) => planLift(def, ctx));
-  // ~40 s par série plus le repos
-  const seconds = lifts.reduce((sum, l) => sum + l.targets.length * (40 + l.restTime), 0);
+  const all = day.exercises.map((def) => planLift(def, ctx));
+  const lifts = isProgramDay(day, ctx) ? fitToTime(all, ctx.profile.sessionMinutes) : all;
+  const seconds = lifts.reduce((sum, l) => sum + liftSeconds(l), 0);
   const links = ctx.settings.supersets?.[dayKey(day.split ?? ctx.profile.program.split, day.name)];
-  return { name: day.name, lifts, minutes: Math.round(seconds / 300) * 5, ...(links?.length ? { links } : {}) };
+  const dropped = all.length - lifts.length;
+  return {
+    name: day.name,
+    lifts,
+    minutes: Math.round(seconds / 300) * 5,
+    ...(links?.length ? { links } : {}),
+    ...(dropped ? { dropped } : {}),
+  };
 }
 
 /**

@@ -33,7 +33,7 @@ Branches, commits and PRs: see `CONTRIBUTING.md`.
 ```
 app/
   _layout.tsx              ← fonts, SQLite init, local data load (offline-first)
-  (onboarding)/            ← welcome, setup (the 4 first-launch questions + recap), login; goal/program edit from Profile (?edit=1)
+  (onboarding)/            ← welcome, setup (the 7 first-launch questions + recap), login; goal/program edit from Profile (?edit=1)
   (tabs)/                  ← index (Aujourd'hui), progress, profile; _layout gates on profile and resumes a running session
   session/preview.tsx      ← today's session, "Lancer la séance"
   session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state; the last set opens SessionDone (effort, undo, one more set, then save)
@@ -86,6 +86,9 @@ A layer never imports a layer above it. Always import with `@/`.
 - `ownExercises.ts` — editing or deleting an own exercise; a rename moves every setting under the name and keeps the old name as an alias.
 - `voiceCommands.ts` — what a few spoken words mean ("fait", "8", "plus tard"…); more than 4 words is never a command.
 - Drop sets (`setType: 'drop'`) never steer progression (`mainSets`). Supersets: exercises with the same `superset` group take turns (`sessionCursor`), no rest inside a round (`supersetHandoff`).
+- `onboarding.ts` — the first-launch answers (goal, about you, experience, rhythm, program, session time, gym), the plain-language programs (`PROGRAM_CHOICES`), and `calibrationPreset`: the first weight offered from experience, sex, age group and body weight, all optional.
+- `gyms.ts` — the gym chains (Basic-Fit, Fitness Park, L'Orange Bleue, Keepcool first, then a search): bar, plates and the machines' steps (`settings.stackStep`, `settings.cableStep`, used by `defaultIncrementFor`), a correctable starting point.
+- A program day that runs over the user's usual session time (`profile.sessionMinutes`) loses its last exercises, 3 at least (`fitToTime`); a day the user set up stays whole.
 - `profile.ts`, `week.ts`, `plates.ts`, `sessionCursor.ts`, `voiceLines.ts`, `format.ts`.
 
 ### Services (`services/`)

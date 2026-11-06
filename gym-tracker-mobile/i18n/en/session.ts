@@ -45,6 +45,10 @@ export const session: Dictionary['session'] = {
     extraEyebrow: 'Off program · ~{minutes} min',
     extraSubtitle: 'Just this once: each exercise picks up where you are. Your program carries on where you left it.',
     liftA11y: '{name}, {target}, {delta}',
+    shortened: {
+      one: 'Shortened to fit in {minutes} min: 1 exercise less. You can add it during the session.',
+      other: 'Shortened to fit in {minutes} min: {count} exercises less. You can add them during the session.',
+    },
     firstTime: 'first time',
     weightToPick: 'Weight to pick',
     perSideA11y: 'Per side: {plates}',

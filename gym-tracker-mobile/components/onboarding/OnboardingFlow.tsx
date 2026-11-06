@@ -14,7 +14,7 @@ import {
   goalTip,
   rhythmTip,
   sessionNames,
-  splitFor,
+  answersSplit,
   weekLegend,
   type OnboardingAnswers,
 } from '@/domain/onboarding';
@@ -36,9 +36,10 @@ import { Barbell } from '@/components/disc/Barbell';
 import { PlateFace } from '@/components/disc/PlateFace';
 import { WeekPicker } from '@/components/program/WeekPicker';
 import { OnboardingHeader, PickMark, Question, Tip } from './OnboardingParts';
+import { AboutStep, ChainPicker, DurationStep, ProgramStep, type StepProps } from './MoreSteps';
 
-const QUESTIONS = 4;
-const RHYTHM = 1;
+const QUESTIONS = 7;
+const RHYTHM = 3;
 const RECAP = QUESTIONS;
 
 export type FlowEnd = 'session' | 'home';
@@ -85,17 +86,15 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
       <OnboardingHeader step={step} total={QUESTIONS} onBack={back} onSkip={() => setStep(RECAP)} />
       <FadeIn key={step}>
         {step === 0 ? <GoalStep answers={answers} set={set} /> : null}
-        {step === 1 ? <RhythmStep answers={answers} set={set} /> : null}
+        {step === 1 ? <AboutStep answers={answers} set={set} /> : null}
         {step === 2 ? <ExperienceStep answers={answers} set={set} /> : null}
-        {step === 3 ? <GymStep answers={answers} set={set} /> : null}
+        {step === 3 ? <RhythmStep answers={answers} set={set} /> : null}
+        {step === 4 ? <ProgramStep answers={answers} set={set} /> : null}
+        {step === 5 ? <DurationStep answers={answers} set={set} /> : null}
+        {step === 6 ? <GymStep answers={answers} set={set} /> : null}
       </FadeIn>
     </Screen>
   );
-}
-
-interface StepProps {
-  answers: OnboardingAnswers;
-  set: (patch: Partial<OnboardingAnswers>) => void;
 }
 
 function GoalStep({ answers, set }: StepProps) {
@@ -147,7 +146,8 @@ function GoalStep({ answers, set }: StepProps) {
 }
 
 function RhythmStep({ answers, set }: StepProps) {
-  const names = sessionNames(answers.perWeek);
+  const split = answersSplit(answers);
+  const names = sessionNames(answers.perWeek, split);
   const week = answersWeek(answers);
   const count = trainingCount(week);
   return (
@@ -161,7 +161,7 @@ function RhythmStep({ answers, set }: StepProps) {
               key={n}
               selected={on}
               // Un autre rythme, un autre programme : on repart de sa semaine type
-              onPress={() => set({ perWeek: n, schedule: defaultSchedule(sessionNames(n), n) })}
+              onPress={() => set({ perWeek: n, split: null, schedule: defaultSchedule(sessionNames(n), n) })}
               accessibilityLabel={t('onboarding.flow.rhythm.perWeek', { n })}
               style={{ flex: 1, height: 72, alignItems: 'center', justifyContent: 'center' }}
             >
@@ -179,17 +179,17 @@ function RhythmStep({ answers, set }: StepProps) {
             {t('onboarding.flow.rhythm.week')}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
-            {getSplit(splitFor(answers.perWeek)).title}
+            {getSplit(split).title}
           </Text>
         </View>
         <WeekPicker week={week} names={names} onChange={(schedule) => set({ schedule })} />
         <Text size={14} color={count === 0 ? colors.danger : colors.inkMuted} style={{ lineHeight: 20 }}>
           {count === 0
             ? t('onboarding.flow.rhythm.pickOne')
-            : t('onboarding.flow.rhythm.legend', { legend: weekLegend(answers.perWeek) })}
+            : t('onboarding.flow.rhythm.legend', { legend: weekLegend(answers.perWeek, split) })}
         </Text>
       </StickerCard>
-      <Tip tip={rhythmTip(answers.perWeek, count)} />
+      <Tip tip={rhythmTip(answers.perWeek, count, split)} />
     </>
   );
 }
@@ -271,8 +271,12 @@ function GymStep({ answers, set }: StepProps) {
   };
   return (
     <>
-      <Question title={t('onboarding.flow.gym.title')} subtitle={t('onboarding.flow.gym.subtitle')} />
-      <Text size={19} weight="titleMedium" style={{ marginBottom: 10 }}>
+      <Question title={t('onboarding.flow.chain.title')} subtitle={t('onboarding.flow.chain.subtitle')} />
+      <ChainPicker answers={answers} set={set} />
+      <Text size={22} weight="black" style={{ marginTop: 28 }}>
+        {t('onboarding.flow.chain.check')}
+      </Text>
+      <Text size={19} weight="titleMedium" style={{ marginTop: 14, marginBottom: 10 }}>
         {t('onboarding.flow.gym.bar')}
       </Text>
       <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 12 }}>
@@ -354,16 +358,21 @@ function Recap({
   onFinish: (end: FlowEnd) => void;
 }) {
   const settings = useSettingsStore((s) => s.settings);
-  const split = getSplit(splitFor(answers.perWeek));
+  const split = getSplit(answersSplit(answers));
   const goal = GOALS.find((g) => g.id === answers.goal) ?? GOALS[0]!;
   const perWeek = answers.schedule ? trainingCount(answers.schedule) : answers.perWeek;
   const plan = useMemo(
     () =>
       planDay(
-        split.days.find((d) => d.name === firstSession(answers.schedule, sessionNames(answers.perWeek)))!,
+        split.days.find((d) => d.name === firstSession(answers.schedule, sessionNames(answers.perWeek, split.id)))!,
         {
-          profile: { goal: answers.goal, program: { split: split.id, perWeek: answers.perWeek }, prs: [] },
-          settings,
+          profile: {
+            goal: answers.goal,
+            program: { split: split.id, perWeek: answers.perWeek },
+            prs: [],
+            sessionMinutes: answers.sessionMinutes,
+          },
+          settings: { ...settings, stackStep: answers.stackStep, cableStep: answers.cableStep },
           workouts: [],
         },
       ),
@@ -402,7 +411,12 @@ function Recap({
             {t('onboarding.flow.recap.ready')}
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {[split.title, t('onboarding.flow.recap.perWeek', { n: perWeek }), goal.sub].map((label) => (
+            {[
+              split.title,
+              t('onboarding.flow.recap.perWeek', { n: perWeek }),
+              t('onboarding.flow.recap.perDay', { n: answers.sessionMinutes }),
+              goal.sub,
+            ].map((label) => (
               <View
                 key={label}
                 style={{
