@@ -89,7 +89,7 @@ export const onboarding: Dictionary['onboarding'] = {
     wrongCredentials: 'Wrong username or password.',
     errors: {
       taken: 'This username is already taken.',
-      confirm: 'The account is waiting for an email confirmation: turn off "Confirm email" in Supabase.',
+      confirm: "Accounts can't be created right now. Try again a bit later.",
       other: "Couldn't create the account. Check your connection and try again.",
     },
     creating: 'Creating…',

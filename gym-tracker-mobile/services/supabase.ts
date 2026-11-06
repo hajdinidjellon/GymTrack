@@ -1,5 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/services/logger';
 import { secureSessionStorage } from '@/services/secureStorage';
 
 // Clé « anon » publique par conception : la sécurité des données repose sur les policies RLS côté Supabase
@@ -49,8 +50,12 @@ export async function signUp(
     options: { data: { username: meta.username, contact_email: meta.contactEmail ?? null } },
   });
   if (error) return { ok: false, reason: error.code === 'user_already_exists' ? 'taken' : 'other' };
-  // Sans session, Supabase attend une confirmation par mail : impossible avec un pseudo
-  if (!data.session) return { ok: false, reason: 'confirm' };
+  // Sans session, Supabase attend une confirmation par mail : impossible avec un pseudo.
+  // The user sees a plain "try later"; the fix is for the developer.
+  if (!data.session) {
+    logger.warn('Supabase asks to confirm the email: turn off "Confirm email" in Authentication → Providers → Email');
+    return { ok: false, reason: 'confirm' };
+  }
   return { ok: true };
 }
 

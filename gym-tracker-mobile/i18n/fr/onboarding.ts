@@ -88,7 +88,7 @@ export const onboarding = {
     wrongCredentials: 'Pseudo ou mot de passe incorrect.',
     errors: {
       taken: 'Ce pseudo est déjà pris.',
-      confirm: 'Le compte attend une confirmation par mail : désactive « Confirm email » dans Supabase.',
+      confirm: "Impossible de créer un compte pour l'instant. Réessaie un peu plus tard.",
       other: 'Impossible de créer le compte. Vérifie ta connexion et réessaie.',
     },
     creating: 'Création…',
