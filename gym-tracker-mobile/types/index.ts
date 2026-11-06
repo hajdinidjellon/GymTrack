@@ -182,6 +182,8 @@ export interface AppSettings {
   language: 'auto' | 'fr' | 'en';
   /** Light or dark mode. `auto` follows the phone. */
   theme: 'auto' | 'light' | 'dark';
+  /** Manual progression per exercise name: the targets repeat the last session, the app never changes the weight. */
+  manualProgression: Record<string, boolean>;
   /** Warm-up sets computed before the working sets. */
   warmups: boolean;
   /** Warm-ups on or off for one exercise, over the global choice. */

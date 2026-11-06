@@ -166,6 +166,22 @@ describe('planLift', () => {
     expect(planLift(EXERCISES.bench, c).targets[0]?.weight).toBe(100);
   });
 
+  it('repeats the last session in manual mode and says so', () => {
+    const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 101.25, [12, 12, 12])])]);
+    c.settings = {
+      ...c.settings,
+      barWeight: 20,
+      plates: [20, 10, 5, 2.5, 1.25],
+      manualProgression: { 'Développé couché': true },
+    };
+    const p = planLift(EXERCISES.bench, c);
+    expect(p.decision).toBe('manual');
+    // Never rounded, never moved: the user's own load
+    expect(p.targets.map((x) => x.weight)).toEqual([101.25, 101.25, 101.25]);
+    expect(reasonLabel(p)).toContain('Mode manuel');
+    expect(deltaLabel(p)).toBe(deltaLabel({ ...p, decision: 'repeat' }));
+  });
+
   it('uses the sets and reps the user chose for the exercise', () => {
     const c = ctx([workout('2026-10-01', 'Push', [lift('Développé couché', 60, [8, 8, 8, 8, 8])])]);
     c.settings.ruleOverrides = { 'Développé couché': { sets: 5, repMin: 5, repMax: 8 } };

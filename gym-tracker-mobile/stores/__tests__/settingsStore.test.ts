@@ -134,6 +134,18 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.warmupOverrides).toEqual({});
   });
 
+  it('stores the manual mode per exercise, never the automatic one', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    const { setManualProgression } = useSettingsStore.getState();
+    setManualProgression('Squat', true);
+    expect(useSettingsStore.getState().settings.manualProgression).toEqual({ Squat: true });
+    setManualProgression('Squat', false);
+    expect(useSettingsStore.getState().settings.manualProgression).toEqual({});
+    expect(parseSettings(JSON.stringify({ manualProgression: { Squat: true } })).manualProgression).toEqual({
+      Squat: true,
+    });
+  });
+
   it('chains and unchains exercises of a day', () => {
     useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
     const { toggleSuperset } = useSettingsStore.getState();

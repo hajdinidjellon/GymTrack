@@ -237,6 +237,7 @@ export const domain: Dictionary['domain'] = {
     reasonStartBodyweight: 'First session: aim for the bottom of the range.',
     reasonStart: 'Starting weight set at 70% of your record.',
     reasonCalibrate: 'First time: pick your weight, then we work out the rest.',
+    reasonManual: 'Manual mode: the same as last time. You change the weight, the app leaves it alone.',
     reasonCalibrated: 'Your starting weight: we adjust it from next time.',
     weeks: { one: '{count} week', other: '{count} weeks' },
     months: { one: '{count} month', other: '{count} months' },

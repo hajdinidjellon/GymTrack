@@ -59,6 +59,7 @@ export interface BuildContext {
         | 'barWeight'
         | 'plates'
         | 'collarWeight'
+        | 'manualProgression'
       >
     >;
   workouts: Workout[];
@@ -174,12 +175,15 @@ export function planLift(def: ExerciseDef, ctx: BuildContext): PlannedLift {
     if (pr) startWeight = startWeightFromOneRepMax(pr.oneRepMax, increment);
   }
 
-  const result = nextTargets(history, rule, { startWeight, now: ctx.now });
+  const manual = !!ctx.settings.manualProgression?.[def.name];
+  const result = nextTargets(history, rule, { startWeight, now: ctx.now, manual });
   const { decision, daysOff } = result;
-  // Never a load the plates cannot make (101,25 kg left by an old 1,25 kg step): the one just under
-  const targets = gym
-    ? result.targets.map((tg) => ({ ...tg, weight: loadableWeight(loading, tg.weight, gym) }))
-    : result.targets;
+  // Never a load the plates cannot make (101,25 kg left by an old 1,25 kg step): the one just under.
+  // In manual mode the user's own loads stay as they are.
+  const targets =
+    gym && decision !== 'manual'
+      ? result.targets.map((tg) => ({ ...tg, weight: loadableWeight(loading, tg.weight, gym) }))
+      : result.targets;
   const lastSession = history.find((h) => mainSets(h.sets).length > 0);
   const last = lastSession ? mainSets(lastSession.sets).map((set) => ({ weight: set.weight, reps: set.reps })) : [];
   const rest = planRest(def, rule, ctx.settings.defaultRestTime, history, ctx.settings.restOverrides?.[def.name]);
@@ -271,6 +275,7 @@ export function deltaLabel(lift: Pick<PlannedLift, 'decision' | 'rule'>): string
       return t('domain.plan.deltaWeight', { kg: formatKg(lift.rule.increment) });
     case 'hold':
     case 'repeat':
+    case 'manual':
       return t('domain.plan.deltaSame');
     case 'deload':
       return t('domain.plan.deltaDeload');
@@ -327,6 +332,8 @@ export function reasonLabel(lift: Pick<PlannedLift, 'decision' | 'rule' | 'targe
       return bodyweight ? t('domain.plan.reasonStartBodyweight') : t('domain.plan.reasonStart');
     case 'calibrate':
       return t('domain.plan.reasonCalibrate');
+    case 'manual':
+      return t('domain.plan.reasonManual');
   }
 }
 

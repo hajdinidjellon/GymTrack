@@ -77,6 +77,23 @@ describe('sets', () => {
     expect(Session.completeSet(changed, 'bench', 9).exercises).toEqual(changed.exercises);
   });
 
+  it('leaves the back-offs of a top set at their own weight', () => {
+    const planned = active('squat', [
+      { weight: 200, reps: 1 },
+      { weight: 180, reps: 5 },
+      { weight: 180, reps: 5 },
+    ]);
+    planned.sets = planned.sets.map((set) => ({ ...set, target: { weight: set.weight, reps: set.reps } }));
+    const s = Session.completeSet(session([planned]), 'squat', 0);
+    expect(s.exercises[0]!.sets.slice(1)).toMatchObject([
+      { weight: 180, reps: 5 },
+      { weight: 180, reps: 5 },
+    ]);
+    // Between back-offs the weight done still carries over
+    const heavier = Session.updateSet(s, 'squat', 1, { weight: 182.5 });
+    expect(Session.completeSet(heavier, 'squat', 1).exercises[0]!.sets[2]).toMatchObject({ weight: 182.5 });
+  });
+
   it('ignores an unknown set or exercise', () => {
     const s = session([bench()]);
     expect(Session.updateSet(s, 'bench', 9, { reps: 1 }).exercises).toEqual(s.exercises);

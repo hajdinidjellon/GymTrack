@@ -52,7 +52,8 @@ export type ProgressionDecision =
   | 'deload' // failed twice in a row at the same weight
   | 'comeback' // back after a break: a bit lighter to find the groove again
   | 'start' // no history, starting weight derived from a PR
-  | 'calibrate'; // no history and no PR: the user picks the weight
+  | 'calibrate' // no history and no PR: the user picks the weight
+  | 'manual'; // manual mode: exactly what was done last time, set by set
 
 /** The decisions that ask for more than last time. */
 export function isProgress(decision: ProgressionDecision): boolean {
@@ -172,7 +173,7 @@ function fill(rule: ProgressionRule, weight: number, reps: (i: number) => number
 export function nextTargets(
   history: ExerciseSession[],
   rule: ProgressionRule,
-  options: { startWeight?: number; now?: Date } = {},
+  options: { startWeight?: number; now?: Date; manual?: boolean } = {},
 ): ProgressionResult {
   const sessions = history
     .map((h) => ({ date: h.date, sets: mainSets(h.sets) }))
@@ -185,6 +186,11 @@ export function nextTargets(
       return { decision: 'start', targets: fill(rule, options.startWeight, () => rule.repMin) };
     }
     return { decision: 'calibrate', targets: fill(rule, 0, () => rule.repMin) };
+  }
+
+  // Mode manuel : l'utilisateur suit son cycle, on reprend sa dernière séance telle quelle
+  if (options.manual) {
+    return { decision: 'manual', targets: last.sets.map((s) => ({ weight: s.weight, reps: s.reps })) };
   }
 
   const weight = referenceWeight(last.sets);

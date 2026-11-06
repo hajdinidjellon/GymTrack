@@ -95,7 +95,9 @@ export function completeSet(session: ActiveSession, exerciseId: string, setIndex
         ...e,
         sets: e.sets.map((set, i) => {
           if (i === setIndex) return { ...set, completed: true, doneAt: now };
-          if (passOn && i > setIndex && !set.completed && !isWarmup(set) && set.setType !== 'drop') {
+          // A set planned at another weight (back-offs after a top set) keeps its own
+          const sameTarget = !done.target || !set.target || set.target.weight === done.target.weight;
+          if (passOn && sameTarget && i > setIndex && !set.completed && !isWarmup(set) && set.setType !== 'drop') {
             const missed = done.target != null && done.reps < done.target.reps;
             return { ...set, weight: done.weight, reps: missed ? set.reps : done.reps };
           }
