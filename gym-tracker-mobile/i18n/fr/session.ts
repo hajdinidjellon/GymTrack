@@ -98,6 +98,19 @@ export const session = {
   },
 
   picker: {
+    tabs: {
+      chest: 'Pecs',
+      back: 'Dos',
+      shoulders: 'Épaules',
+      biceps: 'Biceps',
+      triceps: 'Triceps',
+      arms: 'Bras',
+      legs: 'Jambes',
+      glutes: 'Fessiers',
+      calves: 'Mollets',
+      core: 'Abdos',
+    },
+    allTab: 'Tous',
     suggestions: 'Suggestions',
     all: "Tous les exercices, les plus connus d'abord",
     taken: '{name}, déjà dans la séance',

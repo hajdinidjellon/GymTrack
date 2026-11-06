@@ -21,9 +21,9 @@ beforeEach(() => {
 });
 
 describe('ExercisePicker', () => {
-  it('lists every muscle at once, the most known first, without muscle tabs', async () => {
+  it('opens on every muscle at once, the most known first', async () => {
     await renderPicker();
-    expect(screen.queryByRole('tab')).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Tous' }).props.accessibilityState).toEqual({ selected: true });
     expect(screen.getByText("Tous les exercices, les plus connus d'abord")).toBeOnTheScreen();
     expect(choices().slice(0, 4)).toEqual([
       'Choisir Développé couché',
@@ -31,6 +31,19 @@ describe('ExercisePicker', () => {
       'Choisir Soulevé de terre',
       'Choisir Tirage vertical',
     ]);
+  });
+
+  it('shows one muscle at a time, the most known first, and hides the tabs while searching', async () => {
+    await renderPicker();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Dos' }));
+    expect(screen.queryByText("Tous les exercices, les plus connus d'abord")).toBeNull();
+    expect(choices().slice(0, 2)).toEqual(['Choisir Soulevé de terre', 'Choisir Tirage vertical']);
+    expect(choices()).not.toContain('Choisir Développé couché');
+    for (const label of ['Pectoraux', 'Biceps', 'Triceps', 'Jambes', 'Fessiers']) {
+      expect(screen.getByRole('tab', { name: label })).toBeOnTheScreen();
+    }
+    await fireEvent.changeText(screen.getByLabelText('Chercher un exercice'), 'squat');
+    expect(screen.queryByRole('tab')).toBeNull();
   });
 
   it('puts the suggestions first, then everything else without them', async () => {

@@ -5,6 +5,7 @@ import { border, colors, fonts, radius, space } from '@/constants/theme';
 import {
   aliasMatch,
   exercisesByPopularity,
+  MUSCLE_LABELS,
   namesOf,
   searchExercises,
   searchKey,
@@ -14,6 +15,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import type { MuscleGroup } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
+import { buzz } from '@/components/ui/PressableScale';
 import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 import { exerciseName, t } from '@/i18n';
 
@@ -38,10 +40,12 @@ type Item =
   | { kind: 'exercise'; key: string; def: ExerciseDef }
   | { kind: 'create'; key: string };
 
+type Tab = 'all' | MuscleGroup;
+
 /**
- * Every exercise of the catalog and the user's own in one list, from the most
- * known to the least known; the suggestions (same muscle when swapping) on
- * top. A search looks through every name. One tap picks it; a new one can be created.
+ * Every exercise of the catalog and the user's own, from the most known to the
+ * least known: all of them (the suggestions, same muscle when swapping, on top)
+ * or one muscle tab at a time. A search looks through every name. One tap picks it; a new one can be created.
  */
 export function ExercisePicker({
   visible,
@@ -58,10 +62,17 @@ export function ExercisePicker({
   const own = useSettingsStore((s) => s.settings.customExercises);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState('');
+  const [tab, setTab] = useState<Tab>('all');
   const searching = query.trim() !== '';
   const found = searchExercises(query, own);
   // Typed exactly, even under another name: no offer to create it again
   const exact = found.some((e) => namesOf(e).some((n) => searchKey(n) === searchKey(query)));
+
+  const everything = exercisesByPopularity(own);
+  // Only the muscles that have exercises: « Bras » stays for old own exercises
+  const muscles = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter((m) =>
+    everything.some((d) => d.muscleGroups[0] === m),
+  );
 
   const items: Item[] = [];
   const exercise = (def: ExerciseDef, at: string): Item => ({ kind: 'exercise', key: `${at}/${def.name}`, def });
@@ -72,18 +83,23 @@ export function ExercisePicker({
   } else {
     // Le bouton « créer » en haut : la liste complète est longue
     items.push({ kind: 'create', key: 'create' });
-    const first = suggested ?? [];
-    if (first.length) {
-      items.push({ kind: 'title', key: 'suggested', text: suggestedTitle }, ...first.map((d) => exercise(d, 's')));
+    if (tab === 'all') {
+      const first = suggested ?? [];
+      if (first.length) {
+        items.push({ kind: 'title', key: 'suggested', text: suggestedTitle }, ...first.map((d) => exercise(d, 's')));
+      }
+      const rest = everything.filter((d) => !first.some((s) => s.name === d.name));
+      items.push({ kind: 'title', key: 'all', text: t('session.picker.all') }, ...rest.map((d) => exercise(d, 'all')));
+    } else {
+      items.push(...everything.filter((d) => d.muscleGroups[0] === tab).map((d) => exercise(d, tab)));
     }
-    const rest = exercisesByPopularity(own).filter((d) => !first.some((s) => s.name === d.name));
-    items.push({ kind: 'title', key: 'all', text: t('session.picker.all') }, ...rest.map((d) => exercise(d, 'all')));
   }
 
   // Rouverte, la fenêtre repart toujours sur la liste
   const reset = () => {
     setCreating(false);
     setQuery('');
+    setTab('all');
   };
   const close = () => {
     reset();
@@ -91,7 +107,9 @@ export function ExercisePicker({
   };
   // Left open by the parent (several in a row), the list comes back with the added one ticked
   const pick = (def: ExerciseDef) => {
-    reset();
+    // Same tab: the next one of the same muscle is one tap away
+    setCreating(false);
+    setQuery('');
     onPick(def);
   };
 
@@ -211,7 +229,7 @@ export function ExercisePicker({
               keyboardShouldPersistTaps="handled"
             >
               <CreateExerciseForm
-                muscle={muscle}
+                muscle={tab === 'all' ? muscle : tab}
                 initialName={query.trim()}
                 onCreated={pick}
                 onCancel={() => setCreating(false)}
@@ -244,6 +262,31 @@ export function ExercisePicker({
                   }}
                 />
               </View>
+              {!searching ? (
+                // Toutes visibles d'un coup, sur deux lignes : rien de caché à faire défiler
+                <View
+                  accessibilityRole="tablist"
+                  style={{
+                    flexShrink: 0,
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    paddingHorizontal: 20,
+                    marginTop: space.sm,
+                    paddingBottom: 4,
+                  }}
+                >
+                  {(['all', ...muscles] as Tab[]).map((item) => (
+                    <MuscleTab
+                      key={item}
+                      label={item === 'all' ? t('session.picker.allTab') : t(`session.picker.tabs.${item}`)}
+                      a11y={item === 'all' ? t('session.picker.allTab') : MUSCLE_LABELS[item]}
+                      selected={item === tab}
+                      onPress={() => setTab(item)}
+                    />
+                  ))}
+                </View>
+              ) : null}
               {/* Plus de 200 exercices : la liste ne dessine que ce qui est à l'écran */}
               <FlatList
                 data={items}
@@ -261,5 +304,44 @@ export function ExercisePicker({
         </View>
       </KeyboardAvoidingView>
     </Modal>
+  );
+}
+
+/** One muscle in the tab row: coral-soft and outlined thicker when it is the one shown. */
+function MuscleTab({
+  label,
+  a11y,
+  selected,
+  onPress,
+}: {
+  label: string;
+  a11y: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => {
+        buzz('selection');
+        onPress();
+      }}
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      accessibilityLabel={a11y}
+      hitSlop={{ top: 3, bottom: 3 }}
+      style={({ pressed }) => ({
+        minHeight: 38,
+        paddingHorizontal: 11,
+        borderRadius: radius.pill,
+        borderWidth: selected ? border.strong : border.base,
+        borderColor: colors.outline,
+        backgroundColor: selected || pressed ? colors.coralSoft : colors.card,
+        justifyContent: 'center',
+      })}
+    >
+      <Text size={14} weight={selected ? 'black' : 'titleMedium'} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
