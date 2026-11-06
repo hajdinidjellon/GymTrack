@@ -20,7 +20,9 @@ describe('similarExercises', () => {
   });
 
   it('keeps bodyweight with bodyweight', () => {
-    expect(names(similarExercises(EXERCISES.dips))).toEqual(['Pompes']);
+    const similar = names(similarExercises(EXERCISES.dips));
+    expect(similar).toEqual(expect.arrayContaining(['Pompes', 'Pompes déclinées', 'Dips anneaux']));
+    expect(similar).not.toContain('Dips assistés');
   });
 });
 

@@ -1,5 +1,22 @@
 import { describe, expect, it } from '@jest/globals';
-import { EFFORT_RPE, EFFORTS, effortOf } from '@/domain/effort';
+import { EFFORT_RPE, EFFORTS, effortOf, RPE_STEPS } from '@/domain/effort';
+
+describe('precise RPE', () => {
+  it('goes from 6 to 10 by half points, read back as the three efforts', () => {
+    expect(RPE_STEPS).toEqual([6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10]);
+    expect(RPE_STEPS.map((r) => effortOf(r))).toEqual([
+      'easy',
+      'easy',
+      'easy',
+      'good',
+      'good',
+      'good',
+      'good',
+      'good',
+      'max',
+    ]);
+  });
+});
 
 describe('effortOf', () => {
   it.each([

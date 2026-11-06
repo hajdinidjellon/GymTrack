@@ -1,14 +1,16 @@
 /**
  * IMPORT — the history exported by Strong or Hevy (CSV), turned into
- * Okilo sessions. Exercise names are matched to the catalog when it is
- * safe (same movement, same equipment); the others keep their own name.
+ * Okilo sessions. Exercise names are matched to the catalog from the Hevy
+ * and Strong names it knows, else when it is safe (same movement, same
+ * equipment); the others keep their own name.
  * Every session goes through the same zod schema as a stored one.
  */
 
-import { allExercises, type ExerciseDef } from '@/domain/programs';
+import { HEVY_NAMES, STRONG_NAMES } from '@/domain/catalog/importNames';
+import { allExercises, EXERCISES, type ExerciseDef } from '@/domain/programs';
 import { parseList, workoutSchema } from '@/domain/schemas';
 import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
-import type { CustomExercise, Equipment, Exercise, SetType, Workout, WorkoutSet } from '@/types';
+import type { CustomExercise, Exercise, SetType, Workout, WorkoutSet } from '@/types';
 
 export type ImportSource = 'strong' | 'hevy';
 
@@ -115,17 +117,32 @@ export function nameKey(name: string): string {
     .join(' ');
 }
 
-const EQUIPMENT_HINT: Record<string, Equipment> = {
-  barbell: 'barbell',
-  dumbbell: 'dumbbell',
-  machine: 'machine',
-  cable: 'machine',
-  smith: 'machine',
-  bodyweight: 'bodyweight',
+/** What the word in brackets says about the exercise: "(Smith Machine)" is a Smith, not any machine. */
+const HINTS: Record<string, (def: ExerciseDef) => boolean> = {
+  barbell: (d) => d.equipment === 'barbell',
+  dumbbell: (d) => d.equipment === 'dumbbell' && d.gear !== 'kettlebell',
+  kettlebell: (d) => d.gear === 'kettlebell',
+  machine: (d) => d.equipment === 'machine' && d.gear !== 'cable' && d.gear !== 'smith',
+  cable: (d) => d.gear === 'cable',
+  smith: (d) => d.gear === 'smith',
+  bodyweight: (d) => d.equipment === 'bodyweight',
+  // A pull-up with a belt is still a pull-up: the added weight is logged
+  weighted: (d) => d.equipment === 'bodyweight',
+  assisted: (d) => d.equipment === 'machine',
 };
 
-/** The catalog exercise for "Bench Press (Barbell)", only when movement and equipment agree. */
+/** The Hevy and Strong names the catalog knows, by `nameKey`. */
+const KNOWN_NAMES = new Map<string, ExerciseDef>(
+  Object.entries({ ...STRONG_NAMES, ...HEVY_NAMES }).map(([name, key]) => [nameKey(name), EXERCISES[key]]),
+);
+
+/**
+ * The catalog exercise for "Bench Press (Barbell)": from the Hevy and Strong
+ * names first, else only when the movement and the equipment agree.
+ */
 export function catalogMatch(raw: string, own: CustomExercise[] = []): ExerciseDef | undefined {
+  const known = KNOWN_NAMES.get(nameKey(raw));
+  if (known) return known;
   const index = new Map<string, ExerciseDef>();
   for (const def of allExercises(own)) {
     for (const n of [def.name, EXERCISE_NAMES_EN[def.name], ...(def.aliases ?? [])]) {
@@ -135,12 +152,12 @@ export function catalogMatch(raw: string, own: CustomExercise[] = []): ExerciseD
   const m = raw.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
   const base = (m ? m[1]! : raw).trim();
   const hintWord = m ? nameKey(m[2]!).split(' ')[0]! : '';
-  const hint = EQUIPMENT_HINT[hintWord];
-  if (m && !hint) return undefined;
-  const candidates = hint ? [`${hintWord} ${base}`, base] : [base];
+  const fits = HINTS[hintWord];
+  if (m && !fits) return undefined;
+  const candidates = fits ? [`${hintWord} ${base}`, base] : [base];
   for (const candidate of candidates) {
     const def = index.get(nameKey(candidate));
-    if (def && (!hint || def.equipment === hint)) return def;
+    if (def && (!fits || fits(def))) return def;
   }
   return undefined;
 }

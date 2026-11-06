@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { border, colors, hardShadow, radius, space } from '@/constants/theme';
+import { border, colors, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands } from '@/domain/format';
 import { setsDone } from '@/domain/history';
 import { describeSide, formatKg } from '@/domain/plates';
@@ -10,6 +10,7 @@ import {
   deltaLabel,
   nextDay,
   planDay,
+  breakDays,
   lastTimeLabel,
   targetLabel,
   targetLoad,
@@ -22,7 +23,7 @@ import {
 import { isProgress } from '@/domain/progression';
 import { weekDays } from '@/domain/stats';
 import { weekStreak, workoutsThisWeek } from '@/domain/week';
-import { type ChoosableDay, choosableDays, getSplit, hasExercises } from '@/domain/programs';
+import { type ChoosableDay, choosableDays, getSplit, isOffered } from '@/domain/programs';
 import { latestWorkoutDate, suggestedSplit, SWITCH_AFTER } from '@/domain/programSwitch';
 import { nextScheduled, validSchedule, whenLabel } from '@/domain/schedule';
 import { useBuildContext } from '@/hooks/useTodayPlan';
@@ -42,12 +43,13 @@ import { StickerCard } from '@/components/ui/StickerCard';
 import { Chip, IndexBadge } from '@/components/ui/Chip';
 import { Sparkle } from '@/components/ui/Sparkle';
 import { FadeIn } from '@/components/ui/FadeIn';
-import { buzz, PressableScale } from '@/components/ui/PressableScale';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { ChevronRight } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
 import { WeekStrip } from '@/components/stats/WeekStrip';
 import { RunningCard } from '@/components/session/RunningCard';
+import { DayPicker } from '@/components/program/DayPicker';
 
 function start(plan: PlannedDay) {
   useSessionStore.getState().startSession(plan.name, toActiveExercises(plan));
@@ -68,7 +70,7 @@ export default function Today() {
       ctx.settings.customDays,
       ctx.settings.customExercises,
       ctx.settings.ownDays,
-    ).filter(hasExercises);
+    ).filter(isOffered);
     const next = nextDay(ctx);
     const day = list.find((d) => d.name === picked) ?? next;
     const status = todayStatus(ctx);
@@ -182,7 +184,10 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
   const target = featured?.targets[0];
   const perSide = usePerSide(target?.weight ?? 0);
   const sets = plan.lifts.reduce((n, l) => n + l.targets.length, 0);
-  const daysOff = Math.max(0, ...plan.lifts.map((l) => (l.decision === 'comeback' ? (l.daysOff ?? 0) : 0)));
+  // The user's own break, not the longest one of a single exercise
+  const workouts = useWorkoutStore((s) => s.workouts);
+  const daysOff = breakDays(plan.lifts, workouts, new Date());
+  const ownSession = !!days.find((d) => d.name === plan.name)?.ownSession;
 
   return (
     <>
@@ -203,11 +208,13 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
         >
           {dayName(plan.name)}
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
-          <Chip label={t('common.exercises', { count: plan.lifts.length })} />
-          <Chip label={t('common.sets', { count: sets })} />
-          <Chip label={t('home.today.minutes', { n: plan.minutes })} />
-        </View>
+        {plan.lifts.length ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: space.sm }}>
+            <Chip label={t('common.exercises', { count: plan.lifts.length })} />
+            <Chip label={t('common.sets', { count: sets })} />
+            <Chip label={t('home.today.minutes', { n: plan.minutes })} />
+          </View>
+        ) : null}
         {daysOff > 0 ? (
           <View
             style={{
@@ -271,7 +278,7 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
         ) : plan.lifts.length === 0 ? (
           <View style={{ marginTop: space.md, gap: space.sm }}>
             <Text size={15} color={colors.ink} style={{ lineHeight: 21 }}>
-              {t('home.today.noExercises')}
+              {t(ownSession ? 'home.today.ownSessionEmpty' : 'home.today.noExercises')}
             </Text>
             <Pressable
               onPress={() => router.push({ pathname: '/days/[name]', params: { name: plan.name } })}
@@ -280,7 +287,7 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
               style={{ alignSelf: 'flex-start', paddingBottom: space.sm }}
             >
               <Text size={15} weight="black" style={{ textDecorationLine: 'underline' }}>
-                {t('home.today.addExercises')}
+                {t(ownSession ? 'home.today.ownSessionAdd' : 'home.today.addExercises')}
               </Text>
             </Pressable>
           </View>
@@ -314,7 +321,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       accessibilityLabel={
         calibrate
           ? t('home.lift.a11yToChoose', { name })
-          : t('home.lift.a11y', { name, target: targetLabel(lift.targets, lift.def.timed) })
+          : t('home.lift.a11y', { name, target: targetLabel(lift.targets, lift.def.timed, lift.def.assisted) })
       }
       style={{
         paddingVertical: space.md + 2,
@@ -333,7 +340,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         {/* Today's target, then what changed: the badge sits right after it, not at the edge */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 }}>
           <Text size={16} weight="black">
-            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets, lift.def.timed)}
+            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets, lift.def.timed, lift.def.assisted)}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
             {sets}
@@ -342,7 +349,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         </View>
         {lift.last.length ? (
           <Text size={13} color={colors.inkMuted} numberOfLines={1}>
-            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last, lift.def.timed) })}
+            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last, lift.def.timed, lift.def.assisted) })}
           </Text>
         ) : null}
       </View>
@@ -431,129 +438,6 @@ function RestCard({ done, days, onChoose }: { done: boolean; days: ChoosableDay[
         <DayPicker days={days} current={null} today={null} label={t('home.rest.pickAnyway')} onChoose={onChoose} />
       </View>
     </>
-  );
-}
-
-/** "Pas envie de ça ?": every day of the program side by side, one tap to do it today instead. */
-function DayPicker({
-  days,
-  current,
-  today,
-  label = t('home.picker.label'),
-  onChoose,
-}: {
-  days: ChoosableDay[];
-  current: string | null;
-  today: string | null;
-  label?: string;
-  onChoose: (name: string) => void;
-}) {
-  const program = days.filter((d) => !d.extra);
-  const extras = days.filter((d) => d.extra);
-  // The other programs' days wait behind one link, unless one is already picked
-  const [showExtras, setShowExtras] = useState(false);
-  const extrasOpen = showExtras || extras.some((d) => d.name === current);
-  return (
-    <View style={{ marginBottom: space.md }}>
-      <Text size={14} weight="bold" color={colors.inkMuted}>
-        {label}
-      </Text>
-      <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-        {program.map((d) => {
-          const on = d.name === current;
-          const planned = d.name === today;
-          return (
-            <Pressable
-              key={d.name}
-              onPress={() => {
-                buzz('selection');
-                onChoose(d.name);
-              }}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={t(planned ? 'home.picker.a11yPlanned' : 'home.picker.a11y', {
-                name: dayName(d.name),
-              })}
-              style={{
-                // Equal widths on one row; a long program wraps onto a second one
-                flexGrow: 1,
-                flexBasis: program.length > 3 ? '45%' : 0,
-                minHeight: 56,
-                paddingHorizontal: 10,
-                borderRadius: radius.row,
-                borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.outlineStrong : colors.line,
-                backgroundColor: on ? colors.coralSoft : colors.card,
-                alignItems: 'center',
-                justifyContent: 'center',
-                ...(on ? hardShadow(2) : {}),
-              }}
-            >
-              <Text size={16} weight="black" numberOfLines={1} color={on ? colors.ink : colors.inkMuted}>
-                {dayName(d.name)}
-              </Text>
-              {planned ? (
-                <Text size={12} weight="bold" color={colors.inkMuted}>
-                  {t('home.picker.planned')}
-                </Text>
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </View>
-      {extras.length && !extrasOpen ? (
-        <Pressable
-          onPress={() => setShowExtras(true)}
-          accessibilityRole="button"
-          hitSlop={8}
-          style={{ marginTop: space.md, alignSelf: 'flex-start' }}
-        >
-          <Text size={14} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
-            {t('home.picker.extraLink')}
-          </Text>
-        </Pressable>
-      ) : null}
-      {extras.length && extrasOpen ? (
-        <>
-          <Text size={13} weight="bold" color={colors.inkMuted} style={{ marginTop: space.md }}>
-            {t('home.picker.extraLabel')}
-          </Text>
-          <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-            {extras.map((d) => {
-              const on = d.name === current;
-              return (
-                <Pressable
-                  key={d.name}
-                  onPress={() => {
-                    buzz('selection');
-                    onChoose(d.name);
-                  }}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={t('home.picker.a11yExtra', { name: dayName(d.name) })}
-                  style={{
-                    minHeight: 44,
-                    paddingHorizontal: 16,
-                    borderRadius: radius.pill,
-                    borderWidth: on ? border.strong : border.base,
-                    // Hors programme : en pointillés tant qu'on ne l'a pas choisie
-                    borderStyle: on ? 'solid' : 'dashed',
-                    borderColor: on ? colors.outlineStrong : colors.line,
-                    backgroundColor: on ? colors.coralSoft : 'transparent',
-                    justifyContent: 'center',
-                    ...(on ? hardShadow(2) : {}),
-                  }}
-                >
-                  <Text size={15} weight="black" color={on ? colors.ink : colors.inkMuted}>
-                    {dayName(d.name)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </>
-      ) : null}
-    </View>
   );
 }
 

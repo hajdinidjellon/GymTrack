@@ -3,7 +3,9 @@ import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { colors, space } from '@/constants/theme';
 import { formatShortDay, formatThousands } from '@/domain/format';
-import { formatKg, platesForSide, platesPhrase } from '@/domain/plates';
+import { formatKg, platesPhrase } from '@/domain/plates';
+import { sidePlates } from '@/domain/loading';
+import { useGym } from '@/hooks/useGym';
 import { allExercises } from '@/domain/programs';
 import { weightHistory } from '@/domain/sessionBuilder';
 import { personalBests, weeklyVolume, weekTrend } from '@/domain/stats';
@@ -38,8 +40,7 @@ interface LiftProgress {
 export default function Progress() {
   useLocale();
   const workouts = useWorkoutStore((s) => s.workouts);
-  const bar = useSettingsStore((s) => s.settings.barWeight);
-  const available = useSettingsStore((s) => s.settings.plates);
+  const gym = useGym();
   const own = useSettingsStore((s) => s.settings.customExercises);
 
   const lifts = useMemo<LiftProgress[]>(
@@ -83,7 +84,7 @@ export default function Progress() {
   const hero = lifts
     .filter((l) => l.barbell && l.last.weight > l.first.weight)
     .sort((a, b) => b.last.weight - b.first.weight - (a.last.weight - a.first.weight))[0];
-  const loadOf = (w: number) => platesForSide(Math.max(0, (w - bar) / 2), available);
+  const loadOf = (w: number) => sidePlates('bar', w, gym);
 
   return (
     <Screen tabs scroll>
@@ -143,7 +144,7 @@ export default function Progress() {
             </Text>
             <Text size={22} weight="black" style={{ lineHeight: 27 }}>
               {t('progress.hero.gained', {
-                plates: platesPhrase((hero.last.weight - hero.first.weight) / 2, available),
+                plates: platesPhrase((hero.last.weight - hero.first.weight) / 2, gym.plates),
               })}
             </Text>
             {[hero.first, hero.last].map((point, i) => {

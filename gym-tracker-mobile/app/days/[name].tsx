@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, space } from '@/constants/theme';
-import { choosableDays, dayKey, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
+import { choosableDays, dayKey, equipmentShown, ruleFor, withOverride, type ExerciseDef } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
@@ -166,7 +166,7 @@ function ExerciseRow({
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1}>
             {t('program.day.rowDetail', {
-              equipment: t(`program.equipment.${def.equipment}`),
+              equipment: t(`program.equipment.${equipmentShown(def)}`),
               sets: rule.sets,
               min: rule.repMin,
               max: rule.repMax,

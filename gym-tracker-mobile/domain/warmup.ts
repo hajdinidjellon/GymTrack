@@ -10,7 +10,7 @@
  */
 
 import { loadingOf, type Loading } from '@/domain/loading';
-import { platesForSide } from '@/domain/plates';
+import { emptyBar, platesForSide, type Gym } from '@/domain/plates';
 import { roundDownToIncrement } from '@/domain/progression';
 import type { ActiveExercise, AppSettings, WorkoutSet } from '@/types';
 
@@ -40,7 +40,6 @@ export const WARMUP_REST = 90;
 
 export const isWarmup = (set: Pick<WorkoutSet, 'setType'>): boolean => set.setType === 'warmup';
 
-type Gym = Pick<AppSettings, 'barWeight' | 'plates'>;
 export type WarmupSettings = Gym & Pick<AppSettings, 'warmups' | 'warmupOverrides'>;
 
 /** On for this exercise: its own choice, else the global one. */
@@ -53,12 +52,13 @@ export function roundWarmupLoad(loading: Loading, raw: number, gym: Gym, step: n
   const sum = (plates: number[]) => plates.reduce((a, b) => a + b, 0);
   switch (loading) {
     case 'bar':
-      if (raw <= gym.barWeight) return gym.barWeight;
-      return gym.barWeight + 2 * sum(platesForSide((raw - gym.barWeight) / 2, gym.plates));
+      if (raw <= emptyBar(gym)) return emptyBar(gym);
+      return emptyBar(gym) + 2 * sum(platesForSide((raw - emptyBar(gym)) / 2, gym.plates));
     case 'perSide':
       return sum(platesForSide(raw, gym.plates));
     case 'perHand':
     case 'stack':
+    case 'assist':
       return roundDownToIncrement(raw, step);
   }
 }
@@ -68,7 +68,7 @@ function plan(exercise: ActiveExercise, warm: boolean, loading: Loading, working
   if (warm) return compound ? REMINDER : [];
   if (!compound) return LIGHT;
   if (loading !== 'bar') return SHORT_RAMP;
-  return working >= gym.barWeight * 7 ? [...BAR_RAMP, HEAVY_STEP] : BAR_RAMP;
+  return working >= emptyBar(gym) * 7 ? [...BAR_RAMP, HEAVY_STEP] : BAR_RAMP;
 }
 
 /**
@@ -78,14 +78,15 @@ function plan(exercise: ActiveExercise, warm: boolean, loading: Loading, working
 export function warmupSets(exercise: ActiveExercise, warm: boolean, gym: Gym): WorkoutSet[] {
   const first = exercise.sets.find((s) => !isWarmup(s));
   const working = first?.weight ?? 0;
-  if (!first || exercise.needsWeight || exercise.equipment === 'bodyweight' || exercise.timed || working <= 0)
-    return [];
+  // Less help is harder: an assisted machine has nothing lighter to warm up with
+  const none = exercise.needsWeight || exercise.equipment === 'bodyweight' || exercise.timed || exercise.assisted;
+  if (!first || none || working <= 0) return [];
   const loading = loadingOf(exercise);
-  if (loading === 'bar' && working <= gym.barWeight) return [];
+  if (loading === 'bar' && working <= emptyBar(gym)) return [];
   const step = exercise.rule?.increment ?? 2.5;
 
   const loads: { weight: number; reps: number }[] = [];
-  if (loading === 'bar' && !warm) loads.push({ weight: gym.barWeight, reps: EMPTY_BAR_REPS });
+  if (loading === 'bar' && !warm) loads.push({ weight: emptyBar(gym), reps: EMPTY_BAR_REPS });
   for (const [percent, reps] of plan(exercise, warm, loading, working, gym)) {
     const weight = roundWarmupLoad(loading, working * percent, gym, step);
     const previous = loads[loads.length - 1]?.weight ?? 0;

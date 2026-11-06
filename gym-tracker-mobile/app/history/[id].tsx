@@ -6,6 +6,7 @@ import { EFFORT_LABELS } from '@/domain/effort';
 import { formatDay, formatThousands } from '@/domain/format';
 import { loggedExercises, setsDone, type LoggedSet } from '@/domain/history';
 import { formatKg } from '@/domain/plates';
+import { findExerciseDef } from '@/domain/programs';
 import { loadLabel, newRecords, tonnage } from '@/domain/sessionBuilder';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
@@ -81,7 +82,7 @@ export default function WorkoutScreen() {
                 </Text>
                 <ChevronRight size={18} />
               </PressableScale>
-              <SetLines sets={e.sets} timed={e.timed} />
+              <SetLines sets={e.sets} timed={e.timed} assisted={findExerciseDef(e.name, own)?.assisted} />
             </StickerCard>
           </FadeIn>
         ))}
@@ -102,7 +103,8 @@ export default function WorkoutScreen() {
 }
 
 /** "1   80 kg × 10   Juste bien", warm-ups marked and not numbered. */
-function SetLines({ sets, timed }: { sets: LoggedSet[]; timed?: boolean }) {
+function SetLines({ sets, timed, assisted }: { sets: LoggedSet[]; timed?: boolean; assisted?: boolean }) {
+  const preciseRpe = useSettingsStore((s) => s.settings.preciseRpe);
   let n = 0;
   return (
     <View>
@@ -128,11 +130,15 @@ function SetLines({ sets, timed }: { sets: LoggedSet[]; timed?: boolean }) {
               {label}
             </Text>
             <Text size={16} weight="black" color={s.warmup ? colors.inkMuted : colors.ink} style={{ flex: 1 }}>
-              {loadLabel(s.weight, s.reps, timed)}
+              {loadLabel(s.weight, s.reps, timed, assisted)}
             </Text>
             {s.effort || s.kind === 'failure' ? (
               <Text size={13} weight="semibold" color={colors.inkMuted}>
-                {s.effort ? EFFORT_LABELS[s.effort] : t('history.detail.failure')}
+                {preciseRpe && s.rpe != null
+                  ? t('session.effort.rpe', { rpe: formatKg(s.rpe) })
+                  : s.effort
+                    ? EFFORT_LABELS[s.effort]
+                    : t('history.detail.failure')}
               </Text>
             ) : null}
           </View>
