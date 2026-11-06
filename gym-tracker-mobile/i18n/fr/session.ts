@@ -98,6 +98,7 @@ export const session = {
   },
 
   picker: {
+    allTab: 'Tous',
     suggestions: 'Suggestions',
     all: "Tous les exercices, les plus connus d'abord",
     taken: '{name}, déjà dans la séance',
