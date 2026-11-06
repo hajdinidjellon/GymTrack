@@ -188,6 +188,8 @@ export interface AppSettings {
   ownDays: Record<string, string[]>;
   /** Per program day ("ppl/Push"): the exercises chained with the one after them, as a superset. */
   supersets: Record<string, string[]>;
+  /** The one-time suggestion to add a recovery email was answered (added or declined). */
+  recoveryPromptSeen: boolean;
 }
 
 // ============================================================

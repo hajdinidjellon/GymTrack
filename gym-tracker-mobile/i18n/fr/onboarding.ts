@@ -102,7 +102,6 @@ export const onboarding = {
     signinSubtitle: "Ta barre est restée chargée là où tu l'as laissée.",
     username: 'Pseudo',
     password: 'Mot de passe',
-    email: 'Email (facultatif)',
     emailPlaceholder: 'toi@exemple.com',
     haveAccount: "J'ai déjà un compte",
     toSignup: 'Pas de compte ? Créer un compte',

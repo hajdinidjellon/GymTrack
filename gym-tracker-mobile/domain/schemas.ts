@@ -167,6 +167,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     warmupOverrides: z.record(z.string().max(100), z.boolean()),
     supersets: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),
     ownDays: z.record(z.string().max(10), z.array(z.string().max(100)).max(14)),
+    recoveryPromptSeen: z.boolean(),
   })
   .partial();
 
@@ -174,6 +175,13 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
 export const settingsSyncMetaSchema = z.object({
   updatedAt: isoDate.nullable(),
   pending: z.boolean(),
+});
+
+/** What the account recovery Edge Functions answer (supabase/functions/). */
+export const recoveryAnswerSchema = z.object({
+  ok: z.boolean(),
+  code: z.string().max(40).optional(),
+  reason: z.enum(['limit', 'password']).optional(),
 });
 
 /** Valid items only. A broken record is skipped, not allowed to crash the app. */

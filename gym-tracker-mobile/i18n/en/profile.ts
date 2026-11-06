@@ -77,6 +77,7 @@ export const profile: Dictionary['profile'] = {
     title: 'Account',
     signedIn: 'Signed in: your workouts and your program are backed up to your account.',
     local: 'No account: your workouts stay on this phone.',
+    manage: 'Email and recovery code',
     signOut: 'Sign out',
     signIn: 'Create an account or sign in',
     confirmTitle: 'Sign out?',

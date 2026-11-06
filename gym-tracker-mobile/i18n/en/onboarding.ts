@@ -103,7 +103,6 @@ export const onboarding: Dictionary['onboarding'] = {
     signinSubtitle: 'Your bar is still loaded right where you left it.',
     username: 'Username',
     password: 'Password',
-    email: 'Email (optional)',
     emailPlaceholder: 'you@example.com',
     haveAccount: 'I already have an account',
     toSignup: 'No account? Create one',
