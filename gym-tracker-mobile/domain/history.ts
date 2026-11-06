@@ -12,6 +12,8 @@ export interface LoggedSet {
   /** A drop set or a set to failure, when it was one. */
   kind?: 'drop' | 'failure';
   effort?: Effort;
+  /** The RPE as it was given (6, 8,5…). */
+  rpe?: number;
 }
 
 export interface LoggedExercise {
@@ -35,6 +37,7 @@ export function loggedExercises(workout: Workout): LoggedExercise[] {
           warmup: s.setType === 'warmup',
           ...(s.setType === 'drop' || s.setType === 'failure' ? { kind: s.setType } : {}),
           effort: effortOf(s.rpe),
+          ...(s.rpe != null ? { rpe: s.rpe } : {}),
         })),
     }))
     .filter((e) => e.sets.length > 0);

@@ -112,3 +112,29 @@ describe('profile', () => {
     expect(await db.loadProfileLocal()).toEqual({ goal: 'force' });
   });
 });
+
+describe('settings sync queue', () => {
+  const clearSettings = "DELETE FROM sync_queue WHERE table_name = 'user_settings'";
+
+  it('keeps a single settings entry: a new one replaces the waiting one', async () => {
+    fake.state.version = 3;
+    await db.enqueueSettingsSync();
+    const queue = fake.calls.filter((c) => c.sql.includes('sync_queue'));
+    expect(queue[0]?.sql).toBe(clearSettings);
+    expect(queue[1]?.sql).toContain('INSERT INTO sync_queue');
+    expect(queue[1]?.params.slice(0, 3)).toEqual(['user_settings', 'settings', 'upsert']);
+    expect(fake.state.transactions).toBe(1);
+  });
+
+  it('drops the waiting settings entry', async () => {
+    fake.state.version = 3;
+    await db.clearSettingsSyncQueue();
+    expect(fake.calls.some((c) => c.sql === clearSettings)).toBe(true);
+  });
+
+  it('sends the settings entries with the others', async () => {
+    fake.state.version = 3;
+    await db.getPendingSyncQueue();
+    expect(fake.calls.some((c) => c.sql.includes("'user_settings'"))).toBe(true);
+  });
+});

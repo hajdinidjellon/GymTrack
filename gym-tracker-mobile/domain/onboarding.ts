@@ -1,5 +1,5 @@
 import { translatedList } from '@/domain/format';
-import { DEFAULT_PLATES } from '@/domain/plates';
+import { ALL_PLATES, DEFAULT_PLATES } from '@/domain/plates';
 import { getSplit } from '@/domain/programs';
 import { defaultSchedule, weekdayIndex, type Schedule } from '@/domain/schedule';
 import { dayName, t } from '@/i18n';
@@ -42,7 +42,7 @@ export const BAR_CHOICES = [
   },
 ];
 /** Every plate a gym may have, heaviest first. */
-export const GYM_PLATES = [25, ...DEFAULT_PLATES];
+export const GYM_PLATES = ALL_PLATES;
 
 const experienceDef = (id: Experience, level: number) => ({
   id,

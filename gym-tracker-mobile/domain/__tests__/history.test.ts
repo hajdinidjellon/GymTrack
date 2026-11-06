@@ -17,7 +17,7 @@ describe('loggedExercises', () => {
         name: 'Développé couché',
         sets: [
           { weight: 40, reps: 10, warmup: true, effort: undefined },
-          { weight: 80, reps: 9, warmup: false, effort: 'max' },
+          { weight: 80, reps: 9, warmup: false, effort: 'max', rpe: 10 },
         ],
       },
       { name: 'Curl haltères', sets: [{ weight: 14, reps: 12, warmup: false, effort: undefined }] },

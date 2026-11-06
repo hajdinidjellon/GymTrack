@@ -13,7 +13,7 @@ function renderPicker(props: { suggested?: ExerciseDef[]; muscle?: MuscleGroup }
   return render(<ExercisePicker visible taken={[]} onPick={onPick} onClose={() => null} {...props} />);
 }
 
-const tab = (name: string) => screen.getByRole('tab', { name });
+const choices = () => screen.getAllByRole('button', { name: /^Choisir / }).map((b) => b.props.accessibilityLabel);
 
 beforeEach(() => {
   onPick.mockClear();
@@ -21,55 +21,73 @@ beforeEach(() => {
 });
 
 describe('ExercisePicker', () => {
-  it('shows one muscle at a time, picked from the tabs', async () => {
+  it('lists every muscle at once, the most known first, without muscle tabs', async () => {
     await renderPicker();
-    expect(tab('Pectoraux')).toBeSelected();
-    expect(screen.getByText(EXERCISES.bench.name)).toBeOnTheScreen();
-    expect(screen.queryByText(EXERCISES.squat.name)).toBeNull();
-
-    await fireEvent.press(tab('Jambes'));
-    expect(tab('Jambes')).toBeSelected();
-    expect(screen.getByText(EXERCISES.squat.name)).toBeOnTheScreen();
-    expect(screen.queryByText(EXERCISES.bench.name)).toBeNull();
+    expect(screen.queryByRole('tab')).toBeNull();
+    expect(screen.getByText("Tous les exercices, les plus connus d'abord")).toBeOnTheScreen();
+    expect(choices().slice(0, 4)).toEqual([
+      'Choisir Développé couché',
+      'Choisir Squat',
+      'Choisir Soulevé de terre',
+      'Choisir Tirage vertical',
+    ]);
   });
 
-  it("opens on the exercise's muscle", async () => {
-    await renderPicker({ muscle: 'legs' });
-    expect(tab('Jambes')).toBeSelected();
-  });
-
-  it('opens on the suggestions when there are some', async () => {
-    await renderPicker({ suggested: [EXERCISES.squat], muscle: 'chest' });
-    expect(tab('Suggestions')).toBeSelected();
+  it('puts the suggestions first, then everything else without them', async () => {
+    await renderPicker({ suggested: [EXERCISES.legpress, EXERCISES.squat], muscle: 'chest' });
+    expect(screen.getByText('Suggestions')).toBeOnTheScreen();
+    expect(choices().slice(0, 3)).toEqual(['Choisir Presse à cuisses', 'Choisir Squat', 'Choisir Développé couché']);
+    expect(choices().filter((c) => c === 'Choisir Squat')).toHaveLength(1);
     await fireEvent.press(screen.getByRole('button', { name: `Choisir ${EXERCISES.squat.name}` }));
     expect(onPick).toHaveBeenCalledWith(EXERCISES.squat);
   });
 
-  it('searches every muscle at once, without the tabs', async () => {
+  it('puts the user’s own exercises first', async () => {
+    const own = {
+      name: 'Écarté Panatta',
+      equipment: 'machine' as const,
+      category: 'isolation' as const,
+      muscleGroups: ['chest' as const],
+    };
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, customExercises: [own] } });
+    await renderPicker();
+    expect(choices()[0]).toBe('Choisir Écarté Panatta');
+    expect(screen.getByText('Ton exercice')).toBeOnTheScreen();
+  });
+
+  it('searches every name, most known first', async () => {
     await renderPicker();
     await fireEvent.changeText(screen.getByLabelText('Chercher un exercice'), 'squat');
-    expect(screen.queryByRole('tab', { name: 'Pectoraux' })).toBeNull();
-    expect(screen.getByText(EXERCISES.squat.name)).toBeOnTheScreen();
+    expect(screen.queryByText("Tous les exercices, les plus connus d'abord")).toBeNull();
+    expect(choices()[0]).toBe('Choisir Squat');
+    expect(screen.getByText(EXERCISES.hacksquat.name)).toBeOnTheScreen();
   });
 
   it('shows the other name an exercise was found under, and does not offer to create it again', async () => {
     await renderPicker();
     await fireEvent.changeText(screen.getByLabelText('Chercher un exercice'), 'Lat pulldown');
     expect(screen.getByText(EXERCISES.pulldown.name)).toBeOnTheScreen();
-    expect(screen.getByText('Aussi appelé Lat pulldown')).toBeOnTheScreen();
+    expect(screen.getAllByText('Aussi appelé Lat pulldown').length).toBeGreaterThan(0);
     expect(screen.queryByText('+ Créer « Lat pulldown »')).toBeNull();
+  });
+
+  it('finds an exercise by its English name, and offers to create a name it does not know', async () => {
+    await renderPicker();
+    await fireEvent.changeText(screen.getByLabelText('Chercher un exercice'), 'butterfly');
+    expect(screen.getByText(EXERCISES.pecdeck.name)).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByLabelText('Chercher un exercice'), 'Zercher lesté');
+    expect(screen.getByText('+ Créer « Zercher lesté »')).toBeOnTheScreen();
   });
 });
 
 describe('ExercisePicker for several exercises', () => {
-  it('stays open on the same tab after a pick, with the options on top', async () => {
+  it('stays on the list after a pick, with the options on top', async () => {
     const onClose = jest.fn();
     await render(
       <ExercisePicker
         visible
         taken={[]}
         muscle="back"
-        stayOpen
         options={<Text>Option lue avant</Text>}
         onPick={onPick}
         onClose={onClose}
@@ -79,6 +97,6 @@ describe('ExercisePicker for several exercises', () => {
     await fireEvent.press(screen.getAllByRole('button', { name: /Tractions/ })[0]!);
     expect(onPick).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled();
-    expect(tab('Dos')).toBeSelected();
+    expect(screen.getByText("Tous les exercices, les plus connus d'abord")).toBeOnTheScreen();
   });
 });

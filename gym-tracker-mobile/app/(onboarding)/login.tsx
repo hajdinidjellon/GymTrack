@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
-import { border, colors, fonts, hardShadow, radius } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import { contactEmailError, loginEmail, normalizeUsername, passwordError, usernameError } from '@/domain/account';
 import { t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
+import { createRecoveryCode } from '@/services/recovery';
 import { isSupabaseConfigured, signInWithEmail, signUp } from '@/services/supabase';
-import { initialSync } from '@/services/sync';
+import { loadAccountData } from '@/stores/accountData';
 import { useProfileStore } from '@/stores/profileStore';
-import { useWorkoutStore } from '@/stores/workoutStore';
+import { useRecoveryStore } from '@/stores/recoveryStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
+import { TextField } from '@/components/ui/TextField';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { BackButton } from '@/components/ui/BackButton';
 import { resetTo } from '@/components/navigation/resetTo';
@@ -61,10 +63,11 @@ export default function Login() {
     }
     setBusy(true);
     setError(null);
+    const email = contactEmail.trim() || undefined;
     if (signingUp) {
       const result = await signUp(loginEmail(identifier), password, {
         username: normalizeUsername(identifier),
-        contactEmail: contactEmail.trim() || undefined,
+        contactEmail: email,
       });
       if (!result.ok) {
         setBusy(false);
@@ -79,10 +82,17 @@ export default function Login() {
         return;
       }
     }
-    // À l'inscription, ça envoie les séances déjà faites sur ce téléphone
-    await initialSync().catch(() => null);
-    await Promise.all([useWorkoutStore.getState().loadWorkouts(), useProfileStore.getState().loadProfile()]);
+    await loadAccountData();
+    // Sans email, le code de récupération est la seule façon de revenir : montré une fois
+    const code = signingUp && !email ? await createRecoveryCode(password) : null;
     setBusy(false);
+    if (code?.ok) {
+      const hasProfile = !!useProfileStore.getState().profile;
+      if (hasProfile) useSettingsStore.getState().updateSettings({ signedOut: false });
+      useRecoveryStore.getState().show(code.code, normalizeUsername(identifier), hasProfile ? 'app' : 'goal');
+      router.replace('/recovery-code');
+      return;
+    }
     goOn();
   };
 
@@ -114,14 +124,14 @@ export default function Login() {
         </Text>
 
         <View style={{ gap: 18, marginTop: 34 }}>
-          <Field
+          <TextField
             label={t('onboarding.login.username')}
             value={identifier}
             onChangeText={setIdentifier}
             placeholder="poseidon"
             kind="username"
           />
-          <Field
+          <TextField
             label={t('onboarding.login.password')}
             value={password}
             onChangeText={setPassword}
@@ -129,8 +139,9 @@ export default function Login() {
             kind={signingUp ? 'newPassword' : 'password'}
           />
           {signingUp ? (
-            <Field
-              label={t('onboarding.login.email')}
+            <TextField
+              label={t('account.emailLabel')}
+              hint={t('account.emailWhy')}
               value={contactEmail}
               onChangeText={setContactEmail}
               placeholder={t('onboarding.login.emailPlaceholder')}
@@ -142,6 +153,14 @@ export default function Login() {
               {error}
             </Text>
           ) : null}
+          {signingUp ? null : (
+            <StickerButton
+              label={t('account.forgot.link')}
+              variant="ghost"
+              size="small"
+              onPress={() => router.push('/forgot')}
+            />
+          )}
           <StickerButton
             label={t(signingUp ? 'onboarding.login.haveAccount' : 'onboarding.login.toSignup')}
             variant="ghost"
@@ -151,56 +170,5 @@ export default function Login() {
         </View>
       </Screen>
     </KeyboardAvoidingView>
-  );
-}
-
-interface FieldProps {
-  label: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  placeholder: string;
-  kind: 'username' | 'password' | 'newPassword' | 'email';
-}
-
-const CONTENT_TYPE = {
-  username: 'username',
-  password: 'password',
-  newPassword: 'newPassword',
-  email: 'emailAddress',
-} as const;
-
-function Field({ label, value, onChangeText, placeholder, kind }: FieldProps) {
-  return (
-    <View style={{ gap: 8 }}>
-      <Text size={15} weight="bold">
-        {label}
-      </Text>
-      {/* L'ombre dure est portée par le cadre : TextInput ne la prend pas */}
-      <View style={{ borderRadius: radius.input, ...hardShadow(2) }}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={colors.inkFaint}
-          accessibilityLabel={label}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType={kind === 'email' ? 'email-address' : 'default'}
-          textContentType={CONTENT_TYPE[kind]}
-          secureTextEntry={kind === 'password' || kind === 'newPassword'}
-          style={{
-            height: 60,
-            borderRadius: radius.input,
-            borderWidth: border.base,
-            borderColor: colors.outline,
-            backgroundColor: colors.card,
-            color: colors.ink,
-            fontFamily: fonts.regular,
-            fontSize: 19,
-            paddingHorizontal: 20,
-          }}
-        />
-      </View>
-    </View>
   );
 }

@@ -90,12 +90,16 @@ export function completeSet(session: ActiveSession, exerciseId: string, setIndex
     ...mapExercise(session, exerciseId, (e) => {
       const done = e.sets[setIndex];
       if (!done) return e;
-      const passOn = !isWarmup(done) && done.setType !== 'drop';
+      // A top set is heavier on purpose: the back-off sets keep their own weight
+      const passOn = !isWarmup(done) && done.setType !== 'drop' && done.setType !== 'top';
       return {
         ...e,
         sets: e.sets.map((set, i) => {
           if (i === setIndex) return { ...set, completed: true, doneAt: now };
-          if (passOn && i > setIndex && !set.completed && !isWarmup(set) && set.setType !== 'drop') {
+          // A set planned at another weight (back-offs after a top set) keeps its own
+          const sameTarget = !done.target || !set.target || set.target.weight === done.target.weight;
+          const own = isWarmup(set) || set.setType === 'drop' || set.setType === 'top';
+          if (passOn && sameTarget && i > setIndex && !set.completed && !own) {
             const missed = done.target != null && done.reps < done.target.reps;
             return { ...set, weight: done.weight, reps: missed ? set.reps : done.reps };
           }
@@ -140,6 +144,14 @@ export function rateLastSet(session: ActiveSession, effort: Effort): ActiveSessi
   if (!last || !set?.completed) return session;
   const rpe = effortOf(set.rpe) === effort ? undefined : EFFORT_RPE[effort];
   return updateSet(session, last.exerciseId, last.setIndex, { rpe });
+}
+
+/** The precise RPE of the last validated set. The same value a second time takes it back. */
+export function rateLastSetRpe(session: ActiveSession, rpe: number): ActiveSession {
+  const last = session.lastCompleted;
+  const set = last && findSet(session, last.exerciseId, last.setIndex);
+  if (!last || !set?.completed) return session;
+  return updateSet(session, last.exerciseId, last.setIndex, { rpe: set.rpe === rpe ? undefined : rpe });
 }
 
 /**

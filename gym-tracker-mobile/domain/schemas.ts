@@ -143,6 +143,7 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     restBell: z.boolean(),
     programSwitchDismissed: z.string().max(40).nullable(),
     barWeight: z.number().min(0).max(50),
+    collarWeight: z.number().min(0).max(5),
     plates: z.array(z.number().positive().max(50)).max(20),
     increments: z.record(z.string().max(100), z.number().positive().max(50)),
     customDays: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),
@@ -163,12 +164,28 @@ export const settingsPatchSchema: z.ZodType<Partial<AppSettings>> = z
     signedOut: z.boolean(),
     language: z.enum(['auto', 'fr', 'en']),
     theme: z.enum(['auto', 'light', 'dark']),
+    manualProgression: z.record(z.string().max(100), z.boolean()),
+    preciseRpe: z.boolean(),
     warmups: z.boolean(),
     warmupOverrides: z.record(z.string().max(100), z.boolean()),
     supersets: z.record(z.string().max(100), z.array(z.string().max(100)).max(30)),
     ownDays: z.record(z.string().max(10), z.array(z.string().max(100)).max(14)),
+    recoveryPromptSeen: z.boolean(),
   })
   .partial();
+
+/** When the settings last changed on this phone, and whether that change still has to reach the queue. */
+export const settingsSyncMetaSchema = z.object({
+  updatedAt: isoDate.nullable(),
+  pending: z.boolean(),
+});
+
+/** What the account recovery Edge Functions answer (supabase/functions/). */
+export const recoveryAnswerSchema = z.object({
+  ok: z.boolean(),
+  code: z.string().max(40).optional(),
+  reason: z.enum(['limit', 'password']).optional(),
+});
 
 /** Valid items only. A broken record is skipped, not allowed to crash the app. */
 export function parseList<T>(schema: z.ZodType<T>, items: unknown[]): { valid: T[]; rejected: number } {

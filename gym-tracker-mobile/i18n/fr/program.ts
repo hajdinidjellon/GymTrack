@@ -5,6 +5,7 @@ export const program = {
     dumbbell: 'Haltères',
     machine: 'Machine',
     bodyweight: 'Poids du corps',
+    kettlebell: 'Kettlebell',
   },
   kind: {
     compound: 'Plusieurs muscles',

@@ -1,4 +1,5 @@
 /** French is the source language: every other dictionary has exactly its shape. */
+import { account } from './account';
 import { common } from './common';
 import { data } from './data';
 import { domain } from './domain';
@@ -13,6 +14,7 @@ import { session } from './session';
 import { ui } from './ui';
 
 export const fr = {
+  account,
   common,
   data,
   domain,
