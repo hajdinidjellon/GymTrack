@@ -482,7 +482,7 @@ function DayPicker({
                 paddingHorizontal: 10,
                 borderRadius: radius.row,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.outlineStrong : colors.line,
+                borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                 backgroundColor: on ? colors.coralSoft : colors.card,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -538,7 +538,7 @@ function DayPicker({
                     borderWidth: on ? border.strong : border.base,
                     // Hors programme : en pointillés tant qu'on ne l'a pas choisie
                     borderStyle: on ? 'solid' : 'dashed',
-                    borderColor: on ? colors.outlineStrong : colors.line,
+                    borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                     backgroundColor: on ? colors.coralSoft : 'transparent',
                     justifyContent: 'center',
                     ...(on ? hardShadow(2) : {}),

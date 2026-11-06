@@ -31,7 +31,7 @@ function pillStyle(state: PillState, pressed: boolean): ViewStyle {
       waiting: pressed ? colors.coralSoft : 'transparent',
     }[state],
     borderWidth: state === 'current' ? border.strong : 2,
-    borderColor: solid ? colors.outlineStrong : colors.line,
+    borderColor: solid ? colors.outlineStrong : colors.outlineSoft,
     borderStyle: solid ? 'solid' : 'dashed',
   };
 }
@@ -60,7 +60,7 @@ export function SessionProgress({ exercises, current, onPick }: Props) {
                   flex: 1,
                   height: 2.5,
                   borderRadius: 2,
-                  backgroundColor: finished || now ? colors.ink : colors.line,
+                  backgroundColor: finished || now ? colors.ink : colors.outlineSoft,
                 }}
               />
             ) : null}

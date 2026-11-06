@@ -255,7 +255,7 @@ function LevelBars({ level, on }: { level: number; on: boolean }) {
             borderRadius: 3,
             backgroundColor: i < level ? colors.ink : 'transparent',
             borderWidth: i < level ? 0 : 2,
-            borderColor: colors.line,
+            borderColor: colors.outlineSoft,
             borderStyle: 'dashed',
           }}
         />

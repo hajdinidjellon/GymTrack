@@ -103,7 +103,7 @@ export function SetRow({ index, kg, reps, state, noWeight, warmup, timed, kind, 
               height: 32,
               borderRadius: 16,
               borderWidth: 2,
-              borderColor: colors.line,
+              borderColor: colors.outlineSoft,
               borderStyle: 'dashed',
             }}
           />

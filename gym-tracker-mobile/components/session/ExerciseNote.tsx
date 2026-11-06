@@ -59,7 +59,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
         borderRadius: radius.input,
         borderWidth: border.base,
         borderStyle: note ? 'solid' : 'dashed',
-        borderColor: note || pressed ? colors.outlineStrong : colors.line,
+        borderColor: note || pressed ? colors.outlineStrong : colors.outlineSoft,
         backgroundColor: note ? colors.card : 'transparent',
       })}
     >

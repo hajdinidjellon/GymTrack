@@ -200,7 +200,7 @@ export function SetView({ cursor, footer }: Props) {
               borderRadius: radius.row,
               borderWidth: border.base,
               borderStyle: 'dashed',
-              borderColor: pressed ? colors.outlineStrong : colors.line,
+              borderColor: pressed ? colors.outlineStrong : colors.outlineSoft,
               alignItems: 'center',
               justifyContent: 'center',
             })}

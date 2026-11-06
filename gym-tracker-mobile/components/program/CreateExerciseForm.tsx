@@ -168,7 +168,7 @@ function Options<T extends string>({
                 justifyContent: 'center',
                 borderRadius: radius.pill,
                 borderWidth: on ? border.strong : border.base,
-                borderColor: on ? colors.outlineStrong : colors.line,
+                borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                 backgroundColor: on ? colors.coralSoft : colors.card,
               }}
             >

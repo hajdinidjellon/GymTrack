@@ -214,7 +214,7 @@ export default function Profile() {
                   minHeight: 48,
                   borderRadius: radius.pill,
                   borderWidth: on ? border.strong : border.base,
-                  borderColor: on ? colors.outlineStrong : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                   backgroundColor: on ? colors.coralSoft : colors.card,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -248,7 +248,7 @@ export default function Profile() {
                   gap: 4,
                   backgroundColor: on ? colors.card : 'transparent',
                   borderWidth: border.base,
-                  borderColor: on ? colors.outlineStrong : colors.line,
+                  borderColor: on ? colors.outlineStrong : colors.outlineSoft,
                   borderStyle: on ? 'solid' : 'dashed',
                   ...(on ? hardShadow(2) : {}),
                 }}
