@@ -10,6 +10,7 @@ import {
   deltaLabel,
   nextDay,
   planDay,
+  breakDays,
   lastTimeLabel,
   targetLabel,
   targetLoad,
@@ -182,7 +183,9 @@ function TodayCard({ plan, days, today, firstTime, onChoose }: TodayProps) {
   const target = featured?.targets[0];
   const perSide = usePerSide(target?.weight ?? 0);
   const sets = plan.lifts.reduce((n, l) => n + l.targets.length, 0);
-  const daysOff = Math.max(0, ...plan.lifts.map((l) => (l.decision === 'comeback' ? (l.daysOff ?? 0) : 0)));
+  // The user's own break, not the longest one of a single exercise
+  const workouts = useWorkoutStore((s) => s.workouts);
+  const daysOff = breakDays(plan.lifts, workouts, new Date());
 
   return (
     <>
@@ -314,7 +317,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
       accessibilityLabel={
         calibrate
           ? t('home.lift.a11yToChoose', { name })
-          : t('home.lift.a11y', { name, target: targetLabel(lift.targets, lift.def.timed) })
+          : t('home.lift.a11y', { name, target: targetLabel(lift.targets, lift.def.timed, lift.def.assisted) })
       }
       style={{
         paddingVertical: space.md + 2,
@@ -333,7 +336,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         {/* Today's target, then what changed: the badge sits right after it, not at the edge */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 4 }}>
           <Text size={16} weight="black">
-            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets, lift.def.timed)}
+            {calibrate ? t('home.lift.toChoose') : targetLoad(lift.targets, lift.def.timed, lift.def.assisted)}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
             {sets}
@@ -342,7 +345,7 @@ function LiftLine({ lift, index, last }: { lift: PlannedLift; index: number; las
         </View>
         {lift.last.length ? (
           <Text size={13} color={colors.inkMuted} numberOfLines={1}>
-            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last, lift.def.timed) })}
+            {t('home.lift.lastTime', { last: lastTimeLabel(lift.last, lift.def.timed, lift.def.assisted) })}
           </Text>
         ) : null}
       </View>

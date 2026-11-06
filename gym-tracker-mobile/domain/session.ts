@@ -90,12 +90,14 @@ export function completeSet(session: ActiveSession, exerciseId: string, setIndex
     ...mapExercise(session, exerciseId, (e) => {
       const done = e.sets[setIndex];
       if (!done) return e;
-      const passOn = !isWarmup(done) && done.setType !== 'drop';
+      // A top set is heavier on purpose: the back-off sets keep their own weight
+      const passOn = !isWarmup(done) && done.setType !== 'drop' && done.setType !== 'top';
       return {
         ...e,
         sets: e.sets.map((set, i) => {
           if (i === setIndex) return { ...set, completed: true, doneAt: now };
-          if (passOn && i > setIndex && !set.completed && !isWarmup(set) && set.setType !== 'drop') {
+          const own = isWarmup(set) || set.setType === 'drop' || set.setType === 'top';
+          if (passOn && i > setIndex && !set.completed && !own) {
             const missed = done.target != null && done.reps < done.target.reps;
             return { ...set, weight: done.weight, reps: missed ? set.reps : done.reps };
           }

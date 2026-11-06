@@ -19,6 +19,7 @@ import {
   similarExercises,
   programDays,
   restFor,
+  easierVariant,
   ruleFor,
   SPLITS,
   withOverride,
@@ -39,11 +40,28 @@ describe('programs', () => {
   });
 
   it('picks a weight step per equipment', () => {
-    expect(defaultIncrementFor('barbell', 'kg')).toBe(2.5);
-    expect(defaultIncrementFor('dumbbell', 'kg')).toBe(2);
-    expect(defaultIncrementFor('machine', 'kg')).toBe(5);
-    expect(defaultIncrementFor('machine', 'kg', true)).toBe(2.5);
-    expect(defaultIncrementFor('dumbbell', 'lbs')).toBe(5);
+    const E = EXERCISES;
+    expect(defaultIncrementFor(E.bench, 'kg')).toBe(2.5);
+    expect(defaultIncrementFor(E.curl, 'kg')).toBe(2);
+    expect(defaultIncrementFor(E.dipsmachine, 'kg')).toBe(5); // big movement on a stack
+    expect(defaultIncrementFor(E.legpress, 'kg', true)).toBe(2.5);
+    expect(defaultIncrementFor(E.curl, 'lbs')).toBe(5);
+  });
+
+  it('never jumps by half on cables and single-muscle stack work', () => {
+    const E = EXERCISES;
+    expect(defaultIncrementFor(E.cablelateral, 'kg')).toBe(2.5);
+    expect(defaultIncrementFor(E.pulldown, 'kg')).toBe(2.5);
+    expect(defaultIncrementFor(E.legext, 'kg')).toBe(2.5);
+  });
+
+  it('offers an easier variant of the hard bodyweight lifts', () => {
+    const E = EXERCISES;
+    expect(easierVariant(E.pullup)).toBe(E.assisted);
+    expect(easierVariant(E.chinup)).toBe(E.assisted);
+    expect(easierVariant(E.dips)).toBe(E.pushup);
+    expect(easierVariant(E.squat)).toBeUndefined();
+    expect(E.assisted.assisted).toBe(true);
   });
 
   it('knows the plate-loaded machines, and lets the user say otherwise', () => {

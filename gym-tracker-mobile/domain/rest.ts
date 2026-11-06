@@ -3,15 +3,16 @@
  *
  * Dans l'ordre : le choix de l'utilisateur, puis ce qu'il prend vraiment
  * d'habitude (mesuré entre deux validations) quand c'est plus long, puis le
- * type d'exercice : 4 min en très lourd, 3 min sur les gros mouvements,
- * 2 min sur un seul muscle.
+ * type d'exercice selon l'objectif : 4 min en très lourd, 3 min sur les gros
+ * mouvements et 2 min sur un seul muscle (muscle), plus en force, et des
+ * repos courts pour rester en forme (1 min 30, 1 min).
  * Logique pure.
  */
 
 import { formatRest } from '@/domain/format';
 import { restFor, type ExerciseDef } from '@/domain/programs';
 import { t } from '@/i18n';
-import type { ProgressionRule, WorkoutSet } from '@/types';
+import type { Goal, ProgressionRule, WorkoutSet } from '@/types';
 
 /** Rough time to do a set, taken off the gap between two validations. */
 export function setSeconds(reps: number): number {
@@ -73,8 +74,9 @@ export function planRest(
   defaultRest: number,
   history: { sets: WorkoutSet[] }[],
   own?: number,
+  goal: Goal = 'muscle',
 ): PlannedRest {
-  const base = restFor(rule, defaultRest, def);
+  const base = restFor(rule, defaultRest, def, goal);
   if (own != null) return { seconds: clampRest(own), source: 'own', note: t('domain.rest.own') };
 
   const usual = usualRest(history);

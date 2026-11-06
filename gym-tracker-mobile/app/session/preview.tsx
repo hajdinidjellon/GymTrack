@@ -158,7 +158,9 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
       accessibilityRole="button"
       accessibilityLabel={t('session.preview.liftA11y', {
         name: exerciseName(lift.def.name),
-        target: calibrate ? t('session.preview.firstTime') : targetLabel(lift.targets, lift.def.timed),
+        target: calibrate
+          ? t('session.preview.firstTime')
+          : targetLabel(lift.targets, lift.def.timed, lift.def.assisted),
         delta: deltaLabel(lift),
       })}
     >
@@ -170,7 +172,9 @@ function LiftRow({ lift, index, onRemove }: { lift: PlannedLift; index: number; 
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text size={14} weight="semibold" color={colors.inkMuted} numberOfLines={1} style={{ flexShrink: 1 }}>
-              {calibrate ? t('session.preview.weightToPick') : targetLabel(lift.targets, lift.def.timed)}
+              {calibrate
+                ? t('session.preview.weightToPick')
+                : targetLabel(lift.targets, lift.def.timed, lift.def.assisted)}
             </Text>
             {progress ? <Chip tone="success" label={deltaLabel(lift)} /> : null}
           </View>

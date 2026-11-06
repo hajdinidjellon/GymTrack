@@ -26,6 +26,8 @@ export interface ExerciseDef extends CustomExercise {
   plateLoaded?: boolean;
   /** A cable station or a Smith machine: the usual weights differ from a stack machine's. */
   gear?: 'cable' | 'smith';
+  /** A counterweight helps (assisted pull-ups): less weight is harder, progress takes help away. */
+  assisted?: boolean;
 }
 
 const ex = (
@@ -40,6 +42,7 @@ const withPlates = (def: ExerciseDef): ExerciseDef => ({ ...def, plateLoaded: tr
 const onCable = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'cable' });
 const onSmith = (def: ExerciseDef): ExerciseDef => ({ ...def, gear: 'smith' });
 const held = (def: ExerciseDef): ExerciseDef => ({ ...def, timed: true });
+const helped = (def: ExerciseDef): ExerciseDef => ({ ...def, assisted: true });
 
 export const EXERCISES = {
   // Pectoraux
@@ -73,7 +76,7 @@ export const EXERCISES = {
   // Dos
   pullup: ex('Tractions', 'bodyweight', 'compound', ['back', 'biceps'], ['Tractions pronation']),
   chinup: ex('Tractions supination', 'bodyweight', 'compound', ['back', 'biceps'], ['Chin-up']),
-  assisted: ex('Tractions assistées', 'machine', 'compound', ['back', 'biceps']),
+  assisted: helped(ex('Tractions assistées', 'machine', 'compound', ['back', 'biceps'])),
   pulldown: onCable(
     ex('Tirage vertical', 'machine', 'compound', ['back', 'biceps'], ['Tirage vertical poulie', 'Lat pulldown']),
   ),
@@ -470,14 +473,34 @@ const goalDef = (id: Goal, plates: number[]): GoalDef => ({
 export const GOALS: GoalDef[] = [goalDef('muscle', [10, 5]), goalDef('force', [20, 20]), goalDef('forme', [5])];
 
 /**
- * Default weight step per equipment. Stack machines move by a full stack plate,
- * plate-loaded ones by a small plate on each side.
+ * Default weight step. Big movements on a stack machine move by a full stack
+ * plate (5 kg); cables and single-muscle work on a stack by 2,5 kg, so a
+ * lateral raise never jumps by half. Plate-loaded machines move by a small
+ * plate on each side.
  */
-export function defaultIncrementFor(equipment: Equipment, units: 'kg' | 'lbs', plateLoaded = false): number {
+export function defaultIncrementFor(
+  def: Pick<ExerciseDef, 'equipment' | 'category' | 'gear'>,
+  units: 'kg' | 'lbs',
+  plateLoaded = false,
+): number {
   if (units === 'lbs') return 5;
-  if (equipment === 'dumbbell') return 2;
-  if (equipment === 'machine' && !plateLoaded) return 5;
+  if (def.equipment === 'dumbbell') return 2;
+  if (def.equipment === 'machine' && !plateLoaded && def.gear !== 'cable' && def.category === 'compound') return 5;
   return 2.5;
+}
+
+/**
+ * An easier exercise for the same movement, for a beginner who cannot reach
+ * the bottom of the range yet: pull-ups → assisted pull-ups, dips → push-ups.
+ */
+export function easierVariant(def: Pick<ExerciseDef, 'name'>): ExerciseDef | undefined {
+  const E = EXERCISES;
+  const easier: Record<string, ExerciseDef> = {
+    [E.pullup.name]: E.assisted,
+    [E.chinup.name]: E.assisted,
+    [E.dips.name]: E.pushup,
+  };
+  return easier[def.name];
 }
 
 /** Loaded with plates on each side: the user's choice, else the catalog's. Machines only. */
@@ -518,20 +541,28 @@ export function withOverride(rule: ProgressionRule, override: RuleOverride | und
   return override ? { ...rule, ...clampRule(override, rule.repStep !== undefined) } : rule;
 }
 
-/** Minimum rest per kind of set, in seconds. */
-export const REST_BY_KIND = { heavy: 240, compound: 180, isolation: 120 } as const;
+/** Minimum rest per goal and kind of set, in seconds. Very heavy sets (5 reps or less) always get 4 min. */
+export const REST_BY_GOAL = {
+  muscle: { heavy: 240, compound: 180, isolation: 120 },
+  force: { heavy: 240, compound: 210, isolation: 150 },
+  forme: { heavy: 240, compound: 90, isolation: 60 },
+} as const satisfies Record<Goal, Record<'heavy' | 'compound' | 'isolation', number>>;
+
+/** The muscle goal's rests, the reference. */
+export const REST_BY_KIND = REST_BY_GOAL.muscle;
 
 /**
- * Rest between sets from the kind of exercise: 4 min for very heavy sets
- * (5 reps or less), 3 min for big movements, 2 min for a single muscle
- * (biceps, triceps, shoulders…). Abs and calves keep the default rest,
- * and the default is never cut.
+ * Rest between sets from the goal and the kind of exercise: 4 min for very
+ * heavy sets (5 reps or less); for big movements 3 min (muscle), 3 min 30
+ * (force), 1 min 30 (forme); for a single muscle 2 min, 2 min 30, 1 min.
+ * Abs and calves keep the default rest, and the default is never cut.
  */
-export function restFor(rule: ProgressionRule, defaultRest: number, def?: ExerciseDef): number {
-  if (rule.repMax <= 5) return Math.max(defaultRest, REST_BY_KIND.heavy);
+export function restFor(rule: ProgressionRule, defaultRest: number, def?: ExerciseDef, goal: Goal = 'muscle'): number {
+  const rests = REST_BY_GOAL[goal];
+  if (rule.repMax <= 5) return Math.max(defaultRest, rests.heavy);
   if (!def) return defaultRest;
-  if (def.category === 'compound') return Math.max(defaultRest, REST_BY_KIND.compound);
+  if (def.category === 'compound') return Math.max(defaultRest, rests.compound);
   const main = def.muscleGroups[0];
   if (main === 'core' || main === 'calves') return defaultRest;
-  return Math.max(defaultRest, REST_BY_KIND.isolation);
+  return Math.max(defaultRest, rests.isolation);
 }
