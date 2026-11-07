@@ -69,7 +69,13 @@
       ],
       "expo-sqlite",
       "expo-web-browser",
-      "expo-asset"
+      "expo-asset",
+      [
+        "./modules/okilo-alarm/app.plugin.js",
+        {
+          "usage": "Okilo sonne la fin de ton repos comme un minuteur, même quand tu es sur une autre app."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

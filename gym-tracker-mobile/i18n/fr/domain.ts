@@ -300,6 +300,10 @@ export const domain = {
     holdGo: "C'est parti.",
   },
 
+  alarm: {
+    stop: 'Arrêter',
+    open: 'Ouvrir Okilo',
+  },
   notifications: {
     restOverTitle: 'Repos terminé',
     restChannel: 'Fin du repos',

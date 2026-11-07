@@ -15,6 +15,12 @@ jest.mock('expo-haptics', () => ({
 }));
 
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));
+jest.mock('@/services/alarmKit', () => ({
+  alarmKitAvailable: jest.fn(() => false),
+  requestAlarmPermission: jest.fn(() => Promise.resolve(false)),
+  scheduleRestAlarm: jest.fn(() => Promise.resolve(false)),
+  cancelRestAlarm: jest.fn(() => Promise.resolve()),
+}));
 jest.mock('@/services/sound', () => ({ playRestBell: jest.fn(), startRestAlarm: jest.fn(), stopRestAlarm: jest.fn() }));
 
 // Les tests lisent les textes français, quelle que soit la langue de la machine

@@ -2,6 +2,7 @@
   "ios": {
     "NSMicrophoneUsageDescription": "Okilo écoute tes commandes pendant la séance (« fait », « 8 », « plus tard ») quand tu les actives.",
     "NSSpeechRecognitionUsageDescription": "Okilo reconnaît tes commandes sur le téléphone, rien n'est envoyé.",
-    "NSPhotoLibraryUsageDescription": "Okilo n'utilise pas ta photothèque : cette autorisation ne te sera jamais demandée."
+    "NSPhotoLibraryUsageDescription": "Okilo n'utilise pas ta photothèque : cette autorisation ne te sera jamais demandée.",
+    "NSAlarmKitUsageDescription": "Okilo sonne la fin de ton repos comme un minuteur, même quand tu es sur une autre app."
   }
 }

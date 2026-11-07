@@ -300,6 +300,10 @@ export const domain: Dictionary['domain'] = {
     holdGo: "Let's go.",
   },
 
+  alarm: {
+    stop: 'Stop',
+    open: 'Open Okilo',
+  },
   notifications: {
     restOverTitle: 'Rest over',
     restChannel: 'End of rest',

@@ -2,6 +2,7 @@
   "ios": {
     "NSMicrophoneUsageDescription": "Okilo listens for your commands during a session (\"done\", \"8\", \"later\") when you turn them on.",
     "NSSpeechRecognitionUsageDescription": "Okilo recognizes your commands on the phone, nothing is sent.",
-    "NSPhotoLibraryUsageDescription": "Okilo does not use your photo library: you will never be asked for this permission."
+    "NSPhotoLibraryUsageDescription": "Okilo does not use your photo library: you will never be asked for this permission.",
+    "NSAlarmKitUsageDescription": "Okilo rings the end of your rest like a timer, even when you are in another app."
   }
 }
