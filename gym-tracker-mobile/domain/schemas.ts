@@ -59,11 +59,35 @@ const muscleGroup = z.enum([
 ]);
 const category = z.enum(['compound', 'isolation', 'accessory']);
 
-const customExerciseSchema: z.ZodType<CustomExercise> = z.object({
+export const customExerciseSchema: z.ZodType<CustomExercise> = z.object({
   name: z.string().trim().min(1).max(100),
   equipment: z.enum(['barbell', 'dumbbell', 'machine', 'bodyweight']),
   category,
   muscleGroups: z.array(muscleGroup).min(1).max(10),
+  region: z
+    .enum([
+      'upperChest',
+      'midChest',
+      'lowerChest',
+      'lats',
+      'midBack',
+      'traps',
+      'lowerBack',
+      'frontDelts',
+      'sideDelts',
+      'rearDelts',
+      'quads',
+      'hamstrings',
+      'adductors',
+      'power',
+      'gluteMax',
+      'gluteMed',
+      'abs',
+      'lowerAbs',
+      'obliques',
+      'plank',
+    ])
+    .optional(),
   timed: z.boolean().optional(),
   aliases: z.array(z.string().max(100)).max(20).optional(),
 });

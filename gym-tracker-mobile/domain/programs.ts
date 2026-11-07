@@ -3,6 +3,7 @@
  */
 
 import { EXERCISES, POPULARITY, type ExerciseDef } from '@/domain/catalog';
+import { regionsOf } from '@/domain/catalog/regions';
 import { exerciseName, t } from '@/i18n';
 import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
 import type {
@@ -12,12 +13,14 @@ import type {
   ExerciseCategory,
   Goal,
   MuscleGroup,
+  MuscleRegion,
   ProgressionRule,
   RuleOverride,
   SplitId,
 } from '@/types';
 
 export { EXERCISES, POPULARITY, type ExerciseDef, type ExerciseKey } from '@/domain/catalog';
+export { regionOf, regionsOf, REGIONS } from '@/domain/catalog/regions';
 
 export interface ProgramDay {
   name: string;
@@ -351,7 +354,15 @@ export const NAME_MAX = 40;
  * taken by the catalog, an old name, or another own exercise.
  */
 export function makeCustomExercise(
-  input: { name: string; equipment: Equipment; category: ExerciseCategory; muscle: MuscleGroup; timed?: boolean },
+  input: {
+    name: string;
+    equipment: Equipment;
+    category: ExerciseCategory;
+    muscle: MuscleGroup;
+    /** Kept only when it belongs to the muscle. */
+    region?: MuscleRegion;
+    timed?: boolean;
+  },
   own: CustomExercise[] = [],
 ): CustomExercise | { error: string } {
   const name = input.name.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
@@ -373,6 +384,7 @@ export function makeCustomExercise(
     category: input.category,
     muscleGroups: [input.muscle],
   };
+  if (input.region && regionsOf(input.muscle).includes(input.region)) made.region = input.region;
   return input.timed ? { ...made, timed: true } : made;
 }
 

@@ -77,7 +77,7 @@ describe('labels in English', () => {
       'Shoulders',
       'Biceps',
       'Triceps',
-      'Arms',
+      'Forearms',
       'Legs',
       'Glutes',
       'Calves',

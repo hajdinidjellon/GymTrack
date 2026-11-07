@@ -46,6 +46,54 @@ describe('ExercisePicker', () => {
     expect(screen.queryByRole('tab')).toBeNull();
   });
 
+  it('splits a muscle in regions: the upper chest only shows the incline work', async () => {
+    await renderPicker();
+    // Pas de zones sur « Tous »
+    expect(screen.queryByRole('tab', { name: 'Haut des pecs' })).toBeNull();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Pectoraux' }));
+    expect(screen.getByText('Pectoraux · 34 exercices')).toBeOnTheScreen();
+    expect(screen.getByRole('tab', { name: 'Pectoraux : tous les exercices' }).props.accessibilityState).toEqual({
+      selected: true,
+    });
+    await fireEvent.press(screen.getByRole('tab', { name: 'Haut des pecs' }));
+    expect(screen.getByText('Haut des pecs · 7 exercices')).toBeOnTheScreen();
+    expect(choices()).toContain('Choisir Développé incliné haltères');
+    expect(choices()).not.toContain('Choisir Développé couché');
+    // Another muscle starts again on all of it
+    await fireEvent.press(screen.getByRole('tab', { name: 'Dos' }));
+    expect(screen.getByRole('tab', { name: 'Dos : tous les exercices' }).props.accessibilityState).toEqual({
+      selected: true,
+    });
+    await fireEvent.press(screen.getByRole('tab', { name: 'Trapèzes' }));
+    expect(choices()).toEqual([
+      'Choisir Shrugs haltères',
+      'Choisir Shrugs barre',
+      'Choisir Shrugs machine',
+      'Choisir Shrugs Smith',
+    ]);
+  });
+
+  it('shows no regions for a muscle that has none', async () => {
+    await renderPicker();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Biceps' }));
+    expect(screen.queryByRole('tab', { name: 'Biceps : tous les exercices' })).toBeNull();
+  });
+
+  it('creates an own exercise in the region on screen', async () => {
+    await renderPicker();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Pectoraux' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Haut des pecs' }));
+    await fireEvent.press(screen.getByRole('button', { name: /créer/i }));
+    expect(screen.getByRole('radio', { name: 'Haut des pecs' })).toBeSelected();
+    await fireEvent.changeText(screen.getByLabelText("Nom de l'exercice"), 'Incliné Panatta');
+    await fireEvent.press(screen.getByRole('button', { name: "Créer l'exercice" }));
+    expect(useSettingsStore.getState().settings.customExercises[0]).toMatchObject({
+      name: 'Incliné Panatta',
+      muscleGroups: ['chest'],
+      region: 'upperChest',
+    });
+  });
+
   it('puts the suggestions first, then everything else without them', async () => {
     await renderPicker({ suggested: [EXERCISES.legpress, EXERCISES.squat], muscle: 'chest' });
     expect(screen.getByText('Suggestions')).toBeOnTheScreen();

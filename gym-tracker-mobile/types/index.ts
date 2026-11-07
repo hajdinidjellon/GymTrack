@@ -7,6 +7,29 @@ export type SetType = 'warmup' | 'normal' | 'top' | 'backoff' | 'amrap' | 'drop'
 export type MuscleGroup =
   'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'arms' | 'legs' | 'core' | 'glutes' | 'calves';
 
+/** The part of the main muscle an exercise works most (domain/catalog/regions.ts). */
+export type MuscleRegion =
+  | 'upperChest'
+  | 'midChest'
+  | 'lowerChest'
+  | 'lats'
+  | 'midBack'
+  | 'traps'
+  | 'lowerBack'
+  | 'frontDelts'
+  | 'sideDelts'
+  | 'rearDelts'
+  | 'quads'
+  | 'hamstrings'
+  | 'adductors'
+  | 'power'
+  | 'gluteMax'
+  | 'gluteMed'
+  | 'abs'
+  | 'lowerAbs'
+  | 'obliques'
+  | 'plank';
+
 export type WorkoutType =
   'strength' | 'hypertrophy' | 'power' | 'endurance' | 'cardio' | 'mobility' | 'ppl' | 'fullbody';
 
@@ -143,6 +166,8 @@ export interface CustomExercise {
   equipment: Equipment;
   category: ExerciseCategory;
   muscleGroups: MuscleGroup[];
+  /** Haut des pecs, dorsaux…: the picker's tab inside the muscle. Unset: only under the muscle. */
+  region?: MuscleRegion;
   /** Held for a time: counted in seconds, not reps. */
   timed?: boolean;
   /** Its old names, after a rename: the saved sessions still match it. */

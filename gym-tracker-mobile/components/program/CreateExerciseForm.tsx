@@ -2,9 +2,16 @@ import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { border, colors, fonts, radius, space } from '@/constants/theme';
-import { makeCustomExercise, MUSCLE_CHOICES, MUSCLE_LABELS, NAME_MAX, type ExerciseDef } from '@/domain/programs';
+import {
+  makeCustomExercise,
+  MUSCLE_CHOICES,
+  MUSCLE_LABELS,
+  NAME_MAX,
+  regionsOf,
+  type ExerciseDef,
+} from '@/domain/programs';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { CustomExercise, Equipment, ExerciseCategory, MuscleGroup } from '@/types';
+import type { CustomExercise, Equipment, ExerciseCategory, MuscleGroup, MuscleRegion } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { buzz } from '@/components/ui/PressableScale';
@@ -16,6 +23,8 @@ const KINDS = ['compound', 'isolation'] as const satisfies readonly ExerciseCate
 interface Props {
   /** Pre-selected muscle, e.g. the one of the exercise being swapped. */
   muscle?: MuscleGroup;
+  /** Pre-selected part of it: the picker's tab (haut des pecs…). */
+  region?: MuscleRegion;
   /** What was typed in the search. */
   initialName?: string;
   /** An own exercise to change instead of creating one. */
@@ -25,13 +34,22 @@ interface Props {
 }
 
 /** Name, muscle, equipment, kind: a new exercise the app then treats like the others. */
-export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', editing, onCreated, onCancel }: Props) {
+export function CreateExerciseForm({
+  muscle: initialMuscle,
+  region: initialRegion,
+  initialName = '',
+  editing,
+  onCreated,
+  onCancel,
+}: Props) {
   const own = useSettingsStore((s) => s.settings.customExercises);
   const addCustomExercise = useSettingsStore((s) => s.addCustomExercise);
   const updateCustomExercise = useSettingsStore((s) => s.updateCustomExercise);
   const [name, setName] = useState(editing?.name ?? initialName);
   const startMuscle = editing?.muscleGroups[0] ?? initialMuscle;
   const [muscle, setMuscle] = useState<MuscleGroup>(startMuscle && startMuscle !== 'arms' ? startMuscle : 'chest');
+  const [region, setRegion] = useState<MuscleRegion | 'none'>((editing ? editing.region : initialRegion) ?? 'none');
+  const regions = regionsOf(muscle);
   const [equipment, setEquipment] = useState<Equipment>(editing?.equipment ?? 'machine');
   const [category, setCategory] = useState<ExerciseCategory>(editing?.category ?? 'isolation');
   const [counted, setCounted] = useState<'reps' | 'seconds'>(editing?.timed ? 'seconds' : 'reps');
@@ -40,7 +58,17 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', ed
   const save = () => {
     // Changing it: its own name (and old names) are not "taken"
     const others = editing ? own.filter((e) => e.name !== editing.name) : own;
-    const result = makeCustomExercise({ name, equipment, category, muscle, timed: counted === 'seconds' }, others);
+    const result = makeCustomExercise(
+      {
+        name,
+        equipment,
+        category,
+        muscle,
+        region: region === 'none' ? undefined : region,
+        timed: counted === 'seconds',
+      },
+      others,
+    );
     if ('error' in result) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => null);
       setError(result.error);
@@ -94,8 +122,23 @@ export function CreateExerciseForm({ muscle: initialMuscle, initialName = '', ed
         label={t('program.create.muscle')}
         options={MUSCLE_CHOICES.map((id) => ({ id, label: MUSCLE_LABELS[id] }))}
         value={muscle}
-        onChange={setMuscle}
+        onChange={(next) => {
+          setMuscle(next);
+          // Le haut des pecs n'a pas de sens pour le dos
+          if (!regionsOf(next).includes(region as MuscleRegion)) setRegion('none');
+        }}
       />
+      {regions.length ? (
+        <Options
+          label={t('program.create.region')}
+          options={[
+            { id: 'none' as const, label: t('program.create.regionNone') },
+            ...regions.map((id) => ({ id, label: t(`domain.programs.regions.${id}`) })),
+          ]}
+          value={region}
+          onChange={setRegion}
+        />
+      ) : null}
       <Options
         label={t('program.create.equipment')}
         options={EQUIPMENTS.map((id) => ({ id, label: t(`program.equipment.${id}`) }))}
