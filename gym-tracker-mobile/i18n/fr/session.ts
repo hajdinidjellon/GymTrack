@@ -198,6 +198,12 @@ export const session = {
     undoBatchA11y: { one: 'Annuler la série validée', other: 'Annuler les {count} séries validées' },
     undo: '{label} · annuler',
   },
+  alarm: {
+    title: 'Repos terminé !',
+    stop: "C'est reparti",
+    stopA11y: "Arrêter l'alarme de fin du repos",
+    hint: "Touche n'importe où pour l'arrêter",
+  },
 
   running: {
     title: 'Séance en cours',
