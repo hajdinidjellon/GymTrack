@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Keyboard, Pressable, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, Text as RNText, TextInput, View } from 'react-native';
 import { border, colors, fonts, hardShadow } from '@/constants/theme';
 import { parseAmount } from '@/domain/format';
 import { ChevronLeft, ChevronRight } from './icons';
@@ -20,10 +20,16 @@ interface Props {
   inputLabel: string;
 }
 
+const NUMBER_STYLE = { fontFamily: fonts.black, fontSize: 60, lineHeight: 70 } as const;
+
 /** A huge number with arrows each side. Arrows nudge it by one step, a tap on the number opens the keyboard. */
 export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, onChange, integer, inputLabel }: Props) {
   // Texte en cours de frappe : "62," n'est pas encore un nombre, on l'affiche tel quel
   const [draft, setDraft] = useState<string | null>(null);
+  // iOS sizes a TextInput with the system font, not Fredoka: "37,5" lost its 5.
+  // The same text, drawn hidden in the same font, gives the real width.
+  const [width, setWidth] = useState(0);
+  const shown = (draft ?? value) || value;
 
   const typing = draft !== null;
   return (
@@ -33,6 +39,16 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
           <ChevronLeft size={24} />
         </Arrow>
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 }}>
+          <RNText
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+            maxFontSizeMultiplier={1.2}
+            onLayout={(e) => setWidth(Math.ceil(e.nativeEvent.layout.width))}
+            style={[NUMBER_STYLE, { position: 'absolute', opacity: 0 }]}
+            testID="stepper-measure"
+          >
+            {shown}
+          </RNText>
           <TextInput
             maxFontSizeMultiplier={1.2}
             value={draft ?? value}
@@ -53,12 +69,12 @@ export function Stepper({ value, unit, onMinus, onPlus, minusLabel, plusLabel, o
             accessibilityLabel={inputLabel}
             accessibilityHint={t('ui.stepper.typeHint')}
             style={{
-              fontFamily: fonts.black,
-              fontSize: 60,
-              lineHeight: 70,
+              ...NUMBER_STYLE,
               color: colors.ink,
               padding: 0,
               minWidth: 80,
+              // A little room for the cursor
+              width: width ? width + 8 : undefined,
               textAlign: 'center',
             }}
           />
