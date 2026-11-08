@@ -5,6 +5,7 @@
   },
   "build": {
     "production": {
+      "node": "24.18.0",
       "channel": "production",
       "autoIncrement": true,
       "ios": {
