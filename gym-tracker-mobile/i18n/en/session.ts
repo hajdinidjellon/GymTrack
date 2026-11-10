@@ -201,6 +201,12 @@ export const session: Dictionary['session'] = {
     undoBatchA11y: { one: 'Undo the set just done', other: 'Undo the {count} sets just done' },
     undo: '{label} · undo',
   },
+  alarm: {
+    title: 'Rest is over!',
+    stop: "Let's go",
+    stopA11y: 'Stop the end-of-rest alarm',
+    hint: 'Tap anywhere to stop it',
+  },
 
   running: {
     title: 'Workout in progress',
