@@ -53,6 +53,14 @@ export const account: Dictionary['account'] = {
     wrongPassword: 'Wrong password.',
     failed: "That didn't work. Check your connection and try again.",
   },
+  delete: {
+    button: 'Delete my account',
+    hint: 'With your password above. Your workouts, program and settings are erased for good, from the cloud and from this phone.',
+    confirmTitle: 'Delete your account?',
+    confirmText: 'Everything is erased for good: workouts, records, program, settings. This cannot be undone.',
+    confirm: 'Delete for good',
+    done: 'Your account and your data are deleted.',
+  },
   prompt: {
     title: 'What if you forget your password?',
     text: "Add an email to your account: it's what will let you get it back.",

@@ -26,10 +26,12 @@ export const program: Dictionary['program'] = {
     submit: 'Create the exercise',
     save: 'Save',
     back: 'Back to the list',
+    full: 'You already have {max} exercises of your own: delete one to create another.',
   },
   editor: {
     add: 'Add an exercise',
     addButton: '+ Add an exercise',
+    full: '{max} exercises at most per session.',
     dragHint: 'Hold an exercise, then drag it to reorder. ',
     saved: 'Your exercises for {day} are saved for next time.',
     howTo: 'Add, remove or move exercises: they’ll be kept for your next {day} sessions.',
@@ -55,6 +57,7 @@ export const program: Dictionary['program'] = {
   },
   days: {
     add: '+ New session',
+    full: '{max} sessions of your own at most.',
     create: 'Create the session',
     namePlaceholder: 'E.g. Shoulders, Upper B…',
     nameA11y: 'Session name',

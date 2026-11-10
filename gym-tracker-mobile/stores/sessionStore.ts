@@ -32,6 +32,7 @@ import { cancelRestAlarm, requestAlarmPermission, scheduleRestAlarm } from '@/se
 import { speak } from '@/services/speech';
 import { playRestBell, startRestAlarm, stopRestAlarm } from '@/services/sound';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
 import { t } from '@/i18n';
 import type { ActiveExercise, ActiveSession, Workout, WorkoutSet } from '@/types';
 
@@ -48,6 +49,11 @@ interface SessionStore {
    * or at its last set when it was left open; `end` (epoch ms) sets it by hand.
    */
   finishSession: (end?: number) => Workout | null;
+  /**
+   * Saves what was done, and only then ends the session: if the save fails it throws and the
+   * session stays, nothing is lost. Nothing done: nothing saved. Returns the saved session.
+   */
+  saveSession: (end?: number) => Promise<Workout | null>;
   /** Left open for hours: "Reprendre" keeps it, the question waits. */
   keepSessionOpen: () => void;
   discardSession: () => void;
@@ -280,6 +286,17 @@ export const useSessionStore = create<SessionStore>()(
           get().stopRestTimer();
           set({ activeSession: null });
           return Session.toWorkout(session, new Date(end ?? sessionEnd(session, Date.now())));
+        },
+
+        saveSession: async (end) => {
+          const session = get().activeSession;
+          if (!session) return null;
+          const endAt = end ?? sessionEnd(session, Date.now());
+          const workout = Session.toWorkout(session, new Date(endAt));
+          if (workout.exercises.length) await useWorkoutStore.getState().addWorkout(workout);
+          // Still the same session once saved: it ends now
+          if (get().activeSession?.workoutId === session.workoutId) get().finishSession(endAt);
+          return workout.exercises.length ? workout : null;
         },
 
         keepSessionOpen: () => apply((s) => Session.keepOpen(s, Date.now())),

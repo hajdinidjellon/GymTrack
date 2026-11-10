@@ -67,7 +67,7 @@ export function syncedSettings(settings: Partial<AppSettings>): SyncedSettings {
   return Object.fromEntries(Object.entries(settings).filter(([key]) => !isPerDevice(key))) as SyncedSettings;
 }
 
-function perDeviceSettings(settings: Partial<AppSettings>): Partial<Pick<AppSettings, PerDevice>> {
+export function perDeviceSettings(settings: Partial<AppSettings>): Partial<Pick<AppSettings, PerDevice>> {
   return Object.fromEntries(Object.entries(settings).filter(([key]) => isPerDevice(key)));
 }
 

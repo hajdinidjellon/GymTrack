@@ -76,6 +76,34 @@ describe('workouts', () => {
     expect(inserts.map((c) => c.params[0])).toEqual(['w1', 'workouts']);
   });
 
+  it('refuses a session that would not read back, before writing anything', async () => {
+    fake.state.version = 3;
+    await expect(db.saveWorkoutLocal({ ...workout, exercises: [], name: 'x'.repeat(500) })).rejects.toThrow(
+      'invalid data',
+    );
+    expect(fake.calls.some((c) => c.sql.startsWith('INSERT'))).toBe(false);
+  });
+
+  it('wipes every table of the account in one transaction', async () => {
+    fake.state.version = 3;
+    await db.wipeLocalData();
+    expect(fake.state.transactions).toBe(1);
+    const deletes = fake.calls.filter((c) => c.sql.startsWith('DELETE')).map((c) => c.sql);
+    expect(deletes).toEqual(['workouts', 'profile', 'sync_queue', 'plans', 'goals'].map((t) => `DELETE FROM ${t}`));
+  });
+
+  it('takes the cloud copy without overwriting a change not sent yet, nor bringing back a deleted session', async () => {
+    fake.state.version = 3;
+    fake.state.rows = [{ record_id: 'gone' }] as never;
+    await db.bulkInsertWorkouts([
+      { ...workout, exercises: [] },
+      { ...workout, exercises: [], id: 'gone' },
+    ]);
+    const inserts = fake.calls.filter((c) => c.sql.includes('INSERT INTO workouts'));
+    expect(inserts.map((c) => c.params[0])).toEqual(['w1']);
+    expect(inserts[0]!.sql).toContain('WHERE workouts.synced = 1');
+  });
+
   it('always binds values as parameters', async () => {
     fake.state.version = 3;
     await db.deleteWorkoutLocal("x'); DROP TABLE workouts; --");

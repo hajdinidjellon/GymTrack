@@ -4,6 +4,7 @@
  * vibrations, de la voix et des notifications.
  */
 
+import { clampAmount, fitWorkout, WORKOUT_LIMITS } from '@/domain/limits';
 import { moveItem } from '@/domain/reorder';
 import { EFFORT_RPE, effortOf, type Effort } from '@/domain/effort';
 import { withRestTaken } from '@/domain/rest';
@@ -51,16 +52,19 @@ export function updateSet(
   setIndex: number,
   patch: Partial<WorkoutSet>,
 ): ActiveSession {
+  const fitted = { ...patch };
+  if (fitted.weight !== undefined) fitted.weight = clampAmount(fitted.weight);
+  if (fitted.reps !== undefined) fitted.reps = Math.round(clampAmount(fitted.reps));
   return mapExercise(session, exerciseId, (e) => {
-    const patched = patchSet(e, setIndex, patch);
+    const patched = patchSet(e, setIndex, fitted);
     const warmup = e.sets[setIndex] && isWarmup(e.sets[setIndex]) && !('completed' in patch);
     return warmup ? { ...patched, keepWarmups: true } : patched;
   });
 }
 
-/** Rounded to the hundredth so steps of 2.5 never drift to 52.4999. Never below zero. */
+/** Rounded to the hundredth so steps of 2.5 never drift to 52.4999. Never below zero, nor over what can be saved. */
 export function nudge(value: number, delta: number): number {
-  return Math.max(0, Math.round((value + delta) * 100) / 100);
+  return clampAmount(Math.round((value + delta) * 100) / 100);
 }
 
 /** First time on an exercise: every set still to do gets the chosen weight as its target. */
@@ -130,7 +134,7 @@ export function undoLastSet(session: ActiveSession): ActiveSession {
 export function addSet(session: ActiveSession, exerciseId: string): ActiveSession {
   return mapExercise(session, exerciseId, (e) => {
     const last = e.sets[e.sets.length - 1];
-    if (!last) return e;
+    if (!last || e.sets.length >= WORKOUT_LIMITS.sets) return e;
     const { rpe: _rpe, doneAt: _doneAt, ...copy } = last;
     const target = last.target ?? { weight: last.weight, reps: last.reps };
     return { ...e, sets: [...e.sets, { ...copy, completed: false, target }] };
@@ -200,6 +204,7 @@ export function addDropSet(session: ActiveSession, exerciseId: string, setIndex:
   const exercise = session.exercises.find((e) => e.id === exerciseId);
   const source = exercise?.sets[setIndex];
   if (!exercise || !source || isWarmup(source) || source.weight <= 0) return session;
+  if (exercise.sets.length >= WORKOUT_LIMITS.sets) return session;
   const step = exercise.rule?.increment ?? 2.5;
   const weight = Math.max(step, Math.floor((source.weight * DROP_FACTOR) / step + 1e-6) * step);
   const drop: WorkoutSet = {
@@ -343,6 +348,7 @@ export function replaceExercise(session: ActiveSession, exerciseId: string, next
 /** One more exercise at the end of the session. Already in it: nothing changes. */
 export function addExercise(session: ActiveSession, next: ActiveExercise): ActiveSession {
   if (session.exercises.some((e) => e.name === next.name)) return session;
+  if (session.exercises.length >= WORKOUT_LIMITS.exercises) return session;
   return { ...session, exercises: [...session.exercises, next] };
 }
 
@@ -380,7 +386,8 @@ export function doLater(session: ActiveSession, exerciseId: string): ActiveSessi
  * `end`: when the session ended (see `sessionEnd`, a session left open ends at its last set).
  */
 export function toWorkout(session: ActiveSession, end: Date): Workout {
-  return {
+  // Within the bounds the schema checks: a session that is saved always reads back
+  return fitWorkout({
     id: session.workoutId,
     date: session.startedAt,
     name: session.name,
@@ -406,7 +413,7 @@ export function toWorkout(session: ActiveSession, end: Date): Workout {
     duration: Math.max(0, Math.round((end.getTime() - new Date(session.startedAt).getTime()) / 60000)),
     feeling: 3,
     completed: true,
-  };
+  } satisfies Workout) as Workout;
 }
 
 /** Left open, then resumed on purpose: the question waits for a new long break. */

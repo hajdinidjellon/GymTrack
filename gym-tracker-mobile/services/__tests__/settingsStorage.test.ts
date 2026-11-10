@@ -15,13 +15,13 @@ describe('settings storage', () => {
     expect(await readSettingsMeta()).toEqual({ updatedAt: '2026-11-01T10:00:00.000Z', pending: false });
   });
 
-  it('reads tampered or broken data as nothing', async () => {
+  it('reads a broken file as unreadable, and keeps the good fields of a tampered one', async () => {
     await AsyncStorage.setItem('@gymtrack/settings', '{oops');
     await AsyncStorage.setItem('@gymtrack/settings-sync', JSON.stringify({ updatedAt: 'never', pending: 'yes' }));
-    expect(await readStoredSettings()).toEqual({});
+    expect(await readStoredSettings()).toBeNull();
     expect(await readSettingsMeta()).toEqual({ updatedAt: null, pending: false });
-    await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ barWeight: 'heavy' }));
-    expect(await readStoredSettings()).toEqual({});
+    await AsyncStorage.setItem('@gymtrack/settings', JSON.stringify({ barWeight: 'heavy', voice: false }));
+    expect(await readStoredSettings()).toEqual({ voice: false });
   });
 
   it('does not throw when the disk refuses', async () => {

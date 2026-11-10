@@ -70,6 +70,7 @@
       "expo-sqlite",
       "expo-web-browser",
       "expo-asset",
+      "expo-video",
       [
         "./modules/okilo-alarm/app.plugin.js",
         {

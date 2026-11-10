@@ -212,6 +212,29 @@ describe('importWorkouts from Strong', () => {
     const csv = STRONG.replace(/,/g, ';').replace(/1h 5m/g, '3600');
     expect(ok(importWorkouts(csv)).workouts[0]!.duration).toBe(60);
   });
+
+  describe('weight unit', () => {
+    /** The Strong file with another weight header, and a "Weight Unit" column when given. */
+    const withUnit = (header: string, unit?: string) => {
+      const [head, ...lines] = STRONG.split('\n');
+      const cols = head!.replace(',Weight,', `,${header},`);
+      if (unit === undefined) return [cols, ...lines].join('\n');
+      return [`${cols},Weight Unit`, ...lines.map((l) => `${l},${unit}`)].join('\n');
+    };
+    const bench = (csv: string) => ok(importWorkouts(csv)).workouts[0]!.exercises[0]!.sets.map((x) => x.weight);
+
+    it.each<[string, string, string | undefined, number[]]>([
+      ['no unit: kilos', 'Weight', undefined, [40, 80, 80]],
+      ['"Weight Unit" lbs', 'Weight', 'lbs', [18.14, 36.29, 36.29]],
+      ['"Weight Unit" LB', 'Weight', 'LB', [18.14, 36.29, 36.29]],
+      ['"Weight Unit" kg', 'Weight', 'kg', [40, 80, 80]],
+      ['"Weight (lbs)"', 'Weight (lbs)', undefined, [18.14, 36.29, 36.29]],
+      ['"Weight (kg)"', 'Weight (kg)', undefined, [40, 80, 80]],
+      ['"Weight (kg)" wins over a stray unit column', 'Weight (kg)', 'lbs', [40, 80, 80]],
+    ])('%s', (_, header, unit, expected) => {
+      expect(bench(withUnit(header, unit))).toEqual(expected);
+    });
+  });
 });
 
 describe('importWorkouts from Hevy', () => {

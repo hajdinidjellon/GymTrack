@@ -8,8 +8,9 @@ import { addOwnDay, removeOwnDay, renameOwnDay } from '@/domain/ownDays';
 import { removeOwnExercise, updateOwnExercise } from '@/domain/ownExercises';
 import type { ExerciseDef } from '@/domain/programs';
 import { applyRule } from '@/domain/ruleSync';
+import { keptLinks } from '@/domain/sessionBuilder';
 import { renameInSchedule } from '@/domain/schedule';
-import { settingsPatchSchema } from '@/domain/schemas';
+import { parseSettingsPatch, SETTINGS_LIMITS } from '@/domain/schemas';
 import { DEFAULT_SETTINGS, hasOwnSettings, syncedSettingsChanged } from '@/domain/settings';
 import { resolveLocale, setLocale } from '@/i18n';
 import { deviceLocaleTag } from '@/services/locale';
@@ -42,7 +43,7 @@ function scheduleSettingsSync(): void {
 
 export const REST_CHOICES = [60, 90, 120, 180];
 
-/** Stored settings over the defaults. Anything unreadable falls back to the defaults. */
+/** Stored settings over the defaults. A field that does not pass keeps its default, the others stay. */
 export function parseSettings(raw: string | null): AppSettings {
   if (!raw) return DEFAULT_SETTINGS;
   let json: unknown;
@@ -51,9 +52,7 @@ export function parseSettings(raw: string | null): AppSettings {
   } catch {
     return DEFAULT_SETTINGS;
   }
-  const patch = settingsPatchSchema.safeParse(json);
-  if (!patch.success) return DEFAULT_SETTINGS;
-  const settings = { ...DEFAULT_SETTINGS, ...patch.data };
+  const settings = { ...DEFAULT_SETTINGS, ...parseSettingsPatch(json) };
   // L'ancienne version avait un repos de 5 s pour le debug
   if (!REST_CHOICES.includes(settings.defaultRestTime)) settings.defaultRestTime = 90;
   return settings;
@@ -94,8 +93,11 @@ interface SettingsStore {
   updateSettings: (patch: Partial<AppSettings>) => void;
   setIncrement: (exerciseName: string, increment: number) => void;
   togglePlate: (plate: number) => void;
-  /** Saves the exercises of a program day. `null` goes back to the program's list. */
-  setDayExercises: (key: string, names: string[] | null) => void;
+  /**
+   * Saves the exercises of a program day. `null` goes back to the program's list. With the
+   * list as it was (`before`), its supersets follow: a link whose partner changed is dropped.
+   */
+  setDayExercises: (key: string, names: string[] | null, before?: string[]) => void;
   /**
    * Own sets and reps for an exercise. `null` goes back to the goal's rule.
    * With `similar`, the similar exercises on the same rule follow.
@@ -161,9 +163,18 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     get().updateSettings({ increments: { ...get().settings.increments, [exerciseName]: increment } });
   },
 
-  setDayExercises: (key, names) => {
-    const { [key]: _old, ...others } = get().settings.customDays;
-    get().updateSettings({ customDays: names ? { ...others, [key]: names } : others });
+  setDayExercises: (key, names, before) => {
+    const { customDays, supersets } = get().settings;
+    const { [key]: _old, ...others } = customDays;
+    const kept = names?.slice(0, SETTINGS_LIMITS.dayExercises);
+    const patch: Partial<AppSettings> = { customDays: kept ? { ...others, [key]: kept } : others };
+    const links = supersets[key];
+    if (before && links?.length) {
+      const { [key]: _links, ...otherLinks } = supersets;
+      const still = kept ? keptLinks(before, kept, links) : [];
+      patch.supersets = still.length ? { ...otherLinks, [key]: still } : otherLinks;
+    }
+    get().updateSettings(patch);
   },
 
   setRule: (def, rule, goal, similar) => {
@@ -177,6 +188,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   addCustomExercise: (exercise) => {
+    if (get().settings.customExercises.length >= SETTINGS_LIMITS.customExercises) return;
     get().updateSettings({ customExercises: [...get().settings.customExercises, exercise] });
   },
 
@@ -210,7 +222,10 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     get().updateSettings(removeOwnExercise(get().settings, name));
   },
 
-  addOwnDay: (split, name) => get().updateSettings(addOwnDay(get().settings, split, name)),
+  addOwnDay: (split, name) => {
+    if ((get().settings.ownDays[split]?.length ?? 0) >= SETTINGS_LIMITS.ownDays) return;
+    get().updateSettings(addOwnDay(get().settings, split, name));
+  },
   renameOwnDay: (split, from, to) => {
     get().updateSettings(renameOwnDay(get().settings, split, from, to));
     followInWeek(split, from, to);

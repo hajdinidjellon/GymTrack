@@ -44,7 +44,8 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
       const at = names.indexOf(exercise.name);
       if (at >= 0) names.splice(at, 1, next.name);
       else names.push(next.name);
-      useSettingsStore.getState().setDayExercises(dayKey(day.split, day.name), names);
+      const before = day.exercises.map((e) => e.name);
+      useSettingsStore.getState().setDayExercises(dayKey(day.split, day.name), names, before);
     }
     setOpen(false);
     setKeep(false);
