@@ -172,6 +172,9 @@ describe('parseAmount', () => {
     ['abc', false, null],
     ['-5', false, null],
     ['1,2,3', false, null],
+    // Over what a session can save: the most it can hold, never a session lost
+    ['1250', false, 1000],
+    ['99999', true, 1000],
   ])('reads %p', (text, integer, expected) => {
     expect(parseAmount(text, integer)).toBe(expected);
   });

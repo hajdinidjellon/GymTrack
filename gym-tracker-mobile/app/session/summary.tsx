@@ -48,10 +48,13 @@ export default function Summary() {
     });
   }, [workout, ctx, own]);
 
+  // Not found (deleted meanwhile): said, with the way home, never a blank screen
   if (!workout)
     return (
-      <Screen>
-        <View />
+      <Screen footer={<StickerButton label={t('session.backHome')} onPress={() => router.dismissTo('/(tabs)')} />}>
+        <Text size={20} style={{ marginTop: 20 }}>
+          {t('history.detail.notFound')}
+        </Text>
       </Screen>
     );
 
@@ -102,22 +105,25 @@ export default function Summary() {
         </StickerCard>
       ))}
 
-      <StickerCard style={{ marginTop: 18, paddingVertical: 18 }}>
-        <Text size={15} weight="semibold" color={colors.inkMuted}>
-          {t('session.summary.lifted')}
-        </Text>
-        <Text size={44} weight="black" style={{ lineHeight: 50 }}>
-          {formatThousands(lifted)} kg
-        </Text>
-        {plates > 0 ? (
-          <>
-            <Text size={15} weight="bold" style={{ marginTop: 2 }}>
-              {t('session.summary.plates', { count: plates, n: formatThousands(plates) })}
-            </Text>
-            <PlatePile count={plates} />
-          </>
-        ) : null}
-      </StickerCard>
+      {/* Bodyweight, held or assisted only: nothing lifted to show, never "0 kg" */}
+      {lifted > 0 ? (
+        <StickerCard style={{ marginTop: 18, paddingVertical: 18 }}>
+          <Text size={15} weight="semibold" color={colors.inkMuted}>
+            {t('session.summary.lifted')}
+          </Text>
+          <Text size={44} weight="black" style={{ lineHeight: 50 }}>
+            {formatThousands(lifted)} {t('common.kg')}
+          </Text>
+          {plates > 0 ? (
+            <>
+              <Text size={15} weight="bold" style={{ marginTop: 2 }}>
+                {t('session.summary.plates', { count: plates, n: formatThousands(plates) })}
+              </Text>
+              <PlatePile count={plates} />
+            </>
+          ) : null}
+        </StickerCard>
+      ) : null}
 
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
         <StatTile value={t('common.minutes', { count: workout.duration ?? 0 })} label={t('session.summary.duration')} />

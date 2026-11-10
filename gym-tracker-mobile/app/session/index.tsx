@@ -10,7 +10,6 @@ import { isRateable } from '@/domain/session';
 import { findCurrent } from '@/domain/sessionCursor';
 import { setNumber, workingCount } from '@/domain/warmup';
 import { useSessionStore } from '@/stores/sessionStore';
-import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { SetView } from '@/components/session/SetView';
@@ -25,15 +24,22 @@ import { SessionDone } from '@/components/session/SessionDone';
 // Pendant qu'on quitte l'écran, la séance est déjà vidée : on ne redirige pas une deuxième fois
 let leaving = false;
 
-/** Saves what was done and opens the summary. Nothing done: nothing saved. */
+/** Saves what was done, then opens the summary. Nothing done: nothing saved. A failed save keeps the session. */
 async function finish() {
+  if (leaving) return;
   leaving = true;
-  const workout = useSessionStore.getState().finishSession();
-  if (!workout || workout.exercises.length === 0) {
+  let workout;
+  try {
+    workout = await useSessionStore.getState().saveSession();
+  } catch {
+    leaving = false;
+    Alert.alert(t('session.logger.saveFailedTitle'), t('session.logger.saveFailed'));
+    return;
+  }
+  if (!workout) {
     router.dismissTo('/(tabs)');
     return;
   }
-  await useWorkoutStore.getState().addWorkout(workout);
   router.replace({ pathname: '/session/summary', params: { id: workout.id } });
 }
 

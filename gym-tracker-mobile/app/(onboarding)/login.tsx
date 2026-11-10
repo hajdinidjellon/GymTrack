@@ -35,7 +35,7 @@ export default function Login() {
   const goOn = () => {
     const hasProfile = !!useProfileStore.getState().profile;
     if (!hasProfile) {
-      router.replace('/goal');
+      router.replace('/setup');
       return;
     }
     useSettingsStore.getState().updateSettings({ signedOut: false });

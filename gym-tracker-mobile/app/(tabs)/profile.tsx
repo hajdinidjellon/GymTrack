@@ -12,7 +12,8 @@ import { insights } from '@/domain/insights';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
 import { localeTag, t, type LanguageSetting } from '@/i18n';
-import { hasSession, signOut } from '@/services/supabase';
+import { hasSession } from '@/services/supabase';
+import { pendingAfterSync, signOutAndClear } from '@/stores/accountData';
 import { speak } from '@/services/speech';
 import { playRestBell } from '@/services/sound';
 import { useProfileStore } from '@/stores/profileStore';
@@ -430,14 +431,20 @@ function Group({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Back to the login page. Workouts stay on the phone, nothing is deleted. */
+/** Back to the login page. */
 function toLogin() {
   useSettingsStore.getState().updateSettings({ signedOut: true });
   router.replace('/login');
 }
 
+/** The account's data leaves this phone with it: the next one to sign in starts clean. */
+async function leave() {
+  await signOutAndClear();
+  toLogin();
+}
+
 function confirmLogout(signedIn: boolean) {
-  // Sans compte, rien à quitter : on va droit à la connexion
+  // Sans compte, rien à quitter : on va droit à la connexion, les séances restent
   if (!signedIn) return toLogin();
   Alert.alert(t('profile.account.confirmTitle'), t('profile.account.confirmText'), [
     { text: t('common.cancel'), style: 'cancel' },
@@ -445,8 +452,13 @@ function confirmLogout(signedIn: boolean) {
       text: t('profile.account.signOut'),
       style: 'destructive',
       onPress: async () => {
-        await signOut().catch(() => null);
-        toLogin();
+        const pending = await pendingAfterSync();
+        if (pending === 0) return leave();
+        // Not in the account yet: said before it is lost
+        Alert.alert(t('profile.account.pendingTitle'), t('profile.account.pendingText', { count: pending }), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('profile.account.signOutAnyway'), style: 'destructive', onPress: () => void leave() },
+        ]);
       },
     },
   ]);
