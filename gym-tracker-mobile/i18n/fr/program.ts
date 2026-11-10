@@ -16,6 +16,8 @@ export const program = {
     namePlaceholder: 'Ex. Pec deck, Curl pupitre…',
     nameA11y: "Nom de l'exercice",
     muscle: 'Où le ranger ? (muscle travaillé)',
+    region: 'Quelle zone ? (facultatif)',
+    regionNone: 'Tout le muscle',
     equipment: 'Matériel',
     kind: 'Type de mouvement',
     counted: 'Compté en',
