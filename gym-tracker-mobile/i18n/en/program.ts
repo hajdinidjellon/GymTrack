@@ -17,6 +17,8 @@ export const program: Dictionary['program'] = {
     namePlaceholder: 'E.g. Pec deck, Preacher curl…',
     nameA11y: 'Exercise name',
     muscle: 'Where does it go? (muscle worked)',
+    region: 'Which part? (optional)',
+    regionNone: 'The whole muscle',
     equipment: 'Equipment',
     kind: 'Type of movement',
     counted: 'Counted in',
