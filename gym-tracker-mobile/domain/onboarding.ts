@@ -1,3 +1,4 @@
+import { cleanName, type CustomProgramDraft } from '@/domain/customProgram';
 import { translatedList } from '@/domain/format';
 import { ALL_PLATES, DEFAULT_PLATES } from '@/domain/plates';
 import { getSplit } from '@/domain/programs';
@@ -16,6 +17,8 @@ export interface OnboardingAnswers {
   schedule: Schedule | null;
   /** The program picked. Null: the one the rhythm gives (`splitFor`). */
   split: SplitId | null;
+  /** « Autre » : the user's own program, its name and its sessions. */
+  custom: CustomProgramDraft | null;
   /** « Toi » : each one optional, null when not said. */
   sex: Sex | null;
   ageGroup: AgeGroup | null;
@@ -37,6 +40,7 @@ export const DEFAULT_ANSWERS: OnboardingAnswers = {
   plates: DEFAULT_PLATES,
   schedule: null,
   split: null,
+  custom: null,
   sex: null,
   ageGroup: null,
   bodyWeight: null,
@@ -69,6 +73,7 @@ export const PROGRAM_CHOICES = [
   programDef('ul', [4]),
   programDef('ppl', [5, 6]),
   programDef('glutes', [3, 4, 5]),
+  programDef('custom', [2, 3, 4, 5, 6]),
 ];
 
 /** The program of the answers: the one picked, else the one the rhythm gives. */
@@ -133,14 +138,19 @@ export function sessionNames(perWeek: number, split: SplitId = splitFor(perWeek)
   return getSplit(split).days.map((d) => d.name);
 }
 
+type WeekAnswers = Pick<OnboardingAnswers, 'perWeek' | 'schedule'> &
+  Partial<Pick<OnboardingAnswers, 'split' | 'custom'>>;
+
+/** The sessions of the program answered: the user's own, named by them, or the program's. */
+export function answersSessionNames(answers: WeekAnswers): string[] {
+  const split = answersSplit({ split: null, ...answers });
+  if (split !== 'custom') return sessionNames(answers.perWeek, split);
+  return (answers.custom?.days ?? []).map((d) => cleanName(d.name)).filter(Boolean);
+}
+
 /** The week on screen: the days picked, else the example week of the rhythm. */
-export function answersWeek(
-  answers: Pick<OnboardingAnswers, 'perWeek' | 'schedule'> & Partial<Pick<OnboardingAnswers, 'split'>>,
-): Schedule {
-  return (
-    answers.schedule ??
-    defaultSchedule(sessionNames(answers.perWeek, answersSplit({ split: null, ...answers })), answers.perWeek)
-  );
+export function answersWeek(answers: WeekAnswers): Schedule {
+  return answers.schedule ?? defaultSchedule(answersSessionNames(answers), answers.perWeek);
 }
 
 /** "A", "B", "C": the letter of a session in its program's order. */

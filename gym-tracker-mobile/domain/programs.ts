@@ -4,6 +4,7 @@
 
 import { EXERCISES, POPULARITY, type ExerciseDef } from '@/domain/catalog';
 import { regionsOf } from '@/domain/catalog/regions';
+import { NAME_MAX } from '@/domain/limits';
 import { exerciseName, t } from '@/i18n';
 import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
 import type {
@@ -96,7 +97,23 @@ export const SPLITS: Split[] = [
       { name: 'Jambes', exercises: [E.squat, E.legpress, E.legext, E.legcurl, E.calves] },
     ],
   },
+  {
+    // The user's own: no day of its own, every day is one they named (`ownDays.custom`)
+    id: 'custom',
+    get title() {
+      return t('domain.programs.splitCustom');
+    },
+    get meta() {
+      return t('domain.programs.metaCustom');
+    },
+    days: [],
+  },
 ];
+
+/** The program's name as shown: the one the user gave their own program, else the program's. */
+export function programTitle(split: SplitId, programName?: string | null): string {
+  return split === 'custom' && programName ? programName : getSplit(split).title;
+}
 
 export function getSplit(id: SplitId): Split {
   return SPLITS.find((s) => s.id === id) ?? SPLITS[0]!;
@@ -313,7 +330,14 @@ export function searchExercises(query: string, own: CustomExercise[] = []): Exer
 /** Every name an exercise is known by: French, English, old names. Gym-goers in France say "Leg curl" too. */
 export function namesOf(def: ExerciseDef): string[] {
   const english = EXERCISE_NAMES_EN[def.name];
-  return [def.name, ...(english && english !== def.name ? [english] : []), ...(def.aliases ?? [])];
+  // The user's own name for it finds it too
+  const shown = exerciseName(def.name);
+  return [
+    def.name,
+    ...(english && english !== def.name ? [english] : []),
+    ...(shown !== def.name && shown !== english ? [shown] : []),
+    ...(def.aliases ?? []),
+  ];
 }
 
 const hasWords = (text: string, words: string[]) => words.every((w) => searchKey(text).includes(w));
@@ -347,7 +371,7 @@ export function similarExercises(def: ExerciseDef, own: CustomExercise[] = []): 
   );
 }
 
-export const NAME_MAX = 40;
+export { NAME_MAX };
 
 /**
  * A new exercise from the form. Refused when the name is empty or already

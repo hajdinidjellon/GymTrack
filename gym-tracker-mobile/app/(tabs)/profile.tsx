@@ -6,7 +6,7 @@ import type { AppSettings } from '@/types';
 import { requestVoicePermission, voiceInputAvailable } from '@/services/voiceInput';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { ALL_PLATES, COLLAR_CHOICES, formatKg } from '@/domain/plates';
-import { GOALS, getSplit } from '@/domain/programs';
+import { GOALS, programTitle } from '@/domain/programs';
 import { totals } from '@/domain/stats';
 import { insights } from '@/domain/insights';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
@@ -84,7 +84,8 @@ export default function Profile() {
 
   const [canListen] = useState(voiceInputAvailable);
   const goal = GOALS.find((g) => g.id === profile?.goal);
-  const split = profile ? getSplit(profile.program.split) : null;
+  // The name the user gave their own program, else the program's
+  const split = profile ? { title: programTitle(profile.program.split, settings.programName) } : null;
 
   return (
     <Screen tabs scroll>

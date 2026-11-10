@@ -2,6 +2,9 @@
  * What a saved session can hold. The schemas (schemas.ts) refuse more, so every way in
  * (typing, arrows, adding sets or exercises, saving) stays within these bounds.
  */
+/** The longest name the user types: an exercise, a day, a program. */
+export const NAME_MAX = 40;
+
 export const WORKOUT_LIMITS = { amount: 1000, sets: 50, exercises: 50, minutes: 24 * 60 } as const;
 
 /** A weight or a number of reps, within what can be saved. */

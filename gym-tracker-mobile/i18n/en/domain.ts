@@ -150,6 +150,8 @@ export const domain: Dictionary['domain'] = {
       pplSub: 'Chest, shoulders and triceps; then back and biceps; then legs.',
       glutesTitle: 'Glutes / Upper / Legs',
       glutesSub: 'A session just for the glutes, one for the upper body, one for the legs.',
+      customTitle: 'Other: my own program',
+      customSub: 'You name it, you name each session (Day A, Chest, Cardio…) and you pick the exercises.',
     },
     goalTips: {
       muscleLead: 'Good choice.',
@@ -165,6 +167,7 @@ export const domain: Dictionary['domain'] = {
       ul: 'upper body, then lower body. Each muscle works twice a week.',
       ppl: 'push, pull, legs. Each session hits one muscle group hard.',
       glutes: 'a glutes session, an upper body one, a legs one. Glutes come first.',
+      custom: 'your sessions, in your order. Each exercise progresses on its own.',
     },
     experienceTips: {
       newLead: "We'll take it easy.",
@@ -185,6 +188,8 @@ export const domain: Dictionary['domain'] = {
     metaUl: '4 d',
     metaFb: '2–3 d',
     metaGlutes: '3–5 d',
+    splitCustom: 'My program',
+    metaCustom: 'yours',
     muscles: {
       chest: 'Chest',
       back: 'Back',
@@ -324,6 +329,17 @@ export const domain: Dictionary['domain'] = {
   ownDays: {
     nameEmpty: 'Give your session a name.',
     nameTaken: 'A session already has this name.',
+  },
+
+  nicknames: {
+    taken: 'Another exercise already has this name.',
+  },
+
+  customProgram: {
+    noDay: 'Add at least one session.',
+    emptyDay: 'Give each session a name.',
+    sameDay: 'Two sessions have the same name.',
+    tooMany: '{max} sessions at most.',
   },
 
   voice: {

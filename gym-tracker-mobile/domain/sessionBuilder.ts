@@ -25,6 +25,7 @@ import {
   findExerciseDef,
   getSplit,
   hasExercises,
+  OWN_SESSION,
   programDays,
   ruleFor,
   withOverride,
@@ -164,6 +165,8 @@ export function nextDay(ctx: BuildContext): ProgramDay {
   // An empty day (just created) is never the next session
   const filled = all.filter(hasExercises);
   const days = filled.length ? filled : all;
+  // A program of their own with no day yet: the session they put together themselves
+  if (!days.length) return { name: OWN_SESSION, exercises: [] };
   const status = todayStatus(ctx);
   const planned = status.kind === 'train' ? days.find((d) => d.name === status.name) : undefined;
   if (planned) return planned;

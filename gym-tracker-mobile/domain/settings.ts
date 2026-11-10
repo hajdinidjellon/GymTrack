@@ -38,6 +38,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   stackStep: null,
   cableStep: null,
   gymChain: null,
+  programName: null,
+  exerciseNicknames: {},
 };
 
 /**

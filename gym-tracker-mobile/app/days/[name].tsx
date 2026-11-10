@@ -19,6 +19,7 @@ import { DayNameForm } from '@/components/program/DayNameForm';
 import { checkDayName } from '@/domain/ownDays';
 import { dayName, exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
+import type { SplitId, UserProfile } from '@/types';
 
 /** One session of the program: its exercises, their order, sets and reps. */
 export default function DayScreen() {
@@ -42,18 +43,24 @@ export default function DayScreen() {
   if (!day) {
     return (
       <Screen>
-        <BackButton />
-        <Text size={20} style={{ marginTop: 20 }}>
-          {t('program.day.notFound')}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm }}>
+          <BackButton />
+          <Text size={20} style={{ flex: 1 }}>
+            {t('program.day.notFound')}
+          </Text>
+        </View>
       </Screen>
     );
   }
 
   return (
     <Screen scroll scrollEnabled={!dragging} footer={undo.bar}>
-      <BackButton />
-      <ScreenHeader eyebrow={t('program.days.title')} title={dayName(day.name)} subtitle={t('program.day.subtitle')} />
+      <ScreenHeader
+        back
+        eyebrow={t('program.days.title')}
+        title={dayName(day.name)}
+        subtitle={t('program.day.subtitle')}
+      />
       {day.own && renaming ? (
         <View style={{ marginBottom: space.md }}>
           <DayNameForm
@@ -64,6 +71,8 @@ export default function DayScreen() {
               const checked = checkDayName(typed, day.split, useSettingsStore.getState().settings, day.name);
               if (typeof checked !== 'string') return checked.error;
               renameOwnDay(day.split, day.name, checked);
+              // The fixed week follows the new name
+              renameInWeek(profile, day.split, day.name, checked);
               setRenaming(false);
               router.setParams({ name: checked });
               return null;
@@ -73,28 +82,32 @@ export default function DayScreen() {
       ) : day.own ? (
         <View style={{ flexDirection: 'row', gap: space.lg, marginBottom: space.md }}>
           <Link label={t('program.days.rename')} onPress={() => setRenaming(true)} />
-          <Link
-            label={t('program.days.remove')}
-            onPress={() =>
-              Alert.alert(
-                t('program.days.removeTitle', { name: day.name }),
-                profile.program.split === day.split && profile.program.schedule?.includes(day.name)
-                  ? t('program.days.removeTextScheduled')
-                  : t('program.days.removeText'),
-                [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  {
-                    text: t('program.days.removeConfirm'),
-                    style: 'destructive',
-                    onPress: () => {
-                      removeOwnDay(day.split, day.name);
-                      router.back();
+          {/* Their own program keeps one session at least */}
+          {day.split === 'custom' && (ownDays.custom?.length ?? 0) <= 1 ? null : (
+            <Link
+              label={t('program.days.remove')}
+              onPress={() =>
+                Alert.alert(
+                  t('program.days.removeTitle', { name: day.name }),
+                  profile.program.split === day.split && profile.program.schedule?.includes(day.name)
+                    ? t('program.days.removeTextScheduled')
+                    : t('program.days.removeText'),
+                  [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('program.days.removeConfirm'),
+                      style: 'destructive',
+                      onPress: () => {
+                        removeOwnDay(day.split, day.name);
+                        renameInWeek(profile, day.split, day.name, null);
+                        router.back();
+                      },
                     },
-                  },
-                ],
-              )
-            }
-          />
+                  ],
+                )
+              }
+            />
+          )}
         </View>
       ) : null}
       <DayExercisesEditor
@@ -213,4 +226,16 @@ function ExerciseRow({
       </StickerCard>
     </PressableScale>
   );
+}
+
+/** The fixed week after a session of the program is renamed (`to`) or removed (null). */
+function renameInWeek(profile: UserProfile, split: SplitId, from: string, to: string | null): void {
+  const schedule = profile.program.schedule;
+  if (profile.program.split !== split || !schedule?.includes(from)) return;
+  const week = schedule.map((n) => (n === from ? to : n));
+  // Its only training day gone: the sessions just follow each other
+  const program = week.some(Boolean)
+    ? { ...profile.program, schedule: week }
+    : { split: profile.program.split, perWeek: profile.program.perWeek };
+  void useProfileStore.getState().updateProfile({ program });
 }

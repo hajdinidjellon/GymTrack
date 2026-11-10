@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BackHandler, Pressable, View } from 'react-native';
 import { border, colors } from '@/constants/theme';
-import { GOALS, getSplit } from '@/domain/programs';
+import { GOALS, getSplit, programDays, programTitle, type ProgramDay } from '@/domain/programs';
+import { draftProblem } from '@/domain/customProgram';
 import {
   BAR_CHOICES,
   DEFAULT_ANSWERS,
@@ -14,8 +15,9 @@ import {
   firstSession,
   goalTip,
   rhythmTip,
-  sessionNames,
+  answersSessionNames,
   answersSplit,
+  scheduleLegend,
   weekLegend,
   type OnboardingAnswers,
 } from '@/domain/onboarding';
@@ -23,6 +25,7 @@ import { trainingCount } from '@/domain/schedule';
 import { formatKg } from '@/domain/plates';
 import { dayName, exerciseName, t } from '@/i18n';
 import { planDay } from '@/domain/sessionBuilder';
+import type { AppSettings } from '@/types';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -40,6 +43,7 @@ import { OnboardingHeader, PickMark, Question, Tip } from './OnboardingParts';
 import { AboutStep, ChainPicker, DurationStep, ProgramStep, rhythmsLabel, type StepProps } from './MoreSteps';
 
 const QUESTIONS = 7;
+const PROGRAM = 3;
 const RHYTHM = 4;
 const RECAP = QUESTIONS;
 
@@ -58,8 +62,9 @@ interface Props {
 export function OnboardingFlow({ onExit, onFinish }: Props) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<OnboardingAnswers>(DEFAULT_ANSWERS);
-  const set = (patch: Partial<OnboardingAnswers>) => {
-    buzz('selection');
+  // `quiet`: typing, no buzz on every letter
+  const set = (patch: Partial<OnboardingAnswers>, quiet = false) => {
+    if (!quiet) buzz('selection');
     setAnswers((a) => ({ ...a, ...patch }));
   };
   const back = () => (step === 0 ? onExit() : setStep(step - 1));
@@ -78,6 +83,8 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
     setStep(step + 1);
   };
   const noDay = step === RHYTHM && trainingCount(answersWeek(answers)) === 0;
+  // « Autre » : each session named before going on
+  const unnamed = step === PROGRAM && answers.split === 'custom' && (!answers.custom || !!draftProblem(answers.custom));
 
   if (step === RECAP) return <Recap answers={answers} onBack={back} onFinish={(end) => onFinish(answers, end)} />;
 
@@ -89,7 +96,7 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
           label={step === QUESTIONS - 1 ? t('onboarding.flow.seeProgram') : t('common.continue')}
           haptic="light"
           onPress={next}
-          disabled={noDay}
+          disabled={noDay || unnamed}
         />
       }
     >
@@ -157,8 +164,9 @@ function GoalStep({ answers, set }: StepProps) {
 
 function RhythmStep({ answers, set }: StepProps) {
   const split = answersSplit(answers);
-  const names = sessionNames(answers.perWeek, split);
+  const names = answersSessionNames(answers);
   const week = answersWeek(answers);
+  const title = programTitle(split, answers.custom?.name.trim());
   const count = trainingCount(week);
   // Un programme choisi qui n'est pas fait pour ce rythme : on le dit, sans l'imposer
   const chosen = PROGRAM_CHOICES.find((p) => p.id === answers.split);
@@ -197,16 +205,16 @@ function RhythmStep({ answers, set }: StepProps) {
             {t('onboarding.flow.rhythm.week')}
           </Text>
           <Text size={14} weight="semibold" color={colors.inkMuted}>
-            {answers.split
-              ? getSplit(split).title
-              : t('onboarding.flow.rhythm.proposed', { name: getSplit(split).title })}
+            {answers.split ? title : t('onboarding.flow.rhythm.proposed', { name: title })}
           </Text>
         </View>
         <WeekPicker week={week} names={names} onChange={(schedule) => set({ schedule })} />
         <Text size={14} color={count === 0 ? colors.danger : colors.inkMuted} style={{ lineHeight: 20 }}>
           {count === 0
             ? t('onboarding.flow.rhythm.pickOne')
-            : t('onboarding.flow.rhythm.legend', { legend: weekLegend(answers.perWeek, split) })}
+            : t('onboarding.flow.rhythm.legend', {
+                legend: split === 'custom' ? scheduleLegend(split, names) : weekLegend(answers.perWeek, split),
+              })}
         </Text>
       </StickerCard>
       <Tip tip={rhythmTip(answers.perWeek, count, split)} />
@@ -381,21 +389,19 @@ function Recap({
   const split = getSplit(answersSplit(answers));
   const goal = GOALS.find((g) => g.id === answers.goal) ?? GOALS[0]!;
   const perWeek = answers.schedule ? trainingCount(answers.schedule) : answers.perWeek;
+  const own = split.id === 'custom';
   const plan = useMemo(
     () =>
-      planDay(
-        split.days.find((d) => d.name === firstSession(answers.schedule, sessionNames(answers.perWeek, split.id)))!,
-        {
-          profile: {
-            goal: answers.goal,
-            program: { split: split.id, perWeek: answers.perWeek },
-            prs: [],
-            sessionMinutes: answers.sessionMinutes,
-          },
-          settings: { ...settings, stackStep: answers.stackStep, cableStep: answers.cableStep },
-          workouts: [],
+      planDay(firstDay(answers, settings), {
+        profile: {
+          goal: answers.goal,
+          program: { split: split.id, perWeek: answers.perWeek },
+          prs: [],
+          sessionMinutes: answers.sessionMinutes,
         },
-      ),
+        settings: { ...settings, stackStep: answers.stackStep, cableStep: answers.cableStep },
+        workouts: [],
+      }),
     [answers, settings, split],
   );
 
@@ -405,7 +411,11 @@ function Recap({
       footer={
         <>
           <StickerButton
-            label={t('onboarding.flow.recap.firstSession')}
+            label={t(
+              own && plan.lifts.length === 0
+                ? 'onboarding.flow.recap.ownExercises'
+                : 'onboarding.flow.recap.firstSession',
+            )}
             haptic="medium"
             onPress={() => onFinish('session')}
           />
@@ -432,7 +442,7 @@ function Recap({
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {[
-              split.title,
+              programTitle(split.id, answers.custom?.name.trim()),
               t('onboarding.flow.recap.perWeek', { n: perWeek }),
               t('onboarding.flow.recap.perDay', { n: answers.sessionMinutes }),
               goal.sub,
@@ -469,6 +479,11 @@ function Recap({
               {t('onboarding.flow.recap.minutes', { n: plan.minutes })}
             </Text>
           </View>
+          {own && plan.lifts.length === 0 ? (
+            <Text size={15} color={colors.inkMuted} style={{ paddingVertical: 10, lineHeight: 21 }}>
+              {t('onboarding.flow.recap.ownEmpty')}
+            </Text>
+          ) : null}
           {plan.lifts.map((lift, i) => (
             <View
               key={lift.def.name}
@@ -498,4 +513,21 @@ function Recap({
       </FadeIn>
     </Screen>
   );
+}
+
+/** The first session of the answers, with its exercises: copied ones for the user's own program. */
+function firstDay(
+  answers: OnboardingAnswers,
+  settings: Pick<AppSettings, 'customDays' | 'customExercises' | 'ownDays'>,
+): ProgramDay {
+  const split = answersSplit(answers);
+  const name = firstSession(answers.schedule, answersSessionNames(answers));
+  if (split !== 'custom') return getSplit(split).days.find((d) => d.name === name) ?? getSplit(split).days[0]!;
+  const source = answers.custom?.days.find((d) => d.name.trim() === name)?.source;
+  const from = source
+    ? programDays(source.split, settings.customDays, settings.customExercises, settings.ownDays).find(
+        (d) => d.name === source.day,
+      )
+    : undefined;
+  return { name: name ?? '', exercises: from?.exercises ?? [] };
 }

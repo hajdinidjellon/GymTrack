@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { View } from 'react-native';
+import { Input } from '@/components/ui/Input';
 import { border, colors, fonts, radius } from '@/constants/theme';
 import { GYM_CHAINS, HOME_GYM, OTHER_GYM, POPULAR_GYMS, searchGyms, type GymChain } from '@/domain/gyms';
 import {
@@ -17,53 +18,14 @@ import { Text } from '@/components/ui/Text';
 import { Choice } from '@/components/ui/Choice';
 import { Stepper } from '@/components/ui/Stepper';
 import { StickerCard } from '@/components/ui/StickerCard';
-import { buzz } from '@/components/ui/PressableScale';
 import { PickMark, Question, Tip } from './OnboardingParts';
+import { Pill } from '@/components/ui/Pill';
+import { CustomProgramBuilder } from '@/components/program/CustomProgramBuilder';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 export interface StepProps {
   answers: OnboardingAnswers;
-  set: (patch: Partial<OnboardingAnswers>) => void;
-}
-
-/** A small round pill of a row of choices: the picked one coral. */
-function Pill({
-  label,
-  a11y,
-  on,
-  onPress,
-  role = 'radio',
-}: {
-  label: string;
-  a11y?: string;
-  on: boolean;
-  onPress: () => void;
-  role?: 'radio' | 'button';
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        buzz('selection');
-        onPress();
-      }}
-      accessibilityRole={role}
-      accessibilityState={role === 'radio' ? { selected: on } : undefined}
-      accessibilityLabel={a11y ?? label}
-      style={({ pressed }) => ({
-        minHeight: 44,
-        paddingHorizontal: 14,
-        borderRadius: radius.pill,
-        borderWidth: on ? border.strong : border.base,
-        borderColor: colors.outline,
-        backgroundColor: on || pressed ? colors.coralSoft : colors.card,
-        alignItems: 'center',
-        justifyContent: 'center',
-      })}
-    >
-      <Text size={16} weight={on ? 'black' : 'titleMedium'} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
-  );
+  set: (patch: Partial<OnboardingAnswers>, quiet?: boolean) => void;
 }
 
 function Label({ children }: { children: string }) {
@@ -154,8 +116,12 @@ export function ProgramStep({ answers, set }: StepProps) {
     const program = PROGRAM_CHOICES.find((p) => p.id === id);
     // Le rythme suit le programme s'il n'est pas fait pour lui ; la semaine se refait
     const perWeek = !program || program.rhythms.includes(answers.perWeek) ? answers.perWeek : program.rhythms[0]!;
-    set({ split: id, perWeek, schedule: null });
+    // « Autre » : two sessions to name to start with, the ones already typed kept
+    const custom =
+      id === 'custom' ? (answers.custom ?? { name: '', days: [{ name: '' }, { name: '' }] }) : answers.custom;
+    set({ split: id, perWeek, schedule: null, custom });
   };
+  const settings = useSettingsStore((s) => s.settings);
   const choices = [
     {
       id: null,
@@ -215,6 +181,18 @@ export function ProgramStep({ answers, set }: StepProps) {
           );
         })}
       </View>
+      {answers.split === 'custom' && answers.custom ? (
+        <View style={{ marginTop: 22 }}>
+          <CustomProgramBuilder
+            draft={answers.custom}
+            // The week is made again from the new names
+            onChange={(custom) => set({ custom, schedule: null }, true)}
+            settings={settings}
+            showProblem
+            hint={t('program.custom.hintOnboarding')}
+          />
+        </View>
+      ) : null}
     </>
   );
 }
@@ -281,7 +259,7 @@ export function ChainPicker({ answers, set }: StepProps) {
         ))}
       </View>
       <View style={{ marginTop: 12 }}>
-        <TextInput
+        <Input
           maxFontSizeMultiplier={1.5}
           value={query}
           onChangeText={setQuery}

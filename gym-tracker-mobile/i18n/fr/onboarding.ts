@@ -105,6 +105,8 @@ export const onboarding = {
     recap: {
       perDay: '{n} min par séance',
       firstSession: 'Voir ma première séance',
+      ownExercises: 'Choisir mes exercices',
+      ownEmpty: 'Pas encore d’exercice : tu les choisis à l’étape suivante, séance par séance.',
       later: "Plus tard, voir l'accueil",
       ready: 'Ton programme\nest prêt',
       perWeek: '{n} × par semaine',

@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import { fitWorkout, WORKOUT_LIMITS } from '@/domain/limits';
+import { fitWorkout, NAME_MAX, WORKOUT_LIMITS } from '@/domain/limits';
 import { NOTE_MAX_LENGTH } from '@/domain/notes';
 import type {
   AppSettings,
@@ -134,7 +134,7 @@ export const profileSchema: z.ZodType<UserProfile> = z.object({
   name: z.string().max(100).optional(),
   goal: z.enum(['muscle', 'force', 'forme']),
   program: z.object({
-    split: z.enum(['ppl', 'ul', 'fb', 'glutes']),
+    split: z.enum(['ppl', 'ul', 'fb', 'glutes', 'custom']),
     perWeek: z.number().int().min(1).max(7),
     schedule: z.array(z.string().max(60).nullable()).length(7).optional(),
   }),
@@ -218,6 +218,8 @@ const settingsFields = {
   stackStep: z.number().positive().max(20).nullable(),
   cableStep: z.number().positive().max(20).nullable(),
   gymChain: z.string().max(40).nullable(),
+  programName: z.string().trim().min(1).max(NAME_MAX).nullable(),
+  exerciseNicknames: keptRecord(z.string().trim().min(1).max(NAME_MAX)),
 };
 
 /** Settings are merged over the defaults: every field is optional here. */
