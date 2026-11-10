@@ -14,7 +14,7 @@ describe('syncedSettings', () => {
     for (const key of ['signedOut', 'notifications', 'voiceCommands', 'theme', 'language']) {
       expect(synced).not.toHaveProperty(key);
     }
-    expect(synced).toMatchObject({ customDays: {}, plates: DEFAULT_SETTINGS.plates, voice: true });
+    expect(synced).toMatchObject({ customDays: {}, plates: DEFAULT_SETTINGS.plates, voice: false });
   });
 });
 
@@ -23,7 +23,7 @@ describe('syncedSettingsChanged', () => {
     [{ theme: 'dark' as const }, false],
     [{ signedOut: true }, false],
     [{ restOverrides: { 'Développé couché': 120 } }, true],
-    [{ voice: false }, true],
+    [{ voice: true }, true],
   ])('%j → %s', (patch, changed) => {
     expect(syncedSettingsChanged(DEFAULT_SETTINGS, { ...DEFAULT_SETTINGS, ...patch })).toBe(changed);
   });

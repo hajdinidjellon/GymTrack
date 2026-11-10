@@ -33,7 +33,8 @@ function exercise(id: string, sets: number, patch: Partial<ActiveExercise> = {})
 }
 
 // Warm-ups have their own tests below: off here, so set indexes stay simple
-const BASE = { ...DEFAULT_SETTINGS, warmups: false };
+// The voice is off by default; these tests check what it says
+const BASE = { ...DEFAULT_SETTINGS, warmups: false, voice: true };
 
 const store = () => useSessionStore.getState();
 
@@ -428,7 +429,7 @@ describe('rating a set', () => {
 describe('warm-ups', () => {
   beforeEach(() => {
     store().discardSession();
-    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS } });
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, voice: true } });
     store().startSession('Push', [
       exercise('bench', 2, { sets: exercise('x', 2).sets.map((x) => ({ ...x, weight: 100 })) }),
     ]);

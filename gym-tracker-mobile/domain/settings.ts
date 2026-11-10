@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultRestTime: 90,
   restTimerEnabled: true,
   notifications: true,
-  voice: true,
+  voice: false,
   voiceCommands: false,
   restBell: true,
   barWeight: DEFAULT_BAR,
