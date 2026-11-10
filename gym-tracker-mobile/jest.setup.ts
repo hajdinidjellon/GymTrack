@@ -19,7 +19,12 @@ jest.mock('expo-video', () => {
   const { View } = require('react-native');
   return { useVideoPlayer: jest.fn(() => ({ play: jest.fn() })), VideoView: View };
 });
-jest.mock('@/services/sound', () => ({ playRestBell: jest.fn(), REST_BELL_MS: 900 }));
+jest.mock('@/services/sound', () => ({
+  playRestBell: jest.fn(),
+  startRestAlarm: jest.fn(),
+  stopRestAlarm: jest.fn(),
+  REST_BELL_MS: 900,
+}));
 
 // Les tests lisent les textes français, quelle que soit la langue de la machine
 jest.mock('@/services/locale', () => ({ deviceLocaleTag: () => 'fr-FR' }));
