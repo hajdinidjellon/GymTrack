@@ -347,6 +347,13 @@ export default function Profile() {
             onPress={() => router.push('/data')}
             hint={t('profile.data.transferHint')}
             chevron
+          />
+          <Row
+            label={t('privacy.link')}
+            value={t('privacy.linkValue')}
+            onPress={() => router.push('/privacy')}
+            hint={t('privacy.linkHint')}
+            chevron
             last
           />
         </Group>
