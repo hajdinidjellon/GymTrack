@@ -7,6 +7,7 @@ import { exercise } from './exercise';
 import { history } from './history';
 import { home } from './home';
 import { onboarding } from './onboarding';
+import { privacy } from './privacy';
 import { profile } from './profile';
 import { program } from './program';
 import { progress } from './progress';
@@ -22,6 +23,7 @@ export const en: Dictionary = {
   history,
   home,
   onboarding,
+  privacy,
   profile,
   program,
   progress,

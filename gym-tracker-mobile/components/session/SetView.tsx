@@ -14,6 +14,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { Check } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
+import { MovementButton } from '@/components/exercise/MovementButton';
 import { ExerciseNote } from './ExerciseNote';
 import { HoldTimer } from './HoldTimer';
 import { LoadHint } from './LoadHint';
@@ -112,7 +113,8 @@ export function SetView({ cursor, footer }: Props) {
             </Text>
           </View>
         ) : null}
-        <View style={{ marginTop: space.sm }}>
+        <View style={{ marginTop: space.sm, gap: space.sm }}>
+          <MovementButton name={exercise.name} />
           <ExerciseNote exerciseName={exercise.name} />
         </View>
         {why ? (

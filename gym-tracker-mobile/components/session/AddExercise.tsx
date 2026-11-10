@@ -5,6 +5,7 @@ import { useBuildContext } from '@/hooks/useTodayPlan';
 import { alternativesFor, dayKey, findExerciseDef, choosableDays, type ExerciseDef } from '@/domain/programs';
 import { planLift, toActiveExercise } from '@/domain/sessionBuilder';
 import { useSessionStore } from '@/stores/sessionStore';
+import { SETTINGS_LIMITS } from '@/domain/schemas';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
@@ -33,7 +34,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
     if (keep && day) {
       const names = day.exercises.map((e) => e.name);
       if (!names.includes(next.name)) {
-        useSettingsStore.getState().setDayExercises(dayKey(day.split, day.name), [...names, next.name]);
+        useSettingsStore.getState().setDayExercises(dayKey(day.split, day.name), [...names, next.name], names);
       }
     }
     setOpen(false);
@@ -77,7 +78,7 @@ export function AddExercise({ current, sessionName }: { current: ActiveExercise;
         onPick={pick}
         onClose={() => setOpen(false)}
         options={
-          day ? (
+          day && day.exercises.length < SETTINGS_LIMITS.dayExercises ? (
             <CheckRow label={t('session.add.keep', { day: dayName(day.name) })} checked={keep} onChange={setKeep} />
           ) : null
         }

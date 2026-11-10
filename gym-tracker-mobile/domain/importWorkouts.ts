@@ -8,7 +8,7 @@
 
 import { HEVY_NAMES, STRONG_NAMES } from '@/domain/catalog/importNames';
 import { allExercises, EXERCISES, type ExerciseDef } from '@/domain/programs';
-import { parseList, workoutSchema } from '@/domain/schemas';
+import { parseList, storedWorkoutSchema } from '@/domain/schemas';
 import { EXERCISE_NAMES_EN } from '@/i18n/exerciseNames';
 import type { CustomExercise, Exercise, SetType, Workout, WorkoutSet } from '@/types';
 
@@ -186,12 +186,21 @@ const col = (cells: string[], columns: Columns, ...names: string[]) => {
 const STRONG_TYPES: Record<string, SetType> = { w: 'warmup', d: 'drop', f: 'failure' };
 const HEVY_TYPES: Record<string, SetType> = { warmup: 'warmup', dropset: 'drop', failure: 'failure' };
 
-/** Kilos. A pounds column is converted; a plain "Weight" (Strong) is read as kilos. */
+const fromLbs = (lbs: number) => Math.max(0, round2(lbs * LB_TO_KG));
+
+/**
+ * Kilos. A pounds column is converted; a plain "Weight" (Strong) follows
+ * its "Weight Unit" column when there is one, else it is read as kilos.
+ */
 function weightOf(cells: string[], columns: Columns): number {
   const lbs = parseNumber(col(cells, columns, 'weight_lbs', 'weight (lbs)', 'weight (lb)'));
-  if (lbs !== null) return Math.max(0, round2(lbs * LB_TO_KG));
-  const kg = parseNumber(col(cells, columns, 'weight_kg', 'weight (kg)', 'weight'));
-  return kg !== null ? Math.max(0, round2(kg)) : 0;
+  if (lbs !== null) return fromLbs(lbs);
+  const kg = parseNumber(col(cells, columns, 'weight_kg', 'weight (kg)', 'weight (kgs)'));
+  if (kg !== null) return Math.max(0, round2(kg));
+  const plain = parseNumber(col(cells, columns, 'weight'));
+  if (plain === null) return 0;
+  const unit = (col(cells, columns, 'weight unit') ?? '').trim().toLowerCase();
+  return unit === 'lbs' || unit === 'lb' ? fromLbs(plain) : Math.max(0, round2(plain));
 }
 
 function rpeOf(cells: string[], columns: Columns): number | undefined {
@@ -327,7 +336,7 @@ export function importWorkouts(text: string, own: CustomExercise[] = []): Import
     feeling: 3,
     completed: true,
   }));
-  const { valid } = parseList(workoutSchema, workouts);
+  const { valid } = parseList(storedWorkoutSchema, workouts);
   if (valid.length === 0) return 'noSets';
 
   const names = new Set(valid.flatMap((w) => w.exercises.map((e) => e.name)));

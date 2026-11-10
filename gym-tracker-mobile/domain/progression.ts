@@ -9,7 +9,8 @@
  * Ce sont les séries de travail qui décident : les séries prévues au poids
  * de travail. Un top set ou un single (plus lourd pour moins de reps) est
  * gardé tel quel et ne décide rien ; une série bonus au-delà du plan non
- * plus. Une séance de singles à des poids qui montent (test de max) n'a pas
+ * plus, ni les séries plus légères avant la première au poids de travail
+ * (montée en charge non marquée échauffement). Une séance de singles à des poids qui montent (test de max) n'a pas
  * de poids de travail : elle ne change pas la charge.
  *
  * Une série prévue sous le minimum = séance ratée : on garde la charge.
@@ -219,7 +220,11 @@ export function readSession(sets: WorkoutSet[], rule: ProgressionRule, assisted 
   const top = sets
     .filter((s) => harder(s.weight, weight) && (s.reps < minReps || s.setType === 'top'))
     .slice(0, Math.max(0, rule.sets - 1));
-  const work = sets.filter((s) => !top.includes(s));
+  const rest = sets.filter((s) => !top.includes(s));
+  // Easier sets before the first one at the working weight are a ramp-up, not marked warm-ups
+  // (imported history): they never decide. Easier back-offs after it still do.
+  const first = rest.findIndex((s) => s.weight === weight);
+  const work = rest.filter((s, i) => i >= first || !harder(weight, s.weight));
   return { weight, top, planned: work.slice(0, Math.max(1, rule.sets - top.length)) };
 }
 

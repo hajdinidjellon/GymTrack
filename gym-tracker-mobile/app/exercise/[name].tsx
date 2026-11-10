@@ -35,6 +35,9 @@ import { ExerciseNote } from '@/components/session/ExerciseNote';
 import { LoadHint } from '@/components/session/LoadHint';
 import { CheckRow } from '@/components/ui/CheckRow';
 import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
+import { ExerciseVideo, videoFor } from '@/components/exercise/ExerciseVideo';
+import { MusclesCard } from '@/components/exercise/MusclesCard';
+import { workedBy } from '@/domain/catalog/muscles';
 import { exerciseName, t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
 
@@ -97,6 +100,8 @@ export default function ExerciseScreen() {
   // Only the steps the gym's plates can make
   const steps = incrementChoices(loading, ctx.settings.plates ?? []);
   const manual = !!ctx.settings.manualProgression?.[def.name];
+  const video = videoFor(def.name);
+  const worked = workedBy(def.name);
 
   return (
     <Screen scroll>
@@ -125,6 +130,12 @@ export default function ExerciseScreen() {
           ) : null}
         </Screen>
       </Modal>
+
+      {video ? (
+        <View style={{ marginBottom: space.lg }}>
+          <ExerciseVideo source={video} />
+        </View>
+      ) : null}
 
       <StickerCard tone="hero">
         <Text size={15} weight="bold">
@@ -169,6 +180,12 @@ export default function ExerciseScreen() {
           </>
         ) : null}
       </StickerCard>
+
+      {worked ? (
+        <View style={{ marginTop: 16 }}>
+          <MusclesCard worked={worked} />
+        </View>
+      ) : null}
 
       <StickerCard style={{ marginTop: 16, gap: space.sm }}>
         <Text size={17} weight="black">

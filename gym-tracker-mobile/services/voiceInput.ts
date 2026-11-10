@@ -1,5 +1,7 @@
 /**
- * MICRO — speech recognition for the voice commands, on the phone only.
+ * MICRO — speech recognition for the voice commands, on the phone only: a phone that can only
+ * recognize through a server (Apple's, Google's) does not offer them. The permission texts
+ * promise that nothing heard leaves the phone.
  * The native module is absent from Expo Go and the tests: then nothing
  * listens and `voiceInputAvailable()` says so.
  */
@@ -23,10 +25,11 @@ function load(): Recognition | null {
   }
 }
 
-/** The phone can recognize speech (development or store build, not Expo Go). */
+/** The phone can recognize speech by itself (development or store build, not Expo Go). */
 export function voiceInputAvailable(): boolean {
   try {
-    return load()?.isRecognitionAvailable() ?? false;
+    const recognition = load();
+    return !!recognition && recognition.isRecognitionAvailable() && recognition.supportsOnDeviceRecognition();
   } catch {
     return false;
   }
@@ -50,9 +53,9 @@ export async function requestVoicePermission(): Promise<boolean> {
  */
 export function startListening(lang: string, hints: string[], onPhrase: (text: string) => void): () => void {
   const recognition = load();
-  if (!recognition) return () => undefined;
+  // Never through a server: without recognition on the phone, nothing listens
+  if (!recognition || !recognition.supportsOnDeviceRecognition()) return () => undefined;
   let active = true;
-  const onDevice = recognition.supportsOnDeviceRecognition();
   const begin = () => {
     if (!active) return;
     try {
@@ -60,7 +63,7 @@ export function startListening(lang: string, hints: string[], onPhrase: (text: s
         lang,
         interimResults: false,
         continuous: true,
-        requiresOnDeviceRecognition: onDevice,
+        requiresOnDeviceRecognition: true,
         contextualStrings: hints,
         addsPunctuation: false,
       });

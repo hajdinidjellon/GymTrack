@@ -285,6 +285,20 @@ export function planDay(day: ProgramDay & { split?: SplitId }, ctx: BuildContext
 }
 
 /**
+ * The links still true once a day's list changed (moved, removed, added, swapped). A link
+ * chains an exercise with the one after it: it is kept only when that one is still the same,
+ * so a drag never pairs an exercise with a new partner, and a link left on the last exercise
+ * does not come back when another is added behind it.
+ */
+export function keptLinks(before: string[], after: string[], links: string[]): string[] {
+  const nextIn = (list: string[], name: string) => list[list.indexOf(name) + 1];
+  return links.filter((name) => {
+    const next = nextIn(after, name);
+    return after.includes(name) && next !== undefined && next === nextIn(before, name);
+  });
+}
+
+/**
  * The superset group of each lift: a lift chained with the next one shares
  * its group. A chain of three makes a tri-set. Alone: no group.
  */
@@ -496,12 +510,16 @@ export function targetLoad(targets: SetTarget[], timed = false, assisted = false
 /** How many times the logged weight counts in the total: 2 for both sides or both dumbbells. */
 export type LoadFactor = (exerciseName: string) => number;
 
-/** Weight lifted on validated working sets. */
-export function tonnage(workout: Workout, factor: LoadFactor = () => 1): number {
-  return workout.exercises.reduce(
-    (sum, e) => sum + factor(e.name) * workingSets(e.sets).reduce((s, set) => s + set.weight * set.reps, 0),
-    0,
-  );
+/**
+ * Weight lifted on validated working sets. An assisted machine's weight is
+ * help, not load, and a hold counts seconds, not reps: neither adds up.
+ */
+export function tonnage(workout: Workout, factor: LoadFactor = () => 1, own: CustomExercise[] = []): number {
+  return workout.exercises.reduce((sum, e) => {
+    const def = findExerciseDef(e.name, own);
+    if (e.timed || def?.timed || def?.assisted) return sum;
+    return sum + factor(e.name) * workingSets(e.sets).reduce((s, set) => s + set.weight * set.reps, 0);
+  }, 0);
 }
 
 export interface NewRecord {

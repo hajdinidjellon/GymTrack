@@ -91,7 +91,14 @@ export const profile: Dictionary['profile'] = {
     signOut: 'Sign out',
     signIn: 'Create an account or sign in',
     confirmTitle: 'Sign out?',
-    confirmText: 'Your workouts and your program are backed up to your account.',
+    confirmText:
+      'Your workouts and your program are backed up to your account. They leave this phone and come back as soon as you sign in again.',
+    pendingTitle: 'Not everything is in your account yet',
+    pendingText: {
+      one: '{count} change has not reached your account yet (no network?). If you sign out now, it will be lost.',
+      other: '{count} changes have not reached your account yet (no network?). If you sign out now, they will be lost.',
+    },
+    signOutAnyway: 'Sign out anyway',
   },
   row: '{label}: {value}',
 };
