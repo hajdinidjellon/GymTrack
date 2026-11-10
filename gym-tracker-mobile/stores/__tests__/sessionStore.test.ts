@@ -9,6 +9,7 @@ import {
 import { playRestBell, startRestAlarm, stopRestAlarm } from '@/services/sound';
 import { REST_ALARM_MAX_MS, useSessionStore } from '@/stores/sessionStore';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
 import type { ActiveExercise } from '@/types';
 
 function exercise(id: string, sets: number, patch: Partial<ActiveExercise> = {}): ActiveExercise {
@@ -250,6 +251,34 @@ describe('end of session', () => {
     store().keepSessionOpen();
     expect(session().keptOpenAt).toBe(started + 3 * 3600_000);
     expect(store().finishSession(started + 25 * 60_000)?.duration).toBe(25);
+  });
+});
+
+describe('saving the session', () => {
+  it('saves first, then ends the session', async () => {
+    const addWorkout = jest.spyOn(useWorkoutStore.getState(), 'addWorkout').mockResolvedValue();
+    store().completeSet('bench', 0);
+    const workout = await store().saveSession();
+    expect(addWorkout).toHaveBeenCalledWith(workout!);
+    expect(workout?.exercises.map((e) => e.name)).toEqual(['bench']);
+    expect(store().activeSession).toBeNull();
+    addWorkout.mockRestore();
+  });
+
+  it('keeps the session when the save fails: nothing is lost', async () => {
+    const addWorkout = jest.spyOn(useWorkoutStore.getState(), 'addWorkout').mockRejectedValue(new Error('disk full'));
+    store().completeSet('bench', 0);
+    await expect(store().saveSession()).rejects.toThrow('disk full');
+    expect(session().exercises[0]!.sets[0]!.completed).toBe(true);
+    addWorkout.mockRestore();
+  });
+
+  it('saves nothing when nothing was done, and ends the session', async () => {
+    const addWorkout = jest.spyOn(useWorkoutStore.getState(), 'addWorkout').mockResolvedValue();
+    expect(await store().saveSession()).toBeNull();
+    expect(addWorkout).not.toHaveBeenCalled();
+    expect(store().activeSession).toBeNull();
+    addWorkout.mockRestore();
   });
 });
 

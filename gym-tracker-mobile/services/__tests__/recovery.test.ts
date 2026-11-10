@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import {
   createRecoveryCode,
+  deleteAccount,
   getContactEmail,
   requestResetEmail,
   resetWithCode,
@@ -32,6 +33,23 @@ const session = (user: unknown) =>
 beforeEach(() => {
   jest.clearAllMocks();
   configured.mockReturnValue(true);
+});
+
+describe('account deletion', () => {
+  it('deletes the account, the password checked on the server', async () => {
+    answer({ ok: true });
+    expect(await deleteAccount('secret1')).toBe('ok');
+    expect(invoke).toHaveBeenCalledWith('delete-account', { body: { password: 'secret1' } });
+  });
+
+  it('says why it did not', async () => {
+    answer({ ok: false, reason: 'password' });
+    expect(await deleteAccount('wrong')).toBe('password');
+    answer({ ok: false, reason: 'limit' });
+    expect(await deleteAccount('x')).toBe('limit');
+    answer(null, new Error('offline'));
+    expect(await deleteAccount('x')).toBe('other');
+  });
 });
 
 describe('recovery code', () => {

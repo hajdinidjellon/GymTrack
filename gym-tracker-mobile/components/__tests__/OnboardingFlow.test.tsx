@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { BackHandler } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { setLocale } from '@/i18n';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
@@ -219,6 +220,28 @@ describe('OnboardingFlow', () => {
     expect(screen.getByText('Tu viens pour quoi ?')).toBeOnTheScreen();
     await tap('Retour');
     expect(onExit).toHaveBeenCalled();
+  });
+
+  it("steps back one question on Android's back button, the answers kept", async () => {
+    type Handler = Parameters<typeof BackHandler.addEventListener>[1];
+    const handlers: Handler[] = [];
+    jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_, handler) => {
+      handlers.push(handler);
+      return { remove: () => void handlers.splice(handlers.indexOf(handler), 1) };
+    });
+    await setup();
+    expect(handlers).toHaveLength(0);
+    await pick(/Devenir plus fort/);
+    await tap('Continuer');
+    expect(screen.getByText('Et toi ?')).toBeOnTheScreen();
+    let handled: boolean | null | undefined;
+    await act(async () => {
+      handled = handlers.at(-1)?.({} as never);
+    });
+    expect(handled).toBe(true);
+    expect(screen.getByRole('radio', { name: /Devenir plus fort/ })).toBeSelected();
+    expect(handlers).toHaveLength(0);
+    jest.restoreAllMocks();
   });
 
   describe('in English', () => {

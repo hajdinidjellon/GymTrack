@@ -1,6 +1,32 @@
 import type { Dictionary } from '@/i18n/fr';
 
 export const exercise: Dictionary['exercise'] = {
+  video: {
+    watch: 'See the movement',
+    watchNew: 'New? See the movement',
+    watchA11y: 'See the video of the movement',
+    close: 'Close',
+    a11y: 'Video of the movement, looping. The worked muscles light up on the mascot.',
+    title: 'Muscles worked',
+    helpers: 'Helping: {muscles}',
+    muscles: {
+      chest: 'Chest',
+      deltoids: 'Shoulders',
+      biceps: 'Biceps',
+      triceps: 'Triceps',
+      forearm: 'Forearms',
+      abs: 'Abs',
+      obliques: 'Obliques',
+      trapezius: 'Traps',
+      'upper-back': 'Lats',
+      'lower-back': 'Lower back',
+      gluteal: 'Glutes',
+      quadriceps: 'Quads',
+      hamstring: 'Hamstrings',
+      adductors: 'Adductors',
+      calves: 'Calves',
+    },
+  },
   notFound: 'Exercise not found.',
   ownEyebrow: '{equipment} · your exercise',
   nextTarget: 'Next target',

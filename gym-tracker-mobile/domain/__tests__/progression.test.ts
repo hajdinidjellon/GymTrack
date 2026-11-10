@@ -523,3 +523,224 @@ describe('assisted machine (less help is harder)', () => {
     expect(nextTargets([test], rule, assisted).decision).toBe('calibrate');
   });
 });
+
+describe('lighter ramp-up sets not marked as warm-ups (imported history)', () => {
+  /** One session from [weight, reps] pairs, in the order they were done. */
+  const ramp = (pairs: [number, number][], extra: Partial<WorkoutSet> = {}): ExerciseSession => {
+    day++;
+    return {
+      date: new Date(2026, 0, day).toISOString(),
+      sets: pairs.map(([weight, r]) => ({ weight, reps: r, setType: 'normal', completed: true, ...extra })),
+    };
+  };
+  const planned = (s: ExerciseSession, assisted = false) =>
+    readSession(s.sets, rule, assisted)?.planned.map((x) => [x.weight, x.reps]);
+
+  it.each<[string, [number, number][], [number, number][]]>([
+    [
+      'ramp-up then 3 working sets',
+      [
+        [20, 10],
+        [40, 8],
+        [60, 8],
+        [60, 8],
+        [60, 8],
+      ],
+      [
+        [60, 8],
+        [60, 8],
+        [60, 8],
+      ],
+    ],
+    [
+      'ramp-up under the range',
+      [
+        [20, 5],
+        [40, 3],
+        [60, 10],
+        [60, 9],
+        [60, 8],
+      ],
+      [
+        [60, 10],
+        [60, 9],
+        [60, 8],
+      ],
+    ],
+    [
+      'lighter back-off after the working sets',
+      [
+        [60, 10],
+        [60, 10],
+        [50, 12],
+      ],
+      [
+        [60, 10],
+        [60, 10],
+        [50, 12],
+      ],
+    ],
+    [
+      'ramp-up and a back-off',
+      [
+        [40, 10],
+        [60, 10],
+        [60, 10],
+        [50, 12],
+      ],
+      [
+        [60, 10],
+        [60, 10],
+        [50, 12],
+      ],
+    ],
+  ])('%s', (_, pairs, expected) => {
+    expect(planned(ramp(pairs))).toEqual(expected);
+  });
+
+  it('reads 3×8 at 60 after a ramp-up: +1 rep, not a lighter target', () => {
+    const r = nextTargets(
+      [
+        ramp([
+          [20, 10],
+          [40, 8],
+          [60, 8],
+          [60, 8],
+          [60, 8],
+        ]),
+      ],
+      rule,
+    );
+    expect(r.decision).toBe('add_reps');
+    expect(r.targets).toEqual([
+      { weight: 60, reps: 9 },
+      { weight: 60, reps: 9 },
+      { weight: 60, reps: 9 },
+    ]);
+  });
+
+  it('adds weight when the 3 working sets hit the top after a ramp-up', () => {
+    const r = nextTargets(
+      [
+        ramp([
+          [20, 12],
+          [40, 12],
+          [60, 12],
+          [60, 12],
+          [60, 12],
+        ]),
+      ],
+      rule,
+    );
+    expect(r.decision).toBe('add_weight');
+    expect(weights(r)).toEqual([62.5, 62.5, 62.5]);
+  });
+
+  it('never counts a short ramp-up set as a failed session', () => {
+    const fails = [
+      ramp([
+        [20, 5],
+        [60, 8],
+        [60, 8],
+        [60, 8],
+      ]),
+      ramp([
+        [20, 5],
+        [60, 8],
+        [60, 8],
+        [60, 8],
+      ]),
+    ];
+    expect(nextTargets(fails, rule).decision).toBe('add_reps');
+  });
+
+  it('still counts a lighter back-off under the range as missed', () => {
+    expect(
+      nextTargets(
+        [
+          ramp([
+            [60, 10],
+            [60, 10],
+            [50, 6],
+          ]),
+        ],
+        rule,
+      ).decision,
+    ).toBe('repeat');
+  });
+
+  it('keeps a heavier top set as a top set behind a ramp-up', () => {
+    const r = nextTargets(
+      [
+        ramp([
+          [40, 10],
+          [80, 3],
+          [60, 12],
+          [60, 12],
+        ]),
+      ],
+      rule,
+    );
+    expect(r.decision).toBe('add_weight');
+    expect(r.targets).toEqual([
+      { weight: 80, reps: 3, top: true },
+      { weight: 62.5, reps: 8 },
+      { weight: 62.5, reps: 8 },
+    ]);
+  });
+
+  it('assisted: more help before the working help is the ramp-up, less help is not', () => {
+    expect(
+      planned(
+        ramp([
+          [50, 10],
+          [40, 10],
+          [30, 12],
+          [30, 12],
+          [30, 12],
+        ]),
+        true,
+      ),
+    ).toEqual([
+      [30, 12],
+      [30, 12],
+      [30, 12],
+    ]);
+    const r = nextTargets(
+      [
+        ramp([
+          [50, 10],
+          [30, 12],
+          [30, 12],
+          [30, 12],
+        ]),
+      ],
+      rule,
+      { assisted: true },
+    );
+    expect(r.decision).toBe('add_weight');
+    expect(weights(r)).toEqual([27.5, 27.5, 27.5]);
+    // Less help first is harder: a top set, never a ramp-up
+    const harder = readSession(
+      ramp([
+        [25, 6],
+        [30, 10],
+        [30, 10],
+        [30, 10],
+      ]).sets,
+      rule,
+      true,
+    );
+    expect(harder?.top.map((x) => [x.weight, x.reps])).toEqual([[25, 6]]);
+  });
+
+  it('timed: holds at the same weight are never a ramp-up', () => {
+    const held: ProgressionRule = { kind: 'double', sets: 3, repMin: 30, repMax: 60, increment: 2.5, repStep: 5 };
+    const s = ramp([
+      [0, 20],
+      [0, 40],
+      [0, 40],
+    ]);
+    expect(readSession(s.sets, held)?.planned.map((x) => x.reps)).toEqual([20, 40, 40]);
+  });
+});

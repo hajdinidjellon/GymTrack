@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, space } from '@/constants/theme';
 import { EFFORT_LABELS } from '@/domain/effort';
@@ -25,6 +25,21 @@ import { ChevronRight } from '@/components/ui/icons';
 import { SessionTimeline } from '@/components/stats/SessionTimeline';
 import { dayName, exerciseName, t } from '@/i18n';
 
+/** Asked first: a session deleted does not come back. Left before it goes, so "not found" never shows. */
+function confirmDelete(id: string) {
+  Alert.alert(t('history.detail.deleteTitle'), t('history.detail.deleteText'), [
+    { text: t('common.cancel'), style: 'cancel' },
+    {
+      text: t('history.detail.deleteConfirm'),
+      style: 'destructive',
+      onPress: () => {
+        router.back();
+        void useWorkoutStore.getState().deleteWorkout(id);
+      },
+    },
+  ]);
+}
+
 /** One past session: what was done on each exercise, set by set. */
 export default function WorkoutScreen() {
   useLocale();
@@ -48,6 +63,7 @@ export default function WorkoutScreen() {
   const exercises = loggedExercises(workout);
   const records = newRecords(workout, workouts, own);
   const time = timeline(workout);
+  const lifted = tonnage(workout, factor);
 
   return (
     <Screen scroll>
@@ -57,7 +73,8 @@ export default function WorkoutScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: space.lg }}>
           <Chip label={t('common.exercises', { count: exercises.length })} />
           <Chip label={t('common.sets', { count: setsDone(workout) })} />
-          <Chip label={t('history.detail.lifted', { kg: formatThousands(tonnage(workout, factor)) })} />
+          {/* Bodyweight, held or assisted only: nothing lifted to show, never "0 kg" */}
+          {lifted > 0 ? <Chip label={t('history.detail.lifted', { kg: formatThousands(lifted) })} /> : null}
           {records.map((r) => (
             <Chip
               key={r.name}
@@ -103,6 +120,16 @@ export default function WorkoutScreen() {
       >
         <Text size={15} weight="black" style={{ textDecorationLine: 'underline' }}>
           {t('history.detail.all')}
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={() => confirmDelete(workout.id)}
+        accessibilityRole="button"
+        hitSlop={8}
+        style={{ alignSelf: 'center', marginTop: space.sm, paddingVertical: space.sm }}
+      >
+        <Text size={15} weight="bold" color={colors.danger} style={{ textDecorationLine: 'underline' }}>
+          {t('history.detail.delete')}
         </Text>
       </Pressable>
     </Screen>

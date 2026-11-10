@@ -7,7 +7,7 @@
 
 import { byDate } from '@/domain/history';
 import { normalizeProfile } from '@/domain/profile';
-import { parseList, settingsPatchSchema, workoutSchema } from '@/domain/schemas';
+import { parseList, parseSettingsPatch, storedWorkoutSchema } from '@/domain/schemas';
 import type { AppSettings, UserProfile, Workout } from '@/types';
 
 export const BACKUP_APP = 'okilo';
@@ -68,9 +68,8 @@ export function parseBackup(text: string): ParsedBackup | BackupError {
   if (!LEGACY_BACKUP_APPS.includes(raw.app) || typeof raw.version !== 'number') return 'notBackup';
   if (raw.version > BACKUP_VERSION) return 'newerVersion';
 
-  const { valid, rejected } = parseList(workoutSchema, Array.isArray(raw.workouts) ? raw.workouts : []);
-  const settings = settingsPatchSchema.safeParse(raw.settings ?? {});
-  const { signedOut: _s, ...restored } = settings.success ? settings.data : ({} as Partial<AppSettings>);
+  const { valid, rejected } = parseList(storedWorkoutSchema, Array.isArray(raw.workouts) ? raw.workouts : []);
+  const { signedOut: _s, ...restored } = parseSettingsPatch(raw.settings);
   return {
     profile: normalizeProfile(raw.profile),
     workouts: valid,

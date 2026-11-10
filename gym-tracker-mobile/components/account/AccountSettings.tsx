@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { router } from 'expo-router';
 import { colors, space } from '@/constants/theme';
 import { contactEmailError } from '@/domain/account';
 import { t } from '@/i18n';
-import { createRecoveryCode, getContactEmail, updateContactEmail } from '@/services/recovery';
+import { createRecoveryCode, deleteAccount, getContactEmail, updateContactEmail } from '@/services/recovery';
+import { signOutAndClear } from '@/stores/accountData';
 import { RecoveryCodeView } from '@/components/account/RecoveryCodeView';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { StickerCard } from '@/components/ui/StickerCard';
@@ -65,6 +67,30 @@ export function AccountSettings() {
     setCode(result.code);
   };
 
+  const removeAccount = async () => {
+    setBusy(true);
+    const result = await deleteAccount(password);
+    if (result !== 'ok') {
+      setBusy(false);
+      const key = {
+        password: 'account.settings.wrongPassword',
+        limit: 'account.forgot.limit',
+        other: 'account.settings.failed',
+      } as const;
+      return setMessage({ text: t(key[result]), error: true });
+    }
+    // Gone from the cloud: gone from this phone too, back to the first screen
+    await signOutAndClear();
+    router.replace('/welcome');
+    Alert.alert(t('account.delete.done'));
+  };
+
+  const confirmDelete = () =>
+    Alert.alert(t('account.delete.confirmTitle'), t('account.delete.confirmText'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('account.delete.confirm'), style: 'destructive', onPress: () => void removeAccount() },
+    ]);
+
   // Shown once, in place: gone once kept
   if (code) return <RecoveryCodeView code={code} onKept={() => setCode(null)} />;
 
@@ -121,6 +147,17 @@ export function AccountSettings() {
         />
         <Text size={14} color={colors.inkMuted} align="center">
           {t('account.settings.newCodeHint')}
+        </Text>
+      </View>
+      <View style={{ gap: space.xs, marginTop: space.lg }}>
+        <StickerButton
+          label={t('account.delete.button')}
+          variant="ghost"
+          onPress={confirmDelete}
+          disabled={busy || !password}
+        />
+        <Text size={14} color={colors.inkMuted} align="center">
+          {t('account.delete.hint')}
         </Text>
       </View>
     </View>

@@ -91,7 +91,15 @@ export const profile = {
     signOut: 'Se déconnecter',
     signIn: 'Créer un compte ou se connecter',
     confirmTitle: 'Se déconnecter ?',
-    confirmText: 'Tes séances et ton programme sont sauvegardés dans ton compte.',
+    confirmText:
+      'Tes séances et ton programme sont sauvegardés dans ton compte. Ils quittent ce téléphone et reviennent dès que tu te reconnectes.',
+    pendingTitle: 'Pas encore tout dans ton compte',
+    pendingText: {
+      one: '{count} changement n’est pas encore arrivé dans ton compte (pas de réseau ?). Si tu te déconnectes maintenant, il sera perdu.',
+      other:
+        '{count} changements ne sont pas encore arrivés dans ton compte (pas de réseau ?). Si tu te déconnectes maintenant, ils seront perdus.',
+    },
+    signOutAnyway: 'Me déconnecter quand même',
   },
   row: '{label} : {value}',
 };

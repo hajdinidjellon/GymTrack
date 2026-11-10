@@ -15,7 +15,16 @@ jest.mock('expo-haptics', () => ({
 }));
 
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));
-jest.mock('@/services/sound', () => ({ playRestBell: jest.fn(), startRestAlarm: jest.fn(), stopRestAlarm: jest.fn() }));
+jest.mock('expo-video', () => {
+  const { View } = require('react-native');
+  return { useVideoPlayer: jest.fn(() => ({ play: jest.fn() })), VideoView: View };
+});
+jest.mock('@/services/sound', () => ({
+  playRestBell: jest.fn(),
+  startRestAlarm: jest.fn(),
+  stopRestAlarm: jest.fn(),
+  REST_BELL_MS: 900,
+}));
 
 // Les tests lisent les textes français, quelle que soit la langue de la machine
 jest.mock('@/services/locale', () => ({ deviceLocaleTag: () => 'fr-FR' }));
@@ -63,3 +72,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
       require('react').createElement(View, null, children, renderRightActions?.(0, 0, { close: () => undefined })),
   };
 });
+
+// Les tests tapent plus vite que n'importe qui : pas de verrou anti double appui (testé à part)
+jest.mock('@/components/ui/pressLock', () => ({ PRESS_LOCK: { ms: 0 } }));

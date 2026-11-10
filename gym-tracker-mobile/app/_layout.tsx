@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,6 +16,7 @@ import { LaunchAnimation } from '@/components/brand/LaunchAnimation';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { resumeAccountSync } from '@/stores/accountData';
 import { useAppearance } from '@/hooks/useLocale';
 import { useLiveActivity } from '@/hooks/useLiveActivity';
 import { RestAlarm } from '@/components/session/RestAlarm';
@@ -46,7 +47,15 @@ export default function RootLayout() {
       ]);
     })()
       .catch((error: unknown) => logger.error('startup load failed', error))
-      .finally(() => setDataLoaded(true));
+      .finally(() => {
+        setDataLoaded(true);
+        // Then the cloud, in the background: what waits goes, what another phone did comes in
+        void resumeAccountSync();
+      });
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void resumeAccountSync();
+    });
+    return () => subscription.remove();
   }, []);
 
   const fontsDone = fontsLoaded || !!fontError;
@@ -78,6 +87,7 @@ export default function RootLayout() {
             <Stack.Screen name="history/index" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="history/[id]" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="account/index" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="privacy/index" options={{ animation: 'slide_from_right' }} />
           </Stack>
         ) : (
           <View style={{ flex: 1, backgroundColor: colors.paper }} />

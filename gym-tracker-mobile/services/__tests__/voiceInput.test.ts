@@ -65,6 +65,15 @@ describe('voiceInput', () => {
     expect(mockRecognition.start).toHaveBeenCalledTimes(2);
   });
 
+  it('never listens through a server: no recognition on the phone, no voice commands', () => {
+    mockRecognition.supportsOnDeviceRecognition.mockReturnValue(false);
+    expect(voiceInputAvailable()).toBe(false);
+    const stop = startListening('fr-FR', [], () => undefined);
+    expect(mockRecognition.start).not.toHaveBeenCalled();
+    expect(() => stop()).not.toThrow();
+    mockRecognition.supportsOnDeviceRecognition.mockReturnValue(true);
+  });
+
   it('survives a start that fails', () => {
     mockRecognition.start.mockImplementationOnce(() => {
       throw new Error('busy');
