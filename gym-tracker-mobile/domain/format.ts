@@ -1,3 +1,4 @@
+import { clampAmount } from '@/domain/limits';
 import { getLocale, listOf, localeTag, t, type TKey } from '@/i18n';
 
 /** "Mardi 21 oct." */
@@ -54,7 +55,9 @@ export function parseAmount(text: string, integer = false): number | null {
   if (!/^\d+(\.\d*)?$|^\.\d+$/.test(clean)) return null;
   const n = Number(clean);
   if (!Number.isFinite(n)) return null;
-  return integer ? Math.round(n) : Math.round(n * 100) / 100;
+  // Over what a session can save: the most it can hold
+  const kept = clampAmount(n);
+  return integer ? Math.round(kept) : Math.round(kept * 100) / 100;
 }
 
 /** "1:30" for a timer. */

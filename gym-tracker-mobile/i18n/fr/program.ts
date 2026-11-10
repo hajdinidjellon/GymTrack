@@ -27,10 +27,12 @@ export const program = {
     submit: "Créer l'exercice",
     save: 'Enregistrer',
     back: 'Retour à la liste',
+    full: 'Tu as déjà {max} exercices à toi : supprimes-en un pour en créer un autre.',
   },
   editor: {
     add: 'Ajouter un exercice',
     addButton: '+ Ajouter un exercice',
+    full: '{max} exercices au maximum par séance.',
     dragHint: 'Maintiens un exercice puis glisse-le pour changer l’ordre. ',
     saved: 'Tes exercices pour {day} sont enregistrés pour les prochaines fois.',
     howTo: 'Ajoute, retire ou déplace des exercices : ils seront gardés pour tes prochaines séances {day}.',
@@ -56,6 +58,7 @@ export const program = {
   },
   days: {
     add: '+ Nouvelle séance',
+    full: '{max} séances à toi au maximum.',
     create: 'Créer la séance',
     namePlaceholder: 'Ex. Épaules, Haut B…',
     nameA11y: 'Nom de la séance',

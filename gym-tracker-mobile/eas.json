@@ -5,7 +5,9 @@
   },
   "build": {
     "production": {
+      "node": "24.18.0",
       "channel": "production",
+      "environment": "production",
       "autoIncrement": true,
       "ios": {
         "resourceClass": "default"

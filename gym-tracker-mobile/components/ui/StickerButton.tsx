@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { border, colors, hardShadow, pressOffset, radius } from '@/constants/theme';
 import { buzz, type HapticKind } from './PressableScale';
+import { PRESS_LOCK } from './pressLock';
 import { Text } from './Text';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
@@ -50,6 +51,7 @@ export function StickerButton({
       : icon;
   const ghost = variant === 'ghost';
   const flat = ghost || disabled;
+  const lastPress = useRef<number | null>(null);
 
   return (
     <Pressable
@@ -60,6 +62,9 @@ export function StickerButton({
       disabled={disabled}
       onLongPress={onLongPress}
       onPress={() => {
+        const now = Date.now();
+        if (lastPress.current !== null && now - lastPress.current < PRESS_LOCK.ms) return;
+        lastPress.current = now;
         buzz(haptic ?? (variant === 'primary' ? 'medium' : 'light'));
         onPress();
       }}

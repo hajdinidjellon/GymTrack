@@ -1,15 +1,4 @@
-import {
-  Button,
-  Capsule,
-  HStack,
-  Image,
-  Overlay,
-  ProgressView,
-  RoundedRectangle,
-  Spacer,
-  Text,
-  VStack,
-} from '@expo/ui/swift-ui';
+import { Button, HStack, Image, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import {
   activityBackgroundTint,
   background,
@@ -71,17 +60,25 @@ const WorkoutActivity = (props: LockScreenProps, environment: LiveActivityEnviro
               : '#C9CFD4';
   const plateText = (kg: number) => (kg === 25 || kg === 20 || kg === 2.5 ? '#FFFFFF' : ink);
 
-  /** A sticker block: filled rounded shape, ink outline. */
+  /**
+   * A sticker block: filled rounded shape, ink outline. strokeBorder is a
+   * modifier that draws the outline over the view it is on: on a bare shape
+   * laid on top, that shape fills in black and hides the text.
+   */
   const sticker = (content: ReactElement, fill: string, radius: number, line = 2.5) => (
-    <Overlay>
-      <VStack modifiers={[background(fill, shapes.roundedRectangle({ cornerRadius: radius }))]}>{content}</VStack>
-      <Overlay.Content>
-        <RoundedRectangle
-          cornerRadius={radius}
-          modifiers={[strokeBorder({ content: ink, style: { lineWidth: dim ? 1.5 : line } })]}
-        />
-      </Overlay.Content>
-    </Overlay>
+    <VStack
+      modifiers={[
+        background(fill, shapes.roundedRectangle({ cornerRadius: radius })),
+        strokeBorder({
+          content: ink,
+          style: { lineWidth: dim ? 1.5 : line },
+          shape: 'roundedRectangle',
+          cornerRadius: radius,
+        }),
+      ]}
+    >
+      {content}
+    </VStack>
   );
 
   /** Plates of one side, as coloured discs like in the app. */
@@ -89,22 +86,19 @@ const WorkoutActivity = (props: LockScreenProps, environment: LiveActivityEnviro
     props.plateList.length > 0 ? (
       <HStack spacing={4}>
         {props.plateList.map(({ kg, label }, i) => (
-          <Overlay key={`${kg}-${i}`}>
-            <Text
-              modifiers={[
-                font({ size: 13, weight: 'heavy', design: 'rounded' }),
-                monospacedDigit(),
-                foregroundStyle(plateText(kg)),
-                padding({ horizontal: 8, vertical: 3 }),
-                background(plateFill(kg), shapes.capsule()),
-              ]}
-            >
-              {label}
-            </Text>
-            <Overlay.Content>
-              <Capsule modifiers={[strokeBorder({ content: ink, style: { lineWidth: 1.5 } })]} />
-            </Overlay.Content>
-          </Overlay>
+          <Text
+            key={`${kg}-${i}`}
+            modifiers={[
+              font({ size: 13, weight: 'heavy', design: 'rounded' }),
+              monospacedDigit(),
+              foregroundStyle(plateText(kg)),
+              padding({ horizontal: 8, vertical: 3 }),
+              background(plateFill(kg), shapes.capsule()),
+              strokeBorder({ content: ink, style: { lineWidth: 1.5 }, shape: 'capsule' }),
+            ]}
+          >
+            {label}
+          </Text>
         ))}
         <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(muted)]}>{props.labels.perSide}</Text>
       </HStack>

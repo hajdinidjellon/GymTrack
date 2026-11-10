@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { BackHandler, Pressable, View } from 'react-native';
 import { border, colors } from '@/constants/theme';
 import { GOALS, getSplit } from '@/domain/programs';
 import {
@@ -63,6 +63,15 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
     setAnswers((a) => ({ ...a, ...patch }));
   };
   const back = () => (step === 0 ? onExit() : setStep(step - 1));
+  // Android's back button: one question back, the answers kept (on the first one, out as usual)
+  useEffect(() => {
+    if (step === 0) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setStep(step - 1);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [step]);
   const next = () => {
     // Continuer sur la semaine affichée : c'est elle qu'on garde
     if (step === RHYTHM && !answers.schedule) setAnswers((a) => ({ ...a, schedule: answersWeek(a) }));

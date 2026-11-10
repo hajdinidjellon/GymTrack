@@ -11,6 +11,9 @@ export const session = {
       other: 'Il reste {count} séries. Les séries déjà validées sont enregistrées.',
     },
     finishNoneLeft: 'Les séries validées sont enregistrées.',
+    saveFailedTitle: 'Séance pas encore enregistrée',
+    saveFailed:
+      'Le téléphone n’a pas pu l’enregistrer. Rien n’est perdu : ta séance reste ouverte, réessaie dans un instant.',
     abandon: 'Abandonner',
     abandonTitle: 'Abandonner la séance ?',
     abandonText: 'Rien ne sera enregistré, même les séries déjà validées.',

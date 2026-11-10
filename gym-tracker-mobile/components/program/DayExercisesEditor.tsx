@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { border, colors, radius } from '@/constants/theme';
 import { dayKey, mainMuscle, type ExerciseDef, type ProgramDay } from '@/domain/programs';
 import { moveItem } from '@/domain/reorder';
+import { SETTINGS_LIMITS } from '@/domain/schemas';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { SplitId } from '@/types';
 import { Text } from '@/components/ui/Text';
@@ -43,10 +44,13 @@ export function DayExercisesEditor<T>({
   const [adding, setAdding] = useState(false);
 
   const key = dayKey(split, day.name);
+  // The list as it was: the supersets follow the change
+  const names = day.exercises.map((e) => e.name);
   const save = (list: ExerciseDef[]) =>
     setDayExercises(
       key,
       list.map((e) => e.name),
+      names,
     );
   const edit = (list: ExerciseDef[]) => {
     save(list);
@@ -58,7 +62,7 @@ export function DayExercisesEditor<T>({
     // The day as it was: its own list, or the program's when it had none
     const before = useSettingsStore.getState().settings.customDays[key] ?? null;
     const after = day.exercises.filter((_, index) => index !== i).map((e) => e.name);
-    setDayExercises(key, after);
+    setDayExercises(key, after, names);
     onRemoved?.(gone.name, () => {
       // Changed since: putting the old list back would undo more than the removal
       const now = useSettingsStore.getState().settings.customDays[key];
@@ -75,24 +79,30 @@ export function DayExercisesEditor<T>({
         onDragChange={onDragChange}
         renderItem={(item, i) => renderRow(item, i, () => remove(i))}
       />
-      <Pressable
-        onPress={() => setAdding(true)}
-        accessibilityRole="button"
-        accessibilityLabel={t('program.editor.add')}
-        style={({ pressed }) => ({
-          minHeight: 56,
-          borderRadius: radius.row,
-          borderWidth: border.base,
-          borderStyle: 'dashed',
-          borderColor: pressed ? colors.outlineStrong : colors.outlineSoft,
-          alignItems: 'center',
-          justifyContent: 'center',
-        })}
-      >
-        <Text size={16} weight="bold" color={colors.inkMuted}>
-          {t('program.editor.addButton')}
+      {items.length >= SETTINGS_LIMITS.dayExercises ? (
+        <Text size={14} color={colors.inkMuted} align="center">
+          {t('program.editor.full', { max: SETTINGS_LIMITS.dayExercises })}
         </Text>
-      </Pressable>
+      ) : (
+        <Pressable
+          onPress={() => setAdding(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('program.editor.add')}
+          style={({ pressed }) => ({
+            minHeight: 56,
+            borderRadius: radius.row,
+            borderWidth: border.base,
+            borderStyle: 'dashed',
+            borderColor: pressed ? colors.outlineStrong : colors.outlineSoft,
+            alignItems: 'center',
+            justifyContent: 'center',
+          })}
+        >
+          <Text size={16} weight="bold" color={colors.inkMuted}>
+            {t('program.editor.addButton')}
+          </Text>
+        </Pressable>
+      )}
       <Text size={13} color={colors.inkFaint} align="center">
         {items.length > 1 ? t('program.editor.dragHint') : ''}
         {t(custom ? 'program.editor.saved' : 'program.editor.howTo', { day: dayName(day.name) })}
@@ -100,7 +110,7 @@ export function DayExercisesEditor<T>({
       {custom ? (
         <Pressable
           onPress={() => {
-            setDayExercises(key, null);
+            setDayExercises(key, null, names);
             onEdited?.();
           }}
           accessibilityRole="button"

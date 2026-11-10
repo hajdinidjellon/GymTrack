@@ -10,7 +10,7 @@ function leave() {
   const { then, forget } = useRecoveryStore.getState();
   forget();
   if (then === 'login') router.replace('/login');
-  else if (then === 'goal') router.replace('/goal');
+  else if (then === 'goal') router.replace('/setup');
   else resetTo('/(tabs)');
 }
 

@@ -14,6 +14,7 @@ import {
   weekOf,
   planLift,
   reasonLabel,
+  keptLinks,
   supersetGroups,
   targetLabel,
   targetLoad,
@@ -350,6 +351,34 @@ describe('tonnage', () => {
     ex.sets.push({ weight: 40, reps: 10, setType: 'warmup', completed: true });
     expect(tonnage(workout('2026-10-01', 'Legs', [ex]))).toBe(1000);
   });
+
+  it.each<[string, Exercise, number]>([
+    ['assisted machine: the weight is help', lift(EXERCISES.assisted.name, 30, [10, 10]), 0],
+    ['catalog hold: seconds, not reps', lift(EXERCISES.plank.name, 10, [60, 60]), 0],
+    ['hold marked on the session', { ...lift('Ma planche lestée', 10, [45]), timed: true }, 0],
+    ['regular lift', lift('Squat', 100, [5]), 500],
+  ])('%s', (_, ex, expected) => {
+    expect(tonnage(workout('2026-10-01', 'Mix', [ex, lift('Squat', 0, [10])]))).toBe(expected);
+  });
+
+  it('knows the own exercises held for a time', () => {
+    const own = [
+      {
+        name: 'Suspension',
+        equipment: 'bodyweight' as const,
+        category: 'isolation' as const,
+        muscleGroups: [],
+        timed: true,
+      },
+    ];
+    const w = workout('2026-10-01', 'Mix', [lift('Suspension', 10, [30]), lift('Squat', 100, [5])]);
+    expect(tonnage(w)).toBe(800);
+    expect(tonnage(w, () => 1, own)).toBe(500);
+  });
+
+  it('applies the load factor', () => {
+    expect(tonnage(workout('2026-10-01', 'Legs', [lift('Squat', 50, [10])]), () => 2)).toBe(1000);
+  });
 });
 
 describe('last time and reason', () => {
@@ -541,6 +570,20 @@ describe('timed exercises', () => {
 });
 
 describe('supersets', () => {
+  it.each<[string, string[], string[]]>([
+    ['kept when nothing moved around it', ['d', 'a', 'b'], ['a']],
+    ['dropped when a drag gives it a new partner', ['b', 'a', 'c'], []],
+    ['dropped when its partner is removed', ['a', 'c'], []],
+    ['dropped when it becomes the last one', ['b', 'c', 'a'], []],
+    ['dropped when the exercise itself is removed', ['b', 'c'], []],
+  ])('a link is %s', (_, after, expected) => {
+    expect(keptLinks(['a', 'b', 'c'], after, ['a'])).toEqual(expected);
+  });
+
+  it('never brings back a link left on the last exercise when one is added behind', () => {
+    expect(keptLinks(['a', 'b'], ['a', 'b', 'c'], ['b'])).toEqual([]);
+  });
+
   it('groups each exercise chained with the next, three in a row included', () => {
     expect(supersetGroups(['a', 'b', 'c', 'd'], ['a'])).toEqual(['a', 'a', undefined, undefined]);
     expect(supersetGroups(['a', 'b', 'c', 'd'], ['a', 'b'])).toEqual(['a', 'a', 'a', undefined]);

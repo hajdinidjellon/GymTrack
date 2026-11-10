@@ -6,6 +6,7 @@ import { checkDayName } from '@/domain/ownDays';
 import { DayNameForm } from '@/components/program/DayNameForm';
 import { dayKey, getSplit, programDays } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
+import { SETTINGS_LIMITS } from '@/domain/schemas';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -75,7 +76,11 @@ export default function DaysScreen() {
         })}
       </View>
       <View style={{ marginTop: space.md }}>
-        {adding ? (
+        {(ownDays[split]?.length ?? 0) >= SETTINGS_LIMITS.ownDays ? (
+          <Text size={14} color={colors.inkMuted} align="center">
+            {t('program.days.full', { max: SETTINGS_LIMITS.ownDays })}
+          </Text>
+        ) : adding ? (
           <DayNameForm
             submitLabel={t('program.days.create')}
             onCancel={() => setAdding(false)}

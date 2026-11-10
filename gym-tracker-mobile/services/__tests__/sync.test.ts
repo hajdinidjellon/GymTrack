@@ -2,7 +2,16 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as db from '@/services/db';
 import { supabase } from '@/services/supabase';
 import * as storage from '@/services/settingsStorage';
-import { flushSyncQueue, initialSync, pullAllFromCloud, queueSettingsSync } from '@/services/sync';
+import { readLastPull, writeLastPull } from '@/services/dataOwner';
+import {
+  FLUSH_FAILURES_MAX,
+  flushSyncQueue,
+  initialSync,
+  PULL_PAGE,
+  pullAllFromCloud,
+  queueSettingsSync,
+  resumeSync,
+} from '@/services/sync';
 import type { Workout } from '@/types';
 
 jest.mock('@/services/db');
@@ -28,6 +37,9 @@ function table(result: Result) {
     delete: jest.fn(() => query),
     select: jest.fn(() => query),
     eq: jest.fn(() => query),
+    gt: jest.fn(() => query),
+    order: jest.fn(() => query),
+    range: jest.fn(() => query),
     maybeSingle: jest.fn(() => done),
   };
   return query;
@@ -102,6 +114,18 @@ describe('settings push', () => {
 
     expect(settings.upsert).not.toHaveBeenCalled();
     expect(mockedDb.clearSyncQueueEntry).toHaveBeenCalledWith(7);
+  });
+
+  it('never sends defaults in place of settings it cannot read', async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([settingsEntry(7)]);
+    mockedStorage.readStoredSettings.mockResolvedValue(null);
+    mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: '2026-11-05T10:00:00.000Z', pending: false });
+    const settings = table({ data: null, error: null });
+    tables({ user_settings: settings });
+
+    await flushSyncQueue();
+
+    expect(settings.upsert).not.toHaveBeenCalled();
   });
 
   it('keeps a refused settings entry without holding back the sessions', async () => {
@@ -220,14 +244,42 @@ describe('flushSyncQueue', () => {
     expect(mockedDb.clearSyncQueueEntry).toHaveBeenCalledWith(1);
   });
 
-  it('keeps the entry and stops when Supabase refuses it', async () => {
-    mockedDb.getPendingSyncQueue.mockResolvedValue([entry(1), entry(2)]);
-    from.mockReturnValue(table({ error: { message: 'RLS violation' } }) as never);
+  it('keeps the entry, and the later ones of the same session, when Supabase refuses it', async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([entry(1), entry(2, 'delete')]);
+    const workouts = table({ error: { message: 'RLS violation' } });
+    from.mockReturnValue(workouts as never);
 
     await flushSyncQueue();
 
     expect(mockedDb.clearSyncQueueEntry).not.toHaveBeenCalled();
     expect(mockedDb.markWorkoutSynced).not.toHaveBeenCalled();
+    // The delete waits behind the refused upsert: their order matters
+    expect(workouts.delete).not.toHaveBeenCalled();
+  });
+
+  it('never lets one refused session hold back the others', async () => {
+    const other = { ...entry(2), record_id: 'w2' };
+    mockedDb.getPendingSyncQueue.mockResolvedValue([entry(1), other]);
+    mockedDb.loadWorkoutById.mockImplementation((id) => Promise.resolve({ ...workout, id }));
+    const refused = table({ error: { message: 'duplicate key' } });
+    const accepted = table({ error: null });
+    from.mockReturnValueOnce(refused as never).mockReturnValue(accepted as never);
+
+    await flushSyncQueue();
+
+    expect(mockedDb.clearSyncQueueEntry).not.toHaveBeenCalledWith(1);
+    expect(mockedDb.clearSyncQueueEntry).toHaveBeenCalledWith(2);
+  });
+
+  it('gives up for now after a few failures in a row (no network)', async () => {
+    const entries = Array.from({ length: 10 }, (_, i) => ({ ...entry(i + 1), record_id: `w${i}` }));
+    mockedDb.getPendingSyncQueue.mockResolvedValue(entries);
+    const offline = table({ error: { message: 'Network request failed' } });
+    from.mockReturnValue(offline as never);
+
+    await flushSyncQueue();
+
+    expect(offline.upsert).toHaveBeenCalledTimes(FLUSH_FAILURES_MAX);
   });
 
   it('deletes only rows of the signed-in user', async () => {
@@ -264,6 +316,75 @@ describe('pullAllFromCloud', () => {
   it('returns null when the request fails', async () => {
     from.mockReturnValue(table({ data: null, error: { message: 'offline' } }) as never);
     expect(await pullAllFromCloud()).toBeNull();
+  });
+
+  it('reads a long history page by page, past the 1000 rows Supabase answers at most', async () => {
+    const page = (n: number, at: string) =>
+      Array.from({ length: n }, (_, i) => ({ data: { ...workout, id: `w${i}` }, updated_at: at }));
+    const first = table({ data: page(PULL_PAGE, '2026-11-01T10:00:00Z'), error: null });
+    const second = table({ data: page(3, '2026-11-02T10:00:00Z'), error: null });
+    const profile = table({ data: null, error: null });
+    let pages = 0;
+    from.mockImplementation(((name: string) => {
+      if (name !== 'workouts') return profile;
+      return pages++ === 0 ? first : second;
+    }) as never);
+
+    const result = await pullAllFromCloud();
+
+    expect(result?.workouts).toHaveLength(PULL_PAGE + 3);
+    expect(first.range).toHaveBeenCalledWith(0, PULL_PAGE - 1);
+    expect(second.range).toHaveBeenCalledWith(PULL_PAGE, 2 * PULL_PAGE - 1);
+    expect(await readLastPull()).toBe('2026-11-02T10:00:00Z');
+  });
+});
+
+describe('resumeSync', () => {
+  it('takes only the sessions changed in the cloud since the last read (another phone)', async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([]);
+    await writeLastPull('2026-11-05T10:00:00.000Z');
+    const workouts = table({ data: [{ data: workout, updated_at: '2026-11-06T08:00:00Z' }], error: null });
+    tables({ workouts });
+
+    expect(await resumeSync()).toBe(true);
+
+    // A little before the last read: a phone whose clock is behind is not missed
+    expect(workouts.gt).toHaveBeenCalledWith('updated_at', '2026-11-05T09:50:00.000Z');
+    expect(mockedDb.bulkInsertWorkouts).toHaveBeenCalledWith([workout]);
+    expect(await readLastPull()).toBe('2026-11-06T08:00:00Z');
+  });
+
+  it('says nothing changed when the cloud has nothing new', async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([]);
+    await writeLastPull('2026-11-05T10:00:00.000Z');
+    tables({ workouts: table({ data: [], error: null }) });
+
+    expect(await resumeSync()).toBe(false);
+    expect(mockedDb.bulkInsertWorkouts).not.toHaveBeenCalled();
+    expect(await readLastPull()).toBe('2026-11-05T10:00:00.000Z');
+  });
+
+  it("takes settings changed since on another phone, never this phone's older copy over them", async () => {
+    mockedDb.getPendingSyncQueue.mockResolvedValue([]);
+    mockedStorage.readStoredSettings.mockResolvedValue(OWN);
+    mockedStorage.readSettingsMeta.mockResolvedValue({ updatedAt: '2026-11-05T10:00:00.000Z', pending: false });
+    tables({
+      user_settings: table({
+        data: { data: { plates: [20, 10] }, updated_at: '2026-11-06T10:00:00+00:00' },
+        error: null,
+      }),
+      workouts: table({ data: [], error: null }),
+    });
+
+    expect(await resumeSync()).toBe(true);
+    expect(mockedStorage.writeSettings).toHaveBeenCalled();
+    expect(mockedDb.enqueueSettingsSync).not.toHaveBeenCalled();
+  });
+
+  it('does nothing signed out', async () => {
+    const { getCurrentUserId } = jest.requireMock<{ getCurrentUserId: jest.Mock }>('@/services/supabase');
+    getCurrentUserId.mockResolvedValueOnce(null as never);
+    expect(await resumeSync()).toBe(false);
   });
 });
 

@@ -34,7 +34,7 @@ export default function ResetPassword() {
     }
     await loadAccountData();
     setBusy(false);
-    if (!useProfileStore.getState().profile) return router.replace('/goal');
+    if (!useProfileStore.getState().profile) return router.replace('/setup');
     useSettingsStore.getState().updateSettings({ signedOut: false });
     resetTo('/(tabs)');
   };

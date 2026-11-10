@@ -10,6 +10,7 @@ import {
   regionsOf,
   type ExerciseDef,
 } from '@/domain/programs';
+import { SETTINGS_LIMITS } from '@/domain/schemas';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { CustomExercise, Equipment, ExerciseCategory, MuscleGroup, MuscleRegion } from '@/types';
 import { Text } from '@/components/ui/Text';
@@ -56,6 +57,10 @@ export function CreateExerciseForm({
   const [error, setError] = useState<string | null>(null);
 
   const save = () => {
+    if (!editing && own.length >= SETTINGS_LIMITS.customExercises) {
+      setError(t('program.create.full', { max: SETTINGS_LIMITS.customExercises }));
+      return;
+    }
     // Changing it: its own name (and old names) are not "taken"
     const others = editing ? own.filter((e) => e.name !== editing.name) : own;
     const result = makeCustomExercise(
