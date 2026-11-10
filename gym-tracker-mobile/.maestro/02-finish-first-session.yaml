@@ -1,0 +1,26 @@
+# The rest of the first session: each exercise's weight chosen, every set validated, then finished.
+# The rest is skipped (« Passer le repos ») so the run does not wait 3 minutes a set.
+appId: host.exp.exponent
+---
+- repeat:
+    while:
+      visible: 'Valider|Commencer à .*|Passer le repos'
+    commands:
+      - runFlow:
+          when:
+            visible: 'Passer le repos'
+          commands:
+            - tapOn: 'Passer le repos'
+      - runFlow:
+          when:
+            visible: 'Commencer à .*'
+          commands:
+            - tapOn: 'Commencer à .*'
+      - runFlow:
+          when:
+            visible: 'Valider'
+          commands:
+            - tapOn: 'Valider'
+- takeScreenshot: .maestro/screens/02-session-done
+- tapOn: 'Terminer la séance'
+- takeScreenshot: .maestro/screens/02-summary

@@ -1,0 +1,53 @@
+# In a session: watch the demo, a missed set, correct it, swap, keep for later, add an exercise.
+appId: host.exp.exponent
+---
+- runFlow:
+    when:
+      visible: "Retour à l'accueil"
+    commands:
+      - tapOn: "Retour à l'accueil"
+# A session already done today: the home offers to pick one
+- runFlow:
+    when:
+      visible: 'Full body B'
+    commands:
+      - tapOn: 'Full body B'
+- tapOn: 'Lancer la séance'
+- runFlow:
+    when:
+      visible: 'Commencer à .*'
+    commands:
+      - tapOn: 'Commencer à .*'
+- takeScreenshot: .maestro/screens/03-set
+# The demo, top right
+- tapOn: 'Voir la démo de .* en grand'
+- takeScreenshot: .maestro/screens/03-demo
+- tapOn: 'J’ai compris'
+# A set with fewer reps
+- tapOn: 'Série ratée.*'
+- takeScreenshot: .maestro/screens/03-missed
+- tapOn: 'Enregistrer .* reps'
+- tapOn: 'Passer le repos'
+# Correct it from its menu
+- tapOn:
+    text: 'Options de la série'
+    index: 0
+- takeScreenshot: .maestro/screens/03-menu
+- tapOn: 'Modifier le poids ou les reps'
+- takeScreenshot: .maestro/screens/03-edit
+- tapOn: 'Plus une rep'
+- tapOn: 'Enregistrer'
+# Machine taken
+- tapOn: 'Faire .* plus tard'
+# Another exercise instead
+- tapOn: "Changer d'exercice.*"
+- takeScreenshot: .maestro/screens/03-swap
+- tapOn:
+    text: 'Choisir .*'
+    index: 0
+# One more exercise at the end
+- tapOn: 'Ajouter un exercice à la séance'
+- tapOn:
+    text: 'Choisir .*'
+    index: 0
+- takeScreenshot: .maestro/screens/03-after

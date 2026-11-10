@@ -1,0 +1,15 @@
+# Expo Go opened on the app: its developer menu closed (it shows up once the bundle has loaded).
+appId: host.exp.exponent
+---
+- waitForAnimationToEnd:
+    timeout: 5000
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: 'SDK version.*'
+          commands:
+            - pressKey: back
+            - waitForAnimationToEnd:
+                timeout: 3000

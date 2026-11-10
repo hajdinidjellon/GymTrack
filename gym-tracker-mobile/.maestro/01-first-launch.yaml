@@ -1,0 +1,28 @@
+# First launch: skip the questions, first session, first weight chosen, first set validated.
+appId: host.exp.exponent
+---
+- runFlow: _ready.yaml
+- runFlow:
+    when:
+      visible: 'Passer'
+    commands:
+      - tapOn: 'Passer'
+      - tapOn: 'Voir ma première séance'
+- runFlow:
+    when:
+      visible: 'Lancer la séance'
+    commands:
+      - tapOn: 'Lancer la séance'
+# Android asks once, at the first session (the rest alarm)
+- runFlow:
+    when:
+      visible: 'Autoriser'
+    commands:
+      - tapOn: 'Autoriser'
+- extendedWaitUntil:
+    visible: 'Première fois'
+    timeout: 20000
+- tapOn:
+    text: 'Commencer à .*'
+- tapOn: 'Valider'
+- takeScreenshot: .maestro/screens/01-after-first-set

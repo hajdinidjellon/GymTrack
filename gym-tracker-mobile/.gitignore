@@ -30,3 +30,7 @@ test-accounts.local.md
 
 # Journey numbers, rebuilt by npm run journeys (REPORT.md is kept)
 journeys/results/
+
+# Maestro runs: screenshots and logs
+.maestro/debug/
+.maestro/screens/
