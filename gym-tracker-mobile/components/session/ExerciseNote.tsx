@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, TextInput } from 'react-native';
+import { Pressable } from 'react-native';
+import { Input } from '@/components/ui/Input';
 import { border, colors, fonts, radius } from '@/constants/theme';
 import { NOTE_MAX_LENGTH } from '@/domain/notes';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -17,7 +18,7 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
 
   if (draft !== null) {
     return (
-      <TextInput
+      <Input
         maxFontSizeMultiplier={1.5}
         value={draft}
         onChangeText={setDraft}

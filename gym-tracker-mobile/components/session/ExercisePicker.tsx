@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Input } from '@/components/ui/Input';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { border, colors, fonts, hardShadow, pressOffset, radius, space } from '@/constants/theme';
 import {
@@ -252,7 +253,7 @@ export function ExercisePicker({
             <>
               {/* Marge sur un cadre : sur iOS, une marge sur le TextInput décale son texte vers le bas */}
               <View style={{ paddingHorizontal: 24, marginTop: space.md }}>
-                <TextInput
+                <Input
                   maxFontSizeMultiplier={1.5}
                   value={query}
                   onChangeText={setQuery}

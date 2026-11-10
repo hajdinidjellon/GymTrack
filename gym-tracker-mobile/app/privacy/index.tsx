@@ -4,7 +4,6 @@ import { colors, space } from '@/constants/theme';
 import { useLocale } from '@/hooks/useLocale';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { Text } from '@/components/ui/Text';
 import { t } from '@/i18n';
@@ -27,8 +26,7 @@ export default function PrivacyScreen() {
   useLocale();
   return (
     <Screen scroll>
-      <BackButton />
-      <ScreenHeader title={t('privacy.title')} subtitle={t('privacy.subtitle')} />
+      <ScreenHeader back title={t('privacy.title')} subtitle={t('privacy.subtitle')} />
       <View style={{ gap: space.md }}>
         {SECTIONS.map((key) => (
           <StickerCard key={key} small style={{ gap: space.sm }}>

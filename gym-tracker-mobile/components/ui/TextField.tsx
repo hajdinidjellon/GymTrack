@@ -1,5 +1,6 @@
 import React from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
+import { Input } from './Input';
 import { border, colors, fonts, hardShadow, radius } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 
@@ -37,7 +38,7 @@ export function TextField({ label, value, onChangeText, placeholder, kind, hint 
       ) : null}
       {/* L'ombre dure est portée par le cadre : TextInput ne la prend pas */}
       <View style={{ borderRadius: radius.input, ...hardShadow(2) }}>
-        <TextInput
+        <Input
           maxFontSizeMultiplier={1.5}
           value={value}
           onChangeText={onChangeText}
