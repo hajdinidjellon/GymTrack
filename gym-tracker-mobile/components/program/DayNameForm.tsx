@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
+import { Input } from '@/components/ui/Input';
 import { border, colors, fonts, radius, space } from '@/constants/theme';
 import { NAME_MAX } from '@/domain/programs';
 import { StickerButton } from '@/components/ui/StickerButton';
@@ -13,28 +14,38 @@ interface Props {
   /** The name typed; returns the error to show, or null once it is saved. */
   onSubmit: (name: string) => string | null;
   onCancel: () => void;
+  /** Another name than a session's: an exercise's (its own example and label). */
+  placeholder?: string;
+  label?: string;
+  /** A sentence over the field. */
+  hint?: string;
 }
 
 /** The name of a session the user adds or renames, checked when saved. */
-export function DayNameForm({ initial = '', submitLabel, onSubmit, onCancel }: Props) {
+export function DayNameForm({ initial = '', submitLabel, onSubmit, onCancel, placeholder, label, hint }: Props) {
   const [name, setName] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   return (
     <StickerCard style={{ gap: space.sm }}>
-      <TextInput
+      {hint ? (
+        <Text size={14} color={colors.inkMuted} style={{ lineHeight: 19 }}>
+          {hint}
+        </Text>
+      ) : null}
+      <Input
         maxFontSizeMultiplier={1.5}
         value={name}
         onChangeText={(text) => {
           setName(text);
           setError(null);
         }}
-        placeholder={t('program.days.namePlaceholder')}
+        placeholder={placeholder ?? t('program.days.namePlaceholder')}
         placeholderTextColor={colors.inkFaint}
         maxLength={NAME_MAX}
         autoFocus
         returnKeyType="done"
         onSubmitEditing={() => setError(onSubmit(name))}
-        accessibilityLabel={t('program.days.nameA11y')}
+        accessibilityLabel={label ?? t('program.days.nameA11y')}
         style={{
           minHeight: 54,
           paddingHorizontal: 16,

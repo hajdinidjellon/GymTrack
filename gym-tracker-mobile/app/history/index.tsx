@@ -10,7 +10,6 @@ import { useLocale } from '@/hooks/useLocale';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { FadeIn } from '@/components/ui/FadeIn';
@@ -80,12 +79,7 @@ export default function HistoryScreen() {
         windowSize={7}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.xl }}
-        ListHeaderComponent={
-          <>
-            <BackButton />
-            <ScreenHeader title={t('history.title')} subtitle={t('history.subtitle')} />
-          </>
-        }
+        ListHeaderComponent={<ScreenHeader back title={t('history.title')} subtitle={t('history.subtitle')} />}
         ListEmptyComponent={
           <Text size={16} color={colors.inkMuted} style={{ lineHeight: 22 }}>
             {t('history.empty')}

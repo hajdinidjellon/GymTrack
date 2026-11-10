@@ -16,6 +16,8 @@ export const SWITCH_AFTER = 3;
  * sessions after it count, so the question comes back only if it goes on.
  */
 export function suggestedSplit(workouts: Workout[], current: SplitId, after?: string | null): SplitId | null {
+  // Their own program: its days may share a name with another program's ("Push" kept from a copy)
+  if (current === 'custom') return null;
   const since = after ? new Date(after).getTime() : -Infinity;
   const recent = workouts
     .filter((w) => new Date(w.date).getTime() > since)

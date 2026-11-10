@@ -21,3 +21,9 @@ web-build/
 expo-env.d.ts
 # @end expo-cli
 coverage/
+
+# Supabase CLI link cache
+supabase/.temp/
+
+# Test accounts and their passwords (npm run seed:personas)
+test-accounts.local.md

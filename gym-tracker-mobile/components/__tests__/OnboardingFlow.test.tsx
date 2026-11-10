@@ -24,6 +24,42 @@ async function toRhythm() {
 }
 
 describe('OnboardingFlow', () => {
+  it('builds a program of their own: its name and each session named by the user', async () => {
+    const { onFinish } = await setup();
+    await tap('Continuer');
+    await tap('Continuer');
+    await tap('Continuer');
+    await pick(/^Autre : mon programme/);
+    // Two sessions to name: nothing goes on before they have a name
+    expect(screen.getByRole('button', { name: 'Continuer' })).toBeDisabled();
+    expect(screen.getByText('Donne un nom à chaque séance.')).toBeOnTheScreen();
+
+    await fireEvent.changeText(screen.getByLabelText('Nom du programme (facultatif)'), 'Ma prise de masse');
+    await fireEvent.changeText(screen.getByLabelText('Nom de la séance 1'), 'Journée A');
+    await fireEvent.changeText(screen.getByLabelText('Nom de la séance 2'), 'Pecs');
+    await tap('+ Ajouter une séance');
+    await fireEvent.changeText(screen.getByLabelText('Nom de la séance 3'), 'Cardio');
+    expect(screen.getByRole('button', { name: 'Continuer' })).toBeEnabled();
+
+    await tap('Continuer');
+    expect(screen.getByText('Ma prise de masse')).toBeOnTheScreen();
+    expect(screen.getByText(/A Journée A · B Pecs · C Cardio/)).toBeOnTheScreen();
+
+    await tap('Continuer');
+    await tap('Continuer');
+    await tap('Voir mon programme');
+    expect(screen.getByText('Séance 1 · Journée A')).toBeOnTheScreen();
+    expect(screen.getByText(/Pas encore d’exercice/)).toBeOnTheScreen();
+    await tap('Choisir mes exercices');
+    expect(onFinish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        split: 'custom',
+        custom: { name: 'Ma prise de masse', days: [{ name: 'Journée A' }, { name: 'Pecs' }, { name: 'Cardio' }] },
+      }),
+      'session',
+    );
+  });
+
   it('asks the seven questions in order, each already answered', async () => {
     await setup();
     expect(screen.getByText('Tu viens pour quoi ?')).toBeOnTheScreen();
@@ -111,6 +147,7 @@ describe('OnboardingFlow', () => {
         gym: 'basicfit',
         stackStep: 4.5,
         cableStep: 2.3,
+        custom: null,
       },
       'session',
     );

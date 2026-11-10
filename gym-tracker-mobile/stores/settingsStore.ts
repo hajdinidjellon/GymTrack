@@ -12,7 +12,7 @@ import { keptLinks } from '@/domain/sessionBuilder';
 import { renameInSchedule } from '@/domain/schedule';
 import { parseSettingsPatch, SETTINGS_LIMITS } from '@/domain/schemas';
 import { DEFAULT_SETTINGS, hasOwnSettings, syncedSettingsChanged } from '@/domain/settings';
-import { resolveLocale, setLocale } from '@/i18n';
+import { resolveLocale, setExerciseNicknames, setLocale } from '@/i18n';
 import { deviceLocaleTag } from '@/services/locale';
 import { logger } from '@/services/logger';
 import { readSettingsMeta, readSettingsRaw, writeSettings, writeSettingsMeta } from '@/services/settingsStorage';
@@ -81,9 +81,10 @@ async function resumeSettingsSync(settings: AppSettings): Promise<void> {
   }
 }
 
-/** Sets the language every t() reads, before the tree re-renders. */
+/** Sets the language every t() reads, and the user's exercise names, before the tree re-renders. */
 function applyLanguage(settings: AppSettings): void {
   setLocale(resolveLocale(settings.language, deviceLocaleTag()));
+  setExerciseNicknames(settings.exerciseNicknames);
 }
 
 interface SettingsStore {

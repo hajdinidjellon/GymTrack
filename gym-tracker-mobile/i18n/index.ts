@@ -97,7 +97,19 @@ export function listOf(items: string[]): string {
  * exercises keep the name they typed.
  */
 export function exerciseName(name: string): string {
+  return nicknames[name] ?? catalogName(name);
+}
+
+/** The exercise's own name in the current language, whatever the user calls it. */
+export function catalogName(name: string): string {
   return current === 'fr' ? name : (EXERCISE_NAMES_EN[name] ?? name);
+}
+
+// The user's own names for catalog exercises (`settings.exerciseNicknames`), in every language
+let nicknames: Record<string, string> = {};
+
+export function setExerciseNicknames(names: Record<string, string>): void {
+  nicknames = names;
 }
 
 /** The name of a program day ("Haut", "Push"), stored in French like the exercises. */

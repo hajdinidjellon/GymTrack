@@ -2,6 +2,8 @@ import React from 'react';
 import { router } from 'expo-router';
 import { answersSplit, type OnboardingAnswers } from '@/domain/onboarding';
 import { trainingCount } from '@/domain/schedule';
+import { customProgramSettings } from '@/domain/customProgram';
+import { hasExercises, programDays } from '@/domain/programs';
 import { useLocale } from '@/hooks/useLocale';
 import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -21,6 +23,11 @@ export default function Setup() {
       signedOut: false,
     });
     const split = answersSplit(answers);
+    // « Autre » : the program the user named, its sessions and the exercises copied into them
+    if (split === 'custom' && answers.custom) {
+      const settings = useSettingsStore.getState().settings;
+      useSettingsStore.getState().updateSettings(customProgramSettings(settings, answers.custom));
+    }
     const bodyStats = profile?.bodyStats ?? [];
     await useProfileStore.getState().saveProfile({
       goal: answers.goal,
@@ -40,7 +47,11 @@ export default function Setup() {
           : bodyStats,
     });
     resetTo('/(tabs)');
-    if (end === 'session') router.push('/session/preview');
+    if (end !== 'session') return;
+    // Sessions still empty: their exercises are picked first
+    const s = useSettingsStore.getState().settings;
+    const empty = programDays(split, s.customDays, s.customExercises, s.ownDays).some((d) => !hasExercises(d));
+    router.push(split === 'custom' && empty ? '/days' : '/session/preview');
   };
 
   return <OnboardingFlow onExit={() => router.back()} onFinish={finish} />;

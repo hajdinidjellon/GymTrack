@@ -4,13 +4,12 @@ import { router } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { checkDayName } from '@/domain/ownDays';
 import { DayNameForm } from '@/components/program/DayNameForm';
-import { dayKey, getSplit, programDays } from '@/domain/programs';
+import { dayKey, programDays, programTitle } from '@/domain/programs';
 import { useProfileStore } from '@/stores/profileStore';
 import { SETTINGS_LIMITS } from '@/domain/schemas';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { Chip } from '@/components/ui/Chip';
@@ -27,6 +26,7 @@ export default function DaysScreen() {
   const customDays = useSettingsStore((s) => s.settings.customDays);
   const own = useSettingsStore((s) => s.settings.customExercises);
   const ownDays = useSettingsStore((s) => s.settings.ownDays);
+  const programName = useSettingsStore((s) => s.settings.programName);
   const addOwnDay = useSettingsStore((s) => s.addOwnDay);
   const [adding, setAdding] = useState(false);
   if (!split) return null;
@@ -34,9 +34,9 @@ export default function DaysScreen() {
 
   return (
     <Screen scroll>
-      <BackButton />
       <ScreenHeader
-        eyebrow={getSplit(split).title}
+        back
+        eyebrow={programTitle(split, programName)}
         title={t('program.days.title')}
         subtitle={t('program.days.subtitle')}
       />
@@ -60,7 +60,7 @@ export default function DaysScreen() {
                       <Text size={20} weight="black">
                         {dayName(day.name)}
                       </Text>
-                      {custom ? <Chip tone="sun" label={t('program.days.custom')} /> : null}
+                      {custom && !day.own ? <Chip tone="sun" label={t('program.days.custom')} /> : null}
                     </View>
                     <Text size={14} color={colors.inkMuted} numberOfLines={2} style={{ lineHeight: 19 }}>
                       {day.exercises.length

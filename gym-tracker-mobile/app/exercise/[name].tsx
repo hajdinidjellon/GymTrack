@@ -38,7 +38,9 @@ import { CreateExerciseForm } from '@/components/program/CreateExerciseForm';
 import { ExerciseVideo, videoFor } from '@/components/exercise/ExerciseVideo';
 import { MusclesCard } from '@/components/exercise/MusclesCard';
 import { workedBy } from '@/domain/catalog/muscles';
-import { exerciseName, t } from '@/i18n';
+import { catalogName, exerciseName, t } from '@/i18n';
+import { withNickname } from '@/domain/nicknames';
+import { DayNameForm } from '@/components/program/DayNameForm';
 import { useLocale } from '@/hooks/useLocale';
 
 export default function ExerciseScreen() {
@@ -53,19 +55,25 @@ export default function ExerciseScreen() {
   const setManualProgression = useSettingsStore((s) => s.setManualProgression);
   const removeCustomExercise = useSettingsStore((s) => s.removeCustomExercise);
   const [editing, setEditing] = useState(false);
+  const [renamingCatalog, setRenamingCatalog] = useState(false);
+  const nicknames = useSettingsStore((s) => s.settings.exerciseNicknames);
   const warmupChoice = useSettingsStore((s) => s.settings);
 
   if (!def || !ctx) {
     return (
       <Screen>
-        <BackButton />
-        <Text size={20} style={{ marginTop: 20 }}>
-          {t('exercise.notFound')}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm }}>
+          <BackButton />
+          <Text size={20} style={{ flex: 1 }}>
+            {t('exercise.notFound')}
+          </Text>
+        </View>
       </Screen>
     );
   }
 
+  // A catalog exercise the user gave their own name
+  const nickname = nicknames[def.name];
   // Created by the user: it can be changed or removed
   const own = def.custom ? ctx.settings.customExercises?.find((e) => e.name === def.name) : undefined;
   const confirmRemove = (name: string) =>
@@ -105,8 +113,8 @@ export default function ExerciseScreen() {
 
   return (
     <Screen scroll>
-      <BackButton />
       <ScreenHeader
+        back
         eyebrow={def.custom ? t('exercise.ownEyebrow', { equipment }) : equipment}
         title={exerciseName(def.name)}
       />
@@ -115,7 +123,45 @@ export default function ExerciseScreen() {
           <Link label={t('exercise.own.edit')} onPress={() => setEditing(true)} />
           <Link label={t('exercise.own.remove')} onPress={() => confirmRemove(own.name)} />
         </View>
-      ) : null}
+      ) : renamingCatalog ? (
+        <View style={{ marginTop: -space.sm, marginBottom: space.md }}>
+          <DayNameForm
+            initial={nickname ?? ''}
+            submitLabel={t('program.nickname.save')}
+            label={t('program.nickname.label')}
+            placeholder={exerciseName(def.name)}
+            hint={t('program.nickname.hint')}
+            onCancel={() => setRenamingCatalog(false)}
+            onSubmit={(typed) => {
+              const next = withNickname(useSettingsStore.getState().settings, def.name, typed);
+              if ('error' in next) return next.error;
+              useSettingsStore.getState().updateSettings({ exerciseNicknames: next.nicknames });
+              setRenamingCatalog(false);
+              return null;
+            }}
+          />
+        </View>
+      ) : (
+        <View style={{ marginTop: -space.sm, marginBottom: space.md, gap: space.xs }}>
+          {nickname ? (
+            <Text size={14} color={colors.inkMuted}>
+              {t('program.nickname.original', { name: catalogName(def.name) })}
+            </Text>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: space.lg }}>
+            <Link label={t('program.nickname.action')} onPress={() => setRenamingCatalog(true)} />
+            {nickname ? (
+              <Link
+                label={t('program.nickname.reset')}
+                onPress={() => {
+                  const { [def.name]: _gone, ...others } = useSettingsStore.getState().settings.exerciseNicknames;
+                  useSettingsStore.getState().updateSettings({ exerciseNicknames: others });
+                }}
+              />
+            ) : null}
+          </View>
+        </View>
+      )}
       <Modal visible={editing} animationType="slide" onRequestClose={() => setEditing(false)}>
         <Screen scroll>
           {own ? (

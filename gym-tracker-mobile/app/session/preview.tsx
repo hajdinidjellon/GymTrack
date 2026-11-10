@@ -24,7 +24,6 @@ import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
-import { BackButton } from '@/components/ui/BackButton';
 import { StickerCard } from '@/components/ui/StickerCard';
 import { Chip, IndexBadge } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
@@ -75,8 +74,8 @@ export default function Preview() {
         </>
       }
     >
-      <BackButton label={t('session.backHome')} />
       <ScreenHeader
+        back={{ label: t('session.backHome') }}
         eyebrow={t(
           day.extra
             ? 'session.preview.extraEyebrow'

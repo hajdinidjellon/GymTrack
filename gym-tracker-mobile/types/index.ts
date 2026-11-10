@@ -129,7 +129,8 @@ export interface BodyStats {
 }
 
 export type Goal = 'muscle' | 'force' | 'forme';
-export type SplitId = 'ppl' | 'ul' | 'fb' | 'glutes';
+/** `custom`: the user's own program, every day of it named and filled by them (`ownDays.custom`). */
+export type SplitId = 'ppl' | 'ul' | 'fb' | 'glutes' | 'custom';
 /** How long the user has been lifting: sets the first weights to try. */
 export type Experience = 'new' | 'months' | 'years';
 
@@ -240,6 +241,10 @@ export interface AppSettings {
   gymChain: string | null;
   /** The one-time suggestion to add a recovery email was answered (added or declined). */
   recoveryPromptSeen: boolean;
+  /** The name the user gave their own program ("Ma prise de masse"). Null: "Mon programme". */
+  programName: string | null;
+  /** The user's own name for a catalog exercise ("Développé couché" → "DC lourd"), shown everywhere. */
+  exerciseNicknames: Record<string, string>;
 }
 
 // ============================================================

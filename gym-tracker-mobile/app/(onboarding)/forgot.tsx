@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
-import { colors } from '@/constants/theme';
+import { colors, space } from '@/constants/theme';
 import { normalizeUsername, passwordError, usernameError } from '@/domain/account';
 import { normalizeRecoveryCode } from '@/domain/recovery';
 import { getLocale, t } from '@/i18n';
@@ -80,10 +80,12 @@ export default function Forgot() {
           />
         }
       >
-        <BackButton />
-        <Text size={44} weight="black" style={{ marginTop: 20, lineHeight: 50 }}>
-          {t('account.forgot.title')}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm }}>
+          <BackButton />
+          <Text size={36} weight="black" accessibilityRole="header" style={{ flex: 1, lineHeight: 42 }}>
+            {t('account.forgot.title')}
+          </Text>
+        </View>
         <Text size={18} color={colors.inkMuted} style={{ marginTop: 12 }}>
           {t('account.forgot.subtitle')}
         </Text>

@@ -106,6 +106,8 @@ export const onboarding: Dictionary['onboarding'] = {
     recap: {
       perDay: '{n} min a session',
       firstSession: 'See my first session',
+      ownExercises: 'Pick my exercises',
+      ownEmpty: 'No exercise yet: you pick them in the next step, session by session.',
       later: 'Later, go to home',
       ready: 'Your program\nis ready',
       perWeek: '{n} × a week',

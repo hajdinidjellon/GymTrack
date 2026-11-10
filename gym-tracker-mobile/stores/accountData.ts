@@ -4,6 +4,7 @@
  */
 
 import { DEFAULT_SETTINGS, perDeviceSettings } from '@/domain/settings';
+import { setExerciseNicknames } from '@/i18n';
 import { readDataOwner, writeDataOwner, writeLastPull } from '@/services/dataOwner';
 import { countPendingSync, wipeLocalData } from '@/services/db';
 import { writeSettings } from '@/services/settingsStorage';
@@ -41,6 +42,8 @@ export async function clearLocalData(): Promise<void> {
   useWorkoutStore.setState({ workouts: [] });
   useProfileStore.setState({ profile: null });
   useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, ...device } });
+  // The names this account gave its exercises are not the next one's
+  setExerciseNicknames({});
 }
 
 /** What is still to send, after one last try. 0: everything is in the account. */

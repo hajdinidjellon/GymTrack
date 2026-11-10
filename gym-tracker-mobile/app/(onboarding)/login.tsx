@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { router } from 'expo-router';
-import { colors } from '@/constants/theme';
+import { colors, space } from '@/constants/theme';
 import { contactEmailError, loginEmail, normalizeUsername, passwordError, usernameError } from '@/domain/account';
 import { t } from '@/i18n';
 import { useLocale } from '@/hooks/useLocale';
@@ -115,10 +115,12 @@ export default function Login() {
           </>
         }
       >
-        <BackButton />
-        <Text size={52} weight="black" style={{ marginTop: 20, lineHeight: 58 }}>
-          {t(signingUp ? 'onboarding.login.signupTitle' : 'onboarding.login.signinTitle')}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm }}>
+          <BackButton />
+          <Text size={40} weight="black" accessibilityRole="header" style={{ flex: 1, lineHeight: 46 }}>
+            {t(signingUp ? 'onboarding.login.signupTitle' : 'onboarding.login.signinTitle')}
+          </Text>
+        </View>
         <Text size={19} color={colors.inkMuted} style={{ marginTop: 12 }}>
           {t(signingUp ? 'onboarding.login.signupSubtitle' : 'onboarding.login.signinSubtitle')}
         </Text>

@@ -17,6 +17,7 @@ npm run check        # everything CI runs: lint, format:check, type-check, test:
 npm run lint         # ESLint, including the layer rules below
 npm run format       # Prettier
 npm test             # Jest: "domain" project (Node) + "app" project (jest-expo)
+npm run seed:personas  # (re)builds the test accounts on the Supabase project of .env.local; passwords in test-accounts.local.md (git-ignored). SEED_DRY=1: build only
 ```
 
 CI: `.github/workflows/` — `ci.yml` (lint, types, tests, expo-doctor, iOS and Android bundles, native fingerprint on PRs; `CI ok` is the required check), `security.yml` (CodeQL, npm audit, dependency review, gitleaks), `pr.yml` (conventional title, labels, actionlint), `release.yml` (tag `v*` → GitHub release + EAS build). Actions pinned by SHA.
@@ -84,6 +85,8 @@ A layer never imports a layer above it. Always import with `@/`.
 - `backup.ts` — the backup file (JSON, validated on restore), merging sessions by id.
 - `importWorkouts.ts` — Strong and Hevy CSV exports to sessions; names matched to the catalog from the Hevy and Strong names it knows (`catalog/importNames.ts`), else only when movement and equipment agree (the word in brackets: Barbell, Cable, Smith Machine…).
 - `ownDays.ts` — days the user adds to a program (`settings.ownDays`): named, renamed, removed; an empty one is never the next session (`hasExercises`).
+- `customProgram.ts` — « Mon programme » (split `custom`): the user names the program (`settings.programName`) and every session (`ownDays.custom`), from nothing or copied from another program with its exercises (`draftFrom`, `customProgramSettings`). Asked in the onboarding (« Autre ») and in Profil → Programme. `programTitle` shows its name. It keeps one session at least and never gets the switch suggestion.
+- `nicknames.ts` — the user's own name for a catalog exercise (`settings.exerciseNicknames`): `exerciseName()` shows it everywhere (voice included) and the search finds it; `catalogName()` is the exercise's own name. History and progression are keyed by the stored name, unchanged.
 - `ownExercises.ts` — editing or deleting an own exercise; a rename moves every setting under the name and keeps the old name as an alias.
 - `voiceCommands.ts` — what a few spoken words mean ("fait", "8", "plus tard"…); more than 4 words is never a command.
 - Drop sets (`setType: 'drop'`) never steer progression (`mainSets`). Supersets: exercises with the same `superset` group take turns (`sessionCursor`), no rest inside a round (`supersetHandoff`).
@@ -127,7 +130,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - Sticker style: `border.strong` (3) on cards and big buttons, `border.base` (2.5) elsewhere; `hardShadow(5 | 4 | 2)` = offset ink shadow, no blur. A pressed button sinks onto its shadow. Empty or upcoming things are dashed `line`. `Sparkle`: 2 max per screen, hero card or celebration only.
 - Clarity: the main action sits at the bottom, under the thumb. The logger never changes screen: the rest opens as a popup in the middle (it can be minimized to a bar at the bottom, or closed). Weight and reps can be typed; sets are added below the table and swiped left to delete. A validated set carries its weight and reps over to the next ones. Exercise pills at the top: tap a waiting one to do it now (machine freed up), "Plus tard" sends the current one to the end (machine taken). The "+" after the pills adds an exercise at the end. Current set circled in the sets table. Everything the app computed is pre-filled.
 
-Base components in `components/ui/` (`StickerButton`, `StickerCard`, `Chip`, `Choice`, `Sparkle`, `PressableScale` for tappable cards, `FadeIn` for screen entrance), plates in `components/disc/`, charts in `components/stats/`, session views in `components/session/` (`SetView` + `SetRow`/`SetsTable`, `RestView`).
+Base components in `components/ui/` (`StickerButton`, `StickerCard`, `Chip`, `Choice`, `Sparkle`, `PressableScale` for tappable cards, `FadeIn` for screen entrance, `ScreenHeader back` for the round back arrow on the title's line, `Input` for one-line fields: it draws the placeholder centred, iOS draws its own too low), plates in `components/disc/`, charts in `components/stats/`, session views in `components/session/` (`SetView` + `SetRow`/`SetsTable`, `RestView`).
 
 ## Key conventions
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Input } from '@/components/ui/Input';
 import * as Haptics from 'expo-haptics';
 import { border, colors, fonts, radius, space } from '@/constants/theme';
 import {
@@ -90,7 +91,7 @@ export function CreateExerciseForm({
         <Text size={14} weight="bold" color={colors.inkMuted}>
           {t('program.create.name')}
         </Text>
-        <TextInput
+        <Input
           maxFontSizeMultiplier={1.5}
           value={name}
           onChangeText={(text) => {

@@ -149,6 +149,8 @@ export const domain = {
       pplSub: 'Pecs, épaules et triceps ; puis dos et biceps ; puis jambes.',
       glutesTitle: 'Fessiers / Haut / Jambes',
       glutesSub: 'Une séance rien que pour les fessiers, une pour le haut, une pour les jambes.',
+      customTitle: 'Autre : mon programme',
+      customSub: 'Tu le nommes, tu nommes chaque séance (Journée A, Pecs, Cardio…) et tu choisis les exercices.',
     },
     goalTips: {
       muscleLead: 'Bon choix.',
@@ -164,6 +166,7 @@ export const domain = {
       ul: 'haut du corps, puis bas du corps. Chaque muscle travaille deux fois par semaine.',
       ppl: 'pousser, tirer, jambes. Chaque séance vise un groupe de muscles à fond.',
       glutes: 'une séance fessiers, une haut du corps, une jambes. Les fessiers passent en premier.',
+      custom: 'tes séances, dans ton ordre. Chaque exercice progresse de son côté.',
     },
     experienceTips: {
       newLead: 'On y va doucement.',
@@ -184,6 +187,8 @@ export const domain = {
     metaUl: '4 j',
     metaFb: '2–3 j',
     metaGlutes: '3–5 j',
+    splitCustom: 'Mon programme',
+    metaCustom: 'à toi',
     muscles: {
       chest: 'Pectoraux',
       back: 'Dos',
@@ -324,6 +329,17 @@ export const domain = {
   ownDays: {
     nameEmpty: 'Donne un nom à ta séance.',
     nameTaken: 'Une séance porte déjà ce nom.',
+  },
+
+  nicknames: {
+    taken: 'Un autre exercice s’appelle déjà comme ça.',
+  },
+
+  customProgram: {
+    noDay: 'Ajoute au moins une séance.',
+    emptyDay: 'Donne un nom à chaque séance.',
+    sameDay: 'Deux séances portent le même nom.',
+    tooMany: '{max} séances au maximum.',
   },
 
   voice: {

@@ -52,10 +52,12 @@ export default function WorkoutScreen() {
   if (!workout) {
     return (
       <Screen>
-        <BackButton />
-        <Text size={20} style={{ marginTop: 20 }}>
-          {t('history.detail.notFound')}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.sm }}>
+          <BackButton />
+          <Text size={20} style={{ flex: 1 }}>
+            {t('history.detail.notFound')}
+          </Text>
+        </View>
       </Screen>
     );
   }
@@ -67,8 +69,7 @@ export default function WorkoutScreen() {
 
   return (
     <Screen scroll>
-      <BackButton />
-      <ScreenHeader eyebrow={formatDay(workout.date)} title={dayName(workout.name)} />
+      <ScreenHeader back eyebrow={formatDay(workout.date)} title={dayName(workout.name)} />
       <FadeIn>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: space.lg }}>
           <Chip label={t('common.exercises', { count: exercises.length })} />

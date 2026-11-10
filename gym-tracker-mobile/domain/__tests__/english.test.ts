@@ -88,6 +88,7 @@ describe('labels in English', () => {
       'Upper · Lower (4 d)',
       'Full body (2–3 d)',
       'Glutes · Upper · Legs (3–5 d)',
+      'My program (yours)',
     ]);
     expect(GOALS.map((g) => g.title)).toEqual(['Build muscle', 'Get stronger', 'Stay in shape']);
     expect(GOALS[1]!.sub).toBe('5 × 3–5 reps, heavy');

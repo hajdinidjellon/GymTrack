@@ -11,6 +11,7 @@ import { Text } from '@/components/ui/Text';
 import { StickerButton } from '@/components/ui/StickerButton';
 import { Choice } from '@/components/ui/Choice';
 import { StepHeader } from '@/components/ui/StepHeader';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Barbell } from '@/components/disc/Barbell';
 import type { Goal } from '@/types';
 
@@ -31,13 +32,20 @@ export default function GoalScreen() {
 
   return (
     <Screen footer={<StickerButton label={edit ? t('common.save') : t('common.continue')} onPress={next} />}>
-      <StepHeader step={edit ? undefined : 1} total={edit ? undefined : 2} />
-      <Text size={48} weight="black" style={{ marginTop: 26, lineHeight: 54 }}>
-        {t('onboarding.goal.title')}
-      </Text>
-      <Text size={18} color={colors.inkMuted} style={{ marginTop: 10 }}>
-        {t('onboarding.goal.subtitle')}
-      </Text>
+      {edit ? (
+        // Opened from the profile: the arrow on the title's line, like every other screen
+        <ScreenHeader back title={t('onboarding.goal.title')} subtitle={t('onboarding.goal.subtitle')} />
+      ) : (
+        <>
+          <StepHeader step={1} total={2} />
+          <Text size={48} weight="black" style={{ marginTop: 26, lineHeight: 54 }}>
+            {t('onboarding.goal.title')}
+          </Text>
+          <Text size={18} color={colors.inkMuted} style={{ marginTop: 10 }}>
+            {t('onboarding.goal.subtitle')}
+          </Text>
+        </>
+      )}
 
       <View accessibilityRole="radiogroup" style={{ gap: 12, marginTop: 28 }}>
         {GOALS.map((g) => (

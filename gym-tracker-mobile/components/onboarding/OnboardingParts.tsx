@@ -1,9 +1,10 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { border, colors, hardShadow, radius } from '@/constants/theme';
+import { border, colors, radius } from '@/constants/theme';
 import { t } from '@/i18n';
 import { Text } from '@/components/ui/Text';
-import { BulbIcon, Check, ChevronLeft } from '@/components/ui/icons';
+import { BackButton } from '@/components/ui/BackButton';
+import { BulbIcon, Check } from '@/components/ui/icons';
 
 /** Back arrow, the questions as segments (done green, current coral, upcoming dashed) and "Passer". */
 export function OnboardingHeader({
@@ -20,26 +21,7 @@ export function OnboardingHeader({
 }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 48 }}>
-      <Pressable
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel={t('onboarding.header.back')}
-        hitSlop={4}
-        style={({ pressed }) => ({
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: colors.card,
-          borderWidth: border.base,
-          borderColor: colors.outline,
-          alignItems: 'center',
-          justifyContent: 'center',
-          ...(pressed ? {} : hardShadow(2)),
-          transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : [],
-        })}
-      >
-        <ChevronLeft size={22} />
-      </Pressable>
+      <BackButton onPress={onBack} label={t('onboarding.header.back')} />
       {step != null ? (
         <View
           accessible
