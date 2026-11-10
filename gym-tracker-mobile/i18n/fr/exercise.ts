@@ -1,10 +1,12 @@
 /** Exercise detail screen (app/exercise/[name]). */
 export const exercise = {
   video: {
-    watch: 'Voir le mouvement',
-    watchNew: 'Nouveau ? Voir le mouvement',
-    watchA11y: 'Voir la vidéo du mouvement',
     close: 'Fermer',
+    thumb: 'Démo',
+    thumbA11y: 'Voir la démo de {name} en grand',
+    sheetTitle: '{name} · la démo',
+    sheetHint: 'La démo tourne en boucle, sans le son. Elle reste en haut à droite pendant ta séance.',
+    gotIt: 'J’ai compris',
     a11y: 'Vidéo du mouvement, en boucle. Les muscles travaillés s’allument sur la mascotte.',
     title: 'Muscles travaillés',
     helpers: 'Aident : {muscles}',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Keyboard, Pressable, ScrollView, View, type AlertButton } from 'react-native';
+import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 import { border, colors, radius, space } from '@/constants/theme';
 import { loadingOf } from '@/domain/loading';
 import { formatKg } from '@/domain/plates';
@@ -14,11 +14,11 @@ import { Stepper } from '@/components/ui/Stepper';
 import { Check } from '@/components/ui/icons';
 import { Barbell } from '@/components/disc/Barbell';
 import { usePerSide } from '@/components/disc/LoadedBar';
-import { MovementButton } from '@/components/exercise/MovementButton';
-import { ExerciseNote } from './ExerciseNote';
 import { HoldTimer } from './HoldTimer';
 import { LoadHint } from './LoadHint';
 import { MissedRepsSheet } from './MissedRepsSheet';
+import { EditSetSheet } from './EditSetSheet';
+import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
 import { SetsTable } from './SetRow';
 import { t } from '@/i18n';
 
@@ -41,39 +41,48 @@ export function SetView({ cursor, footer }: Props) {
   const addDropSet = useSessionStore((s) => s.addDropSet);
   const toggleFailure = useSessionStore((s) => s.toggleFailure);
 
-  /** "⋯" or a long press on a set: a drop set after it, "jusqu'à l'échec", or delete it. */
-  const openSetMenu = (i: number, deletable: boolean) => {
-    const target = exercise.sets[i];
-    if (!target) return;
+  // "⋯" or a long press on a set: its menu. A validated set: correct it (`editing`)
+  const [menu, setMenu] = useState<{ index: number; deletable: boolean } | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  const titleOf = (i: number) => {
     const { warmup, drop, n } = setNumber(exercise.sets, i);
-    const buttons: AlertButton[] = [];
+    return warmup
+      ? t('session.setMenu.titleWarmup')
+      : drop
+        ? t('session.setMenu.titleDrop')
+        : t('session.setMenu.title', { n });
+  };
+  const menuActions = (): SheetAction[] => {
+    const target = menu ? exercise.sets[menu.index] : undefined;
+    if (!menu || !target) return [];
+    const i = menu.index;
+    const { warmup, drop } = setNumber(exercise.sets, i);
+    const actions: SheetAction[] = [];
+    if (target.completed)
+      actions.push({
+        label: t('session.setMenu.edit'),
+        hint: t('session.setMenu.editHint'),
+        opensSheet: true,
+        onPress: () => setEditing(i),
+      });
     if (target.weight > 0 && !warmup)
-      buttons.push({ text: t('session.setMenu.addDrop'), onPress: () => addDropSet(exercise.id, i) });
+      actions.push({ label: t('session.setMenu.addDrop'), onPress: () => addDropSet(exercise.id, i) });
     if (!drop && !warmup) {
       const failure = target.setType === 'failure';
-      buttons.push({
-        text: t(failure ? 'session.setMenu.normal' : 'session.setMenu.failure'),
+      actions.push({
+        label: t(failure ? 'session.setMenu.normal' : 'session.setMenu.failure'),
         onPress: () => toggleFailure(exercise.id, i),
       });
     }
-    if (deletable)
-      buttons.push({
-        text: t(warmup ? 'session.setMenu.deleteWarmup' : 'session.setMenu.delete'),
-        style: 'destructive',
+    if (menu.deletable)
+      actions.push({
+        label: t(warmup ? 'session.setMenu.deleteWarmup' : 'session.setMenu.delete'),
+        danger: true,
         onPress: () => removeSet(exercise.id, i),
       });
-    if (buttons.length === 0) return;
-    buttons.push({ text: t('common.cancel'), style: 'cancel' });
-    Alert.alert(
-      warmup
-        ? t('session.setMenu.titleWarmup')
-        : drop
-          ? t('session.setMenu.titleDrop')
-          : t('session.setMenu.title', { n }),
-      undefined,
-      buttons,
-    );
+    return actions;
   };
+  const editedSet = editing !== null ? exercise.sets[editing] : undefined;
   const [missed, setMissed] = useState(false);
 
   const step = exercise.rule?.increment ?? 2.5;
@@ -113,10 +122,6 @@ export function SetView({ cursor, footer }: Props) {
             </Text>
           </View>
         ) : null}
-        <View style={{ marginTop: space.sm, gap: space.sm }}>
-          <MovementButton name={exercise.name} />
-          <ExerciseNote exerciseName={exercise.name} />
-        </View>
         {why ? (
           <View
             style={{
@@ -205,7 +210,8 @@ export function SetView({ cursor, footer }: Props) {
             exercise={exercise}
             current={setIndex}
             onRemove={(i) => removeSet(exercise.id, i)}
-            onMenu={openSetMenu}
+            onMenu={(index, deletable) => setMenu({ index, deletable })}
+            onEdit={setEditing}
           />
           <Pressable
             onPress={() => addSet(exercise.id)}
@@ -279,6 +285,26 @@ export function SetView({ cursor, footer }: Props) {
         )}
       </View>
 
+      <ActionSheet
+        visible={!!menu}
+        title={menu ? titleOf(menu.index) : ''}
+        actions={menuActions()}
+        onClose={() => setMenu(null)}
+      />
+      <EditSetSheet
+        key={editing ?? 'closed'}
+        set={editedSet ? { weight: editedSet.weight, reps: editedSet.reps } : null}
+        title={editing !== null ? t('session.editSet.title', { set: titleOf(editing) }) : ''}
+        noWeight={exercise.equipment === 'bodyweight'}
+        timed={!!exercise.timed && !!editedSet && !isWarmup(editedSet)}
+        step={step}
+        repStep={exercise.timed ? (exercise.rule?.repStep ?? 5) : 1}
+        onClose={() => setEditing(null)}
+        onSave={(values) => {
+          if (editing !== null) updateSet(exercise.id, editing, values);
+          setEditing(null);
+        }}
+      />
       <MissedRepsSheet
         visible={missed}
         target={targetReps}

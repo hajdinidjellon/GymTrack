@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import { colors } from '@/constants/theme';
+import { chipStyle } from './chipStyle';
 import { doLater } from '@/domain/session';
 import { useSessionStore } from '@/stores/sessionStore';
 import type { ActiveExercise } from '@/types';
@@ -18,9 +18,10 @@ export function DoLater({ exercise }: { exercise: ActiveExercise }) {
       onPress={() => useSessionStore.getState().doLater(exercise.id)}
       accessibilityRole="button"
       accessibilityLabel={t('session.doLater.a11y', { name: exerciseName(exercise.name) })}
-      hitSlop={12}
+      hitSlop={6}
+      style={({ pressed }) => chipStyle(pressed)}
     >
-      <Text size={15} weight="bold" color={colors.inkMuted} style={{ textDecorationLine: 'underline' }}>
+      <Text size={13} weight="bold" numberOfLines={1} maxFontSizeMultiplier={1.3}>
         {t('session.doLater.label')}
       </Text>
     </Pressable>

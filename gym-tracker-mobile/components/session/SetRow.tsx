@@ -185,10 +185,12 @@ interface TableProps {
   onRemove?: (setIndex: number) => void;
   /** A set's menu: "⋯", a long press. `deletable`: it can be deleted from there. */
   onMenu?: (setIndex: number, deletable: boolean) => void;
+  /** A validated set, corrected: the swipe shows « Modifier ». */
+  onEdit?: (setIndex: number) => void;
 }
 
 /** Every set of the exercise. Column headers are the only capitals of the app. */
-export function SetsTable({ exercise, current, onRemove, onMenu }: TableProps) {
+export function SetsTable({ exercise, current, onRemove, onMenu, onEdit }: TableProps) {
   const noWeight = exercise.equipment === 'bodyweight';
   // A warm-up or a drop can always go; the last working set stays
   const canRemove = (i: number) =>
@@ -219,6 +221,8 @@ export function SetsTable({ exercise, current, onRemove, onMenu }: TableProps) {
                     : t('session.setRow.deleteA11y', { n })
               }
               onDelete={deletable ? () => onRemove!(i) : undefined}
+              onEdit={s.completed && onEdit ? () => onEdit(i) : undefined}
+              editLabel={t('session.setRow.editA11y', { n })}
             >
               <SetRow
                 index={n}

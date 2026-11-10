@@ -2,10 +2,12 @@ import type { Dictionary } from '@/i18n/fr';
 
 export const exercise: Dictionary['exercise'] = {
   video: {
-    watch: 'See the movement',
-    watchNew: 'New? See the movement',
-    watchA11y: 'See the video of the movement',
     close: 'Close',
+    thumb: 'Demo',
+    thumbA11y: 'See the {name} demo full size',
+    sheetTitle: '{name} · the demo',
+    sheetHint: 'The demo loops, without sound. It stays top right during your session.',
+    gotIt: 'Got it',
     a11y: 'Video of the movement, looping. The worked muscles light up on the mascot.',
     title: 'Muscles worked',
     helpers: 'Helping: {muscles}',

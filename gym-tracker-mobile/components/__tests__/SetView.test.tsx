@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
-import { Alert, Text, type AlertButton } from 'react-native';
+import { Text } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { findCurrent } from '@/domain/sessionCursor';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -213,73 +213,63 @@ describe('SetView set menu', () => {
     useSessionStore.getState().startSession('Push', [bench]);
   });
 
-  it('adds a drop set or marks a set to failure from a long press', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+  const choice = (name: string) => screen.queryByRole('button', { name });
+  const choose = (name: string) => fireEvent.press(screen.getByRole('button', { name }));
+
+  it('adds a drop set or marks a set to failure from a long press, in the app’s own sheet', async () => {
     await renderCurrentSet();
     await fireEvent(screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, à venir'), 'longPress');
-    const [title, , buttons] = alert.mock.calls.at(-1)!;
-    expect(title).toBe('Série 2');
-    expect((buttons as AlertButton[]).map((b) => b.text)).toEqual([
-      'Ajouter une dégressive après',
-      'Jusqu’à l’échec',
-      'Supprimer la série',
-      'Annuler',
-    ]);
-    await act(() => (buttons as AlertButton[])[0]!.onPress!());
+    expect(screen.getByRole('header', { name: 'Série 2' })).toBeOnTheScreen();
+    for (const name of ['Ajouter une dégressive après', 'Jusqu’à l’échec', 'Supprimer la série', 'Annuler']) {
+      expect(choice(name)).toBeOnTheScreen();
+    }
+    // Not validated yet: nothing to correct
+    expect(choice('Modifier le poids ou les reps')).toBeNull();
+    await choose('Ajouter une dégressive après');
     expect(sets()[2]).toMatchObject({ setType: 'drop', weight: 50 });
-    await act(() => (buttons as AlertButton[])[1]!.onPress!());
+
+    await fireEvent(screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, à venir'), 'longPress');
+    await choose('Jusqu’à l’échec');
     expect(sets()[1]!.setType).toBe('failure');
-    alert.mockRestore();
   });
 
   it('shows the drop set by name in the table and offers no failure on it', async () => {
     useSessionStore.getState().addDropSet('bench', 1);
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await renderCurrentSet();
     expect(screen.getByText('Dégr.')).toBeOnTheScreen();
     await fireEvent(screen.getByLabelText('Dégressive, 50 kilos, 10 reps, à venir'), 'longPress');
-    expect(alert.mock.calls.at(-1)![0]).toBe('Série dégressive');
-    expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).toEqual([
-      'Ajouter une dégressive après',
-      'Supprimer la série',
-      'Annuler',
-    ]);
-    alert.mockRestore();
+    expect(screen.getByRole('header', { name: 'Série dégressive' })).toBeOnTheScreen();
+    expect(choice('Ajouter une dégressive après')).toBeOnTheScreen();
+    expect(choice('Supprimer la série')).toBeOnTheScreen();
+    expect(choice('Jusqu’à l’échec')).toBeNull();
   });
 
   it("opens the same menu from a visible '⋯' on every set", async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await renderCurrentSet();
     const dots = screen.getAllByLabelText('Options de la série');
     expect(dots).toHaveLength(2);
     await fireEvent.press(dots[1]!);
-    expect(alert.mock.calls.at(-1)![0]).toBe('Série 2');
-    const del = (alert.mock.calls.at(-1)![2] as AlertButton[]).find((b) => b.text === 'Supprimer la série')!;
-    expect(del.style).toBe('destructive');
-    await act(() => del.onPress!());
+    expect(screen.getByRole('header', { name: 'Série 2' })).toBeOnTheScreen();
+    await choose('Supprimer la série');
     expect(sets()).toHaveLength(1);
-    alert.mockRestore();
   });
 
   it('never offers to delete the last working set', async () => {
     useSessionStore.getState().removeSet('bench', 1);
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await renderCurrentSet();
     await fireEvent.press(screen.getByLabelText('Options de la série'));
-    expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).not.toContain('Supprimer la série');
-    alert.mockRestore();
+    expect(choice('Supprimer la série')).toBeNull();
   });
 
   it("reaches the menu and the delete from VoiceOver's actions", async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await renderCurrentSet();
     const row = screen.getByLabelText('Série 2, 62,5 kilos, 10 reps, à venir');
     expect(row.props.accessibilityActions.map((a: { name: string }) => a.name)).toEqual(['menu', 'delete']);
     await fireEvent(row, 'accessibilityAction', { nativeEvent: { actionName: 'menu' } });
-    expect(alert).toHaveBeenCalled();
+    expect(screen.getByRole('header', { name: 'Série 2' })).toBeOnTheScreen();
+    await choose('Annuler');
     await fireEvent(row, 'accessibilityAction', { nativeEvent: { actionName: 'delete' } });
     expect(sets()).toHaveLength(1);
-    alert.mockRestore();
   });
 
   it('offers only the delete on a warm-up', async () => {
@@ -287,14 +277,23 @@ describe('SetView set menu', () => {
     useSessionStore
       .getState()
       .startSession('Push', [{ ...bench, sets: [{ ...bench.sets[0]!, setType: 'warmup' as const }, ...bench.sets] }]);
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await renderCurrentSet();
     await fireEvent.press(screen.getAllByLabelText('Options de la série')[0]!);
-    expect(alert.mock.calls.at(-1)![0]).toBe('Échauffement');
-    expect((alert.mock.calls.at(-1)![2] as AlertButton[]).map((b) => b.text)).toEqual([
-      "Supprimer l'échauffement",
-      'Annuler',
-    ]);
-    alert.mockRestore();
+    expect(screen.getByRole('header', { name: 'Échauffement' })).toBeOnTheScreen();
+    expect(choice("Supprimer l'échauffement")).toBeOnTheScreen();
+    expect(choice('Ajouter une dégressive après')).toBeNull();
+  });
+
+  it('corrects a validated set: the weight or the reps typed wrong', async () => {
+    useSessionStore.getState().completeSet('bench', 0);
+    await renderCurrentSet();
+    await fireEvent.press(screen.getAllByLabelText('Options de la série')[0]!);
+    await choose('Modifier le poids ou les reps');
+    // On iOS the edit sheet waits for the menu to be gone
+    await act(() => jest.advanceTimersByTime(600));
+    expect(screen.getByRole('header', { name: 'Modifier · Série 1' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getAllByLabelText('Moins une rep').at(-1)!);
+    await fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(sets()[0]).toMatchObject({ weight: 62.5, reps: 9, completed: true });
   });
 });

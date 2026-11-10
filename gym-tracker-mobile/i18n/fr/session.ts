@@ -99,7 +99,7 @@ export const session = {
 
   swap: {
     a11y: "Changer d'exercice, à la place de {name}",
-    button: 'Changer',
+    button: 'Changer d’exo',
     title: "Changer d'exercice",
     sameMuscle: 'Même muscle · {muscle}',
     keep: 'Garder ce changement pour mes prochaines séances {day}',
@@ -258,6 +258,7 @@ export const session = {
     headerKg: 'KG',
     headerReps: 'REPS',
     deleteA11y: 'Supprimer la série {n}',
+    editA11y: 'Modifier la série {n}',
     warmupShort: 'Éch.',
     a11yWarmup: 'Échauffement, {kg} kilos, {reps} reps, {state}',
     a11ySeconds: 'Série {index}, {reps} secondes, {state}',
@@ -304,6 +305,13 @@ export const session = {
     normal: 'Série normale',
     delete: 'Supprimer la série',
     deleteWarmup: "Supprimer l'échauffement",
+    edit: 'Modifier le poids ou les reps',
+    editHint: 'Tu t’es trompé en validant ? Corrige-la.',
+  },
+
+  editSet: {
+    title: 'Modifier · {set}',
+    hint: 'Le poids et les reps que tu as vraiment faits. Le reste de la séance ne bouge pas.',
   },
 
   hold: {
