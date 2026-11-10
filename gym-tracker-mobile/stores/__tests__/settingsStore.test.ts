@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISES } from '@/domain/programs';
+import { SETTINGS_LIMITS } from '@/domain/schemas';
+import type { CustomExercise } from '@/types';
 import { readSettingsMeta } from '@/services/settingsStorage';
 import { queueSettingsSync } from '@/services/sync';
 import { useProfileStore } from '@/stores/profileStore';
@@ -51,6 +53,14 @@ describe('parseSettings', () => {
 
   it('rejects tampered values', () => {
     expect(parseSettings(JSON.stringify({ barWeight: 'heavy' }))).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('keeps the rest of the settings when one field is out of bounds', () => {
+    const own = { name: 'Écarté Panatta', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] };
+    const settings = parseSettings(JSON.stringify({ voice: false, collarWeight: 40, customExercises: [own] }));
+    expect(settings.voice).toBe(false);
+    expect(settings.customExercises).toEqual([own]);
+    expect(settings.collarWeight).toBe(DEFAULT_SETTINGS.collarWeight);
   });
 });
 
@@ -168,6 +178,17 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.supersets).toEqual({});
   });
 
+  it('keeps a superset with its partner when the day changes, drops it otherwise', () => {
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, supersets: { 'ppl/Push': ['A', 'C'] } } });
+    const { setDayExercises } = useSettingsStore.getState();
+    setDayExercises('ppl/Push', ['C', 'D', 'A', 'B'], ['A', 'B', 'C', 'D']);
+    expect(useSettingsStore.getState().settings.supersets).toEqual({ 'ppl/Push': ['A', 'C'] });
+    setDayExercises('ppl/Push', ['A', 'C', 'D', 'B'], ['C', 'D', 'A', 'B']);
+    expect(useSettingsStore.getState().settings.supersets).toEqual({ 'ppl/Push': ['C'] });
+    setDayExercises('ppl/Push', null, ['A', 'C', 'D', 'B']);
+    expect(useSettingsStore.getState().settings.supersets).toEqual({});
+  });
+
   it('changes, renames and removes an own exercise', () => {
     const press = {
       name: 'Presse A',
@@ -193,6 +214,24 @@ describe('settings store', () => {
     expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: ['Delts'] });
     removeOwnDay('ppl', 'Delts');
     expect(useSettingsStore.getState().settings.ownDays).toEqual({ ppl: [] });
+  });
+
+  it('stops adding where the app stops reading', () => {
+    const own: CustomExercise = { name: 'Own', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] };
+    const full = Array.from({ length: SETTINGS_LIMITS.customExercises }, (_, i) => ({ ...own, name: `Own ${i}` }));
+    const days = Array.from({ length: SETTINGS_LIMITS.ownDays }, (_, i) => `Day ${i}`);
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, customExercises: full, ownDays: { ppl: days } } });
+    const store = useSettingsStore.getState();
+    store.addCustomExercise({ ...own, name: 'One more' });
+    store.addOwnDay('ppl', 'One more');
+    store.setDayExercises(
+      'ppl/Push',
+      Array.from({ length: 40 }, (_, i) => `Exo ${i}`),
+    );
+    const { settings } = useSettingsStore.getState();
+    expect(settings.customExercises).toHaveLength(SETTINGS_LIMITS.customExercises);
+    expect(settings.ownDays.ppl).toHaveLength(SETTINGS_LIMITS.ownDays);
+    expect(settings.customDays['ppl/Push']).toHaveLength(SETTINGS_LIMITS.dayExercises);
   });
 
   it('keeps the fixed week in step with a renamed or removed own day', async () => {

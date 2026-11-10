@@ -1,5 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
-import { parseList, profileSchema, settingsPatchSchema, workoutSchema } from '@/domain/schemas';
+import {
+  parseList,
+  parseSettingsPatch,
+  profileSchema,
+  SETTINGS_LIMITS,
+  settingsPatchSchema,
+  workoutSchema,
+} from '@/domain/schemas';
 import { lift, workout } from './fixtures';
 
 describe('workoutSchema', () => {
@@ -64,9 +71,43 @@ describe('settingsPatchSchema', () => {
       restOverrides: { Squat: 150 },
       customExercises: [own],
     });
-    expect(settingsPatchSchema.safeParse({ restOverrides: { Squat: 5 } }).success).toBe(false);
-    expect(settingsPatchSchema.safeParse({ customExercises: [{ ...own, name: '  ' }] }).success).toBe(false);
-    expect(settingsPatchSchema.safeParse({ customExercises: [{ ...own, muscleGroups: [] }] }).success).toBe(false);
+    // A broken entry is dropped, never the whole list
+    expect(settingsPatchSchema.parse({ restOverrides: { Squat: 5, Bench: 120 } })).toEqual({
+      restOverrides: { Bench: 120 },
+    });
+    expect(settingsPatchSchema.parse({ customExercises: [{ ...own, name: '  ' }, own] })).toEqual({
+      customExercises: [own],
+    });
+    expect(settingsPatchSchema.parse({ customExercises: [{ ...own, muscleGroups: [] }] })).toEqual({
+      customExercises: [],
+    });
+  });
+});
+
+describe('parseSettingsPatch', () => {
+  const own = { name: 'Écarté Panatta', equipment: 'machine', category: 'isolation', muscleGroups: ['chest'] };
+
+  it('keeps every good field when one is broken', () => {
+    expect(parseSettingsPatch({ voice: false, barWeight: 'heavy', plates: [20, 10] })).toEqual({
+      voice: false,
+      plates: [20, 10],
+    });
+  });
+
+  it('cuts a list longer than the app keeps, instead of losing it', () => {
+    const names = Array.from({ length: 35 }, (_, i) => `Exo ${i}`);
+    const parsed = parseSettingsPatch({ customDays: { 'ppl/Push': names }, ownDays: { ppl: names } });
+    expect(parsed.customDays?.['ppl/Push']).toEqual(names.slice(0, SETTINGS_LIMITS.dayExercises));
+    expect(parsed.ownDays?.ppl).toHaveLength(SETTINGS_LIMITS.ownDays);
+    const many = Array.from({ length: 205 }, (_, i) => ({ ...own, name: `Own ${i}` }));
+    expect(parseSettingsPatch({ customExercises: many }).customExercises).toHaveLength(SETTINGS_LIMITS.customExercises);
+  });
+
+  it('ignores unknown keys and what is not an object', () => {
+    expect(parseSettingsPatch({ hacked: true, toString: 1, voice: true })).toEqual({ voice: true });
+    expect(parseSettingsPatch(null)).toEqual({});
+    expect(parseSettingsPatch([1, 2])).toEqual({});
+    expect(parseSettingsPatch('voice')).toEqual({});
   });
 });
 

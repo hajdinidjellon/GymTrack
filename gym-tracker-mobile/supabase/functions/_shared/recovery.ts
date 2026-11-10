@@ -6,6 +6,7 @@
 //   1. Run supabase/schema.sql (recovery_codes, recovery_attempts, recovery_lookup).
 //   2. supabase functions deploy password-reset --no-verify-jwt   (called signed out)
 //      supabase functions deploy recovery-code                    (needs the user's JWT)
+//      supabase functions deploy delete-account                   (needs the user's JWT)
 //   3. supabase secrets set RESEND_API_KEY=… RECOVERY_EMAIL_FROM="Okilo <no-reply@your-domain>"
 //      RESET_LINK_URL=https://your-domain/reset-password (a page opening okilo://reset-password
 //      with the same query; mail apps often refuse custom schemes). Default: okilo://reset-password.

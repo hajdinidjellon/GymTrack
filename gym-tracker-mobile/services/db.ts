@@ -7,7 +7,7 @@
  */
 
 import * as SQLite from 'expo-sqlite';
-import { parseList, workoutSchema } from '@/domain/schemas';
+import { parseList, storedWorkoutSchema, workoutSchema } from '@/domain/schemas';
 import { logger } from '@/services/logger';
 import type { Workout } from '@/types';
 
@@ -111,7 +111,10 @@ function parseJson(raw: string): unknown {
 // WORKOUTS
 // ============================================================
 
+/** Refused when it would not read back: a session is never saved to vanish on the next launch. */
 export async function saveWorkoutLocal(workout: Workout): Promise<void> {
+  const checked = workoutSchema.safeParse(workout);
+  if (!checked.success) throw new Error(`workout ${workout.id} not saved: invalid data`);
   const db = await getDb();
   await db.withTransactionAsync(async () => {
     await db.runAsync(
@@ -138,7 +141,7 @@ export async function loadWorkoutsLocal(): Promise<Workout[]> {
     "SELECT data FROM workouts ORDER BY json_extract(data, '$.date') DESC",
   );
   const { valid, rejected } = parseList(
-    workoutSchema,
+    storedWorkoutSchema,
     rows.map((r) => parseJson(r.data)),
   );
   if (rejected) logger.warn(`${rejected} workout(s) skipped: invalid data`);
@@ -149,7 +152,7 @@ export async function loadWorkoutById(id: string): Promise<Workout | null> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ data: string }>('SELECT data FROM workouts WHERE id = ?', id);
   if (!row) return null;
-  const result = workoutSchema.safeParse(parseJson(row.data));
+  const result = storedWorkoutSchema.safeParse(parseJson(row.data));
   return result.success ? result.data : null;
 }
 
@@ -158,13 +161,24 @@ export async function markWorkoutSynced(id: string): Promise<void> {
   await db.runAsync('UPDATE workouts SET synced = 1 WHERE id = ?', id);
 }
 
-/** Workouts pulled from the cloud: already in sync, nothing to queue. */
+/**
+ * Workouts pulled from the cloud: already in sync, nothing to queue. A session changed on this
+ * phone and not sent yet keeps its local version, and one deleted here (its delete still
+ * waiting) does not come back.
+ */
 export async function bulkInsertWorkouts(workouts: Workout[]): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
+    const deleting = await db.getAllAsync<{ record_id: string }>(
+      "SELECT record_id FROM sync_queue WHERE table_name = 'workouts' AND operation = 'delete'",
+    );
+    const deleted = new Set(deleting.map((r) => r.record_id));
     for (const w of workouts) {
+      if (deleted.has(w.id)) continue;
       await db.runAsync(
-        'INSERT OR REPLACE INTO workouts (id, data, updated_at, synced) VALUES (?, ?, ?, 1)',
+        `INSERT INTO workouts (id, data, updated_at, synced) VALUES (?, ?, ?, 1)
+         ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, synced = 1
+         WHERE workouts.synced = 1`,
         w.id,
         JSON.stringify(w),
         w.date,
@@ -238,6 +252,24 @@ export async function enqueueSettingsSync(): Promise<void> {
 export async function clearSettingsSyncQueue(): Promise<void> {
   const db = await getDb();
   await db.runAsync("DELETE FROM sync_queue WHERE table_name = 'user_settings'");
+}
+
+/** How many changes have not reached the cloud yet. */
+export async function countPendingSync(): Promise<number> {
+  return (await getPendingSyncQueue()).length;
+}
+
+/**
+ * Everything this phone keeps of an account: sessions, profile, the sync queue (and the old
+ * version's tables). After a sign-out or an account deletion, nothing of it stays behind.
+ */
+export async function wipeLocalData(): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    for (const table of ['workouts', 'profile', 'sync_queue', 'plans', 'goals']) {
+      await db.runAsync(`DELETE FROM ${table}`);
+    }
+  });
 }
 
 export async function clearSyncQueueEntry(id: number): Promise<void> {

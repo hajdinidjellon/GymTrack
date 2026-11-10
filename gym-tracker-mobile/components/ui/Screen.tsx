@@ -34,6 +34,9 @@ export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, s
           scrollEnabled={scrollEnabled}
           // Keyboard open: a tap on a button works the first time, it does not just close the keyboard
           keyboardShouldPersistTaps="handled"
+          // iOS: the content scrolls above the keyboard, a field low on the screen stays in view
+          // (Android resizes the window itself). Only the part under the keyboard is added.
+          automaticallyAdjustKeyboardInsets
           contentContainerStyle={[content, { paddingBottom: space.xl }]}
           showsVerticalScrollIndicator={false}
         >

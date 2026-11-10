@@ -4,7 +4,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { settingsPatchSchema, settingsSyncMetaSchema } from '@/domain/schemas';
+import { parseSettingsPatch, settingsSyncMetaSchema } from '@/domain/schemas';
 import { logger } from '@/services/logger';
 import type { AppSettings } from '@/types';
 
@@ -25,14 +25,16 @@ export async function readSettingsRaw(): Promise<string | null> {
   return AsyncStorage.getItem(SETTINGS_KEY);
 }
 
-/** The stored settings, validated. Nothing readable: empty. */
-export async function readStoredSettings(): Promise<Partial<AppSettings>> {
+/**
+ * The stored settings, validated field by field. Nothing stored: empty. Unreadable (storage
+ * error, broken file): null, so that nothing is ever sent to the cloud in their place.
+ */
+export async function readStoredSettings(): Promise<Partial<AppSettings> | null> {
   try {
     const raw = await readSettingsRaw();
-    const patch = settingsPatchSchema.safeParse(raw ? JSON.parse(raw) : {});
-    return patch.success ? patch.data : {};
+    return raw ? parseSettingsPatch(JSON.parse(raw)) : {};
   } catch {
-    return {};
+    return null;
   }
 }
 

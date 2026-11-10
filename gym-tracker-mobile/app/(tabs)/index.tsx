@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
 import { formatDay, formatShortDay, formatThousands, formatTime } from '@/domain/format';
@@ -57,9 +57,14 @@ import { StaleCard } from '@/components/session/StaleCard';
 
 /** A session left open, saved as ending at its last set. */
 async function finishAt(end: number) {
-  const workout = useSessionStore.getState().finishSession(end);
-  if (!workout || workout.exercises.length === 0) return;
-  await useWorkoutStore.getState().addWorkout(workout);
+  let workout;
+  try {
+    workout = await useSessionStore.getState().saveSession(end);
+  } catch {
+    Alert.alert(t('session.logger.saveFailedTitle'), t('session.logger.saveFailed'));
+    return;
+  }
+  if (!workout) return;
   router.push({ pathname: '/session/summary', params: { id: workout.id } });
 }
 
@@ -402,6 +407,7 @@ function LastWorkout() {
   if (!last) return null;
   const sets = setsDone(last);
   const date = formatShortDay(last.date);
+  const lifted = tonnage(last, factor);
   return (
     <>
       <SectionTitle
@@ -426,21 +432,21 @@ function LastWorkout() {
               {dayName(last.name)}
             </Text>
             <Text size={13} color={colors.inkMuted}>
-              {t('home.last.meta', {
-                date,
-                sets: t('common.sets', { count: sets }),
-                minutes: last.duration ?? 0,
-              })}
+              {last.duration
+                ? t('home.last.meta', { date, sets: t('common.sets', { count: sets }), minutes: last.duration })
+                : t('history.metaNoTime', { date, sets: t('common.sets', { count: sets }) })}
             </Text>
           </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text size={17} weight="black">
-              {formatThousands(tonnage(last, factor))} {t('common.kg')}
-            </Text>
-            <Text size={13} color={colors.inkMuted}>
-              {t('home.last.lifted')}
-            </Text>
-          </View>
+          {lifted > 0 ? (
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text size={17} weight="black">
+                {formatThousands(lifted)} {t('common.kg')}
+              </Text>
+              <Text size={13} color={colors.inkMuted}>
+                {t('home.last.lifted')}
+              </Text>
+            </View>
+          ) : null}
           <ChevronRight size={20} />
         </StickerCard>
       </PressableScale>

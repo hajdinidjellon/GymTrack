@@ -52,6 +52,15 @@ export const account = {
     wrongPassword: 'Mot de passe incorrect.',
     failed: 'Ça n’a pas marché. Vérifie ta connexion et réessaie.',
   },
+  delete: {
+    button: 'Supprimer mon compte',
+    hint: 'Avec ton mot de passe ci-dessus. Tes séances, ton programme et tes réglages sont effacés pour de bon, du cloud et de ce téléphone.',
+    confirmTitle: 'Supprimer ton compte ?',
+    confirmText:
+      'Tout est effacé définitivement : séances, records, programme, réglages. Impossible de revenir en arrière.',
+    confirm: 'Supprimer définitivement',
+    done: 'Ton compte et tes données sont supprimés.',
+  },
   prompt: {
     title: 'Et si tu oublies ton mot de passe ?',
     text: 'Ajoute un email à ton compte : c’est ce qui te permettra de le récupérer.',

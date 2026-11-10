@@ -63,3 +63,6 @@ jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
       require('react').createElement(View, null, children, renderRightActions?.(0, 0, { close: () => undefined })),
   };
 });
+
+// Les tests tapent plus vite que n'importe qui : pas de verrou anti double appui (testé à part)
+jest.mock('@/components/ui/pressLock', () => ({ PRESS_LOCK: { ms: 0 } }));

@@ -67,6 +67,16 @@ export async function getContactEmail(): Promise<string | null> {
   return typeof email === 'string' && email ? email : null;
 }
 
+/**
+ * Deletes the account and everything in it, in the cloud (supabase/functions/delete-account).
+ * The password is checked again on the server. This phone's copy is cleared by the caller.
+ */
+export async function deleteAccount(password: string): Promise<'ok' | 'password' | 'limit' | 'other'> {
+  const answer = await call('delete-account', { password });
+  if (answer?.ok) return 'ok';
+  return answer?.reason ?? 'other';
+}
+
 /** The password is checked again before the email changes: an unlocked phone is not enough. */
 export async function updateContactEmail(email: string | null, password: string): Promise<'ok' | 'password' | 'other'> {
   if (!isSupabaseConfigured()) return 'other';

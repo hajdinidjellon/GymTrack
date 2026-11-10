@@ -12,6 +12,8 @@ export const session: Dictionary['session'] = {
       other: '{count} sets left. The sets you already did are saved.',
     },
     finishNoneLeft: 'The sets you did are saved.',
+    saveFailedTitle: 'Session not saved yet',
+    saveFailed: 'The phone could not save it. Nothing is lost: your session stays open, try again in a moment.',
     abandon: 'Discard',
     abandonTitle: 'Discard the session?',
     abandonText: 'Nothing will be saved, not even the sets already logged.',
