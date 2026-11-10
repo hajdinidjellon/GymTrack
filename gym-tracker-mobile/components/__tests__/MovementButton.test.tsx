@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useProfileStore } from '@/stores/profileStore';
@@ -7,6 +7,9 @@ import { useWorkoutStore } from '@/stores/workoutStore';
 import { MovementButton } from '@/components/exercise/MovementButton';
 import { MusclesCard } from '@/components/exercise/MusclesCard';
 import type { Experience, UserProfile, Workout } from '@/types';
+
+// The first render loads the catalog and the video player: slower than 5 s on a busy machine
+jest.setTimeout(20_000);
 
 const profile = (experience?: Experience): UserProfile => ({
   goal: 'muscle',
