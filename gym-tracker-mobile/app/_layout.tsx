@@ -19,6 +19,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { resumeAccountSync } from '@/stores/accountData';
 import { useAppearance } from '@/hooks/useLocale';
 import { useLiveActivity } from '@/hooks/useLiveActivity';
+import { RestAlarm } from '@/components/session/RestAlarm';
 
 SplashScreen.preventAutoHideAsync().catch(() => null);
 
@@ -91,6 +92,8 @@ export default function RootLayout() {
         ) : (
           <View style={{ flex: 1, backgroundColor: colors.paper }} />
         )}
+        {/* Au-dessus de tous les écrans : l'alarme de fin du repos se coupe d'un tap */}
+        <RestAlarm />
         {intro && fontsDone ? <LaunchAnimation ready={ready} onDone={endIntro} /> : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>

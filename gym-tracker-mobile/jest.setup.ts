@@ -15,11 +15,22 @@ jest.mock('expo-haptics', () => ({
 }));
 
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));
+jest.mock('@/services/alarmKit', () => ({
+  alarmKitAvailable: jest.fn(() => false),
+  requestAlarmPermission: jest.fn(() => Promise.resolve(false)),
+  scheduleRestAlarm: jest.fn(() => Promise.resolve(false)),
+  cancelRestAlarm: jest.fn(() => Promise.resolve()),
+}));
 jest.mock('expo-video', () => {
   const { View } = require('react-native');
   return { useVideoPlayer: jest.fn(() => ({ play: jest.fn() })), VideoView: View };
 });
-jest.mock('@/services/sound', () => ({ playRestBell: jest.fn(), REST_BELL_MS: 900 }));
+jest.mock('@/services/sound', () => ({
+  playRestBell: jest.fn(),
+  startRestAlarm: jest.fn(),
+  stopRestAlarm: jest.fn(),
+  REST_BELL_MS: 900,
+}));
 
 // Les tests lisent les textes français, quelle que soit la langue de la machine
 jest.mock('@/services/locale', () => ({ deviceLocaleTag: () => 'fr-FR' }));

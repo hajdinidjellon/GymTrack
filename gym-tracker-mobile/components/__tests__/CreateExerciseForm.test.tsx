@@ -39,6 +39,30 @@ describe('CreateExerciseForm editing an own exercise', () => {
   });
 });
 
+describe('CreateExerciseForm regions', () => {
+  it('offers the regions of the muscle, and forgets one that no longer fits', async () => {
+    const onCreated = jest.fn();
+    await render(<CreateExerciseForm muscle="chest" onCreated={onCreated} onCancel={jest.fn()} />);
+    expect(screen.getByRole('radio', { name: 'Tout le muscle' })).toBeSelected();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Bas des pecs' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Dos' }));
+    expect(screen.queryByRole('radio', { name: 'Bas des pecs' })).toBeNull();
+    expect(screen.getByRole('radio', { name: 'Tout le muscle' })).toBeSelected();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Biceps' }));
+    expect(screen.queryByRole('radio', { name: 'Tout le muscle' })).toBeNull();
+  });
+
+  it('keeps the region of an own exercise being changed', async () => {
+    const mine = { ...press, name: 'Incliné Panatta', muscleGroups: ['chest' as const], region: 'upperChest' as const };
+    useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, customExercises: [mine] } });
+    await render(<CreateExerciseForm editing={mine} onCreated={jest.fn()} onCancel={jest.fn()} />);
+    expect(screen.getByRole('radio', { name: 'Haut des pecs' })).toBeSelected();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Milieu des pecs' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(useSettingsStore.getState().settings.customExercises[0]).toMatchObject({ region: 'midChest' });
+  });
+});
+
 describe('mainMuscle', () => {
   it('is the muscle most of the day works', () => {
     expect(mainMuscle([EXERCISES.bench, EXERCISES.ohp, EXERCISES.incline])).toBe('chest');

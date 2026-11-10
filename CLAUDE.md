@@ -24,7 +24,7 @@ Branches, commits and PRs: see `CONTRIBUTING.md`.
 
 ## Product
 
-"Tu charges. On calcule." — an autopilot logger. The app picks today's session from the program, computes every target with the progression engine, shows the plates to load per side, and the user mostly just taps "Valider". Voice cues (expo-speech) announce the next exercise, the plates and the end of rest. A bell (`services/sound.ts`, expo-audio, rings on silent) marks the end of rest in the app; in the background the rest notification plays the same `assets/sounds/rest-bell.wav`. `settings.restBell` turns both off.
+"Tu charges. On calcule." — an autopilot logger. The app picks today's session from the program, computes every target with the progression engine, shows the plates to load per side, and the user mostly just taps "Valider". Voice cues (expo-speech) announce the next exercise, the plates and the end of rest. In the app, the end of rest is an alarm like a kitchen timer (`startRestAlarm` in `services/sound.ts`): it vibrates over and over and rings the bell in a loop (expo-audio, rings on silent) until a tap on `components/session/RestAlarm.tsx`, any touch to the session, or 30 s; the voice then says the next set. App left during a rest (another app, phone locked), an iPhone on iOS 26 gets a real alarm instead (`services/alarmKit.ts`, AlarmKit through the local module `modules/okilo-alarm`): full screen over any app, rings on silent, "Arrêter" and "Ouvrir Okilo"; an app cannot bring itself to the front on iOS, that button is the closest. Elsewhere (Expo Go, Android, older iOS) the rest notification plays the same `assets/sounds/rest-bell.wav`. `settings.restBell` turns the bell off (the vibrations stay).
 
 ## Architecture
 
@@ -66,6 +66,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `progression.ts` — double progression engine (`nextTargets`), lighter comeback after 2+ weeks off. The last set's effort steers the reps: easy = +2, all-out = same target once. Only the planned working sets decide (`readSession`): top sets/singles heavier for fewer reps are kept as is (`SetTarget.top`), bonus sets never block, a max test has no working weight. Deload/comeback never go under the empty bar (`minWeight`) nor to 0; when nothing lighter makes sense, `ease` lowers the reps to what was done. Assisted machines (`assisted`) progress by taking help away.
 - `effort.ts` — "Comment c'était ?" after a set: Facile / Juste bien / À fond, stored as RPE.
 - `catalog/` — the exercise catalog, one file per body part (`define.ts` helpers: `withPlates`, `onCable`, `onSmith`, `kettlebell`, `held`), `EXERCISES` and `POPULARITY` (the order every exercise list is offered in, most known first; the user's own exercises before). Names are stored and never renamed: add an alias.
+- `catalog/regions.ts` — the part of the main muscle each exercise works (haut/milieu/bas des pecs, dorsaux, trapèzes…): the picker's second row of tabs. Every catalog exercise of a muscle with regions has one (a test checks); an own exercise keeps the one it was created in (`CustomExercise.region`). Arms and calves have none.
 - `programs.ts` — catalog lookups (search by French, English and old names, `byPopularity`, `alternativesFor`), splits, rules per goal.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
 - `session.ts` — pure transitions of the running session (complete set, rest, to workout).
@@ -98,6 +99,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `supabase.ts` + `secureStorage.ts` — auth session encrypted (AES key in the Keychain).
 - `logger.ts` — dev-only logs. `console.*` is banned elsewhere.
 - `files.ts` — write a file and open the share sheet, or pick one (expo-file-system, expo-sharing).
+- `alarmKit.ts` — the end of the rest as an AlarmKit alarm when the app is off screen. Native code in `modules/okilo-alarm/` (Swift, iOS 26+, weakly linked); its config plugin adds the permission text and registers the "Ouvrir Okilo" App Intent in the app target. Only in a build: test it with EAS, not Expo Go.
 - `voiceInput.ts` — on-device speech recognition for the voice commands; the native module is loaded only when it exists (not in Expo Go). `speech.ts` tells when the app itself is talking, so its voice is never taken for a command.
 
 ### State — Zustand stores (`stores/`)

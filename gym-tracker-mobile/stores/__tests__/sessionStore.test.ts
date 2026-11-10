@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { AppState } from 'react-native';
 import * as Speech from 'expo-speech';
 import {
   cancelRestCompleteNotification,
   requestPermissions,
   scheduleRestCompleteNotification,
 } from '@/services/notifications';
-import { playRestBell } from '@/services/sound';
-import { useSessionStore } from '@/stores/sessionStore';
+import { cancelRestAlarm, requestAlarmPermission, scheduleRestAlarm } from '@/services/alarmKit';
+import { playRestBell, startRestAlarm, stopRestAlarm } from '@/services/sound';
+import { REST_ALARM_MAX_MS, useSessionStore } from '@/stores/sessionStore';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import type { ActiveExercise } from '@/types';
@@ -34,10 +36,19 @@ function exercise(id: string, sets: number, patch: Partial<ActiveExercise> = {})
 const BASE = { ...DEFAULT_SETTINGS, warmups: false };
 
 const store = () => useSessionStore.getState();
+
+// Registered once, when the store loads: captured before beforeEach clears the mocks
+const appStateChange = (
+  jest.isMockFunction(AppState.addEventListener)
+    ? jest.mocked(AppState.addEventListener).mock.calls.find(([type]) => type === 'change')?.[1]
+    : undefined
+) as ((state: string) => void) | undefined;
 const session = () => store().activeSession!;
 
 beforeEach(() => {
   jest.useFakeTimers();
+  // L'app à l'écran : la fin du repos sonne dans l'app
+  Object.defineProperty(AppState, 'currentState', { value: 'active', configurable: true });
   jest.clearAllMocks();
   useSettingsStore.setState({ settings: { ...BASE } });
   store().startSession('Push', [exercise('bench', 2), exercise('ohp', 1)]);
@@ -117,24 +128,124 @@ describe('adding and removing sets', () => {
 });
 
 describe('rest timer', () => {
-  it('ends by itself, rings, then says the next set', () => {
+  it('ends by itself and rings until a tap, then says the next set', () => {
     store().completeSet('bench', 0);
     jest.advanceTimersByTime(120_000);
     expect(session().restEndsAt).toBeNull();
-    expect(playRestBell).toHaveBeenCalledTimes(1);
-    // La voix attend la fin de la cloche
+    expect(startRestAlarm).toHaveBeenCalledWith(true);
+    expect(store().restAlarm).toBe(true);
+    // La voix attend qu'on coupe l'alarme
+    jest.advanceTimersByTime(10_000);
     expect(Speech.speak).not.toHaveBeenCalledWith(expect.stringContaining("C'est reparti"), expect.anything());
-    jest.advanceTimersByTime(900);
+    store().stopRestAlarm();
+    expect(stopRestAlarm).toHaveBeenCalled();
+    expect(store().restAlarm).toBe(false);
     expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Série 2. 60 kilos, 10 reps.", expect.anything());
   });
 
-  it('stays silent with the bell off, and the notification too', () => {
+  it('stops ringing by itself after 30 s, the phone left on the bench', () => {
+    store().completeSet('bench', 0);
+    jest.advanceTimersByTime(120_000 + REST_ALARM_MAX_MS);
+    expect(store().restAlarm).toBe(false);
+    expect(stopRestAlarm).toHaveBeenCalledTimes(1);
+    expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Série 2. 60 kilos, 10 reps.", expect.anything());
+  });
+
+  it('stops ringing as soon as the session is touched, without talking', () => {
+    store().completeSet('bench', 0);
+    jest.advanceTimersByTime(120_000);
+    jest.mocked(Speech.speak).mockClear();
+    store().nudgeSet('bench', 1, 'weight', 2.5);
+    expect(store().restAlarm).toBe(false);
+    expect(stopRestAlarm).toHaveBeenCalled();
+    jest.advanceTimersByTime(REST_ALARM_MAX_MS);
+    expect(Speech.speak).not.toHaveBeenCalledWith(expect.stringContaining("C'est reparti"), expect.anything());
+  });
+
+  it('stops ringing when the app leaves the screen', () => {
+    expect(appStateChange).toBeDefined();
+    store().completeSet('bench', 0);
+    jest.advanceTimersByTime(120_000);
+    appStateChange!('active');
+    expect(store().restAlarm).toBe(true);
+    appStateChange!('background');
+    expect(store().restAlarm).toBe(false);
+    expect(stopRestAlarm).toHaveBeenCalled();
+  });
+
+  it('leaves the end of the rest to the notification when the app is not on screen', () => {
+    store().completeSet('bench', 0);
+    Object.defineProperty(AppState, 'currentState', { value: 'background', configurable: true });
+    jest.advanceTimersByTime(120_000);
+    expect(startRestAlarm).not.toHaveBeenCalled();
+    expect(store().restAlarm).toBe(false);
+  });
+
+  it('becomes a real alarm when the app is left, without the notification', async () => {
+    jest.mocked(scheduleRestAlarm).mockResolvedValueOnce(true);
+    store().completeSet('bench', 0);
+    const end = session().restEndsAt!;
+    jest.mocked(cancelRestCompleteNotification).mockClear();
+    Object.defineProperty(AppState, 'currentState', { value: 'background', configurable: true });
+    appStateChange!('background');
+    expect(scheduleRestAlarm).toHaveBeenCalledWith(end);
+    await Promise.resolve();
+    expect(cancelRestCompleteNotification).toHaveBeenCalled();
+  });
+
+  it('keeps the notification when AlarmKit is not there (Expo Go, older iPhone)', async () => {
+    store().completeSet('bench', 0);
+    jest.mocked(cancelRestCompleteNotification).mockClear();
+    Object.defineProperty(AppState, 'currentState', { value: 'background', configurable: true });
+    appStateChange!('background');
+    await Promise.resolve();
+    expect(cancelRestCompleteNotification).not.toHaveBeenCalled();
+  });
+
+  it('drops the alarm back on screen and keeps the notification ready', () => {
+    store().completeSet('bench', 0);
+    jest.advanceTimersByTime(30_000);
+    jest.mocked(scheduleRestCompleteNotification).mockClear();
+    appStateChange!('active');
+    expect(cancelRestAlarm).toHaveBeenCalled();
+    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(90, 'bench · 60 kg × 10', true);
+  });
+
+  it('rings no alarm off screen with the bell or the notifications off', () => {
+    useSettingsStore.setState({ settings: { ...BASE, restBell: false } });
+    store().completeSet('bench', 0);
+    Object.defineProperty(AppState, 'currentState', { value: 'background', configurable: true });
+    appStateChange!('background');
+    useSettingsStore.setState({ settings: { ...BASE, notifications: false } });
+    appStateChange!('background');
+    expect(scheduleRestAlarm).not.toHaveBeenCalled();
+  });
+
+  it('schedules the alarm at once for a set validated from the lock screen', () => {
+    Object.defineProperty(AppState, 'currentState', { value: 'background', configurable: true });
+    store().completeSet('bench', 0);
+    expect(scheduleRestAlarm).toHaveBeenCalledWith(session().restEndsAt!);
+  });
+
+  it('cancels the alarm with the rest', () => {
+    store().completeSet('bench', 0);
+    jest.mocked(cancelRestAlarm).mockClear();
+    store().stopRestTimer();
+    expect(cancelRestAlarm).toHaveBeenCalled();
+  });
+
+  it('only vibrates with the bell off, and the voice speaks right away', () => {
     useSettingsStore.setState({ settings: { ...BASE, restBell: false } });
     store().completeSet('bench', 0);
     expect(scheduleRestCompleteNotification).toHaveBeenLastCalledWith(120, 'bench · 60 kg × 10', false);
     jest.advanceTimersByTime(120_000);
+    expect(startRestAlarm).toHaveBeenCalledWith(false);
     expect(playRestBell).not.toHaveBeenCalled();
     expect(Speech.speak).toHaveBeenLastCalledWith("C'est reparti. Série 2. 60 kilos, 10 reps.", expect.anything());
+    // Pas une deuxième fois quand on coupe
+    jest.mocked(Speech.speak).mockClear();
+    store().stopRestAlarm();
+    expect(Speech.speak).not.toHaveBeenCalled();
   });
 
   it('adds time to the current rest', () => {
@@ -450,7 +561,7 @@ describe('a rest that ends while the phone sleeps', () => {
     const now = Date.now();
     const clock = jest.spyOn(Date, 'now').mockReturnValue(now + 120_000 + 10_000);
     jest.advanceTimersByTime(120_000);
-    expect(playRestBell).not.toHaveBeenCalled();
+    expect(startRestAlarm).not.toHaveBeenCalled();
     expect(session().restEndsAt).toBeNull();
     clock.mockRestore();
   });
@@ -463,7 +574,8 @@ describe('a rest that ends while the phone sleeps', () => {
 });
 
 describe('notification permission', () => {
-  it('is asked when a session starts, not when the app opens', () => {
+  it('is asked when a session starts, not when the app opens, with the alarm one', () => {
     expect(requestPermissions).toHaveBeenCalled();
+    expect(requestAlarmPermission).toHaveBeenCalled();
   });
 });

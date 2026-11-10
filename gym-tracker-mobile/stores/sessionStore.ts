@@ -11,6 +11,7 @@
  * re-rendent chaque seconde (hooks/useSessionClock.ts).
  */
 
+import { AppState } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { Storage } from 'expo-sqlite/kv-store';
@@ -27,8 +28,9 @@ import {
   requestPermissions,
   scheduleRestCompleteNotification,
 } from '@/services/notifications';
+import { cancelRestAlarm, requestAlarmPermission, scheduleRestAlarm } from '@/services/alarmKit';
 import { speak } from '@/services/speech';
-import { playRestBell, REST_BELL_MS } from '@/services/sound';
+import { playRestBell, startRestAlarm, stopRestAlarm } from '@/services/sound';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { t } from '@/i18n';
@@ -38,6 +40,8 @@ type NudgeField = 'weight' | 'reps';
 
 interface SessionStore {
   activeSession: ActiveSession | null;
+  /** The rest is over and the alarm rings, app open: until a tap, or 30 s. Never persisted. */
+  restAlarm: boolean;
 
   startSession: (name: string, exercises: ActiveExercise[]) => void;
   /**
@@ -97,6 +101,8 @@ interface SessionStore {
   startRestTimer: (seconds: number) => void;
   addRestTime: (seconds: number) => void;
   stopRestTimer: () => void;
+  /** "C'est reparti": stops the alarm, then the voice says the next set. */
+  stopRestAlarm: () => void;
 }
 
 const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -105,14 +111,15 @@ const settings = () => useSettingsStore.getState().settings;
 // Hors du state : un timeout n'a rien à faire dans un état sérialisable
 let restEndTimeout: ReturnType<typeof setTimeout> | null = null;
 
-let restBellVoice: ReturnType<typeof setTimeout> | null = null;
+let alarmTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function clearRestEndTimeout() {
   if (restEndTimeout) clearTimeout(restEndTimeout);
-  if (restBellVoice) clearTimeout(restBellVoice);
   restEndTimeout = null;
-  restBellVoice = null;
 }
+
+/** The phone left on the bench rings no longer than this. */
+export const REST_ALARM_MAX_MS = 30_000;
 
 /** Past this, a rest end the phone delivers late (app asleep) stays quiet: the notification already rang. */
 const LATE_MS = 2000;
@@ -124,20 +131,66 @@ function armRestEnd(ms: number) {
     restEndTimeout = null;
     const late = Date.now() - due > LATE_MS;
     useSessionStore.setState((s) => ({ activeSession: s.activeSession && Session.endRest(s.activeSession) }));
-    if (late) return;
+    if (late || AppState.currentState !== 'active') return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
-
-    const { restBell, voice } = settings();
-    if (restBell) playRestBell();
-
-    const session = useSessionStore.getState().activeSession;
-    const next = session && findCurrent(session.exercises);
-    if (!next || next.exercise.needsWeight || !voice) return;
-    const line = restOverLine(next);
-    // La voix attend la fin des coups de cloche
-    if (restBell) restBellVoice = setTimeout(() => speak(line), REST_BELL_MS);
-    else speak(line);
+    ringRestAlarm();
   }, ms);
+}
+
+/**
+ * App off screen (another app, phone locked) during a rest: its end becomes a
+ * real alarm when the iPhone has AlarmKit, and the notification is dropped so
+ * nothing rings twice. Back on screen, the app rings itself again.
+ */
+function syncOffScreenAlarm() {
+  const session = useSessionStore.getState().activeSession;
+  const at = session?.restEndsAt;
+  const { restBell, notifications } = settings();
+  if (AppState.currentState === 'active' || at == null || at <= Date.now() || !restBell || !notifications) {
+    void cancelRestAlarm();
+    return;
+  }
+  void scheduleRestAlarm(at).then((scheduled) => {
+    if (scheduled && useSessionStore.getState().activeSession?.restEndsAt === at) void cancelRestCompleteNotification();
+  });
+}
+
+/** Back on screen: no alarm left, and the notification again in case the app is left once more. */
+function backOnScreen() {
+  void cancelRestAlarm();
+  const session = useSessionStore.getState().activeSession;
+  const left = session ? Session.restLeft(session, Date.now()) : 0;
+  if (!session || left <= 0) return;
+  void scheduleRestCompleteNotification(left, Session.nextSetSummary(session, formatKg), settings().restBell);
+}
+
+/** "C'est reparti. Série 2. 60 kilos, 10 reps." */
+function announceNext() {
+  const session = useSessionStore.getState().activeSession;
+  const next = session && findCurrent(session.exercises);
+  if (!next || next.exercise.needsWeight || !settings().voice) return;
+  speak(restOverLine(next));
+}
+
+/** Like a real timer: it vibrates, and rings with the bell on, until a tap. The voice speaks once it stops. */
+function ringRestAlarm() {
+  silenceRestAlarm(false);
+  const { restBell } = settings();
+  startRestAlarm(restBell);
+  useSessionStore.setState({ restAlarm: true });
+  alarmTimeout = setTimeout(() => silenceRestAlarm(true), REST_ALARM_MAX_MS);
+  // Sans sonnerie, rien à couvrir : la voix parle tout de suite
+  if (!restBell) announceNext();
+}
+
+/** `announce`: the voice says the next set (a tap on the alarm, or its 30 s are over). */
+function silenceRestAlarm(announce: boolean) {
+  if (alarmTimeout) clearTimeout(alarmTimeout);
+  alarmTimeout = null;
+  if (!useSessionStore.getState().restAlarm) return;
+  stopRestAlarm();
+  useSessionStore.setState({ restAlarm: false });
+  if (announce && settings().restBell) announceNext();
 }
 
 /**
@@ -187,8 +240,11 @@ export const useSessionStore = create<SessionStore>()(
   persist(
     (set, get) => {
       /** Applies a pure transition to the running session, if any. */
-      const apply = (fn: (s: ActiveSession) => ActiveSession) =>
+      const apply = (fn: (s: ActiveSession) => ActiveSession) => {
+        // Toucher à la séance, c'est avoir entendu l'alarme
+        silenceRestAlarm(false);
         set((state) => (state.activeSession ? { activeSession: fn(state.activeSession) } : state));
+      };
       /** Same, then the warm-ups follow the new order or the new exercises. */
       const applyWarm = (fn: (s: ActiveSession) => ActiveSession) =>
         apply((s) => Session.refreshWarmups(fn(s), settings()));
@@ -211,11 +267,15 @@ export const useSessionStore = create<SessionStore>()(
 
       return {
         activeSession: null,
+        restAlarm: false,
 
         startSession: (name, exercises) => {
           clearRestEndTimeout();
           // Asked when it makes sense (the first session, for the end of the rest), not at the app's launch
-          if (settings().notifications) requestPermissions().catch(() => null);
+          if (settings().notifications) {
+            requestPermissions().catch(() => null);
+            requestAlarmPermission().catch(() => null);
+          }
           const session = Session.createSession(newId(), name, exercises, new Date());
           set({ activeSession: Session.refreshWarmups(session, settings()) });
         },
@@ -399,6 +459,8 @@ export const useSessionStore = create<SessionStore>()(
             settings().restBell,
           );
           armRestEnd(session.restDuration! * 1000);
+          // Validated from the lock screen, the app stays in the background: the alarm right away
+          syncOffScreenAlarm();
         },
 
         addRestTime: (seconds) => {
@@ -410,8 +472,11 @@ export const useSessionStore = create<SessionStore>()(
         stopRestTimer: () => {
           clearRestEndTimeout();
           void cancelRestCompleteNotification();
+          void cancelRestAlarm();
           apply(Session.endRest);
         },
+
+        stopRestAlarm: () => silenceRestAlarm(true),
       };
     },
     {
@@ -432,3 +497,14 @@ if (restored?.restEndsAt != null) {
   if (left > 0) armRestEnd(left);
   else useSessionStore.setState({ activeSession: Session.endRest(restored) });
 }
+
+// L'app quitte l'écran : l'alarme de l'app s'arrête (son et vibrations ne tournent pas en arrière-plan),
+// celle d'AlarmKit prend le relais
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    backOnScreen();
+    return;
+  }
+  silenceRestAlarm(false);
+  syncOffScreenAlarm();
+});
