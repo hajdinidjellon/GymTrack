@@ -54,7 +54,9 @@ export function ExerciseNote({ exerciseName }: { exerciseName: string }) {
       accessibilityLabel={note ? t('session.note.editA11y', { note }) : t('session.note.addA11y')}
       hitSlop={8}
       style={({ pressed }) => ({
-        minHeight: 44,
+        // A little lower than a field: the 8 pt around it keeps the touch area
+        minHeight: 36,
+        paddingVertical: 4,
         paddingHorizontal: 12,
         justifyContent: 'center',
         borderRadius: radius.input,

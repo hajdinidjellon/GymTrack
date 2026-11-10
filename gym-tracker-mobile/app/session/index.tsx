@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, space } from '@/constants/theme';
+import { colors, space } from '@/constants/theme';
 import { useLocale } from '@/hooks/useLocale';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { dayName, exerciseName, listOf, t } from '@/i18n';
@@ -18,6 +18,9 @@ import { CalibrationView } from '@/components/session/CalibrationView';
 import { SessionProgress } from '@/components/session/SessionProgress';
 import { SwapExercise } from '@/components/session/SwapExercise';
 import { DoLater } from '@/components/session/DoLater';
+import { ExerciseNote } from '@/components/session/ExerciseNote';
+import { DemoThumb } from '@/components/exercise/DemoThumb';
+import { videoFor } from '@/components/exercise/ExerciseVideo';
 import { AddExercise } from '@/components/session/AddExercise';
 import { SessionDone } from '@/components/session/SessionDone';
 
@@ -109,6 +112,8 @@ export default function SessionScreen() {
   const doneExercise = last && session.exercises.find((e) => e.id === last.exerciseId);
   const left = session.exercises.reduce((n, e) => n + workingCount(e.sets, 'left'), 0);
   const now = setNumber(exercise.sets, setIndex);
+  // The movement's video, when the catalog has one: top right of the exercise
+  const demo = videoFor(exercise.name);
   const partners = exercise.superset
     ? listOf(
         session.exercises
@@ -158,51 +163,54 @@ export default function SessionScreen() {
         <AddExercise current={exercise} sessionName={session.name} />
       </View>
 
-      <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        <Pressable
-          onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: exercise.name } })}
-          accessibilityRole="button"
-          accessibilityHint={t('session.logger.exerciseHint')}
-          style={{ flex: 1 }}
-        >
-          <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ lineHeight: 34 }}>
-            {exerciseName(exercise.name)}
-          </Text>
-        </Pressable>
-        <SwapExercise exercise={exercise} sessionName={session.name} />
-      </View>
-      {partners ? (
-        <Text size={14} weight="bold" color={colors.inkMuted} style={{ marginTop: 4 }}>
-          {t('session.logger.superset', { name: partners })}
-        </Text>
-      ) : null}
-      {listening ? (
-        <Text size={13} weight="bold" color={colors.inkMuted} style={{ marginTop: 4 }} accessibilityLiveRegion="polite">
-          {t('session.logger.listening')}
-        </Text>
-      ) : null}
-      <View
-        style={{ marginTop: space.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-      >
-        <View
-          style={{
-            paddingVertical: 4,
-            paddingHorizontal: 12,
-            borderRadius: radius.pill,
-            borderWidth: 2,
-            borderColor: colors.outline,
-            backgroundColor: colors.card,
-          }}
-        >
-          <Text size={14} weight="black">
-            {now.drop
-              ? t(resting ? 'session.logger.nextDropSet' : 'session.logger.dropSet')
-              : now.warmup
-                ? t(resting ? 'session.logger.nextWarmupOf' : 'session.logger.warmupOf', { n: now.n, total: now.total })
-                : t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', { n: now.n, total: now.total })}
-          </Text>
+      <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space.sm }}>
+          {/* The set beside the name; a long name pushes it to the next line */}
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: space.lg, rowGap: 2 }}
+          >
+            <Pressable
+              onPress={() => router.push({ pathname: '/exercise/[name]', params: { name: exercise.name } })}
+              accessibilityRole="button"
+              accessibilityHint={t('session.logger.exerciseHint')}
+              style={{ flexShrink: 1 }}
+            >
+              <Text size={30} weight="black" accessibilityRole="header" numberOfLines={2} style={{ lineHeight: 34 }}>
+                {exerciseName(exercise.name)}
+              </Text>
+            </Pressable>
+            {/* Plain words on the name's line, no frame: the sets table below shows it too */}
+            <Text size={15} weight="bold" color={colors.inkMuted}>
+              {now.drop
+                ? t(resting ? 'session.logger.nextDropSet' : 'session.logger.dropSet')
+                : now.warmup
+                  ? t(resting ? 'session.logger.nextWarmupOf' : 'session.logger.warmupOf', {
+                      n: now.n,
+                      total: now.total,
+                    })
+                  : t(resting ? 'session.logger.nextSetOf' : 'session.logger.setOf', { n: now.n, total: now.total })}
+            </Text>
+          </View>
+          {partners ? (
+            <Text size={14} weight="bold" color={colors.inkMuted}>
+              {t('session.logger.superset', { name: partners })}
+            </Text>
+          ) : null}
+          {listening ? (
+            <Text size={13} weight="bold" color={colors.inkMuted} accessibilityLiveRegion="polite">
+              {t('session.logger.listening')}
+            </Text>
+          ) : null}
+          {/* Side by side, always: they shrink rather than stack */}
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            <SwapExercise exercise={exercise} sessionName={session.name} />
+            <DoLater exercise={exercise} />
+          </View>
+          {/* The note under the actions: it stops at the demo, beside it */}
+          {exercise.needsWeight ? null : <ExerciseNote exerciseName={exercise.name} />}
         </View>
-        <DoLater exercise={exercise} />
+        {/* The movement's video, when the catalog has one */}
+        {demo ? <DemoThumb name={exercise.name} source={demo} /> : null}
       </View>
 
       {exercise.needsWeight ? (

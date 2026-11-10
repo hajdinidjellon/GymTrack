@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Pressable } from 'react-native';
-import { border, colors, radius } from '@/constants/theme';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import {
   alternativesFor,
@@ -17,9 +16,10 @@ import type { ActiveExercise } from '@/types';
 import { Text } from '@/components/ui/Text';
 import { CheckRow } from '@/components/ui/CheckRow';
 import { ExercisePicker } from './ExercisePicker';
+import { chipStyle } from './chipStyle';
 import { dayName, exerciseName, t } from '@/i18n';
 
-/** "Changer" next to the exercise name: machine taken, sore shoulder… another exercise, computed the same way. */
+/** « Changer d'exo », under the exercise name: machine taken, sore shoulder… another exercise, computed the same way. */
 export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExercise; sessionName: string }) {
   const ctx = useBuildContext();
   const exercises = useSessionStore((s) => s.activeSession?.exercises ?? []);
@@ -57,18 +57,10 @@ export function SwapExercise({ exercise, sessionName }: { exercise: ActiveExerci
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={t('session.swap.a11y', { name: exerciseName(exercise.name) })}
-        hitSlop={8}
-        style={({ pressed }) => ({
-          minHeight: 36,
-          paddingHorizontal: 12,
-          borderRadius: radius.pill,
-          borderWidth: border.base,
-          borderColor: colors.outline,
-          backgroundColor: pressed ? colors.coralSoft : colors.card,
-          justifyContent: 'center',
-        })}
+        hitSlop={6}
+        style={({ pressed }) => chipStyle(pressed)}
       >
-        <Text size={14} weight="titleMedium">
+        <Text size={13} weight="bold" numberOfLines={1} maxFontSizeMultiplier={1.3}>
           {t('session.swap.button')}
         </Text>
       </Pressable>

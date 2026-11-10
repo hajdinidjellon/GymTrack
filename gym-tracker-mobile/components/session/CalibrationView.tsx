@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Keyboard, Pressable, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 import { border, colors, hardShadow, radius, space } from '@/constants/theme';
 import { loadableWeight, loadingOf } from '@/domain/loading';
 import { START_PERCENT_OF_1RM, startWeightFromOneRepMax } from '@/domain/progression';
@@ -82,8 +82,14 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
         </Text>
       </View>
 
-      {/* The weight and the presets share the free height, centred, instead of piling up above the button */}
-      <View style={{ flex: 1, justifyContent: 'center', gap: space.xl, paddingVertical: space.md }}>
+      {/* The weight and the presets share the free height, centred; taller than the screen (small phone,
+          large text), they scroll instead of sliding under the panel above and the button below */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', gap: space.xl, paddingVertical: space.md }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <StickerCard tone="hero" style={{ paddingHorizontal: 12, paddingVertical: 18, gap: space.sm }}>
           {loading === 'bar' ? (
             <View style={{ height: 120, justifyContent: 'center' }}>
@@ -193,7 +199,7 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
             />
           </StickerCard>
         ) : null}
-      </View>
+      </ScrollView>
 
       <StickerButton
         label={t('session.calibration.start', { kg: formatKg(weight) })}

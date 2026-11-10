@@ -97,7 +97,7 @@ export const session: Dictionary['session'] = {
 
   swap: {
     a11y: 'Swap exercise, instead of {name}',
-    button: 'Swap',
+    button: 'Swap exercise',
     title: 'Swap exercise',
     sameMuscle: 'Same muscle · {muscle}',
     keep: 'Keep this swap for my next {day} workouts',
@@ -256,6 +256,7 @@ export const session: Dictionary['session'] = {
     headerKg: 'KG',
     headerReps: 'REPS',
     deleteA11y: 'Delete set {n}',
+    editA11y: 'Edit set {n}',
     warmupShort: 'Warm',
     a11yWarmup: 'Warm-up, {kg} kilos, {reps} reps, {state}',
     a11ySeconds: 'Set {index}, {reps} seconds, {state}',
@@ -302,6 +303,13 @@ export const session: Dictionary['session'] = {
     normal: 'Normal set',
     delete: 'Delete the set',
     deleteWarmup: 'Delete the warm-up',
+    edit: 'Edit the weight or reps',
+    editHint: 'Tapped the wrong numbers? Fix them.',
+  },
+
+  editSet: {
+    title: 'Edit · {set}',
+    hint: 'The weight and reps you really did. The rest of the session stays as it is.',
   },
 
   hold: {

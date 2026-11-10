@@ -55,33 +55,35 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
               ? t('session.missed.hintWeight', { target, kg: formatKg(weight) })
               : t('session.missed.hint', { target })}
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 22 }}>
+          {/* Three per row: each a third of the width, the gap inside it (percent widths plus a gap ran
+              over and fell back to two) */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 10, marginTop: 22, marginHorizontal: -5 }}>
             {options.map((n) => {
               const on = n === picked;
               const isTarget = n === target;
               return (
-                <Pressable
-                  key={n}
-                  onPress={() => setPicked(n)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={t(isTarget ? 'session.missed.optionTarget' : 'session.missed.option', { n })}
-                  style={{
-                    width: '31.5%',
-                    height: 72,
-                    borderRadius: radius.md,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: on ? colors.coralSoft : colors.card,
-                    borderWidth: on ? border.strong : border.base,
-                    borderStyle: isTarget && !on ? 'dashed' : 'solid',
-                    borderColor: colors.outline,
-                  }}
-                >
-                  <Text size={32} weight="black">
-                    {n}
-                  </Text>
-                </Pressable>
+                <View key={n} style={{ width: '33.333%', paddingHorizontal: 5 }}>
+                  <Pressable
+                    onPress={() => setPicked(n)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={t(isTarget ? 'session.missed.optionTarget' : 'session.missed.option', { n })}
+                    style={{
+                      height: 72,
+                      borderRadius: radius.md,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: on ? colors.coralSoft : colors.card,
+                      borderWidth: on ? border.strong : border.base,
+                      borderStyle: isTarget && !on ? 'dashed' : 'solid',
+                      borderColor: colors.outline,
+                    }}
+                  >
+                    <Text size={32} weight="black">
+                      {n}
+                    </Text>
+                  </Pressable>
+                </View>
               );
             })}
           </View>
