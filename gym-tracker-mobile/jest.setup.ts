@@ -15,6 +15,12 @@ jest.mock('expo-haptics', () => ({
 }));
 
 jest.mock('expo-speech', () => ({ speak: jest.fn(), stop: jest.fn() }));
+jest.mock('@/services/alarmKit', () => ({
+  alarmKitAvailable: jest.fn(() => false),
+  requestAlarmPermission: jest.fn(() => Promise.resolve(false)),
+  scheduleRestAlarm: jest.fn(() => Promise.resolve(false)),
+  cancelRestAlarm: jest.fn(() => Promise.resolve()),
+}));
 jest.mock('expo-video', () => {
   const { View } = require('react-native');
   return { useVideoPlayer: jest.fn(() => ({ play: jest.fn() })), VideoView: View };

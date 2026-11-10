@@ -24,7 +24,7 @@ Branches, commits and PRs: see `CONTRIBUTING.md`.
 
 ## Product
 
-"Tu charges. On calcule." — an autopilot logger. The app picks today's session from the program, computes every target with the progression engine, shows the plates to load per side, and the user mostly just taps "Valider". Voice cues (expo-speech) announce the next exercise, the plates and the end of rest. In the app, the end of rest is an alarm like a kitchen timer (`startRestAlarm` in `services/sound.ts`): it vibrates over and over and rings the bell in a loop (expo-audio, rings on silent) until a tap on `components/session/RestAlarm.tsx`, any touch to the session, or 30 s; the voice then says the next set. In the background the rest notification plays the same `assets/sounds/rest-bell.wav`. `settings.restBell` turns the bell off (the vibrations stay).
+"Tu charges. On calcule." — an autopilot logger. The app picks today's session from the program, computes every target with the progression engine, shows the plates to load per side, and the user mostly just taps "Valider". Voice cues (expo-speech) announce the next exercise, the plates and the end of rest. In the app, the end of rest is an alarm like a kitchen timer (`startRestAlarm` in `services/sound.ts`): it vibrates over and over and rings the bell in a loop (expo-audio, rings on silent) until a tap on `components/session/RestAlarm.tsx`, any touch to the session, or 30 s; the voice then says the next set. App left during a rest (another app, phone locked), an iPhone on iOS 26 gets a real alarm instead (`services/alarmKit.ts`, AlarmKit through the local module `modules/okilo-alarm`): full screen over any app, rings on silent, "Arrêter" and "Ouvrir Okilo"; an app cannot bring itself to the front on iOS, that button is the closest. Elsewhere (Expo Go, Android, older iOS) the rest notification plays the same `assets/sounds/rest-bell.wav`. `settings.restBell` turns the bell off (the vibrations stay).
 
 ## Architecture
 
@@ -99,6 +99,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `supabase.ts` + `secureStorage.ts` — auth session encrypted (AES key in the Keychain).
 - `logger.ts` — dev-only logs. `console.*` is banned elsewhere.
 - `files.ts` — write a file and open the share sheet, or pick one (expo-file-system, expo-sharing).
+- `alarmKit.ts` — the end of the rest as an AlarmKit alarm when the app is off screen. Native code in `modules/okilo-alarm/` (Swift, iOS 26+, weakly linked); its config plugin adds the permission text and registers the "Ouvrir Okilo" App Intent in the app target. Only in a build: test it with EAS, not Expo Go.
 - `voiceInput.ts` — on-device speech recognition for the voice commands; the native module is loaded only when it exists (not in Expo Go). `speech.ts` tells when the app itself is talking, so its voice is never taken for a command.
 
 ### State — Zustand stores (`stores/`)

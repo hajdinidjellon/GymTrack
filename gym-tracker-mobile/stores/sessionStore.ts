@@ -28,6 +28,7 @@ import {
   requestPermissions,
   scheduleRestCompleteNotification,
 } from '@/services/notifications';
+import { cancelRestAlarm, requestAlarmPermission, scheduleRestAlarm } from '@/services/alarmKit';
 import { speak } from '@/services/speech';
 import { playRestBell, startRestAlarm, stopRestAlarm } from '@/services/sound';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -134,6 +135,33 @@ function armRestEnd(ms: number) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => null);
     ringRestAlarm();
   }, ms);
+}
+
+/**
+ * App off screen (another app, phone locked) during a rest: its end becomes a
+ * real alarm when the iPhone has AlarmKit, and the notification is dropped so
+ * nothing rings twice. Back on screen, the app rings itself again.
+ */
+function syncOffScreenAlarm() {
+  const session = useSessionStore.getState().activeSession;
+  const at = session?.restEndsAt;
+  const { restBell, notifications } = settings();
+  if (AppState.currentState === 'active' || at == null || at <= Date.now() || !restBell || !notifications) {
+    void cancelRestAlarm();
+    return;
+  }
+  void scheduleRestAlarm(at).then((scheduled) => {
+    if (scheduled && useSessionStore.getState().activeSession?.restEndsAt === at) void cancelRestCompleteNotification();
+  });
+}
+
+/** Back on screen: no alarm left, and the notification again in case the app is left once more. */
+function backOnScreen() {
+  void cancelRestAlarm();
+  const session = useSessionStore.getState().activeSession;
+  const left = session ? Session.restLeft(session, Date.now()) : 0;
+  if (!session || left <= 0) return;
+  void scheduleRestCompleteNotification(left, Session.nextSetSummary(session, formatKg), settings().restBell);
 }
 
 /** "C'est reparti. Série 2. 60 kilos, 10 reps." */
@@ -244,7 +272,10 @@ export const useSessionStore = create<SessionStore>()(
         startSession: (name, exercises) => {
           clearRestEndTimeout();
           // Asked when it makes sense (the first session, for the end of the rest), not at the app's launch
-          if (settings().notifications) requestPermissions().catch(() => null);
+          if (settings().notifications) {
+            requestPermissions().catch(() => null);
+            requestAlarmPermission().catch(() => null);
+          }
           const session = Session.createSession(newId(), name, exercises, new Date());
           set({ activeSession: Session.refreshWarmups(session, settings()) });
         },
@@ -428,6 +459,8 @@ export const useSessionStore = create<SessionStore>()(
             settings().restBell,
           );
           armRestEnd(session.restDuration! * 1000);
+          // Validated from the lock screen, the app stays in the background: the alarm right away
+          syncOffScreenAlarm();
         },
 
         addRestTime: (seconds) => {
@@ -439,6 +472,7 @@ export const useSessionStore = create<SessionStore>()(
         stopRestTimer: () => {
           clearRestEndTimeout();
           void cancelRestCompleteNotification();
+          void cancelRestAlarm();
           apply(Session.endRest);
         },
 
@@ -464,7 +498,13 @@ if (restored?.restEndsAt != null) {
   else useSessionStore.setState({ activeSession: Session.endRest(restored) });
 }
 
-// L'app quitte l'écran : l'alarme s'arrête (le son et les vibrations ne tournent pas en arrière-plan)
+// L'app quitte l'écran : l'alarme de l'app s'arrête (son et vibrations ne tournent pas en arrière-plan),
+// celle d'AlarmKit prend le relais
 AppState.addEventListener('change', (state) => {
-  if (state !== 'active') silenceRestAlarm(false);
+  if (state === 'active') {
+    backOnScreen();
+    return;
+  }
+  silenceRestAlarm(false);
+  syncOffScreenAlarm();
 });
