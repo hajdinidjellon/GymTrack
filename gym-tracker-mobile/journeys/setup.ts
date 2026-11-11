@@ -37,6 +37,7 @@ jest.mock('@/services/supabase', () => ({
   isSupabaseConfigured: () => true,
   getCurrentUserId: jest.fn(async () => 'journey-user'),
   hasSession: jest.fn(async () => true),
+  getUsername: jest.fn(async () => null),
   signInWithEmail: jest.fn(async () => ({ ok: true })),
   signUp: jest.fn(async () => ({ ok: true })),
   signOut: quiet(),

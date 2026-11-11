@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 import { border, colors, radius, space } from '@/constants/theme';
-import { formatDay, formatShortDay, formatThousands, formatTime } from '@/domain/format';
+import { formatShortDay, formatThousands, formatTime } from '@/domain/format';
 import { setsDone } from '@/domain/history';
 import { describeSide, formatKg } from '@/domain/plates';
 import {
@@ -30,6 +30,7 @@ import { nextScheduled, whenLabel } from '@/domain/schedule';
 import { isStale, lastSetAt } from '@/domain/sessionTime';
 import { useBuildContext } from '@/hooks/useTodayPlan';
 import { useLocale } from '@/hooks/useLocale';
+import { useGreeting } from '@/hooks/useGreeting';
 import { dayName, exerciseName, t } from '@/i18n';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useProfileStore } from '@/stores/profileStore';
@@ -75,6 +76,8 @@ function start(plan: PlannedDay) {
 
 export default function Today() {
   useLocale();
+  // « Bonjour Djellon » instead of the date and « Aujourd'hui »: the tab already says where you are
+  const greeting = useGreeting();
   const ctx = useBuildContext();
   const workouts = useWorkoutStore((s) => s.workouts);
   // A day picked by hand holds until the next saved session, then the program leads again
@@ -137,8 +140,7 @@ export default function Today() {
     >
       <FadeIn>
         <ScreenHeader
-          eyebrow={formatDay(new Date())}
-          title={t('home.title')}
+          title={greeting}
           right={streak > 1 ? <Chip tone="sun" label={t('home.streak', { count: streak })} /> : undefined}
         />
       </FadeIn>

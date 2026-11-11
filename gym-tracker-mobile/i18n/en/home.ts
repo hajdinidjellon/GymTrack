@@ -7,6 +7,12 @@ export const home: Dictionary['home'] = {
     profile: 'Profile',
   },
   title: 'Today',
+  greeting: {
+    day: 'Hello',
+    evening: 'Good evening',
+    dayName: 'Hello {name}',
+    eveningName: 'Good evening {name}',
+  },
   resume: 'Resume workout',
   start: 'Start workout',
   streak: '{count} wk streak',
