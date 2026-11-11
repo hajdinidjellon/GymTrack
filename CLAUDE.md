@@ -37,13 +37,15 @@ app/
   (onboarding)/            ← welcome, setup (the 7 first-launch questions + recap), login; goal/program edit from Profile (?edit=1)
   (tabs)/                  ← index (Aujourd'hui), progress, profile; _layout gates on profile and resumes a running session
   session/preview.tsx      ← today's session, "Lancer la séance"
-  session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state; the last set opens SessionDone (effort, undo, one more set, then save)
+  session/index.tsx        ← the logger: set / rest / calibration views, driven by sessionStore state; the last set opens SessionDone (what was done, effort, undo, one more set, then save); « Terminer » asks in the app's `ActionSheet` (discard in red, apart, confirmed again)
   session/summary.tsx      ← tonnage, next targets
   exercise/[name].tsx      ← next target, own sets/reps (RuleEditor), plate-loaded or stack, increment picker, history
   history/index.tsx        ← "Historique": every past session, newest first (home → Dernière séance → Historique)
   history/[id].tsx         ← one past session: each exercise, set by set (weight × reps, effort), records
   days/index.tsx           ← "Mes séances": every day of the program, "+ Nouvelle séance" adds one's own (Profil → Mes séances)
   days/[name].tsx          ← one day: add, remove, drag to reorder its exercises, "+ superset" chains one with the next
+  settings/gym.tsx         ← "Ma salle": bar, collars, plates, machine steps, « Compter les 2 côtés » (Profil → Réglages)
+  settings/app.tsx         ← "Application": language and appearance, applied at once (Profil → Réglages)
   data/index.tsx           ← "Tes données": backup, restore, import from Strong or Hevy, CSV export (Profil → Sauvegarde, import)
 ```
 
@@ -70,7 +72,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `catalog/regions.ts` — the part of the main muscle each exercise works (haut/milieu/bas des pecs, dorsaux, trapèzes…): the picker's second row of tabs. Every catalog exercise of a muscle with regions has one (a test checks); an own exercise keeps the one it was created in (`CustomExercise.region`). Arms and calves have none.
 - `programs.ts` — catalog lookups (search by French, English and old names, `byPopularity`, `alternativesFor`), splits, rules per goal.
 - `sessionBuilder.ts` — next day of the program, per-lift plan, conversion to `ActiveExercise`.
-- `session.ts` — pure transitions of the running session (complete set, rest, to workout).
+- `session.ts` — pure transitions of the running session (complete set, rest, to workout). `firstSetAfterStart`: a first weight chosen with no warm-up before it logs its first set in the same tap (« Série faite : 20 kg × 10 », `startAndLog`).
 - `schemas.ts` — zod schemas; everything read from disk or the cloud is validated here.
 - `programSwitch.ts` — off-program sessions: `choosableDays` (programs.ts) adds the other programs' days (Haut, Bas, one `EXTRA_FULL_BODY` instead of A and B) and « Ma séance » (`OWN_SESSION`), the one the user fills in, saved under their program and offered even empty (`isOffered`), for a one-off; they keep each exercise's progression and do not move the rotation. Three in a row from the same other program: the home offers to switch (`settings.programSwitchDismissed` after a no).
 - `ruleSync.ts` — sets/reps shared with similar exercises (same main muscle and kind of movement): the ones on the same rule follow a change.
@@ -90,7 +92,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `ownExercises.ts` — editing or deleting an own exercise; a rename moves every setting under the name and keeps the old name as an alias.
 - `voiceCommands.ts` — what a few spoken words mean ("fait", "8", "plus tard"…); more than 4 words is never a command.
 - Drop sets (`setType: 'drop'`) never steer progression (`mainSets`). Supersets: exercises with the same `superset` group take turns (`sessionCursor`), no rest inside a round (`supersetHandoff`).
-- `onboarding.ts` — the first-launch answers (goal, about you, experience, rhythm, program, session time, gym), the plain-language programs (`PROGRAM_CHOICES`), and `calibrationPreset`: the first weight offered from experience, sex, age group and body weight, all optional.
+- `onboarding.ts` — the first-launch answers (a one-choice question goes on by itself, `ADVANCE_MS` in `OnboardingFlow`) (goal, about you, experience, rhythm, program, session time, gym), the plain-language programs (`PROGRAM_CHOICES`), and `calibrationPreset`: the first weight offered from experience, sex, age group and body weight, all optional.
 - `gyms.ts` — the gym chains (Basic-Fit, Fitness Park, L'Orange Bleue, Keepcool first, then a search): bar, plates and the machines' steps (`settings.stackStep`, `settings.cableStep`, used by `defaultIncrementFor`), a correctable starting point.
 - A program day that runs over the user's usual session time (`profile.sessionMinutes`) loses its last exercises, 3 at least (`fitToTime`); a day the user set up stays whole.
 - `profile.ts`, `week.ts`, `plates.ts`, `sessionCursor.ts`, `voiceLines.ts`, `format.ts`.
@@ -109,7 +111,7 @@ A layer never imports a layer above it. Always import with `@/`.
 
 | Store | Responsibility |
 |---|---|
-| `sessionStore` | Running session, persisted in `expo-sqlite/kv-store`. Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here. |
+| `sessionStore` | Running session, persisted in `expo-sqlite/kv-store`. Absolute timestamps, no per-second tick. All haptics, voice and rest notifications start here; the notification permission is asked at a session's first rest. |
 | `workoutStore` | Past workouts (SQLite) |
 | `profileStore` | Goal, program, PRs. Normalizes profiles from the old app version. |
 | `settingsStore` | Rest time, voice, bar weight, gym plates, per-exercise increments, own exercises per day (`customDays`, key `"ppl/Legs"`) and own sets/reps per exercise (`ruleOverrides`), own rest per exercise (`restOverrides`), own exercises (`customExercises`), a note per exercise (`exerciseNotes`, read by the voice), plate-loaded or stack machine per exercise (`plateLoaded`, over the catalog's), warm-ups on/off globally and per exercise (`warmups`, `warmupOverrides`), supersets per day (`supersets`, key `"ppl/Push"`), voice commands (`voiceCommands`, off by default). Totals count both sides and both dumbbells when `countBothSides` is on. Validated on load. |

@@ -26,6 +26,8 @@ import { useSettingsStore } from '@/stores/settingsStore';
 export interface StepProps {
   answers: OnboardingAnswers;
   set: (patch: Partial<OnboardingAnswers>, quiet?: boolean) => void;
+  /** A one-choice question: on to the next once answered. */
+  advance?: () => void;
 }
 
 function Label({ children }: { children: string }) {
@@ -111,7 +113,7 @@ export function AboutStep({ answers, set }: StepProps) {
 }
 
 /** The programs in plain words; the one the rhythm suits is advised and picked first. */
-export function ProgramStep({ answers, set }: StepProps) {
+export function ProgramStep({ answers, set, advance }: StepProps) {
   const pick = (id: SplitId | null) => {
     const program = PROGRAM_CHOICES.find((p) => p.id === id);
     // Le rythme suit le programme s'il n'est pas fait pour lui ; la semaine se refait
@@ -120,6 +122,8 @@ export function ProgramStep({ answers, set }: StepProps) {
     const custom =
       id === 'custom' ? (answers.custom ?? { name: '', days: [{ name: '' }, { name: '' }] }) : answers.custom;
     set({ split: id, perWeek, schedule: null, custom });
+    // « Autre » : its sessions are named here first
+    if (id !== 'custom') advance?.();
   };
   const settings = useSettingsStore((s) => s.settings);
   const choices = [
@@ -202,7 +206,7 @@ export const rhythmsLabel = (rhythms: number[]) =>
   rhythms.length > 1 ? `${rhythms[0]}–${rhythms[rhythms.length - 1]}` : `${rhythms[0]}`;
 
 /** The usual session time: a program day that runs over is cut to fit. */
-export function DurationStep({ answers, set }: StepProps) {
+export function DurationStep({ answers, set, advance }: StepProps) {
   return (
     <>
       <Question title={t('onboarding.flow.duration.title')} subtitle={t('onboarding.flow.duration.subtitle')} />
@@ -213,7 +217,10 @@ export function DurationStep({ answers, set }: StepProps) {
             <Choice
               key={n}
               selected={on}
-              onPress={() => set({ sessionMinutes: n })}
+              onPress={() => {
+                set({ sessionMinutes: n });
+                advance?.();
+              }}
               accessibilityLabel={t('onboarding.flow.duration.minutesLabel', { n })}
               style={{ flex: 1, height: 84, alignItems: 'center', justifyContent: 'center' }}
             >

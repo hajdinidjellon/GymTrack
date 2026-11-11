@@ -67,6 +67,8 @@ interface SessionStore {
   removeSet: (exerciseId: string, setIndex: number) => void;
   /** First time on an exercise: sets the weight of every remaining set. */
   setStartWeight: (exerciseId: string, weight: number) => void;
+  /** The first weight and its first set done, one tap; only the weight when a warm-up comes first. */
+  startAndLog: (exerciseId: string, weight: number) => void;
   /** Marks the set done and starts the rest timer, unless it was the last set. */
   completeSet: (exerciseId: string, setIndex: number) => void;
   /** "Done as planned": completes every remaining set of the exercise at once. */
@@ -162,6 +164,23 @@ function backOnScreen() {
   const left = session ? Session.restLeft(session, Date.now()) : 0;
   if (!session || left <= 0) return;
   void scheduleRestCompleteNotification(left, Session.nextSetSummary(session, formatKg), settings().restBell);
+}
+
+let notificationsAsked = false;
+
+/**
+ * Asked at a session's first rest: that is when a notification makes sense (the end of the rest),
+ * not at the app's launch nor before the first set. Granted, the rest under way gets its notification.
+ */
+function askNotificationsOnce() {
+  if (notificationsAsked || !settings().notifications) return;
+  notificationsAsked = true;
+  void Promise.all([requestPermissions().catch(() => false), requestAlarmPermission().catch(() => null)]).then(() => {
+    const session = useSessionStore.getState().activeSession;
+    const left = session ? Session.restLeft(session, Date.now()) : 0;
+    if (session && left > 0)
+      void scheduleRestCompleteNotification(left, Session.nextSetSummary(session, formatKg), settings().restBell);
+  });
 }
 
 /** "C'est reparti. Série 2. 60 kilos, 10 reps." */
@@ -271,11 +290,8 @@ export const useSessionStore = create<SessionStore>()(
 
         startSession: (name, exercises) => {
           clearRestEndTimeout();
-          // Asked when it makes sense (the first session, for the end of the rest), not at the app's launch
-          if (settings().notifications) {
-            requestPermissions().catch(() => null);
-            requestAlarmPermission().catch(() => null);
-          }
+          // Asked again at this session's first rest (a no-op once granted)
+          notificationsAsked = false;
           const session = Session.createSession(newId(), name, exercises, new Date());
           set({ activeSession: Session.refreshWarmups(session, settings()) });
         },
@@ -336,6 +352,17 @@ export const useSessionStore = create<SessionStore>()(
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => null);
           const next = findCurrent(get().activeSession?.exercises ?? []);
           if (next && settings().voice) speak(nextSetLine(next, settings()));
+        },
+
+        startAndLog: (exerciseId, weight) => {
+          const session = get().activeSession;
+          const first = session && Session.firstSetAfterStart(session, exerciseId, weight, settings());
+          if (!first) {
+            get().setStartWeight(exerciseId, weight);
+            return;
+          }
+          applyWarm((s) => Session.setStartWeight(s, exerciseId, weight));
+          get().completeSet(exerciseId, first.setIndex);
         },
 
         completeSet: (exerciseId, setIndex) => {
@@ -461,6 +488,7 @@ export const useSessionStore = create<SessionStore>()(
           armRestEnd(session.restDuration! * 1000);
           // Validated from the lock screen, the app stays in the background: the alarm right away
           syncOffScreenAlarm();
+          askNotificationsOnce();
         },
 
         addRestTime: (seconds) => {

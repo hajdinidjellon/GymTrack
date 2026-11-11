@@ -12,6 +12,7 @@ import {
 } from '@/domain/warmup';
 import type { ActiveExercise, WorkoutSet } from '@/types';
 import { active } from './fixtures';
+import { createSession, firstSetAfterStart } from '@/domain/session';
 
 const gym = { barWeight: 20, plates: [20, 15, 10, 5, 2.5, 1.25] };
 
@@ -213,5 +214,18 @@ describe('numbering', () => {
     expect(workingCount(sets)).toBe(3);
     expect(workingCount(sets, 'done')).toBe(1);
     expect(workingCount(sets, 'left')).toBe(2);
+  });
+});
+
+describe('firstSetAfterStart', () => {
+  const start = () => createSession('s', 'Push', [bench(0, { needsWeight: true })], new Date('2026-11-09T10:00:00Z'));
+
+  it('is the first working set when no warm-up comes first: one tap logs it', () => {
+    const first = firstSetAfterStart(start(), bench(0).id, 60, { ...settings, warmups: false });
+    expect(first).toMatchObject({ setIndex: 0, set: { weight: 60, reps: 8 } });
+  });
+
+  it('is none when warm-ups come first: the weight is only set', () => {
+    expect(firstSetAfterStart(start(), bench(0).id, 60, settings)).toBeNull();
   });
 });

@@ -193,6 +193,24 @@ export function refreshWarmups(session: ActiveSession, settings: WarmupSettings)
   return exercises.every((e, i) => e === session.exercises[i]) ? session : { ...session, exercises };
 }
 
+/**
+ * The first weight chosen and the set done in one tap: the set it would validate, once the
+ * weight is set and the warm-ups computed from it. None when that set is a warm-up (its own,
+ * lighter weight) or the exercise is gone: the weight is then only set.
+ */
+export function firstSetAfterStart(
+  session: ActiveSession,
+  exerciseId: string,
+  weight: number,
+  settings: WarmupSettings,
+): { setIndex: number; set: WorkoutSet } | null {
+  const started = refreshWarmups(setStartWeight(session, exerciseId, weight), settings);
+  const sets = started.exercises.find((e) => e.id === exerciseId)?.sets ?? [];
+  const setIndex = sets.findIndex((s) => !s.completed);
+  const set = sets[setIndex];
+  return set && !isWarmup(set) ? { setIndex, set } : null;
+}
+
 /** A drop set takes about 20 % off, rounded down to the exercise's step. */
 export const DROP_FACTOR = 0.8;
 

@@ -74,7 +74,7 @@ export function DemoThumb({ name, source }: { name: string; source: number }) {
         </View>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
+      <Modal statusBarTranslucent visible={open} transparent animationType="slide" onRequestClose={close}>
         <Pressable
           onPress={close}
           accessibilityLabel={t('exercise.video.close')}

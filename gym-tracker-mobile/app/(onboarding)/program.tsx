@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Pressable, View, type ScrollViewInstance } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { border, colors, hardShadow } from '@/constants/theme';
 import { scheduleLegend } from '@/domain/onboarding';
@@ -41,6 +41,8 @@ export default function ProgramScreen() {
   const [split, setSplit] = useState<SplitId>(offered ?? profile?.program.split ?? 'ppl');
   const [perWeek, setPerWeek] = useState(profile?.program.perWeek ?? 3);
   const settings = useSettingsStore((s) => s.settings);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const bringBuilder = useRef(false);
   // « Mon programme » : what the user has, else two sessions to name
   const [draft, setDraft] = useState<CustomProgramDraft>(() =>
     profile?.program.split === 'custom' ? currentDraft(settings) : { name: '', days: [{ name: '' }, { name: '' }] },
@@ -61,6 +63,8 @@ export default function ProgramScreen() {
 
   const chooseSplit = (id: SplitId) => {
     setSplit(id);
+    // « Mon programme » : its builder opens under the cards, brought into view
+    if (id === 'custom') bringBuilder.current = true;
     // Les séances changent de nom : on repart d'une semaine type avec le même nombre de jours
     setSchedule(defaultSchedule(id === 'custom' ? draftNames : getSplit(id).days.map((d) => d.name), days || perWeek));
   };
@@ -86,6 +90,7 @@ export default function ProgramScreen() {
   return (
     <Screen
       scroll
+      scrollRef={scrollRef}
       footer={
         <StickerButton
           label={edit ? t('common.save') : t('onboarding.program.start')}
@@ -120,6 +125,8 @@ export default function ProgramScreen() {
               minHeight: 74,
               paddingVertical: 10,
               flexWrap: 'wrap',
+              // Wrapped lines sit in the middle of the card, not at its top
+              alignContent: 'center',
               columnGap: 12,
               paddingHorizontal: 22,
               flexDirection: 'row',
@@ -138,7 +145,14 @@ export default function ProgramScreen() {
       </View>
 
       {custom ? (
-        <View style={{ marginTop: 24 }}>
+        <View
+          style={{ marginTop: 24 }}
+          onLayout={(e) => {
+            if (!bringBuilder.current) return;
+            bringBuilder.current = false;
+            scrollRef.current?.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - 24) });
+          }}
+        >
           <CustomProgramBuilder
             draft={draft}
             onChange={setDraft}

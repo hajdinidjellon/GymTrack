@@ -17,7 +17,7 @@
     "test:coverage": "jest --coverage",
     "check": "npm run lint && npm run format:check && npm run type-check && npm run test:coverage",
     "seed:personas": "jest --config scripts/personas/jest.config.js --runInBand --silent=false",
-    "journeys": "jest --config journeys/jest.config.js --runInBand && node journeys/report.mjs"
+    "journeys": "jest --config journeys/jest.config.js --runInBand && node journeys/report.mjs && prettier --write journeys/REPORT.md"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",

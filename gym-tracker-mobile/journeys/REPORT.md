@@ -6,41 +6,43 @@ Temps estimé : 0,4 s par tap, 0,3 s par lettre, 1,35 s pour lire chaque écran 
 
 ## Séance
 
-| Parcours | Taps | Lettres | Écrans lus | Temps estimé |
-|---|---:|---:|---:|---:|
-| Faire l’exercice plus tard (machine prise) | 2 | 0 | 2 | 3,5 s |
-| Lancer la séance et valider la 1ʳᵉ série | 2 | 0 | 2 | 3,5 s |
-| Une série faite 2,5 kg plus lourd que prévu | 3 | 0 | 2 | 3,9 s |
-| Ajouter un exercice à la séance | 3 | 0 | 3 | 5,3 s |
-| Voir la démo de l’exercice et revenir | 3 | 0 | 3 | 5,3 s |
-| Changer d’exercice (machine prise) | 3 | 0 | 3 | 5,3 s |
-| Noter une série ratée (moins de reps) | 4 | 0 | 3 | 5,7 s |
-| Corriger une série déjà validée | 6 | 0 | 4 | 7,8 s |
-| Première séance (débutant) : charge à choisir à chaque exercice | 21 | 0 | 7 | 17,9 s |
-| Une séance habituelle entière, de l’accueil au bilan | 17 | 0 | 9 | 19 s |
+| Parcours                                                        | Taps | Lettres | Écrans lus | Temps estimé |
+| --------------------------------------------------------------- | ---: | ------: | ---------: | -----------: |
+| Faire l’exercice plus tard (machine prise)                      |    2 |       0 |          2 |        3,5 s |
+| Lancer la séance et valider la 1ʳᵉ série                        |    2 |       0 |          2 |        3,5 s |
+| Une série faite 2,5 kg plus lourd que prévu                     |    3 |       0 |          2 |        3,9 s |
+| Ajouter un exercice à la séance                                 |    3 |       0 |          3 |        5,3 s |
+| Voir la démo de l’exercice et revenir                           |    3 |       0 |          3 |        5,3 s |
+| Changer d’exercice (machine prise)                              |    3 |       0 |          3 |        5,3 s |
+| Noter une série ratée (moins de reps)                           |    4 |       0 |          3 |        5,7 s |
+| Corriger une série déjà validée                                 |    6 |       0 |          4 |        7,8 s |
+| Première séance (débutant) : charge à choisir à chaque exercice |   16 |       0 |          7 |       15,9 s |
+| Une séance habituelle entière, de l’accueil au bilan            |   17 |       0 |          9 |         19 s |
 
 ## Programme
 
-| Parcours | Taps | Lettres | Écrans lus | Temps estimé |
-|---|---:|---:|---:|---:|
-| Revoir la dernière séance | 1 | 0 | 2 | 3,1 s |
-| Changer de programme (Push · Pull · Legs → Haut · Bas) | 4 | 0 | 4 | 7 s |
-| Renommer un exercice du catalogue | 4 | 11 | 2 | 7,6 s |
-| Ajouter un exercice à une séance du programme | 5 | 0 | 5 | 8,8 s |
-| Créer « Mon programme » à partir d’un programme copié, 3 séances renommées | 9 | 30 | 4 | 18 s |
+| Parcours                                                                   | Taps | Lettres | Écrans lus | Temps estimé |
+| -------------------------------------------------------------------------- | ---: | ------: | ---------: | -----------: |
+| Revoir la dernière séance                                                  |    1 |       0 |          2 |        3,1 s |
+| Retirer un disque que la salle n’a pas                                     |    3 |       0 |          3 |        5,3 s |
+| Passer l’application en sombre                                             |    3 |       0 |          3 |        5,3 s |
+| Changer de programme (Push · Pull · Legs → Haut · Bas)                     |    4 |       0 |          4 |          7 s |
+| Renommer un exercice du catalogue                                          |    4 |      11 |          2 |        7,6 s |
+| Ajouter un exercice à une séance du programme                              |    5 |       0 |          5 |        8,8 s |
+| Créer « Mon programme » à partir d’un programme copié, 3 séances renommées |    9 |      30 |          4 |         18 s |
 
 ## Arrivée
 
-| Parcours | Taps | Lettres | Écrans lus | Temps estimé |
-|---|---:|---:|---:|---:|
-| Premier lancement, questions passées → 1ʳᵉ séance | 4 | 0 | 5 | 8,4 s |
-| Créer un compte depuis l’accueil, puis l’onboarding passé | 5 | 19 | 4 | 13,1 s |
-| Premier lancement, les 7 questions répondues → 1ʳᵉ séance | 18 | 0 | 11 | 22,1 s |
+| Parcours                                                  | Taps | Lettres | Écrans lus | Temps estimé |
+| --------------------------------------------------------- | ---: | ------: | ---------: | -----------: |
+| Premier lancement, questions passées → 1ʳᵉ séance         |    4 |       0 |          5 |        8,4 s |
+| Créer un compte depuis l’accueil, puis l’onboarding passé |    5 |      19 |          4 |       13,1 s |
+| Premier lancement, les 7 questions répondues → 1ʳᵉ séance |   14 |       0 |         11 |       20,5 s |
 
 ## Ce qu’on a vu en les mesurant
 
-- **Premier lancement, les 7 questions répondues → 1ʳᵉ séance** : Chaque question demande 2 taps (choisir + Continuer) : passer à la suivante dès le choix fait économiserait 6 taps.
-- **Première séance (débutant) : charge à choisir à chaque exercice** : 5 exercices : 1 tap « Commencer à … kg » chacun en plus des séries.
+- **Premier lancement, les 7 questions répondues → 1ʳᵉ séance** : Les questions à un seul choix (objectif, expérience, programme, durée) passent seules à la suivante : 4 taps de moins.
+- **Première séance (débutant) : charge à choisir à chaque exercice** : 5 exercices : la charge de départ et la 1ʳᵉ série validées d’un seul tap (« Série faite »).
 - **Une séance habituelle entière, de l’accueil au bilan** : 15 séries prévues : 1 tap « Valider » par série, le repos se ferme tout seul.
 - **Créer un compte depuis l’accueil, puis l’onboarding passé** : Le bouton « Créer un compte » est caché derrière « J’ai déjà un compte » : 1 tap et une lecture de trop.
 
@@ -103,6 +105,17 @@ Temps estimé : 0,4 s par tap, 0,3 s par lettre, 1,35 s pour lire chaque écran 
 
 </details>
 
+<details><summary>Retirer un disque que la salle n’a pas</summary>
+
+1. écran /
+1. tap « Profil »
+1. → écran /profile
+1. tap « /^Ma salle :/ »
+1. → écran /settings/gym
+1. tap « Disque de 1,25 kg »
+
+</details>
+
 <details><summary>Revoir la dernière séance</summary>
 
 1. écran /
@@ -117,23 +130,19 @@ Temps estimé : 0,4 s par tap, 0,3 s par lettre, 1,35 s pour lire chaque écran 
 1. tap « C'est parti »
 1. → écran /setup
 1. tap « /^Prendre du muscle/ »
-1. tap « Continuer »
 1. vue « question 2 »
 1. tap « Un homme »
 1. tap « /^25/ »
 1. tap « Continuer »
 1. vue « question 3 »
 1. tap « /^Quelques mois/ »
-1. tap « Continuer »
 1. vue « question 4 »
 1. tap « /^Haut \/ Bas/ »
-1. tap « Continuer »
 1. vue « question 5 »
 1. tap « 4 séances par semaine »
 1. tap « Continuer »
 1. vue « question 6 »
 1. tap « 60 minutes »
-1. tap « Continuer »
 1. vue « question 7 »
 1. tap « Basic-Fit »
 1. tap « Voir mon programme »
@@ -196,40 +205,35 @@ Temps estimé : 0,4 s par tap, 0,3 s par lettre, 1,35 s pour lire chaque écran 
 1. tap « Lancer la séance »
 1. → écran /session
 1. vue « choix de la charge »
-1. tap « Commencer à 20 kg »
-1. tap « Valider la série »
+1. tap « Série faite : 20 kg × 8 »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. vue « choix de la charge »
-1. tap « Commencer à 20 kg »
-1. tap « Valider la série »
+1. tap « Série faite : 20 kg × 8 »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. vue « choix de la charge »
-1. tap « Commencer à 20 kg »
-1. tap « Valider la série »
+1. tap « Série faite : 20 kg × 8 »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. vue « choix de la charge »
-1. tap « Commencer à 20 kg »
-1. tap « Valider la série »
+1. tap « Série faite : 20 kg × 8 »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
 1. vue « choix de la charge »
-1. tap « Commencer à 4 kg »
-1. tap « Valider la série »
+1. tap « Série faite : 4 kg × 8 »
 1. (repos écoulé)
 1. tap « Valider la série »
 1. (repos écoulé)
@@ -275,7 +279,7 @@ Temps estimé : 0,4 s par tap, 0,3 s par lettre, 1,35 s pour lire chaque écran 
 1. tap « Valider la série »
 1. (repos écoulé)
 1. tap « Valider la série »
-1. vue « Dernière série validée »
+1. vue « Toutes tes séries sont faites »
 1. vue « séance finie »
 1. tap « Terminer la séance »
 1. → écran /session/summary
@@ -351,5 +355,16 @@ Temps estimé : 0,4 s par tap, 0,3 s par lettre, 1,35 s pour lire chaque écran 
 1. tap « /^Changer d'exercice/ »
 1. fenêtre « choix d’exercice »
 1. tap « Choisir Leg extension »
+
+</details>
+
+<details><summary>Passer l’application en sombre</summary>
+
+1. écran /
+1. tap « Profil »
+1. → écran /profile
+1. tap « /^Application :/ »
+1. → écran /settings/app
+1. tap « Sombre »
 
 </details>

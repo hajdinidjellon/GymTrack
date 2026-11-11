@@ -77,18 +77,22 @@ describe('session', () => {
     let guard = 60;
     let exercises = 0;
     while (guard-- > 0) {
-      const start = screen.queryAllByRole('button').find((b) => /^Commencer à /.test(b.props.accessibilityLabel ?? ''));
+      const start = screen
+        .queryAllByRole('button')
+        .find((b) => /^(Série faite|Commencer à) /.test(b.props.accessibilityLabel ?? ''));
       if (start) {
         exercises++;
         j.view('choix de la charge');
         await j.tap(start.props.accessibilityLabel as string);
+        // « Série faite » logs the first set too: its rest runs out like any other
+        if (useSessionStore.getState().activeSession?.restEndsAt) await j.restEnds();
       } else if (validate()) {
         await j.tap('Valider la série');
         if (useSessionStore.getState().activeSession?.restEndsAt) await j.restEnds();
       } else break;
     }
-    j.note(`${exercises} exercices : 1 tap « Commencer à … kg » chacun en plus des séries.`);
-    j.save();
+    j.note(`${exercises} exercices : la charge de départ et la 1ʳᵉ série validées d’un seul tap (« Série faite »).`);
+    expect(j.save().taps).toBeLessThanOrEqual(16);
   });
 
   it('a set done at another weight than planned', async () => {

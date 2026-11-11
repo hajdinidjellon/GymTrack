@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { ADVANCE_MS } from '@/components/onboarding/OnboardingFlow';
 import { Journey, seed } from './harness';
 
 jest.setTimeout(60_000);
@@ -35,7 +36,8 @@ describe('arrival', () => {
     await j.tap("C'est parti");
     // 1. Objectif
     await j.tap(/^Prendre du muscle/, 'radio');
-    await j.tap('Continuer');
+    // One-choice question: on to the next by itself
+    await j.pause(ADVANCE_MS);
     j.view('question 2');
     // 2. Toi : sexe, âge, poids
     await j.tap('Un homme', 'radio');
@@ -44,11 +46,13 @@ describe('arrival', () => {
     j.view('question 3');
     // 3. Expérience
     await j.tap(/^Quelques mois/, 'radio');
-    await j.tap('Continuer');
+    // One-choice question: on to the next by itself
+    await j.pause(ADVANCE_MS);
     j.view('question 4');
     // 4. Programme
     await j.tap(/^Haut \/ Bas/, 'radio');
-    await j.tap('Continuer');
+    // One-choice question: on to the next by itself
+    await j.pause(ADVANCE_MS);
     j.view('question 5');
     // 5. Rythme : la semaine proposée est gardée
     await j.tap('4 séances par semaine', 'radio');
@@ -56,7 +60,8 @@ describe('arrival', () => {
     j.view('question 6');
     // 6. Durée
     await j.tap('60 minutes', 'radio');
-    await j.tap('Continuer');
+    // One-choice question: on to the next by itself
+    await j.pause(ADVANCE_MS);
     j.view('question 7');
     // 7. Salle
     await j.tap('Basic-Fit', 'radio');
@@ -66,9 +71,9 @@ describe('arrival', () => {
     await j.tap('Lancer la séance');
     expect(j.pathname).toBe('/session');
     j.note(
-      'Chaque question demande 2 taps (choisir + Continuer) : passer à la suivante dès le choix fait économiserait 6 taps.',
+      'Les questions à un seul choix (objectif, expérience, programme, durée) passent seules à la suivante : 4 taps de moins.',
     );
-    j.save();
+    expect(j.save().taps).toBeLessThanOrEqual(14);
   });
 
   it('creates an account from the welcome screen', async () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ScrollView, View, type ScrollViewInstance, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space } from '@/constants/theme';
 
@@ -15,9 +15,11 @@ interface Props {
   /** Drawn behind the content, over the paper: a decoration that must not hide under the background. */
   background?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** The scroll view, for a screen that scrolls to a part of itself (`scroll` only). */
+  scrollRef?: React.Ref<ScrollViewInstance>;
 }
 
-export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, style, background }: Props) {
+export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, style, background, scrollRef }: Props) {
   const insets = useSafeAreaInsets();
   const bottom = tabs ? space.lg : Math.max(insets.bottom, space.lg) + space.sm;
   const content = [{ paddingTop: insets.top + space.md, paddingHorizontal: space.gutter }, style];
@@ -31,6 +33,7 @@ export function Screen({ children, footer, scroll, scrollEnabled = true, tabs, s
       ) : null}
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           scrollEnabled={scrollEnabled}
           // Keyboard open: a tap on a button works the first time, it does not just close the keyboard
           keyboardShouldPersistTaps="handled"

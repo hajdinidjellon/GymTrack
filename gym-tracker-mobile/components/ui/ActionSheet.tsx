@@ -22,6 +22,10 @@ interface Props {
   title: string;
   actions: SheetAction[];
   onClose: () => void;
+  /** One sentence under the title. */
+  message?: string;
+  /** The way out without choosing (« Annuler » by default). */
+  cancelLabel?: string;
 }
 
 /**
@@ -29,7 +33,7 @@ interface Props {
  * the system's grey alert, which looked foreign to the app. A choice closes it, then runs: on iOS
  * once the sheet is gone, so a choice that opens another sheet is not lost.
  */
-export function ActionSheet({ visible, title, actions, onClose }: Props) {
+export function ActionSheet({ visible, title, actions, onClose, message, cancelLabel }: Props) {
   const insets = useSafeAreaInsets();
   const pending = useRef<(() => void) | null>(null);
   const runPending = () => {
@@ -48,7 +52,14 @@ export function ActionSheet({ visible, title, actions, onClose }: Props) {
     setTimeout(runPending, 500);
   };
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={runPending}>
+    <Modal
+      statusBarTranslucent
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      onDismiss={runPending}
+    >
       <View style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}>
         <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View
@@ -69,6 +80,11 @@ export function ActionSheet({ visible, title, actions, onClose }: Props) {
           <Text size={28} weight="black" accessibilityRole="header" style={{ marginTop: space.sm, marginBottom: 4 }}>
             {title}
           </Text>
+          {message ? (
+            <Text size={16} color={colors.inkMuted} style={{ lineHeight: 22, marginBottom: 4 }}>
+              {message}
+            </Text>
+          ) : null}
           {actions.map((action) => (
             <Pressable
               key={action.label}
@@ -102,7 +118,7 @@ export function ActionSheet({ visible, title, actions, onClose }: Props) {
               ) : null}
             </Pressable>
           ))}
-          <StickerButton label={t('common.cancel')} variant="ghost" size="small" onPress={onClose} />
+          <StickerButton label={cancelLabel ?? t('common.cancel')} variant="ghost" size="small" onPress={onClose} />
         </View>
       </View>
     </Modal>

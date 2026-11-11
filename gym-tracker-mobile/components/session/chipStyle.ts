@@ -7,7 +7,8 @@ import { border, colors, radius } from '@/constants/theme';
  */
 export function chipStyle(pressed: boolean): ViewStyle {
   return {
-    minHeight: 36,
+    minHeight: 30,
+    paddingVertical: 2,
     flexShrink: 1,
     paddingHorizontal: 10,
     borderRadius: radius.pill,

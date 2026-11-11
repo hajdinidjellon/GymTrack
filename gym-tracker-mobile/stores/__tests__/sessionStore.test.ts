@@ -575,8 +575,10 @@ describe('a rest that ends while the phone sleeps', () => {
 });
 
 describe('notification permission', () => {
-  it('is asked when a session starts, not when the app opens, with the alarm one', () => {
-    expect(requestPermissions).toHaveBeenCalled();
-    expect(requestAlarmPermission).toHaveBeenCalled();
+  it('is asked at the first rest, not when the session starts, with the alarm one', () => {
+    expect(requestPermissions).not.toHaveBeenCalled();
+    store().completeSet('bench', 0);
+    expect(requestPermissions).toHaveBeenCalledTimes(1);
+    expect(requestAlarmPermission).toHaveBeenCalledTimes(1);
   });
 });
