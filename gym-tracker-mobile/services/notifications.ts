@@ -43,9 +43,13 @@ export async function requestPermissions(): Promise<boolean> {
 }
 
 const REST_COMPLETE_ID = 'rest-complete';
-const REST_CHANNEL = 'rest';
-/** Declared in the expo-notifications plugin of app.json. */
-const REST_BELL = 'rest-bell.wav';
+/** A new channel for the alarm sound: Android never changes the sound of a channel once made. */
+const REST_CHANNEL = 'rest-alarm';
+/**
+ * The bell rung again and again for ~23 s, like a kitchen timer (iOS plays a
+ * notification sound up to 30 s). Declared in the expo-notifications plugin of app.json.
+ */
+const REST_ALARM = 'rest-alarm.wav';
 
 /** Handled by the OS, so it fires even with the app in the background. `ring`: the bell, else silent. */
 export async function scheduleRestCompleteNotification(seconds: number, body: string, ring = true): Promise<void> {
@@ -57,8 +61,8 @@ export async function scheduleRestCompleteNotification(seconds: number, body: st
         name: t('domain.notifications.restChannel'),
         // eslint-disable-next-line import/namespace
         importance: Notifications.AndroidImportance.HIGH,
-        sound: REST_BELL,
-        vibrationPattern: [0, 250, 250, 250],
+        sound: REST_ALARM,
+        vibrationPattern: [0, 600, 300, 600, 300, 600, 300, 600],
       });
     }
     await Notifications.scheduleNotificationAsync({
@@ -66,7 +70,9 @@ export async function scheduleRestCompleteNotification(seconds: number, body: st
       content: {
         title: t('domain.notifications.restOverTitle'),
         body,
-        sound: ring ? REST_BELL : false,
+        sound: ring ? REST_ALARM : false,
+        // Through Focus modes, like an alarm (entitlement in app.json)
+        interruptionLevel: 'timeSensitive',
         data: { type: 'rest-complete' },
       },
       trigger: {

@@ -12,6 +12,9 @@
       "config": {
         "usesNonExemptEncryption": false
       },
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      },
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Okilo n'utilise pas ta photothèque : cette autorisation ne te sera jamais demandée."
       }
@@ -35,7 +38,7 @@
         "expo-notifications",
         {
           "color": "#F7F5F0",
-          "sounds": ["./assets/sounds/rest-bell.wav"]
+          "sounds": ["./assets/sounds/rest-bell.wav", "./assets/sounds/rest-alarm.wav"]
         }
       ],
       [

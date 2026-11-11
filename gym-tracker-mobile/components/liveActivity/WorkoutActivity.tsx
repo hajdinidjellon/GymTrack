@@ -108,16 +108,18 @@ const WorkoutActivity = (props: LockScreenProps, environment: LiveActivityEnviro
       </Text>
     ) : null;
 
-  const validate = props.canValidate ? (
-    <Button
-      label={props.labels.validate}
-      systemImage="checkmark"
-      target="validate"
-      modifiers={[buttonStyle('borderedProminent'), buttonBorderShape('capsule'), controlSize('large'), tint(coral)]}
-    />
-  ) : null;
+  const validateButton = (size: 'regular' | 'large') =>
+    props.canValidate ? (
+      <Button
+        label={props.labels.validate}
+        systemImage="checkmark"
+        target="validate"
+        modifiers={[buttonStyle('borderedProminent'), buttonBorderShape('capsule'), controlSize(size), tint(coral)]}
+      />
+    ) : null;
+  const validate = validateButton('large');
 
-  /** "Push · Série 2/4" pill, and the session progress. */
+  /** "Série 2/4" pill, the exercise, and the session progress: one line. */
   const header = (
     <HStack spacing={8}>
       {sticker(
@@ -129,11 +131,18 @@ const WorkoutActivity = (props: LockScreenProps, environment: LiveActivityEnviro
             padding({ horizontal: 10, vertical: 4 }),
           ]}
         >
-          {props.done || !props.setLabel ? props.session : `${props.session} · ${props.setLabel}`}
+          {props.done || !props.setLabel ? props.session : props.setLabel}
         </Text>,
         props.done ? successSoft : coralSoft,
         12,
         2,
+      )}
+      {props.done ? null : (
+        <Text
+          modifiers={[font({ size: 15, weight: 'bold' }), foregroundStyle(ink), lineLimit(1), minimumScaleFactor(0.8)]}
+        >
+          {props.exercise}
+        </Text>
       )}
       <Spacer />
       <Text
@@ -155,8 +164,9 @@ const WorkoutActivity = (props: LockScreenProps, environment: LiveActivityEnviro
     </VStack>
   ) : rest ? (
     // Repos : le minuteur en gros sur fond soleil, et ce qu'il faut charger ensuite
+    // The lock screen cuts what goes past ~160 pt: no header, no second timer, the button inside
     sticker(
-      <VStack alignment="leading" spacing={8} modifiers={[padding({ all: 12 })]}>
+      <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 10 })]}>
         <HStack alignment="center" spacing={10}>
           <VStack alignment="leading" spacing={0}>
             <Text modifiers={[font({ size: 13, weight: 'heavy', design: 'rounded' }), foregroundStyle(ink)]}>
@@ -166,7 +176,7 @@ const WorkoutActivity = (props: LockScreenProps, environment: LiveActivityEnviro
               timerInterval={rest}
               countsDown
               modifiers={[
-                font({ size: 46, weight: 'heavy', design: 'rounded' }),
+                font({ size: 40, weight: 'heavy', design: 'rounded' }),
                 monospacedDigit(),
                 foregroundStyle(ink),
                 lineLimit(1),
@@ -191,52 +201,48 @@ const WorkoutActivity = (props: LockScreenProps, environment: LiveActivityEnviro
             </Text>
           </VStack>
         </HStack>
-        <ProgressView timerInterval={rest} countsDown modifiers={[tint(coral)]} />
-        {plates}
+        {plates || props.canValidate ? (
+          <HStack alignment="center" spacing={8}>
+            {plates}
+            <Spacer />
+            {validateButton('regular')}
+          </HStack>
+        ) : null}
       </VStack>,
       sunSoft,
       16,
     )
   ) : (
-    <VStack alignment="leading" spacing={6}>
-      <Text modifiers={[font({ size: 17, weight: 'bold' }), foregroundStyle(ink), lineLimit(1)]}>{props.exercise}</Text>
-      <HStack alignment="center" spacing={12}>
-        <VStack alignment="leading" spacing={6}>
-          <Text
-            modifiers={[
-              font({ size: 40, weight: 'heavy', design: 'rounded' }),
-              monospacedDigit(),
-              foregroundStyle(ink),
-              lineLimit(1),
-              minimumScaleFactor(0.5),
-            ]}
-          >
-            {props.target}
-          </Text>
-          {plates}
-        </VStack>
-        <Spacer />
-        {validate}
-      </HStack>
-    </VStack>
+    <HStack alignment="center" spacing={12}>
+      <VStack alignment="leading" spacing={4}>
+        <Text
+          modifiers={[
+            font({ size: 38, weight: 'heavy', design: 'rounded' }),
+            monospacedDigit(),
+            foregroundStyle(ink),
+            lineLimit(1),
+            minimumScaleFactor(0.5),
+          ]}
+        >
+          {props.target}
+        </Text>
+        {plates}
+      </VStack>
+      <Spacer />
+      {validate}
+    </HStack>
   );
 
   return {
     banner: (
       <VStack
         alignment="leading"
-        spacing={10}
-        modifiers={[padding({ all: 16 }), activityBackgroundTint(paper), foregroundStyle(ink)]}
+        spacing={8}
+        modifiers={[padding({ all: 14 }), activityBackgroundTint(paper), foregroundStyle(ink)]}
       >
-        {header}
+        {rest ? null : header}
         {body}
         {rest || props.done ? null : bar}
-        {rest && validate ? (
-          <HStack>
-            <Spacer />
-            {validate}
-          </HStack>
-        ) : null}
       </VStack>
     ),
     compactLeading: <Image systemName="dumbbell.fill" color={coral} />,
