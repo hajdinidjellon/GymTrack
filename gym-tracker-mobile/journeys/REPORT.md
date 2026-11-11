@@ -6,36 +6,36 @@ Temps estimé : 0,4 s par tap, 0,3 s par lettre, 1,35 s pour lire chaque écran 
 
 ## Séance
 
-| Parcours                                                        | Taps | Lettres | Écrans lus | Temps estimé |
-| --------------------------------------------------------------- | ---: | ------: | ---------: | -----------: |
-| Faire l’exercice plus tard (machine prise)                      |    2 |       0 |          2 |        3,5 s |
-| Lancer la séance et valider la 1ʳᵉ série                        |    2 |       0 |          2 |        3,5 s |
-| Une série faite 2,5 kg plus lourd que prévu                     |    3 |       0 |          2 |        3,9 s |
-| Ajouter un exercice à la séance                                 |    3 |       0 |          3 |        5,3 s |
-| Voir la démo de l’exercice et revenir                           |    3 |       0 |          3 |        5,3 s |
-| Changer d’exercice (machine prise)                              |    3 |       0 |          3 |        5,3 s |
-| Noter une série ratée (moins de reps)                           |    4 |       0 |          3 |        5,7 s |
-| Corriger une série déjà validée                                 |    6 |       0 |          4 |        7,8 s |
-| Première séance (débutant) : charge à choisir à chaque exercice |   21 |       0 |          7 |       17,9 s |
-| Une séance habituelle entière, de l’accueil au bilan            |   17 |       0 |          9 |         19 s |
+| Parcours | Taps | Lettres | Écrans lus | Temps estimé |
+|---|---:|---:|---:|---:|
+| Faire l’exercice plus tard (machine prise) | 2 | 0 | 2 | 3,5 s |
+| Lancer la séance et valider la 1ʳᵉ série | 2 | 0 | 2 | 3,5 s |
+| Une série faite 2,5 kg plus lourd que prévu | 3 | 0 | 2 | 3,9 s |
+| Ajouter un exercice à la séance | 3 | 0 | 3 | 5,3 s |
+| Voir la démo de l’exercice et revenir | 3 | 0 | 3 | 5,3 s |
+| Changer d’exercice (machine prise) | 3 | 0 | 3 | 5,3 s |
+| Noter une série ratée (moins de reps) | 4 | 0 | 3 | 5,7 s |
+| Corriger une série déjà validée | 6 | 0 | 4 | 7,8 s |
+| Première séance (débutant) : charge à choisir à chaque exercice | 21 | 0 | 7 | 17,9 s |
+| Une séance habituelle entière, de l’accueil au bilan | 17 | 0 | 9 | 19 s |
 
 ## Programme
 
-| Parcours                                                                   | Taps | Lettres | Écrans lus | Temps estimé |
-| -------------------------------------------------------------------------- | ---: | ------: | ---------: | -----------: |
-| Revoir la dernière séance                                                  |    1 |       0 |          2 |        3,1 s |
-| Changer de programme (Push · Pull · Legs → Haut · Bas)                     |    4 |       0 |          4 |          7 s |
-| Renommer un exercice du catalogue                                          |    4 |      11 |          2 |        7,6 s |
-| Ajouter un exercice à une séance du programme                              |    5 |       0 |          5 |        8,8 s |
-| Créer « Mon programme » à partir d’un programme copié, 3 séances renommées |    9 |      30 |          4 |         18 s |
+| Parcours | Taps | Lettres | Écrans lus | Temps estimé |
+|---|---:|---:|---:|---:|
+| Revoir la dernière séance | 1 | 0 | 2 | 3,1 s |
+| Changer de programme (Push · Pull · Legs → Haut · Bas) | 4 | 0 | 4 | 7 s |
+| Renommer un exercice du catalogue | 4 | 11 | 2 | 7,6 s |
+| Ajouter un exercice à une séance du programme | 5 | 0 | 5 | 8,8 s |
+| Créer « Mon programme » à partir d’un programme copié, 3 séances renommées | 9 | 30 | 4 | 18 s |
 
 ## Arrivée
 
-| Parcours                                                  | Taps | Lettres | Écrans lus | Temps estimé |
-| --------------------------------------------------------- | ---: | ------: | ---------: | -----------: |
-| Premier lancement, questions passées → 1ʳᵉ séance         |    4 |       0 |          5 |        8,4 s |
-| Créer un compte depuis l’accueil, puis l’onboarding passé |    5 |      19 |          4 |       13,1 s |
-| Premier lancement, les 7 questions répondues → 1ʳᵉ séance |   18 |       0 |         11 |       22,1 s |
+| Parcours | Taps | Lettres | Écrans lus | Temps estimé |
+|---|---:|---:|---:|---:|
+| Premier lancement, questions passées → 1ʳᵉ séance | 4 | 0 | 5 | 8,4 s |
+| Créer un compte depuis l’accueil, puis l’onboarding passé | 5 | 19 | 4 | 13,1 s |
+| Premier lancement, les 7 questions répondues → 1ʳᵉ séance | 18 | 0 | 11 | 22,1 s |
 
 ## Ce qu’on a vu en les mesurant
 
