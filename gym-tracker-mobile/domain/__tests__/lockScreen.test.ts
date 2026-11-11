@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { lockScreenProps } from '@/domain/lockScreen';
+import { lockScreenProps, lockScreenState } from '@/domain/lockScreen';
 import { DEFAULT_PLATES } from '@/domain/plates';
 import { active, session } from './fixtures';
 
@@ -106,5 +106,56 @@ describe('lockScreenProps on a drop set', () => {
     const press = active('Squat', [{ weight: 100, reps: 5, completed: true }]);
     press.sets.push({ weight: 80, reps: 5, setType: 'drop' });
     expect(lockScreenProps(session([press]), gym, NOW).setLabel).toBe('Dégressive');
+  });
+});
+
+describe('lockScreenState', () => {
+  const settings = { ...gym, restTimerEnabled: true, defaultRestTime: 90, restBell: true, notifications: true };
+  const twoSets = () => {
+    const bench = active('Développé couché', [
+      { weight: 80, reps: 8 },
+      { weight: 80, reps: 8 },
+    ]);
+    bench.sets[0]!.restTime = 120;
+    return session([bench, active('Squat', [{ weight: 100, reps: 5 }])]);
+  };
+
+  it('names the set the button validates, and the screens after each tap', () => {
+    const state = lockScreenState(twoSets(), settings, NOW);
+    const bench = state.set!.exerciseId;
+    expect(state.set).toEqual({ exerciseId: bench, setIndex: 0 });
+    // First tap: set 2, after the set's own rest
+    expect(state.next).toMatchObject({
+      setLabel: 'Série 2/2',
+      setsDone: 1,
+      restSeconds: 120,
+      restStart: null,
+      canValidate: true,
+      set: { exerciseId: bench, setIndex: 1 },
+    });
+    expect(state.next).not.toHaveProperty('labels');
+    // Second tap: the squat, after set 2's rest; the last screen known ahead has no button
+    expect(state.next!.next).toMatchObject({ exercise: 'Squat', restSeconds: 90, canValidate: false, next: null });
+  });
+
+  it('carries the alarm words only with the bell on', () => {
+    expect(lockScreenState(twoSets(), settings, NOW).alarm).toEqual({
+      title: 'Repos terminé',
+      stop: 'Arrêter',
+      open: 'Ouvrir Okilo',
+    });
+    expect(lockScreenState(twoSets(), { ...settings, restBell: false }, NOW).alarm).toBeNull();
+  });
+
+  it('rests nothing when the rest timer is off, nor after the last set', () => {
+    const off = lockScreenState(twoSets(), { ...settings, restTimerEnabled: false }, NOW);
+    expect(off.next!.restSeconds).toBe(0);
+    const last = session([active('a', [{ weight: 80, reps: 8 }])]);
+    expect(lockScreenState(last, settings, NOW).next).toMatchObject({ done: true, restSeconds: 0, next: null });
+  });
+
+  it('knows nothing ahead while the start weight is still to pick', () => {
+    const s = session([active('a', [{ weight: 0, reps: 10 }], { needsWeight: true })]);
+    expect(lockScreenState(s, settings, NOW)).toMatchObject({ set: null, next: null });
   });
 });

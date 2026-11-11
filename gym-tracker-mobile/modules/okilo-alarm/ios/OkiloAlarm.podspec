@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
   s.name           = 'OkiloAlarm'
   s.version        = '1.0.0'
-  s.summary        = 'The end of the rest as a real alarm (AlarmKit, iOS 26+)'
+  s.summary        = 'The end of the rest as a real alarm (AlarmKit, iOS 26+), lock screen taps with the app closed'
   s.author         = 'Okilo'
   s.homepage       = 'https://github.com/hajdinidjellon/GymTrack'
   s.license        = 'UNLICENSED'
@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
   # Older iOS versions launch without AlarmKit: linked weakly, used behind #available
-  s.weak_frameworks = 'AlarmKit', 'AppIntents'
+  s.weak_frameworks = 'AlarmKit', 'AppIntents', 'ActivityKit'
 
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.source_files = '**/*.swift'

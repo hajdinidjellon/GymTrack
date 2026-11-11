@@ -292,6 +292,17 @@ export function supersetHandoff(session: ActiveSession, exerciseId: string): boo
   );
 }
 
+/** The rest after a set (on the session where it is done): none when a superset partner goes next. */
+export function restAfterSet(
+  session: ActiveSession,
+  exerciseId: string,
+  planned: number | undefined,
+  defaultRest: number,
+): number {
+  if (supersetHandoff(session, exerciseId)) return 0;
+  return planned ?? defaultRest;
+}
+
 /** "Passer l'échauffement": the warm-ups left on this exercise go. */
 export function skipWarmups(session: ActiveSession, exerciseId: string): ActiveSession {
   return mapExercise(session, exerciseId, withoutWarmups);

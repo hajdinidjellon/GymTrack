@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
-import { lockScreenProps, type LockScreenProps } from '@/domain/lockScreen';
+import { lockScreenState } from '@/domain/lockScreen';
 import { findCurrent } from '@/domain/sessionCursor';
+import { lockScreenTapsAvailable, takeLockScreenTaps } from '@/services/lockScreenTaps';
 import { logger } from '@/services/logger';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -34,6 +35,8 @@ function loadNative(): { widgets: Widgets; factory: Factory; validate: string } 
 /**
  * Keeps the running session on the lock screen (Live Activity) and turns
  * its "Valider" button into a validated set. Mounted once, at the root.
+ * In a build the button works with the app asleep or closed: the native code
+ * queues the tap and moves the lock screen on; the app replays the queue here.
  */
 export function useLiveActivity(): void {
   useEffect(() => {
@@ -55,7 +58,7 @@ export function useLiveActivity(): void {
         if (activity || factory.getInstances().length > 0) end();
         return;
       }
-      const props: LockScreenProps = lockScreenProps(session, useSettingsStore.getState().settings, Date.now());
+      const props = lockScreenState(session, useSettingsStore.getState().settings, Date.now());
       const json = JSON.stringify(props);
       if (json === shown) return;
       try {
@@ -70,7 +73,17 @@ export function useLiveActivity(): void {
       }
     };
 
-    sync(useSessionStore.getState().activeSession);
+    /** The taps made while the app was not running, on the sets they were made on. */
+    const replay = () => {
+      const taps = takeLockScreenTaps();
+      for (const { exerciseId, setIndex, at } of taps) useSessionStore.getState().completeSet(exerciseId, setIndex, at);
+      // The native code moved the lock screen on by itself: show the app's own view again
+      shown = '';
+      sync(useSessionStore.getState().activeSession);
+    };
+
+    if (lockScreenTapsAvailable()) replay();
+    else sync(useSessionStore.getState().activeSession);
     const unsubscribe = useSessionStore.subscribe((state, previous) => {
       if (state.activeSession !== previous.activeSession) sync(state.activeSession);
     });
@@ -82,12 +95,22 @@ export function useLiveActivity(): void {
 
     const interactions = widgets.addUserInteractionListener((event) => {
       if (event.source !== 'WorkoutActivity' || event.target !== validate) return;
+      // The native code already queued this tap
+      if (lockScreenTapsAvailable()) {
+        replay();
+        return;
+      }
       const { activeSession, completeSet } = useSessionStore.getState();
       const cursor = activeSession && findCurrent(activeSession.exercises);
       if (cursor && !cursor.exercise.needsWeight) completeSet(cursor.exercise.id, cursor.setIndex);
     });
 
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && lockScreenTapsAvailable()) replay();
+    });
+
     return () => {
+      appState.remove();
       unsubscribe();
       unsubscribeLanguage();
       interactions.remove();

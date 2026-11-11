@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { renderHook } from '@testing-library/react-native';
+import { AppState } from 'react-native';
 import { useLiveActivity } from '@/hooks/useLiveActivity';
 import { useSessionStore } from '@/stores/sessionStore';
 import { DEFAULT_SETTINGS, useSettingsStore } from '@/stores/settingsStore';
@@ -12,12 +13,14 @@ const mockNative = {
   listener: null as Listener | null,
   instances: [] as { update: jest.Mock; end: jest.Mock }[],
   start: jest.fn(),
+  /** The native modules: OkiloAlarm's tap queue is added by the tests that need it. */
+  module: {} as { takeLockScreenTaps?: jest.Mock<() => unknown[]> },
 };
 
 // The native module is there, like in a development build
 jest.mock('expo', () => ({
   ...(jest.requireActual('expo') as object),
-  requireOptionalNativeModule: () => ({}),
+  requireOptionalNativeModule: () => mockNative.module,
 }));
 jest.mock('expo-widgets', () => ({
   addUserInteractionListener: (listener: Listener) => {
@@ -71,6 +74,7 @@ beforeEach(() => {
   jest.useFakeTimers();
   mockNative.instances = [];
   mockNative.start.mockClear();
+  delete mockNative.module.takeLockScreenTaps;
   useSettingsStore.setState({ settings: { ...DEFAULT_SETTINGS, warmups: false } });
 });
 
@@ -132,5 +136,59 @@ describe('useLiveActivity', () => {
     expect(mockNative.instances).toHaveLength(0);
     await unmount();
     expect(mockNative.listener).toBeNull();
+  });
+});
+
+describe('useLiveActivity with the native tap queue (a build)', () => {
+  const queue = (...taps: { setIndex: number; at: number }[]) => {
+    mockNative.module.takeLockScreenTaps = jest.fn(() => []);
+    mockNative.module.takeLockScreenTaps.mockReturnValueOnce(taps.map((t) => ({ exerciseId: 'bench', ...t })));
+  };
+  const sets = () => store().activeSession!.exercises[0]!.sets;
+
+  it('replays the taps made while the app was closed, at their time', async () => {
+    store().startSession('Push', [exercise('bench', 3)]);
+    const at = Date.now() - 10_000;
+    queue({ setIndex: 0, at }, { setIndex: 1, at: at + 1000 }, { setIndex: 1, at: at + 2000 });
+    await renderHook(() => useLiveActivity());
+    expect(sets().map((s) => s.completed)).toEqual([true, true, false]);
+    expect(sets()[0]!.doneAt).toBe(at);
+    expect(mockNative.start).toHaveBeenCalledTimes(1);
+    expect(mockNative.start).toHaveBeenCalledWith(expect.objectContaining({ setLabel: 'Série 3/3' }));
+  });
+
+  it('takes the button from the queue, not from the event', async () => {
+    await renderHook(() => useLiveActivity());
+    store().startSession('Push', [exercise('bench', 2)]);
+    queue({ setIndex: 0, at: Date.now() });
+    tap();
+    expect(sets()[0]!.completed).toBe(true);
+    // Already replayed: the same event again validates nothing more
+    tap();
+    expect(sets()[1]!.completed).toBe(false);
+  });
+
+  it('replays when the app comes back on screen', async () => {
+    const listen = jest.spyOn(AppState, 'addEventListener');
+    await renderHook(() => useLiveActivity());
+    store().startSession('Push', [exercise('bench', 2)]);
+    queue({ setIndex: 0, at: Date.now() });
+    const change = listen.mock.calls.filter(([type]) => type === 'change').pop()?.[1] as (state: string) => void;
+    change('background');
+    expect(sets()[0]!.completed).toBe(false);
+    change('active');
+    expect(sets()[0]!.completed).toBe(true);
+  });
+
+  it('sends the screens after each tap, worked out ahead', async () => {
+    mockNative.module.takeLockScreenTaps = jest.fn(() => []);
+    await renderHook(() => useLiveActivity());
+    store().startSession('Push', [exercise('bench', 2)]);
+    expect(mockNative.start).toHaveBeenCalledWith(
+      expect.objectContaining({
+        set: { exerciseId: 'bench', setIndex: 0 },
+        next: expect.objectContaining({ setLabel: 'Série 2/2', restSeconds: 120 }),
+      }),
+    );
   });
 });

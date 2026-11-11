@@ -582,3 +582,20 @@ describe('notification permission', () => {
     expect(requestAlarmPermission).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('a set validated on the lock screen, heard late', () => {
+  it('rests from the tap, without a sound nor the voice', () => {
+    const at = Date.now() - 30_000;
+    store().completeSet('bench', 0, at);
+    expect(session().exercises[0]!.sets[0]).toMatchObject({ completed: true, doneAt: at });
+    expect(session().restEndsAt).toBe(at + 120_000);
+    expect(scheduleRestCompleteNotification).toHaveBeenCalledWith(90, 'bench · 60 kg × 10', true);
+    expect(Speech.speak).not.toHaveBeenCalled();
+  });
+
+  it('starts no rest that is already over', () => {
+    store().completeSet('bench', 0, Date.now() - 200_000);
+    expect(session().exercises[0]!.sets[0]!.completed).toBe(true);
+    expect(session().restEndsAt).toBeNull();
+  });
+});

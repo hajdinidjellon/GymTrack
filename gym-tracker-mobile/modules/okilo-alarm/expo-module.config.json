@@ -1,6 +1,7 @@
 {
   "platforms": ["apple"],
   "apple": {
-    "modules": ["OkiloAlarmModule"]
+    "modules": ["OkiloAlarmModule"],
+    "appDelegateSubscribers": ["OkiloLockScreenTaps"]
   }
 }

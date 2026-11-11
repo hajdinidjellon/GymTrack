@@ -70,7 +70,11 @@ interface SessionStore {
   /** The first weight and its first set done, one tap; only the weight when a warm-up comes first. */
   startAndLog: (exerciseId: string, weight: number) => void;
   /** Marks the set done and starts the rest timer, unless it was the last set. */
-  completeSet: (exerciseId: string, setIndex: number) => void;
+  /**
+   * `at`: when it was done (epoch ms), for a tap on the lock screen the app
+   * hears late. Its rest then runs from that moment, and an old tap stays quiet.
+   */
+  completeSet: (exerciseId: string, setIndex: number, at?: number) => void;
   /** "Done as planned": completes every remaining set of the exercise at once. */
   completeRemaining: (exerciseId: string) => void;
   /** How the last validated set felt; the same effort again clears it. */
@@ -100,7 +104,8 @@ interface SessionStore {
   /** A held set is over: logs the seconds held and validates it. The bell when the target was reached. */
   finishHold: (exerciseId: string, setIndex: number, seconds: number, reached: boolean) => void;
 
-  startRestTimer: (seconds: number) => void;
+  /** `from`: when the rest began (epoch ms), now by default. */
+  startRestTimer: (seconds: number, from?: number) => void;
   addRestTime: (seconds: number) => void;
   stopRestTimer: () => void;
   /** "C'est reparti": stops the alarm, then the voice says the next set. */
@@ -119,6 +124,9 @@ function clearRestEndTimeout() {
   if (restEndTimeout) clearTimeout(restEndTimeout);
   restEndTimeout = null;
 }
+
+/** A set validated longer ago than this (on the lock screen, app asleep): no sound, no voice for it. */
+const LATE_TAP_MS = 5000;
 
 /** The phone left on the bench rings no longer than this. */
 export const REST_ALARM_MAX_MS = 30_000;
@@ -216,14 +224,18 @@ function silenceRestAlarm(announce: boolean) {
  * After a set: announce a new exercise early, so the bar can be loaded during
  * the rest. No rest (from one warm-up to the next): the next load right away.
  */
-function afterSet(previousExerciseId: string, restSeconds: number) {
-  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
+function afterSet(previousExerciseId: string, restSeconds: number, at: number) {
+  const late = Date.now() - at > LATE_TAP_MS;
+  if (!late) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => null);
   const session = useSessionStore.getState().activeSession;
   if (!session || Session.isDone(session)) return;
 
   const { restTimerEnabled, voice } = settings();
   const rests = restSeconds > 0;
-  if (restTimerEnabled && rests) useSessionStore.getState().startRestTimer(restSeconds);
+  // A late tap: its rest from the tap, unless it is already over
+  if (restTimerEnabled && rests && at + restSeconds * 1000 > Date.now())
+    useSessionStore.getState().startRestTimer(restSeconds, at);
+  if (late) return;
 
   const next = findCurrent(session.exercises);
   if (!next || !voice) return;
@@ -271,8 +283,8 @@ export const useSessionStore = create<SessionStore>()(
       /** The rest after a set: none when a superset partner goes next. */
       const restAfter = (exerciseId: string, planned: number | undefined) => {
         const session = get().activeSession;
-        if (session && Session.supersetHandoff(session, exerciseId)) return 0;
-        return planned ?? settings().defaultRestTime;
+        const fallback = settings().defaultRestTime;
+        return session ? Session.restAfterSet(session, exerciseId, planned, fallback) : (planned ?? fallback);
       };
       /** Applies a new order; a no-op stays silent. */
       const reorder = (fn: (s: ActiveSession) => ActiveSession) => {
@@ -365,14 +377,14 @@ export const useSessionStore = create<SessionStore>()(
           get().completeSet(exerciseId, first.setIndex);
         },
 
-        completeSet: (exerciseId, setIndex) => {
+        completeSet: (exerciseId, setIndex, at = Date.now()) => {
           const session = get().activeSession;
           const target = session && Session.findSet(session, exerciseId, setIndex);
           if (!target || target.completed) return;
           // Validated during a rest (the minimized bar): that rest is over
           if (session.restEndsAt != null) get().stopRestTimer();
-          apply((s) => Session.completeSet(s, exerciseId, setIndex, Date.now()));
-          afterSet(exerciseId, restAfter(exerciseId, target.restTime));
+          apply((s) => Session.completeSet(s, exerciseId, setIndex, at));
+          afterSet(exerciseId, restAfter(exerciseId, target.restTime), at);
         },
 
         completeRemaining: (exerciseId) => {
@@ -381,7 +393,7 @@ export const useSessionStore = create<SessionStore>()(
           if (!exercise || last === undefined) return;
           if (get().activeSession?.restEndsAt != null) get().stopRestTimer();
           apply((s) => Session.completeRemaining(s, exerciseId, Date.now()));
-          afterSet(exerciseId, restAfter(exerciseId, exercise.sets[last]?.restTime));
+          afterSet(exerciseId, restAfter(exerciseId, exercise.sets[last]?.restTime), Date.now());
         },
 
         rateLastSet: (effort) => {
@@ -475,17 +487,18 @@ export const useSessionStore = create<SessionStore>()(
           if (next && settings().voice) speak(nextSetLine(next, settings()));
         },
 
-        startRestTimer: (seconds) => {
+        startRestTimer: (seconds, from = Date.now()) => {
           if (!get().activeSession) return;
-          apply((s) => Session.startRest(s, seconds, Date.now()));
+          apply((s) => Session.startRest(s, seconds, from));
           const session = get().activeSession!;
+          const leftMs = session.restEndsAt! - Date.now();
           // Notification gérée par l'OS : elle sonne même app en arrière-plan
           void scheduleRestCompleteNotification(
-            session.restDuration!,
+            Math.max(1, Math.ceil(leftMs / 1000)),
             Session.nextSetSummary(session, formatKg),
             settings().restBell,
           );
-          armRestEnd(session.restDuration! * 1000);
+          armRestEnd(leftMs);
           // Validated from the lock screen, the app stays in the background: the alarm right away
           syncOffScreenAlarm();
           askNotificationsOnce();
