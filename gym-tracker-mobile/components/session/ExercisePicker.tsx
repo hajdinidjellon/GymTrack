@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { Input } from '@/components/ui/Input';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,43 +69,53 @@ export function ExercisePicker({
   const [tab, setTab] = useState<Tab>('all');
   const [region, setRegion] = useState<RegionTab>('all');
   const searching = query.trim() !== '';
-  const found = searchExercises(query, own);
-  // Typed exactly, even under another name: no offer to create it again
-  const exact = found.some((e) => namesOf(e).some((n) => searchKey(n) === searchKey(query)));
+  // Mounted on the session screen even closed (« Changer d'exo », « + »): over 200 exercises are
+  // sorted and searched only while the window is open, and once per change
+  const { exact, muscles, regions, items } = useMemo(() => {
+    if (!visible)
+      return { exact: false, muscles: [] as MuscleGroup[], regions: [] as MuscleRegion[], items: [] as Item[] };
+    const found = searchExercises(query, own);
+    // Typed exactly, even under another name: no offer to create it again
+    const exact = found.some((e) => namesOf(e).some((n) => searchKey(n) === searchKey(query)));
 
-  const everything = exercisesByPopularity(own);
-  // Only the muscles that have exercises: « Bras » stays for old own exercises
-  const muscles = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter((m) =>
-    everything.some((d) => d.muscleGroups[0] === m),
-  );
-  const ofMuscle = tab === 'all' ? [] : everything.filter((d) => d.muscleGroups[0] === tab);
-  // Haut, milieu, bas des pecs… only the ones with exercises
-  const regions = tab === 'all' ? [] : regionsOf(tab).filter((r) => ofMuscle.some((d) => regionOf(d) === r));
-  const shown = region === 'all' ? ofMuscle : ofMuscle.filter((d) => regionOf(d) === region);
+    const everything = exercisesByPopularity(own);
+    // Only the muscles that have exercises: « Bras » stays for old own exercises
+    const muscles = (Object.keys(MUSCLE_LABELS) as MuscleGroup[]).filter((m) =>
+      everything.some((d) => d.muscleGroups[0] === m),
+    );
+    const ofMuscle = tab === 'all' ? [] : everything.filter((d) => d.muscleGroups[0] === tab);
+    // Haut, milieu, bas des pecs… only the ones with exercises
+    const regions = tab === 'all' ? [] : regionsOf(tab).filter((r) => ofMuscle.some((d) => regionOf(d) === r));
+    const shown = region === 'all' ? ofMuscle : ofMuscle.filter((d) => regionOf(d) === region);
 
-  const items: Item[] = [];
-  const exercise = (def: ExerciseDef, at: string): Item => ({ kind: 'exercise', key: `${at}/${def.name}`, def });
-  if (searching) {
-    const count = found.length ? t('common.exercises', { count: found.length }) : t('session.picker.notFound');
-    items.push({ kind: 'title', key: 'found', text: count }, ...found.map((d) => exercise(d, 'found')));
-    items.push({ kind: 'create', key: 'create' });
-  } else {
-    // Le bouton « créer » en haut : la liste complète est longue
-    items.push({ kind: 'create', key: 'create' });
-    if (tab === 'all') {
-      const first = suggested ?? [];
-      if (first.length) {
-        items.push({ kind: 'title', key: 'suggested', text: suggestedTitle }, ...first.map((d) => exercise(d, 's')));
-      }
-      const rest = everything.filter((d) => !first.some((s) => s.name === d.name));
-      items.push({ kind: 'title', key: 'all', text: t('session.picker.all') }, ...rest.map((d) => exercise(d, 'all')));
+    const items: Item[] = [];
+    const exercise = (def: ExerciseDef, at: string): Item => ({ kind: 'exercise', key: `${at}/${def.name}`, def });
+    if (searching) {
+      const count = found.length ? t('common.exercises', { count: found.length }) : t('session.picker.notFound');
+      items.push({ kind: 'title', key: 'found', text: count }, ...found.map((d) => exercise(d, 'found')));
+      items.push({ kind: 'create', key: 'create' });
     } else {
-      const name = region === 'all' ? MUSCLE_LABELS[tab] : t(`domain.programs.regions.${region}`);
-      const count = t('common.exercises', { count: shown.length });
-      items.push({ kind: 'title', key: 'muscle', text: `${name} · ${count}` });
-      items.push(...shown.map((d) => exercise(d, `${tab}/${region}`)));
+      // Le bouton « créer » en haut : la liste complète est longue
+      items.push({ kind: 'create', key: 'create' });
+      if (tab === 'all') {
+        const first = suggested ?? [];
+        if (first.length) {
+          items.push({ kind: 'title', key: 'suggested', text: suggestedTitle }, ...first.map((d) => exercise(d, 's')));
+        }
+        const rest = everything.filter((d) => !first.some((s) => s.name === d.name));
+        items.push(
+          { kind: 'title', key: 'all', text: t('session.picker.all') },
+          ...rest.map((d) => exercise(d, 'all')),
+        );
+      } else {
+        const name = region === 'all' ? MUSCLE_LABELS[tab] : t(`domain.programs.regions.${region}`);
+        const count = t('common.exercises', { count: shown.length });
+        items.push({ kind: 'title', key: 'muscle', text: `${name} · ${count}` });
+        items.push(...shown.map((d) => exercise(d, `${tab}/${region}`)));
+      }
     }
-  }
+    return { exact, muscles, regions, items };
+  }, [visible, query, searching, own, tab, region, suggested, suggestedTitle]);
 
   // Rouverte, la fenêtre repart toujours sur la liste
   const reset = () => {
@@ -212,7 +222,7 @@ export function ExercisePicker({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
+    <Modal statusBarTranslucent visible={visible} transparent animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}
@@ -317,7 +327,10 @@ export function ExercisePicker({
                 data={items}
                 keyExtractor={(item) => item.key}
                 renderItem={renderItem}
-                initialNumToRender={24}
+                // About one screen first, the rest as the list scrolls
+                initialNumToRender={12}
+                maxToRenderPerBatch={12}
+                windowSize={7}
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: space.md }}
               />

@@ -6,7 +6,7 @@ import { START_PERCENT_OF_1RM, startWeightFromOneRepMax } from '@/domain/progres
 import { emptyBar, formatKg } from '@/domain/plates';
 import { useGym } from '@/hooks/useGym';
 import { bodyOf, calibrationPreset } from '@/domain/onboarding';
-import { nudge } from '@/domain/session';
+import { firstSetAfterStart, nudge } from '@/domain/session';
 import { findExerciseDef } from '@/domain/programs';
 import { fitToGym, startPresets } from '@/domain/startWeights';
 import type { ActiveExercise } from '@/types';
@@ -40,6 +40,11 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
   const suggested = calibrationPreset(presets, experience, bodyOf(profile));
   const [weight, setWeight] = useState(() => suggested ?? 20);
   const setStartWeight = useSessionStore((s) => s.setStartWeight);
+  const startAndLog = useSessionStore((s) => s.startAndLog);
+  const session = useSessionStore((s) => s.activeSession);
+  const settings = useSettingsStore((s) => s.settings);
+  // No warm-up first: the button logs the first set too
+  const first = session ? firstSetAfterStart(session, exercise.id, weight, settings) : null;
   // Any weight goes, down to the empty bar; off the bar, anything above zero (a 2,9 kg cable)
   const allowed = (w: number) => (loading === 'bar' ? w >= barWeight : w > 0);
   const perSide = useSidePlates(loading, weight);
@@ -201,13 +206,35 @@ export function CalibrationView({ exercise }: { exercise: ActiveExercise }) {
         ) : null}
       </ScrollView>
 
-      <StickerButton
-        label={t('session.calibration.start', { kg: formatKg(weight) })}
-        onPress={() => {
-          Keyboard.dismiss();
-          setStartWeight(exercise.id, weight);
-        }}
-      />
+      {first ? (
+        // Done at the bar already: the weight and the first set in one tap
+        <>
+          <StickerButton
+            label={t('session.calibration.startAndLog', { kg: formatKg(weight), reps: first.set.reps })}
+            onPress={() => {
+              Keyboard.dismiss();
+              startAndLog(exercise.id, weight);
+            }}
+          />
+          <StickerButton
+            label={t('session.calibration.weightOnly')}
+            variant="ghost"
+            size="small"
+            onPress={() => {
+              Keyboard.dismiss();
+              setStartWeight(exercise.id, weight);
+            }}
+          />
+        </>
+      ) : (
+        <StickerButton
+          label={t('session.calibration.start', { kg: formatKg(weight) })}
+          onPress={() => {
+            Keyboard.dismiss();
+            setStartWeight(exercise.id, weight);
+          }}
+        />
+      )}
     </Pressable>
   );
 }

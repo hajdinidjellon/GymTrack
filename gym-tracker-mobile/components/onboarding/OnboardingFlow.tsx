@@ -46,6 +46,8 @@ const QUESTIONS = 7;
 const PROGRAM = 3;
 const RHYTHM = 4;
 const RECAP = QUESTIONS;
+/** How long a choice stays on screen before the next question. */
+export const ADVANCE_MS = 350;
 
 export type FlowEnd = 'session' | 'home';
 
@@ -82,6 +84,12 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
     if (step === RHYTHM && !answers.schedule) setAnswers((a) => ({ ...a, schedule: answersWeek(a) }));
     setStep(step + 1);
   };
+  // A one-choice question goes on by itself once answered: the choice is seen a moment, then the next
+  // question. Only from the step it was answered on (a quick « Continuer » meanwhile is not doubled).
+  const advance = () => {
+    const from = step;
+    setTimeout(() => setStep((s) => (s === from ? s + 1 : s)), ADVANCE_MS);
+  };
   const noDay = step === RHYTHM && trainingCount(answersWeek(answers)) === 0;
   // « Autre » : each session named before going on
   const unnamed = step === PROGRAM && answers.split === 'custom' && (!answers.custom || !!draftProblem(answers.custom));
@@ -102,19 +110,19 @@ export function OnboardingFlow({ onExit, onFinish }: Props) {
     >
       <OnboardingHeader step={step} total={QUESTIONS} onBack={back} onSkip={() => setStep(RECAP)} />
       <FadeIn key={step}>
-        {step === 0 ? <GoalStep answers={answers} set={set} /> : null}
+        {step === 0 ? <GoalStep answers={answers} set={set} advance={advance} /> : null}
         {step === 1 ? <AboutStep answers={answers} set={set} /> : null}
-        {step === 2 ? <ExperienceStep answers={answers} set={set} /> : null}
-        {step === 3 ? <ProgramStep answers={answers} set={set} /> : null}
+        {step === 2 ? <ExperienceStep answers={answers} set={set} advance={advance} /> : null}
+        {step === 3 ? <ProgramStep answers={answers} set={set} advance={advance} /> : null}
         {step === 4 ? <RhythmStep answers={answers} set={set} /> : null}
-        {step === 5 ? <DurationStep answers={answers} set={set} /> : null}
+        {step === 5 ? <DurationStep answers={answers} set={set} advance={advance} /> : null}
         {step === 6 ? <GymStep answers={answers} set={set} /> : null}
       </FadeIn>
     </Screen>
   );
 }
 
-function GoalStep({ answers, set }: StepProps) {
+function GoalStep({ answers, set, advance }: StepProps) {
   return (
     <>
       <Question title={t('onboarding.flow.goal.title')} subtitle={t('onboarding.flow.goal.subtitle')} />
@@ -125,7 +133,10 @@ function GoalStep({ answers, set }: StepProps) {
             <Choice
               key={g.id}
               selected={on}
-              onPress={() => set({ goal: g.id })}
+              onPress={() => {
+                set({ goal: g.id });
+                advance?.();
+              }}
               accessibilityLabel={`${g.title}, ${g.sub}`}
               style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 }}
             >
@@ -222,7 +233,7 @@ function RhythmStep({ answers, set }: StepProps) {
   );
 }
 
-function ExperienceStep({ answers, set }: StepProps) {
+function ExperienceStep({ answers, set, advance }: StepProps) {
   return (
     <>
       <Question title={t('onboarding.flow.experience.title')} subtitle={t('onboarding.flow.experience.subtitle')} />
@@ -233,7 +244,10 @@ function ExperienceStep({ answers, set }: StepProps) {
             <Choice
               key={e.id}
               selected={on}
-              onPress={() => set({ experience: e.id })}
+              onPress={() => {
+                set({ experience: e.id });
+                advance?.();
+              }}
               accessibilityLabel={`${e.title}, ${e.sub}`}
               style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 }}
             >

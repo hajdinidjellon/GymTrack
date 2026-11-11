@@ -1,0 +1,45 @@
+{
+  "01": {
+    "actions": 3,
+    "seconds": 6.9,
+    "per_action": 2.3,
+    "slowest": [
+      ["Commencer à .*", 2444],
+      ["Autoriser", 2333],
+      ["Valider", 2110]
+    ]
+  },
+  "02": {
+    "actions": 33,
+    "seconds": 71.0,
+    "per_action": 2.15,
+    "slowest": [
+      ["Commencer à .*", 2468],
+      ["Commencer à .*", 2451],
+      ["Commencer à .*", 2370],
+      ["Valider", 2330]
+    ]
+  },
+  "03": {
+    "actions": 17,
+    "seconds": 41.4,
+    "per_action": 2.44,
+    "slowest": [
+      ["Ajouter un exercice à la séance", 3353],
+      ["Options de la série", 3084],
+      ["Lancer la séance", 3043],
+      ["Série ratée.*", 2916]
+    ]
+  },
+  "04": {
+    "actions": 8,
+    "seconds": 18.4,
+    "per_action": 2.3,
+    "slowest": [
+      ["Ma prise de masse", 3162],
+      ["Nom de la séance 1", 2791],
+      ["Nom du programme.*", 2740],
+      ["Enregistrer", 2403]
+    ]
+  }
+}

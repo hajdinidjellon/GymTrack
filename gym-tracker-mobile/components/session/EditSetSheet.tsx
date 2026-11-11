@@ -36,7 +36,7 @@ export function EditSetSheet({ set, title, noWeight, timed, step, repStep, onSav
   const [draft, setDraft] = useState<SetValues>(set ?? { weight: 0, reps: 0 });
 
   return (
-    <Modal visible={!!set} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal statusBarTranslucent visible={!!set} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

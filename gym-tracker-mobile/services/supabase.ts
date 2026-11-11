@@ -25,6 +25,14 @@ export async function getCurrentUserId(): Promise<string | null> {
   return error ? null : (data.user?.id ?? null);
 }
 
+/** The account's username, kept in the session on this phone (no network): null signed out. */
+export async function getUsername(): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+  const { data } = await supabase.auth.getSession();
+  const name: unknown = data.session?.user.user_metadata?.username;
+  return typeof name === 'string' && name.trim() ? name.trim() : null;
+}
+
 export async function hasSession(): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
   const { data } = await supabase.auth.getSession();

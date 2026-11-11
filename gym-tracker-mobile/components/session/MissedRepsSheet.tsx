@@ -25,6 +25,7 @@ export function MissedRepsSheet({ visible, target, weight, onSave, onClose }: Pr
 
   return (
     <Modal
+      statusBarTranslucent
       visible={visible}
       transparent
       animationType="slide"

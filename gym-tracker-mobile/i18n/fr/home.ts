@@ -6,6 +6,12 @@ export const home = {
     profile: 'Profil',
   },
   title: "Aujourd'hui",
+  greeting: {
+    day: 'Bonjour',
+    evening: 'Bonsoir',
+    dayName: 'Bonjour {name}',
+    eveningName: 'Bonsoir {name}',
+  },
   resume: 'Reprendre la séance',
   start: 'Lancer la séance',
   streak: "{count} sem. d'affilée",

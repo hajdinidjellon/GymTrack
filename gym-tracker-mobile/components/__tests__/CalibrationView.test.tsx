@@ -56,7 +56,7 @@ describe('Tu connais ton max ?', () => {
     await fireEvent(input, 'blur');
     // 70 % of 140 = 98, down to what the plates make
     await fireEvent.press(screen.getByText('Partir à 70 % : 97,5 kg'));
-    expect(screen.getByText('Commencer à 97,5 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 97,5 kg × /)).toBeTruthy();
     expect(addPR).toHaveBeenCalledWith(expect.objectContaining({ exercise: 'Squat', oneRepMax: 140, reps: 1 }));
   });
 
@@ -72,8 +72,18 @@ describe('CalibrationView', () => {
     await show(fresh({ plateLoaded: true }));
     await fireEvent.press(screen.getByLabelText('25 kilos'));
     expect(screen.getByText('De chaque côté : 20 + 5')).toBeTruthy();
-    await fireEvent.press(screen.getByText('Commencer à 25 kg'));
+    await fireEvent.press(screen.getByText(/^Série faite : 25 kg × /));
     expect(sets().map((s) => s.weight)).toEqual([25, 25]);
+    // One tap: the weight and the first set, done at the machine already
+    expect(sets().map((s) => !!s.completed)).toEqual([true, false]);
+  });
+
+  it('only sets the weight when asked to, the set still to validate', async () => {
+    await show(fresh({ plateLoaded: true }));
+    await fireEvent.press(screen.getByLabelText('25 kilos'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Choisir la charge seulement' }));
+    expect(sets().map((s) => s.weight)).toEqual([25, 25]);
+    expect(sets().some((s) => s.completed)).toBe(false);
   });
 
   it('says a dumbbell weight is per dumbbell', async () => {
@@ -98,7 +108,7 @@ describe('CalibrationView', () => {
     await fireEvent.press(screen.getByLabelText(/^20 kilos/));
     await fireEvent.press(screen.getByLabelText('Moins 2,5 kg'));
     expect(screen.getByText('Barre à vide')).toBeTruthy();
-    expect(screen.getByText('Commencer à 20 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 20 kg × /)).toBeTruthy();
   });
 
   it('takes any weight typed off the bar, even under one step', async () => {
@@ -108,12 +118,12 @@ describe('CalibrationView', () => {
     const input = screen.getByLabelText('Charge de départ en kilos');
     await fireEvent(input, 'focus');
     await fireEvent.changeText(input, '2,9');
-    expect(screen.getByText('Commencer à 2,9 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 2,9 kg × /)).toBeTruthy();
     await fireEvent(input, 'blur');
     await fireEvent.press(screen.getByLabelText('Moins 5 kg'));
-    expect(screen.getByText('Commencer à 2,9 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 2,9 kg × /)).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Plus 5 kg'));
-    expect(screen.getByText('Commencer à 7,9 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 7,9 kg × /)).toBeTruthy();
   });
 
   it('marks the suggested weight', async () => {
@@ -125,7 +135,7 @@ describe('CalibrationView', () => {
     await show(fresh({ plateLoaded: true }));
     await fireEvent.press(screen.getByLabelText(/^20 kilos/));
     await fireEvent.press(screen.getByLabelText('Plus 2,5 kg'));
-    expect(screen.getByText('Commencer à 22,5 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 22,5 kg × /)).toBeTruthy();
   });
 
   it('takes a weight typed on the keyboard, never under the empty bar', async () => {
@@ -133,8 +143,8 @@ describe('CalibrationView', () => {
     const input = screen.getByLabelText('Charge de départ en kilos');
     await fireEvent(input, 'focus');
     await fireEvent.changeText(input, '72,5');
-    expect(screen.getByText('Commencer à 72,5 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 72,5 kg × /)).toBeTruthy();
     await fireEvent.changeText(input, '5');
-    expect(screen.getByText('Commencer à 20 kg')).toBeTruthy();
+    expect(screen.getByText(/^Série faite : 20 kg × /)).toBeTruthy();
   });
 });

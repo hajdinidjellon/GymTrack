@@ -15,6 +15,10 @@ export const session = {
     saveFailed:
       'Le téléphone n’a pas pu l’enregistrer. Rien n’est perdu : ta séance reste ouverte, réessaie dans un instant.',
     abandon: 'Abandonner',
+    finishSave: 'Terminer et enregistrer',
+    keepGoing: 'Continuer la séance',
+    abandonAction: 'Abandonner la séance',
+    abandonHint: 'Rien n’est enregistré, même les séries validées.',
     abandonTitle: 'Abandonner la séance ?',
     abandonText: 'Rien ne sera enregistré, même les séries déjà validées.',
     abandonConfirm: 'Tout effacer',
@@ -150,6 +154,8 @@ export const session = {
     suggested: 'conseillé',
     presetSuggestedA11y: '{kg} kilos, conseillé',
     start: 'Commencer à {kg} kg',
+    startAndLog: 'Série faite : {kg} kg × {reps}',
+    weightOnly: 'Choisir la charge seulement',
   },
 
   doLater: {
@@ -239,6 +245,8 @@ export const session = {
     undo: 'Annuler la dernière série',
     oneMore: '+ Une série de plus',
     finish: 'Terminer la séance',
+    allDone: 'Toutes tes séries sont faites',
+    minutes: '{n} min',
   },
 
   progress: {

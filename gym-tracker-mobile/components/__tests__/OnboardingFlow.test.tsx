@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import React from 'react';
 import { BackHandler } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { setLocale } from '@/i18n';
-import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
+import { ADVANCE_MS, OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
 async function setup() {
   const onExit = jest.fn();
@@ -23,7 +23,28 @@ async function toRhythm() {
   await tap('Continuer');
 }
 
+// The first session offered is today's in the week: a Monday, so the expected days do not move
+beforeEach(() => {
+  jest.useFakeTimers({ now: new Date('2026-11-09T10:00:00'), advanceTimers: true });
+});
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 describe('OnboardingFlow', () => {
+  it('goes on by itself once a one-choice question is answered', async () => {
+    await setup();
+    await pick(/^Devenir plus fort/);
+    // The choice stays a moment on screen, then the next question
+    expect(screen.getByText('Tu viens pour quoi ?')).toBeOnTheScreen();
+    await act(() => jest.advanceTimersByTime(ADVANCE_MS));
+    expect(screen.getByText('Et toi ?')).toBeOnTheScreen();
+    // A question with several settings waits for « Continuer »
+    await pick('Je préfère pas dire');
+    await act(() => jest.advanceTimersByTime(ADVANCE_MS));
+    expect(screen.getByText('Et toi ?')).toBeOnTheScreen();
+  });
+
   it('builds a program of their own: its name and each session named by the user', async () => {
     const { onFinish } = await setup();
     await tap('Continuer');

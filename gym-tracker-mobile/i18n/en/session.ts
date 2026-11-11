@@ -15,6 +15,10 @@ export const session: Dictionary['session'] = {
     saveFailedTitle: 'Session not saved yet',
     saveFailed: 'The phone could not save it. Nothing is lost: your session stays open, try again in a moment.',
     abandon: 'Discard',
+    finishSave: 'Finish and save',
+    keepGoing: 'Keep going',
+    abandonAction: 'Discard the session',
+    abandonHint: 'Nothing is saved, not even the sets already logged.',
     abandonTitle: 'Discard the session?',
     abandonText: 'Nothing will be saved, not even the sets already logged.',
     abandonConfirm: 'Delete everything',
@@ -148,6 +152,8 @@ export const session: Dictionary['session'] = {
     suggested: 'suggested',
     presetSuggestedA11y: '{kg} kilos, suggested',
     start: 'Start at {kg} kg',
+    startAndLog: 'Set done: {kg} kg × {reps}',
+    weightOnly: 'Only choose the weight',
   },
 
   doLater: {
@@ -237,6 +243,8 @@ export const session: Dictionary['session'] = {
     undo: 'Undo the last set',
     oneMore: '+ One more set',
     finish: 'Finish the session',
+    allDone: 'Every set is done',
+    minutes: '{n} min',
   },
 
   progress: {

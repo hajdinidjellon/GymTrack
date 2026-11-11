@@ -1,0 +1,48 @@
+# Profile: build « Mon programme » from a copy, then give an exercise its own name.
+appId: host.exp.exponent
+---
+# Leave the running session for the home (it stays open)
+- runFlow:
+    when:
+      visible: 'Terminer'
+    commands:
+      - tapOn: 'Terminer'
+      - takeScreenshot: .maestro/screens/04-finish-ask
+      - runFlow:
+          when:
+            visible: 'Terminer la séance \\?'
+          commands:
+            - tapOn: 'TERMINER'
+- runFlow:
+    when:
+      visible: "Retour à l'accueil"
+    commands:
+      - tapOn: "Retour à l'accueil"
+- runFlow:
+    when:
+      notVisible: 'Ton programme'
+    commands:
+      - tapOn: 'Profil'
+      - tapOn: 'Programme.*'
+- tapOn: 'Mon programme.*'
+- tapOn: 'Nom du programme.*'
+- inputText: 'Ma prise de masse'
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Partir de'
+# The « Partir de » pill, not the program card above it
+- tapOn:
+    text: 'Push · Pull · Legs'
+    index: 1
+- takeScreenshot: .maestro/screens/04-builder
+- scrollUntilVisible:
+    element: 'Tes séances, dans l.ordre'
+- scroll
+- tapOn: 'Nom de la séance 1'
+- eraseText: 10
+- inputText: 'Pecs'
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Enregistrer'
+- tapOn: 'Enregistrer'
+- takeScreenshot: .maestro/screens/04-profile-after

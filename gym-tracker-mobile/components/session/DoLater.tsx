@@ -18,7 +18,7 @@ export function DoLater({ exercise }: { exercise: ActiveExercise }) {
       onPress={() => useSessionStore.getState().doLater(exercise.id)}
       accessibilityRole="button"
       accessibilityLabel={t('session.doLater.a11y', { name: exerciseName(exercise.name) })}
-      hitSlop={6}
+      hitSlop={8}
       style={({ pressed }) => chipStyle(pressed)}
     >
       <Text size={13} weight="bold" numberOfLines={1} maxFontSizeMultiplier={1.3}>

@@ -23,6 +23,7 @@ import { DemoThumb } from '@/components/exercise/DemoThumb';
 import { videoFor } from '@/components/exercise/ExerciseVideo';
 import { AddExercise } from '@/components/session/AddExercise';
 import { SessionDone } from '@/components/session/SessionDone';
+import { ActionSheet } from '@/components/ui/ActionSheet';
 
 // Pendant qu'on quitte l'écran, la séance est déjà vidée : on ne redirige pas une deuxième fois
 let leaving = false;
@@ -44,15 +45,6 @@ async function finish() {
     return;
   }
   router.replace({ pathname: '/session/summary', params: { id: workout.id } });
-}
-
-function confirmFinish(left: number) {
-  const message = left > 0 ? t('session.logger.finishLeft', { count: left }) : t('session.logger.finishNoneLeft');
-  Alert.alert(t('session.logger.finishTitle'), message, [
-    { text: t('common.continue'), style: 'cancel' },
-    { text: t('session.logger.abandon'), style: 'destructive', onPress: confirmAbandon },
-    { text: t('session.logger.finish'), onPress: () => void finish() },
-  ]);
 }
 
 /** Abandoning wipes the whole session: asked a second time, never one tap away. */
@@ -82,6 +74,8 @@ export default function SessionScreen() {
   // Réduit pour ce repos seulement : il revient en grand après la série suivante
   const restKey = resting ? JSON.stringify(session.lastCompleted) : null;
   const [minimizedKey, setMinimizedKey] = useState<string | null>(null);
+  // « Terminer » asked: the sets still to do, in the app's own sheet (abandon in red, apart)
+  const [finishLeft, setFinishLeft] = useState<number | null>(null);
   const minimized = resting && minimizedKey === restKey;
   const setMinimized = (on: boolean) => setMinimizedKey(on ? restKey : null);
 
@@ -146,7 +140,7 @@ export default function SessionScreen() {
             {t('session.logger.exerciseOf', { n: exerciseIndex + 1, total: session.exercises.length })}
           </Text>
         </Text>
-        <Pressable onPress={() => confirmFinish(left)} accessibilityRole="button" hitSlop={12}>
+        <Pressable onPress={() => setFinishLeft(left)} accessibilityRole="button" hitSlop={12}>
           <Text size={16} weight="black" style={{ textDecorationLine: 'underline' }}>
             {t('session.logger.finish')}
           </Text>
@@ -163,7 +157,7 @@ export default function SessionScreen() {
         <AddExercise current={exercise} sessionName={session.name} />
       </View>
 
-      <View style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
+      <View style={{ marginTop: space.md, flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
         <View style={{ flex: 1, minWidth: 0, gap: space.sm }}>
           {/* The set beside the name; a long name pushes it to the next line */}
           <View
@@ -223,7 +217,13 @@ export default function SessionScreen() {
         <SetView cursor={cursor} footer={rest ?? undefined} />
       )}
 
-      <Modal visible={resting && !minimized} transparent animationType="fade" onRequestClose={() => setMinimized(true)}>
+      <Modal
+        statusBarTranslucent
+        visible={resting && !minimized}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMinimized(true)}
+      >
         <View style={{ flex: 1, backgroundColor: colors.scrim }}>
           {/* Large text on a small phone: the popup scrolls instead of being cut */}
           <ScrollView
@@ -268,6 +268,26 @@ export default function SessionScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      <ActionSheet
+        visible={finishLeft !== null}
+        title={t('session.logger.finishTitle')}
+        message={
+          finishLeft ? t('session.logger.finishLeft', { count: finishLeft }) : t('session.logger.finishNoneLeft')
+        }
+        cancelLabel={t('session.logger.keepGoing')}
+        onClose={() => setFinishLeft(null)}
+        actions={[
+          { label: t('session.logger.finishSave'), opensSheet: true, onPress: () => void finish() },
+          {
+            label: t('session.logger.abandonAction'),
+            hint: t('session.logger.abandonHint'),
+            danger: true,
+            opensSheet: true,
+            onPress: confirmAbandon,
+          },
+        ]}
+      />
     </Screen>
   );
 }
