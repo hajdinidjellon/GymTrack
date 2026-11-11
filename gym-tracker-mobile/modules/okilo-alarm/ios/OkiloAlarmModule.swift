@@ -52,6 +52,11 @@ public class OkiloAlarmModule: Module {
       return false
     }
 
+    /// The "Valider" tapped on the lock screen while the app's JS was not running (OkiloLockScreenTaps).
+    Function("takeLockScreenTaps") { () -> [[String: Any]] in
+      OkiloLockScreenTaps.take()
+    }
+
     AsyncFunction("cancel") { (id: String) in
       #if canImport(AlarmKit) && canImport(AppIntents)
       if #available(iOS 26.0, *), let uuid = UUID(uuidString: id) {

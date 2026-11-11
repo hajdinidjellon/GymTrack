@@ -5,10 +5,11 @@
 
 import { LOADING_SUFFIX, loadingOf, sidePlates } from '@/domain/loading';
 import { formatKg, type Gym } from '@/domain/plates';
+import * as Session from '@/domain/session';
 import { findCurrent } from '@/domain/sessionCursor';
 import { setNumber } from '@/domain/warmup';
 import { dayName, exerciseName, t } from '@/i18n';
-import type { ActiveSession } from '@/types';
+import type { ActiveSession, AppSettings } from '@/types';
 
 /** Plain JSON: it crosses to the widget extension. */
 export interface LockScreenProps {
@@ -102,5 +103,74 @@ export function lockScreenProps(session: ActiveSession, settings: Gym, now: numb
     ...rest,
     canValidate: !exercise.needsWeight,
     done: false,
+  };
+}
+
+/** The set a tap on "Valider" validates. */
+export interface LockScreenSet {
+  exerciseId: string;
+  setIndex: number;
+}
+
+/**
+ * What the lock screen shows once "Valider" is tapped, worked out ahead: with
+ * the app not running, its native code swaps it in by itself (modules/okilo-alarm).
+ * The words that do not change (labels, session name) stay those of the screen before.
+ */
+export type LockScreenNext = Omit<LockScreenProps, 'labels' | 'session'> & {
+  set: LockScreenSet | null;
+  /** The rest that starts with the tap, 0 for none; the native code turns it into restStart / restEnd. */
+  restSeconds: number;
+  next: LockScreenNext | null;
+};
+
+export interface LockScreenState extends LockScreenProps {
+  set: LockScreenSet | null;
+  next: LockScreenNext | null;
+  /** The words of the rest's alarm (AlarmKit), null when the bell is off. */
+  alarm: { title: string; stop: string; open: string } | null;
+}
+
+export type LockScreenSettings = Gym &
+  Pick<AppSettings, 'restTimerEnabled' | 'defaultRestTime' | 'restBell' | 'notifications'>;
+
+/** How many taps ahead the lock screen knows: past that, the button hides until the app runs again. */
+export const LOCK_SCREEN_STEPS = 2;
+
+function currentSet(session: ActiveSession): LockScreenSet | null {
+  const cursor = findCurrent(session.exercises);
+  return cursor && !cursor.exercise.needsWeight ? { exerciseId: cursor.exercise.id, setIndex: cursor.setIndex } : null;
+}
+
+/** The screen after validating the current set, `steps` taps deep. */
+function nextAfter(
+  session: ActiveSession,
+  settings: LockScreenSettings,
+  now: number,
+  steps: number,
+): LockScreenNext | null {
+  const set = currentSet(session);
+  if (!set || steps <= 0) return null;
+  const planned = Session.findSet(session, set.exerciseId, set.setIndex)?.restTime;
+  const after = Session.completeSet(Session.endRest(session), set.exerciseId, set.setIndex, now);
+  const rests = settings.restTimerEnabled && !Session.isDone(after);
+  const restSeconds = rests ? Session.restAfterSet(after, set.exerciseId, planned, settings.defaultRestTime) : 0;
+  const { labels: _labels, session: _name, ...props } = lockScreenProps(after, settings, now);
+  const next = nextAfter(after, settings, now, steps - 1);
+  // The last screen known ahead: nothing to swap in after it, so no button
+  return { ...props, canValidate: props.canValidate && next !== null, set: currentSet(after), restSeconds, next };
+}
+
+/** Everything the Live Activity gets: the screen, the set its button validates, and the screens after it. */
+export function lockScreenState(session: ActiveSession, settings: LockScreenSettings, now: number): LockScreenState {
+  const alarm =
+    settings.restBell && settings.notifications
+      ? { title: t('domain.notifications.restOverTitle'), stop: t('domain.alarm.stop'), open: t('domain.alarm.open') }
+      : null;
+  return {
+    ...lockScreenProps(session, settings, now),
+    set: currentSet(session),
+    next: nextAfter(session, settings, now, LOCK_SCREEN_STEPS),
+    alarm,
   };
 }

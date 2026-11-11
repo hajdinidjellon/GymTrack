@@ -105,6 +105,7 @@ A layer never imports a layer above it. Always import with `@/`.
 - `logger.ts` — dev-only logs. `console.*` is banned elsewhere.
 - `files.ts` — write a file and open the share sheet, or pick one (expo-file-system, expo-sharing).
 - `alarmKit.ts` — the end of the rest as an AlarmKit alarm when the app is off screen. Native code in `modules/okilo-alarm/` (Swift, iOS 26+, weakly linked); its config plugin adds the permission text and registers the "Ouvrir Okilo" App Intent in the app target. Only in a build: test it with EAS, not Expo Go.
+- `lockScreenTaps.ts` — "Valider" on the lock screen (Live Activity, `hooks/useLiveActivity.ts`) with the app asleep or closed. The button's intent runs in the app's process but only JS heard it: `OkiloLockScreenTaps` (app delegate subscriber in `modules/okilo-alarm`) now queues the tap natively, swaps in the screen the app worked out ahead (`lockScreenState` in `domain/lockScreen.ts`: `set`, `next` two taps deep, the last one without a button) with the rest starting at the tap, and schedules the rest's AlarmKit alarm. The app replays the queue on launch, on the button event and back on screen (`completeSet(…, at)`: rest from the tap, quiet when late). Build only.
 - `voiceInput.ts` — on-device speech recognition for the voice commands; the native module is loaded only when it exists (not in Expo Go). `speech.ts` tells when the app itself is talking, so its voice is never taken for a command.
 
 ### State — Zustand stores (`stores/`)
