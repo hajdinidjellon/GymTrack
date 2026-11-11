@@ -93,4 +93,22 @@ describe('program', () => {
     expect(j.pathname).toMatch(/^\/history\//);
     j.save();
   });
+
+  it('switches the app to dark', async () => {
+    const j = await new Journey('theme-dark', 'Passer l’application en sombre', GROUP).open('/');
+    await j.tap('Profil', 'tab');
+    await j.tap(/^Application :/);
+    await j.tap('Sombre', 'radio');
+    expect(useSettingsStore.getState().settings.theme).toBe('dark');
+    j.save();
+  });
+
+  it('removes a plate the gym does not have', async () => {
+    const j = await new Journey('gym-plate', 'Retirer un disque que la salle n’a pas', GROUP).open('/');
+    await j.tap('Profil', 'tab');
+    await j.tap(/^Ma salle :/);
+    await j.tap('Disque de 1,25 kg', 'checkbox');
+    expect(useSettingsStore.getState().settings.plates).not.toContain(1.25);
+    j.save();
+  });
 });

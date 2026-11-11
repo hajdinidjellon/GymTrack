@@ -32,6 +32,8 @@ import HistoryDetail from '@/app/history/[id]';
 import History from '@/app/history/index';
 import Privacy from '@/app/privacy/index';
 import SessionScreen from '@/app/session/index';
+import AppSettingsScreen from '@/app/settings/app';
+import GymSettingsScreen from '@/app/settings/gym';
 import Preview from '@/app/session/preview';
 import Summary from '@/app/session/summary';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
@@ -62,6 +64,8 @@ export const ROUTES = {
   'history/index': History,
   'history/[id]': HistoryDetail,
   'privacy/index': Privacy,
+  'settings/gym': GymSettingsScreen,
+  'settings/app': AppSettingsScreen,
   'session/preview': Preview,
   'session/index': SessionScreen,
   'session/summary': Summary,

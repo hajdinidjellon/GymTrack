@@ -88,6 +88,8 @@ export default function RootLayout() {
             <Stack.Screen name="history/[id]" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="account/index" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="privacy/index" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="settings/gym" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="settings/app" options={{ animation: 'slide_from_right' }} />
           </Stack>
         ) : (
           <View style={{ flex: 1, backgroundColor: colors.paper }} />
