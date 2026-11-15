@@ -247,6 +247,8 @@ export const session = {
     finish: 'Terminer la séance',
     allDone: 'Toutes tes séries sont faites',
     minutes: '{n} min',
+    keepDay: 'Garder ces changements pour ma séance {day}',
+    keepDayDetail: 'Dans cet ordre : {list}',
   },
 
   progress: {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, space } from '@/constants/theme';
@@ -7,10 +7,12 @@ import { formatDay, formatThousands } from '@/domain/format';
 import { loggedExercises, setsDone, type LoggedSet } from '@/domain/history';
 import { formatKg } from '@/domain/plates';
 import { findExerciseDef } from '@/domain/programs';
+import { dayOfSession, dayUpdateFrom, type DayUpdate } from '@/domain/dayFromSession';
 import { loadLabel, newRecords, tonnage } from '@/domain/sessionBuilder';
 import { timeline } from '@/domain/sessionTime';
 import { useLoadFactor } from '@/hooks/useLoadFactor';
 import { useLocale } from '@/hooks/useLocale';
+import { useProfileStore } from '@/stores/profileStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Screen } from '@/components/ui/Screen';
@@ -21,9 +23,10 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { Chip } from '@/components/ui/Chip';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { Text } from '@/components/ui/Text';
+import { StickerButton } from '@/components/ui/StickerButton';
 import { ChevronRight } from '@/components/ui/icons';
 import { SessionTimeline } from '@/components/stats/SessionTimeline';
-import { dayName, exerciseName, t } from '@/i18n';
+import { dayName, exerciseName, listOf, t } from '@/i18n';
 
 /** Asked first: a session deleted does not come back. Left before it goes, so "not found" never shows. */
 function confirmDelete(id: string) {
@@ -40,12 +43,35 @@ function confirmDelete(id: string) {
   ]);
 }
 
+/** The past session becomes the day's list, once asked: the next sessions of that day follow it. */
+function confirmKeepDay(update: DayUpdate, onKept: () => void) {
+  const day = dayName(update.day.name);
+  Alert.alert(
+    t('history.detail.keepDayTitle', { day }),
+    t('history.detail.keepDayText', { day, list: listOf(update.names.map(exerciseName)) }),
+    [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('history.detail.keepDayConfirm'),
+        onPress: () => {
+          useSettingsStore.getState().setDayExercises(update.key, update.names, update.before);
+          onKept();
+        },
+      },
+    ],
+  );
+}
+
 /** One past session: what was done on each exercise, set by set. */
 export default function WorkoutScreen() {
   useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
   const workouts = useWorkoutStore((s) => s.workouts);
-  const own = useSettingsStore((s) => s.settings.customExercises);
+  const settings = useSettingsStore((s) => s.settings);
+  const own = settings.customExercises;
+  const split = useProfileStore((s) => s.profile?.program.split);
+  // Name of the day once kept: the button gives way to a line saying so
+  const [kept, setKept] = useState<string | null>(null);
   const factor = useLoadFactor();
   const workout = workouts.find((w) => w.id === id);
 
@@ -66,6 +92,14 @@ export default function WorkoutScreen() {
   const records = newRecords(workout, workouts, own);
   const time = timeline(workout);
   const lifted = tonnage(workout, factor);
+  const update = split
+    ? dayUpdateFrom(
+        dayOfSession(workout.name, split, settings),
+        exercises.map((e) => e.name),
+        undefined,
+        (name) => !!findExerciseDef(name, own),
+      )
+    : null;
 
   return (
     <Screen scroll>
@@ -113,6 +147,19 @@ export default function WorkoutScreen() {
         ))}
       </View>
 
+      {kept ? (
+        <Text size={15} weight="bold" color={colors.inkMuted} style={{ textAlign: 'center', marginTop: space.lg }}>
+          {t('history.detail.keptDay', { day: dayName(kept) })}
+        </Text>
+      ) : update ? (
+        <StickerButton
+          label={t('history.detail.keepDay', { day: dayName(update.day.name) })}
+          variant="secondary"
+          testID="keep-day"
+          style={{ marginTop: space.lg }}
+          onPress={() => confirmKeepDay(update, () => setKept(update.day.name))}
+        />
+      ) : null}
       <Pressable
         onPress={() => router.push('/history')}
         accessibilityRole="button"

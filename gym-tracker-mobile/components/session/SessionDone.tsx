@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { colors, space } from '@/constants/theme';
 import { isRateable } from '@/domain/session';
@@ -9,8 +9,13 @@ import { Text } from '@/components/ui/Text';
 import { Check } from '@/components/ui/icons';
 import { Chip } from '@/components/ui/Chip';
 import { workingCount } from '@/domain/warmup';
+import { CheckRow } from '@/components/ui/CheckRow';
+import { dayOfSession, dayUpdateFrom } from '@/domain/dayFromSession';
+import { findExerciseDef } from '@/domain/programs';
+import { useProfileStore } from '@/stores/profileStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { EffortPicker } from './EffortPicker';
-import { dayName, t } from '@/i18n';
+import { dayName, exerciseName, listOf, t } from '@/i18n';
 
 /**
  * Every set is validated. Before saving: how the last set felt (it steers
@@ -22,6 +27,23 @@ export function SessionDone({ onFinish }: { onFinish: () => void }) {
   const addSet = useSessionStore((s) => s.addSet);
   const lastExerciseId = useSessionStore((s) => s.activeSession?.lastCompleted?.exerciseId);
   const session = useSessionStore((s) => s.activeSession);
+  const settings = useSettingsStore((s) => s.settings);
+  const split = useProfileStore((s) => s.profile?.program.split);
+  const [keep, setKeep] = useState(false);
+  // Moved, swapped or added during the session: offered as the day's new list, never by default
+  const update =
+    session && split
+      ? dayUpdateFrom(
+          dayOfSession(session.name, split, settings),
+          session.exercises.map((e) => e.name),
+          session.planned,
+          (name) => !!findExerciseDef(name, settings.customExercises),
+        )
+      : null;
+  const finish = () => {
+    if (keep && update) useSettingsStore.getState().setDayExercises(update.key, update.names, update.before);
+    onFinish();
+  };
   const recap = session
     ? {
         name: session.name,
@@ -66,6 +88,14 @@ export function SessionDone({ onFinish }: { onFinish: () => void }) {
         </Text>
         {rateable ? <EffortPicker /> : null}
       </StickerCard>
+      {update ? (
+        <CheckRow
+          label={t('session.done.keepDay', { day: dayName(update.day.name) })}
+          detail={t('session.done.keepDayDetail', { list: listOf(update.names.map(exerciseName)) })}
+          checked={keep}
+          onChange={setKeep}
+        />
+      ) : null}
       <View style={{ flex: 1 }} />
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.xl }}>
         <Link label={t('session.done.undo')} onPress={undoLastSet} />
@@ -76,7 +106,7 @@ export function SessionDone({ onFinish }: { onFinish: () => void }) {
         size="xl"
         icon={<Check size={28} />}
         testID="finish-session"
-        onPress={onFinish}
+        onPress={finish}
       />
     </View>
   );
