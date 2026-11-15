@@ -31,6 +31,37 @@ function session(weight: number, reps: number[], extra: Partial<WorkoutSet>[] = 
 
 const weights = (r: ReturnType<typeof nextTargets>) => r.targets.map((t) => t.weight);
 
+describe('a higher range than last time', () => {
+  const heavy: ProgressionRule = { kind: 'double', sets: 5, repMin: 3, repMax: 5, increment: 2.5 };
+  const target = { target: { weight: 30, reps: 3 } };
+  const fiveByThree = (weight: number) => ({
+    ...session(weight, [3, 3, 3, 3, 3], Array(5).fill({ ...target, target: { weight, reps: 3 } })),
+    rule: heavy,
+  });
+
+  it('takes the weight the new reps need, from what was done', () => {
+    // 30 × 3 ≈ 33 kg max: 8 reps at about 26, down to the step
+    const r = nextTargets([fiveByThree(30)], rule);
+    expect(r).toEqual({ decision: 'new_range', targets: Array(3).fill({ weight: 25, reps: 8 }) });
+  });
+
+  it('never goes under the empty bar, keeps bodyweight at 0', () => {
+    expect(weights(nextTargets([fiveByThree(20)], rule, { minWeight: 20 }))).toEqual([20, 20, 20]);
+    expect(nextTargets([fiveByThree(0)], rule)).toEqual({
+      decision: 'new_range',
+      targets: Array(3).fill({ weight: 0, reps: 8 }),
+    });
+  });
+
+  it('keeps the usual progression when the range is the same, lower, or overlaps', () => {
+    expect(nextTargets([{ ...session(30, [8, 8, 8]), rule }], rule).decision).toBe('add_reps');
+    expect(nextTargets([{ ...session(30, [12, 12, 12, 12, 12]), rule }], heavy).decision).toBe('add_weight');
+    const close = { ...rule, repMin: 6, repMax: 10 };
+    expect(nextTargets([{ ...session(30, [6, 6, 6]), rule: close }], rule).decision).not.toBe('new_range');
+    expect(nextTargets([fiveByThree(30)], rule, { assisted: true }).decision).not.toBe('new_range');
+  });
+});
+
 describe('manual mode', () => {
   it('repeats the last session set by set, top set and back-offs included', () => {
     const last = session(180, [1, 5, 5, 5], [{ weight: 200 }]);

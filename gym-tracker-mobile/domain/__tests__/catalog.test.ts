@@ -93,6 +93,9 @@ describe('programs', () => {
   it('uses heavy sets for strength on the barbell only', () => {
     expect(ruleFor('force', EXERCISES.squat, 2.5)).toMatchObject({ sets: 5, repMin: 3, repMax: 5 });
     expect(ruleFor('force', EXERCISES.curl, 2)).toMatchObject({ sets: 3, repMin: 8, repMax: 12 });
+    // A barbell isolation is not a strength lift: never 5 × 3 on an EZ curl
+    expect(ruleFor('force', EXERCISES.ezcurl, 2.5)).toMatchObject({ sets: 3, repMin: 8, repMax: 12 });
+    expect(ruleFor('force', EXERCISES.bench, 2.5)).toMatchObject({ sets: 5, repMin: 3, repMax: 5 });
     expect(ruleFor('forme', EXERCISES.squat, 2.5)).toMatchObject({ repMin: 10, repMax: 15 });
   });
 

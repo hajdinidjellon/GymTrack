@@ -490,7 +490,8 @@ export const TIMED_RULE = { sets: 3, repMin: 30, repMax: 60, repStep: 5 } as con
 /** Heavy low reps only make sense on the big barbell lifts. */
 export function ruleFor(goal: Goal, def: ExerciseDef, increment: number): ProgressionRule {
   if (def.timed) return { kind: 'double', ...TIMED_RULE, increment };
-  if (goal === 'force' && def.equipment === 'barbell') {
+  // Heavy and low only on the big barbell lifts: a curl or a skull crusher at 3 reps loads the joints, not the muscle
+  if (goal === 'force' && def.equipment === 'barbell' && def.category === 'compound') {
     return { kind: 'double', sets: 5, repMin: 3, repMax: 5, increment };
   }
   if (goal === 'forme') return { kind: 'double', sets: 3, repMin: 10, repMax: 15, increment };

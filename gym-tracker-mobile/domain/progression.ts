@@ -56,6 +56,8 @@ export type Units = 'kg' | 'lbs';
 export interface ExerciseSession {
   date: string;
   sets: WorkoutSet[];
+  /** The rule the session was done with, when it was saved. */
+  rule?: ProgressionRule;
 }
 
 export type ProgressionDecision =
@@ -66,6 +68,7 @@ export type ProgressionDecision =
   | 'repeat' // a set fell under the minimum: same weight, same targets
   | 'deload' // failed twice in a row at the same weight
   | 'ease' // failed twice, nothing lighter to load: the reps really done become the target
+  | 'new_range' // the range is now above the last one (5 × 3 → 3 × 8-12): the weight those reps take
   | 'comeback' // back after a break: a bit lighter to find the groove again
   | 'start' // no history, starting weight derived from a PR
   | 'calibrate' // no history and no PR: the user picks the weight
@@ -303,7 +306,7 @@ export function nextTargets(
   const assisted = !!options.assisted;
   const harder = harderThan(assisted);
   const done = history
-    .map((h) => ({ date: h.date, sets: mainSets(h.sets) }))
+    .map((h) => ({ date: h.date, sets: mainSets(h.sets), rule: h.rule }))
     .filter((h) => h.sets.length > 0)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const sessions: ReadSession[] = done.flatMap((h) => {
@@ -327,6 +330,22 @@ export function nextTargets(
 
   const { weight, planned, top } = last.read;
   const bodyweight = weight === 0;
+
+  // Last time's range is all under today's (strength rule, or the user's own sets and reps):
+  // its low targets do not hold. The weight for the new reps, from what was done (Epley), never heavier.
+  if (last.rule && last.rule.repMax < rule.repMin && !rule.repStep && !assisted) {
+    const best = Math.max(...planned.map((s) => s.weight * (1 + Math.min(s.reps, 12) / 30)));
+    const lighter = bodyweight
+      ? 0
+      : Math.min(
+          weight,
+          Math.max(
+            roundDownToIncrement(best / (1 + rule.repMin / 30), rule.increment),
+            floorFor(weight, rule.increment, options.minWeight),
+          ),
+        );
+    return { decision: 'new_range', targets: fill(rule.sets, lighter, () => rule.repMin) };
+  }
 
   if (options.now && !bodyweight) {
     // The break counts from the last time the exercise was done, max test included
