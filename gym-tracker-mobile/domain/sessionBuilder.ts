@@ -381,6 +381,8 @@ export function deltaLabel(
       return t('domain.plan.deltaEase');
     case 'comeback':
       return t('domain.plan.deltaComeback');
+    case 'new_range':
+      return t('domain.plan.deltaNewRange');
     case 'start':
       return t('domain.plan.deltaStart');
     case 'calibrate':
@@ -454,6 +456,8 @@ function mainReason(lift: ReasonInput): string {
       return t(seconds ? 'domain.plan.reasonDeloadSeconds' : 'domain.plan.reasonDeload', { reps: rule.repMin });
     case 'ease':
       return t(seconds ? 'domain.plan.reasonEaseSeconds' : 'domain.plan.reasonEase', { reps: rule.repMin });
+    case 'new_range':
+      return t('domain.plan.reasonNewRange', { min: rule.repMin, max: rule.repMax });
     case 'comeback':
       return t('domain.plan.reasonComeback', { break: breakLabel(lift.daysOff ?? 14) });
     case 'start':

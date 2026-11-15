@@ -293,6 +293,7 @@ export const domain = {
     deltaLessHelp: "−{kg} kg d'aide",
     deltaEase: 'à ta mesure',
     deltaComeback: 'reprise',
+    deltaNewRange: 'nouvelle fourchette',
     deltaStart: 'départ',
     deltaCalibrate: 'à régler',
     reasonAddWeight: 'Toutes tes séries ont atteint {reps} reps : on ajoute {kg} kg.',
@@ -316,6 +317,8 @@ export const domain = {
       'Deux séances de suite sous {reps} s : on part de ce que tu as vraiment tenu, et on remonte de là.',
     reasonEasierVariant: "Trop dur pour l'instant ? Essaie plutôt « {name} ».",
     reasonTopKept: 'Ton top set reste tel quel : tes séries de travail décident.',
+    reasonNewRange:
+      'Nouvelle fourchette : {min} à {max} reps. Charge calculée sur ta dernière séance pour tenir {min} reps.',
     reasonComeback: '{break} sans cet exercice : on reprend un peu plus léger pour retrouver tes marques.',
     reasonStartBodyweight: 'Première séance : vise le bas de la fourchette.',
     reasonStart: 'Charge de départ calculée à 70 % de ton record.',

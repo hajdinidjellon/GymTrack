@@ -228,6 +228,24 @@ describe('planLift', () => {
     expect(planLift(EXERCISES.squat, c).rule).toMatchObject({ sets: 5, repMin: 3, repMax: 5 });
     expect(planLift(EXERCISES.squat, c).restTime).toBe(240);
     expect(planLift(EXERCISES.curl, c).rule).toMatchObject({ sets: 3, repMin: 8 });
+    expect(planLift(EXERCISES.ezcurl, c).rule).toMatchObject({ sets: 3, repMin: 8 });
+  });
+
+  it('after 5 × 3 on an EZ curl (the old strength rule), goes back to 8 to 12 reps', () => {
+    const curl: Exercise = {
+      ...lift('Curl barre EZ', 30, [3, 3, 3, 3, 3]),
+      rule: { kind: 'double', sets: 5, repMin: 3, repMax: 5, increment: 2.5 },
+    };
+    curl.sets = curl.sets.map((s) => ({ ...s, target: { weight: 30, reps: 3 } }));
+    const c = ctx([workout('2026-10-01', 'Push', [curl])], { goal: 'force' });
+    c.now = new Date('2026-10-04');
+    const p = planLift(EXERCISES.ezcurl, c);
+    expect(p.decision).toBe('new_range');
+    expect(p.targets).toEqual(Array(3).fill({ weight: 25, reps: 8 }));
+    expect(deltaLabel(p)).toBe('nouvelle fourchette');
+    expect(reasonLabel(p)).toBe(
+      'Nouvelle fourchette : 8 à 12 reps. Charge calculée sur ta dernière séance pour tenir 8 reps.',
+    );
   });
 });
 
