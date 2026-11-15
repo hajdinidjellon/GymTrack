@@ -19,6 +19,7 @@ export function createSession(id: string, name: string, exercises: ActiveExercis
     name,
     startedAt: now.toISOString(),
     exercises,
+    planned: exercises.map((e) => e.name),
     restEndsAt: null,
     restDuration: null,
     lastCompleted: null,

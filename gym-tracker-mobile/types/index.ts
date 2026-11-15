@@ -279,6 +279,8 @@ export interface ActiveSession {
   name: string;
   startedAt: string;
   exercises: ActiveExercise[];
+  /** The exercises it started with: what the user changed during the session shows against it. */
+  planned?: string[];
   /** Absolute timestamps so the timers survive re-renders and app restarts. */
   restEndsAt: number | null;
   restDuration: number | null;

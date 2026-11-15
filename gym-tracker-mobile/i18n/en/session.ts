@@ -245,6 +245,8 @@ export const session: Dictionary['session'] = {
     finish: 'Finish the session',
     allDone: 'Every set is done',
     minutes: '{n} min',
+    keepDay: 'Keep these changes for my {day} session',
+    keepDayDetail: 'In this order: {list}',
   },
 
   progress: {
